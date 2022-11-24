@@ -1,3 +1,8 @@
+import {
+  DataSourceTypeName,
+  MultiTypeDatasource,
+  MultiTypeDataSourceQuery,
+} from 'grafana/public/app/plugins/datasource/cloudwatch/multiTypeDataSource';
 import { ComponentType } from 'react';
 import { Observable } from 'rxjs';
 
