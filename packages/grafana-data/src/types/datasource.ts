@@ -301,6 +301,8 @@ abstract class DataSourceApi<
    */
   components?: DataSourcePluginComponents<DataSourceApi<TQuery, TOptions>, TQuery, TOptions>;
 
+  pseudoDataSources?: Record<string, DataSourceApi>;
+
   /**
    * static information about the datasource
    */
