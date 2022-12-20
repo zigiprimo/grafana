@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
+import { Controller, FieldValues } from 'react-hook-form';
 
 import { EditorField, EditorFieldGroup, EditorRow, EditorRows, EditorSwitch } from '@grafana/experimental';
 import { config } from '@grafana/runtime';
-import { Select } from '@grafana/ui';
+import { FormAPI, Select } from '@grafana/ui';
 
 import { Dimensions } from '..';
 import { CloudWatchDatasource } from '../../datasource';
@@ -18,6 +19,7 @@ export type Props = {
   datasource: CloudWatchDatasource;
   disableExpressions?: boolean;
   onChange: (value: MetricStat) => void;
+  formApi: FormAPI<FieldValues>;
 };
 
 export function MetricStatEditor({
@@ -25,6 +27,7 @@ export function MetricStatEditor({
   metricStat,
   datasource,
   disableExpressions = false,
+  formApi,
   onChange,
 }: React.PropsWithChildren<Props>) {
   const namespaceFieldState = useNamespaces(datasource, metricStat.namespace);
@@ -66,15 +69,44 @@ export function MetricStatEditor({
               onChange={(option) => onChange({ ...metricStat, namespace: option?.value ?? '' })}
             />
           </EditorField>
-          <EditorField label="Metric name" width={16} error="test">
-            <Select
-              {...metricFieldState}
-              aria-label="Metric name"
-              value={metricStat?.metricName && toOption(metricStat.metricName)}
-              allowCustomValue
-              onChange={(option) => onChange({ ...metricStat, metricName: option?.value })}
-            />
-          </EditorField>
+          <Controller
+            control={formApi.control}
+            name="metricName"
+            rules={{
+              // required: {
+              //   value: assetType.value == 'item',
+              //   message: 'Item type is required.',
+              // },
+              validate: (value) => {
+                console.log(value);
+                return false;
+              },
+            }}
+            render={({
+              field: { onChange, onBlur, value, name, ref },
+              fieldState: { invalid, isTouched, isDirty, error },
+              formState,
+            }) => (
+              // <Select
+              //   inputRef={ref}
+              //   classNamePrefix="addl-class"
+              //   options={options}
+              //   value={options.find((c) => c.value === value)}
+              //   onChange={(val) => onChange(val.value)}
+              // />
+              <EditorField label="Metric name" width={16} error="test">
+                <Select
+                  // {...metricFieldState}
+                  options={metricFieldState.options}
+                  defaultValue={metricStat?.metricName && toOption(metricStat.metricName)}
+                  aria-label="Metric name"
+                  value={value?.metricName && toOption(value.metricName)}
+                  allowCustomValue
+                  onChange={(option) => onChange({ ...metricStat, metricName: option?.value })}
+                />
+              </EditorField>
+            )}
+          />
 
           <EditorField label="Statistic" width={16}>
             <Select

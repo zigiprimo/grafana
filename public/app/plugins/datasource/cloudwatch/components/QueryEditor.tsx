@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 
 import { QueryEditorProps } from '@grafana/data';
+import { Form } from '@grafana/ui';
 
 import { CloudWatchDatasource } from '../datasource';
 import { isCloudWatchLogsQuery, isCloudWatchMetricsQuery } from '../guards';
@@ -31,25 +32,30 @@ export const QueryEditor = (props: Props) => {
   );
 
   return (
-    <>
-      <QueryHeader
-        {...props}
-        extraHeaderElementLeft={extraHeaderElementLeft}
-        extraHeaderElementRight={extraHeaderElementRight}
-        dataIsStale={dataIsStale}
-      />
+    <Form onSubmit={props.onRunQuery} maxWidth="none">
+      {(formApi) => (
+        <>
+          <QueryHeader
+            {...props}
+            extraHeaderElementLeft={extraHeaderElementLeft}
+            extraHeaderElementRight={extraHeaderElementRight}
+            dataIsStale={dataIsStale}
+          />
 
-      {isCloudWatchMetricsQuery(query) && (
-        <MetricsQueryEditor
-          {...props}
-          query={query}
-          onRunQuery={() => {}}
-          onChange={onChangeInternal}
-          extraHeaderElementLeft={setExtraHeaderElementLeft}
-          extraHeaderElementRight={setExtraHeaderElementRight}
-        />
+          {isCloudWatchMetricsQuery(query) && (
+            <MetricsQueryEditor
+              {...props}
+              formApi={formApi}
+              query={query}
+              onRunQuery={() => {}}
+              onChange={onChangeInternal}
+              extraHeaderElementLeft={setExtraHeaderElementLeft}
+              extraHeaderElementRight={setExtraHeaderElementRight}
+            />
+          )}
+          {isCloudWatchLogsQuery(query) && <LogsQueryEditor {...props} query={query} onChange={onChangeInternal} />}
+        </>
       )}
-      {isCloudWatchLogsQuery(query) && <LogsQueryEditor {...props} query={query} onChange={onChangeInternal} />}
-    </>
+    </Form>
   );
 };

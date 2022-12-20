@@ -98,7 +98,8 @@ const QueryHeader: React.FC<Props> = ({
         <Button
           variant={dataIsStale ? 'primary' : 'secondary'}
           size="sm"
-          onClick={onRunQuery}
+          type="submit"
+          // onClick={onRunQuery}
           icon={data?.state === LoadingState.Loading ? 'fa fa-spinner' : undefined}
           disabled={data?.state === LoadingState.Loading}
         >

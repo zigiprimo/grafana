@@ -1,9 +1,10 @@
 import React, { ChangeEvent, useCallback, useEffect, useState } from 'react';
+import { FieldValues } from 'react-hook-form';
 
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { EditorField, EditorRow, InlineSelect, Space } from '@grafana/experimental';
 import { config } from '@grafana/runtime';
-import { ConfirmModal, Input, RadioButtonGroup } from '@grafana/ui';
+import { ConfirmModal, FormAPI, Input, RadioButtonGroup } from '@grafana/ui';
 
 import { MathExpressionQueryField, MetricStatEditor, SQLBuilderEditor } from '../';
 import { CloudWatchDatasource } from '../../datasource';
@@ -23,6 +24,7 @@ import { Alias } from './Alias';
 
 export interface Props extends QueryEditorProps<CloudWatchDatasource, CloudWatchQuery, CloudWatchJsonData> {
   query: CloudWatchMetricsQuery;
+  formApi: FormAPI<FieldValues>;
   extraHeaderElementLeft?: React.Dispatch<JSX.Element | undefined>;
   extraHeaderElementRight?: React.Dispatch<JSX.Element | undefined>;
 }
@@ -117,6 +119,7 @@ export const MetricsQueryEditor = (props: Props) => {
           {query.metricEditorMode === MetricEditorMode.Builder && (
             <MetricStatEditor
               {...props}
+              formApi={props.formApi}
               refId={query.refId}
               metricStat={query}
               onChange={(metricStat: MetricStat) => props.onChange({ ...query, ...metricStat })}
