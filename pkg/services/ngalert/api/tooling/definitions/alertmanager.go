@@ -1025,6 +1025,17 @@ type PostableGrafanaReceiver struct {
 	SecureSettings        map[string]string `json:"secureSettings"`
 }
 
+func (p *PostableGrafanaReceiver) ToGrafanaReceiver() *alertingNotify.GrafanaReceiver {
+	return &alertingNotify.GrafanaReceiver{
+		UID:                   p.UID,
+		Name:                  p.Name,
+		Type:                  p.Type,
+		DisableResolveMessage: p.DisableResolveMessage,
+		Settings:              json.RawMessage(p.Settings),
+		SecureSettings:        p.SecureSettings,
+	}
+}
+
 type ReceiverType int
 
 const (
