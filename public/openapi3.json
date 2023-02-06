@@ -37,7 +37,7 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/UserIdDTO"
+              "$ref": "#/components/schemas/AdminCreateUserResponse"
             }
           }
         },
@@ -2030,6 +2030,18 @@
         },
         "type": "object"
       },
+      "AdminCreateUserResponse": {
+        "properties": {
+          "id": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "AdminStats": {
         "properties": {
           "activeAdmins": {
@@ -2349,7 +2361,7 @@
       "AlertQuery": {
         "properties": {
           "datasourceUid": {
-            "description": "Grafana data source unique identifier; it should be '-100' for a Server Side Expression operation.",
+            "description": "Grafana data source unique identifier; it should be '__expr__' for a Server Side Expression operation.",
             "type": "string"
           },
           "model": {
@@ -2369,6 +2381,28 @@
           }
         },
         "title": "AlertQuery represents a single query associated with an alert definition.",
+        "type": "object"
+      },
+      "AlertQueryExport": {
+        "properties": {
+          "datasourceUid": {
+            "type": "string"
+          },
+          "model": {
+            "additionalProperties": false,
+            "type": "object"
+          },
+          "queryType": {
+            "type": "string"
+          },
+          "refId": {
+            "type": "string"
+          },
+          "relativeTimeRange": {
+            "$ref": "#/components/schemas/RelativeTimeRange"
+          }
+        },
+        "title": "AlertQueryExport is the provisioned export of models.AlertQuery.",
         "type": "object"
       },
       "AlertResponse": {
@@ -2391,6 +2425,68 @@
         ],
         "type": "object"
       },
+      "AlertRuleExport": {
+        "properties": {
+          "annotations": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "condition": {
+            "type": "string"
+          },
+          "dasboardUid": {
+            "type": "string"
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/AlertQueryExport"
+            },
+            "type": "array"
+          },
+          "execErrState": {
+            "enum": [
+              "Alerting",
+              "Error",
+              "OK"
+            ],
+            "type": "string"
+          },
+          "for": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "isPaused": {
+            "type": "boolean"
+          },
+          "labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "noDataState": {
+            "enum": [
+              "Alerting",
+              "NoData",
+              "OK"
+            ],
+            "type": "string"
+          },
+          "panelId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "uid": {
+            "type": "string"
+          }
+        },
+        "title": "AlertRuleExport is the provisioned file export of models.AlertRule.",
+        "type": "object"
+      },
       "AlertRuleGroup": {
         "properties": {
           "folderUid": {
@@ -2410,6 +2506,31 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "AlertRuleGroupExport": {
+        "properties": {
+          "folder": {
+            "type": "string"
+          },
+          "interval": {
+            "$ref": "#/components/schemas/Duration"
+          },
+          "name": {
+            "type": "string"
+          },
+          "orgId": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "rules": {
+            "items": {
+              "$ref": "#/components/schemas/AlertRuleExport"
+            },
+            "type": "array"
+          }
+        },
+        "title": "AlertRuleGroupExport is the provisioned file export of AlertRuleGroupV1.",
         "type": "object"
       },
       "AlertRuleGroupMetadata": {
@@ -2499,6 +2620,22 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "AlertingFileExport": {
+        "properties": {
+          "apiVersion": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/AlertRuleGroupExport"
+            },
+            "type": "array"
+          }
+        },
+        "title": "AlertingFileExport is the full provisioned file export.",
         "type": "object"
       },
       "AlertingRule": {
@@ -4053,8 +4190,8 @@
         "type": "integer"
       },
       "Duration": {
-        "description": "A Duration represents the elapsed time between two instants\nas an int64 nanosecond count. The representation limits the\nlargest representable duration to approximately 290 years.",
         "format": "int64",
+        "title": "Duration is a type used for marshalling durations.",
         "type": "integer"
       },
       "EmailConfig": {
@@ -4838,6 +4975,9 @@
           "intervalSeconds": {
             "format": "int64",
             "type": "integer"
+          },
+          "is_paused": {
+            "type": "boolean"
           },
           "namespace_id": {
             "format": "int64",
@@ -5662,7 +5802,7 @@
             "type": "string"
           }
         },
-        "title": "LibraryElementDTOMetaUser is the meta information for user that creates/changes the library element.",
+        "title": "LibraryElementDTOMetaUser defines model for LibraryElementDTOMetaUser.",
         "type": "object"
       },
       "LibraryElementResponse": {
@@ -6794,6 +6934,9 @@
             ],
             "type": "string"
           },
+          "is_paused": {
+            "type": "boolean"
+          },
           "no_data_state": {
             "enum": [
               "Alerting",
@@ -6919,7 +7062,7 @@
           "data": {
             "example": [
               {
-                "datasourceUid": "-100",
+                "datasourceUid": "__expr__",
                 "model": {
                   "conditions": [
                     {
@@ -6985,6 +7128,10 @@
           "id": {
             "format": "int64",
             "type": "integer"
+          },
+          "isPaused": {
+            "example": false,
+            "type": "boolean"
           },
           "labels": {
             "additionalProperties": {
@@ -9447,7 +9594,8 @@
           "theme": {
             "enum": [
               "light",
-              "dark"
+              "dark",
+              "system"
             ],
             "type": "string"
           },
@@ -9567,18 +9715,6 @@
             "type": "string"
           },
           "theme": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "UserIdDTO": {
-        "properties": {
-          "id": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "message": {
             "type": "string"
           }
         },
@@ -10179,6 +10315,7 @@
         "type": "object"
       },
       "gettableSilences": {
+        "description": "GettableSilences gettable silences",
         "items": {
           "$ref": "#/components/schemas/gettableSilence"
         },
@@ -13196,6 +13333,41 @@
         ]
       }
     },
+    "/api/v1/provisioning/alert-rules/export": {
+      "get": {
+        "operationId": "RouteGetAlertRulesExport",
+        "parameters": [
+          {
+            "description": "Whether to initiate a download of the file or not.",
+            "in": "query",
+            "name": "download",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertingFileExport"
+                }
+              }
+            },
+            "description": "AlertingFileExport"
+          },
+          "404": {
+            "description": " Not found."
+          }
+        },
+        "summary": "Export all alert rules in provisioning file format.",
+        "tags": [
+          "provisioning"
+        ]
+      }
+    },
     "/api/v1/provisioning/alert-rules/{UID}": {
       "delete": {
         "operationId": "RouteDeleteAlertRule",
@@ -13306,6 +13478,60 @@
           }
         },
         "summary": "Update an existing alert rule.",
+        "tags": [
+          "provisioning"
+        ]
+      }
+    },
+    "/api/v1/provisioning/alert-rules/{UID}/export": {
+      "get": {
+        "operationId": "RouteGetAlertRuleExport",
+        "parameters": [
+          {
+            "description": "Alert rule UID",
+            "in": "path",
+            "name": "UID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Whether to initiate a download of the file or not.",
+            "in": "query",
+            "name": "download",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertingFileExport"
+                }
+              },
+              "application/yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertingFileExport"
+                }
+              },
+              "text/yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertingFileExport"
+                }
+              }
+            },
+            "description": "AlertingFileExport"
+          },
+          "404": {
+            "description": " Not found."
+          }
+        },
+        "summary": "Export an alert rule in provisioning file format.",
         "tags": [
           "provisioning"
         ]
@@ -13550,6 +13776,67 @@
           }
         },
         "summary": "Update the interval of a rule group.",
+        "tags": [
+          "provisioning"
+        ]
+      }
+    },
+    "/api/v1/provisioning/folder/{FolderUID}/rule-groups/{Group}/export": {
+      "get": {
+        "operationId": "RouteGetAlertRuleGroupExport",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "FolderUID",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "Group",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "description": "Whether to initiate a download of the file or not.",
+            "in": "query",
+            "name": "download",
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertingFileExport"
+                }
+              },
+              "application/yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertingFileExport"
+                }
+              },
+              "text/yaml": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertingFileExport"
+                }
+              }
+            },
+            "description": "AlertingFileExport"
+          },
+          "404": {
+            "description": " Not found."
+          }
+        },
+        "summary": "Export an alert rule group in provisioning file format.",
         "tags": [
           "provisioning"
         ]

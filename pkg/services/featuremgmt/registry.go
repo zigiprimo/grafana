@@ -40,17 +40,6 @@ var (
 			State:       FeatureStateAlpha,
 		},
 		{
-			Name:            "dashboardPreviewsAdmin",
-			Description:     "Manage the dashboard previews crawler process from the UI",
-			State:           FeatureStateAlpha,
-			RequiresDevMode: true,
-		},
-		{
-			Name:        "live-config",
-			Description: "Save Grafana Live configuration in SQL tables",
-			State:       FeatureStateAlpha,
-		},
-		{
 			Name:        "live-pipeline",
 			Description: "Enable a generic live processing pipeline",
 			State:       FeatureStateAlpha,
@@ -71,12 +60,6 @@ var (
 			Name:        "panelTitleSearch",
 			Description: "Search for dashboards using panel title",
 			State:       FeatureStateBeta,
-		},
-		{
-			Name:         "tempoApmTable",
-			Description:  "Show APM table",
-			State:        FeatureStateAlpha,
-			FrontendOnly: true,
 		},
 		{
 			Name:        "prometheusAzureOverrideAudience",
@@ -161,6 +144,12 @@ var (
 			RequiresDevMode: true,
 		},
 		{
+			Name:            "apiserver",
+			Description:     "Add a k8s API server proxy",
+			State:           FeatureStateAlpha,
+			RequiresDevMode: true,
+		},
+		{
 			Name:        "supportBundles",
 			Description: "Support bundles for troubleshooting",
 			State:       FeatureStateAlpha,
@@ -178,13 +167,6 @@ var (
 			RequiresDevMode: true,
 		},
 		{
-			Name:            "azureMonitorResourcePickerForMetrics",
-			Description:     "New UI for Azure Monitor Metrics Query",
-			State:           FeatureStateAlpha,
-			RequiresDevMode: true,
-			FrontendOnly:    true,
-		},
-		{
 			Name:         "exploreMixedDatasource",
 			Description:  "Enable mixed datasource in Explore",
 			State:        FeatureStateAlpha,
@@ -194,13 +176,6 @@ var (
 			Name:         "tracing",
 			Description:  "Adds trace ID to error notifications",
 			State:        FeatureStateAlpha,
-			FrontendOnly: true,
-		},
-		{
-			Name:         "commandPalette",
-			Description:  "Enable command palette",
-			State:        FeatureStateStable,
-			Expression:   "true", // enabled by default
 			FrontendOnly: true,
 		},
 		{
@@ -283,8 +258,8 @@ var (
 		},
 		{
 			Name:        "topnav",
-			Description: "New top nav and page layouts",
-			State:       FeatureStateAlpha,
+			Description: "Displays new top nav and page layouts",
+			State:       FeatureStateBeta,
 		},
 		{
 			Name:            "grpcServer",
@@ -305,8 +280,9 @@ var (
 		},
 		{
 			Name:        "cloudWatchCrossAccountQuerying",
-			Description: "Use cross-account querying in CloudWatch datasource",
-			State:       FeatureStateAlpha,
+			Description: "Enables cross-account querying in CloudWatch datasources",
+			State:       FeatureStateStable,
+			Expression:  "true", //enabled by default
 		},
 		{
 			Name:         "redshiftAsyncQueryDataSupport",
@@ -416,14 +392,23 @@ var (
 			RequiresRestart: false,
 		},
 		{
-			Name:        "azureMultipleResourcePicker",
-			Description: "Azure multiple resource picker",
-			State:       FeatureStateAlpha,
-		},
-		{
 			Name:         "topNavCommandPalette",
 			Description:  "Launch the Command Palette from the top navigation search box",
 			State:        FeatureStateBeta,
+			FrontendOnly: true,
+		},
+		{
+
+			Name:         "logsSampleInExplore",
+			Description:  "Enables access to the logs sample feature in Explore",
+			State:        FeatureStateStable,
+			Expression:   "true", //turned on by default
+			FrontendOnly: true,
+		},
+		{
+			Name:         "logsContextDatasourceUi",
+			Description:  "Allow datasource to provide custom UI for context view",
+			State:        FeatureStateAlpha,
 			FrontendOnly: true,
 		},
 	}
