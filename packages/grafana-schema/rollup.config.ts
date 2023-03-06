@@ -19,7 +19,7 @@ export default [
       {
         format: 'esm',
         sourcemap: true,
-        dir: path.dirname(pkg.publishConfig.module),
+        dir: path.dirname(pkg.publishConfig.exports['.'].import),
         preserveModules: true,
         // @ts-expect-error (TS cannot assure that `process.env.PROJECT_CWD` is a string)
         preserveModulesRoot: path.join(process.env.PROJECT_CWD, `packages/grafana-schema/src`),
@@ -27,7 +27,7 @@ export default [
     ],
   },
   {
-    input: './compiled/index.d.ts',
+    input: './dist/esm/index.d.ts',
     plugins: [dts()],
     output: {
       file: pkg.publishConfig.types,
