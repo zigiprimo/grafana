@@ -112,9 +112,6 @@ func Calculate(mlog log.Logger, class plugins.Class, plugin plugins.FoundPlugin)
 		}, nil
 	}
 
-	// nolint:gosec
-	// We can ignore the gosec G304 warning on this one because `manifestPath` is based
-	// on plugin the folder structure on disk and not user input.
 	f, err := plugin.FS.Open("MANIFEST.txt")
 	if err != nil {
 		if errors.Is(err, plugins.ErrFileNotExist) {
@@ -129,6 +126,14 @@ func Calculate(mlog log.Logger, class plugins.Class, plugin plugins.FoundPlugin)
 			Status: plugins.SignatureInvalid,
 		}, nil
 	}
+	defer func() {
+		if f == nil {
+			return
+		}
+		if err = f.Close(); err != nil {
+			mlog.Warn("Failed to close plugin MANIFEST file", "err", err)
+		}
+	}()
 
 	byteValue, err := io.ReadAll(f)
 	if err != nil || len(byteValue) < 10 {
@@ -190,6 +195,7 @@ func Calculate(mlog log.Logger, class plugins.Class, plugin plugins.FoundPlugin)
 	// Track files missing from the manifest
 	var unsignedFiles []string
 	for _, f := range plugin.FS.Files() {
+		// Ignoring unsigned Chromium debug.log so it doesn't invalidate the signature for Renderer plugin running on Windows
 		if runningWindows && plugin.JSONData.Type == plugins.Renderer && f == "chrome-win/debug.log" {
 			continue
 		}

@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -42,7 +41,8 @@ func (f *FS) Find(_ context.Context, pluginPaths ...string) ([]*plugins.FoundBun
 	for _, path := range pluginPaths {
 		exists, err := fs.Exists(path)
 		if err != nil {
-			f.log.Warn("Error occurred when checking if plugin directory exists", "path", path, "err", err)
+			f.log.Warn("Skipping finding plugins as an error occurred", "path", path, "err", err)
+			continue
 		}
 		if !exists {
 			f.log.Warn("Skipping finding plugins as directory does not exist", "path", path)
@@ -184,14 +184,18 @@ func (f *FS) readPluginJSON(pluginJSONPath string) (plugins.JSONData, error) {
 	if err != nil {
 		return plugins.JSONData{}, err
 	}
+	defer func() {
+		if reader == nil {
+			return
+		}
+		if err = reader.Close(); err != nil {
+			f.log.Warn("Failed to close JSON file", "path", pluginJSONPath, "err", err)
+		}
+	}()
 
 	plugin := plugins.JSONData{}
 	if err = json.NewDecoder(reader).Decode(&plugin); err != nil {
 		return plugins.JSONData{}, err
-	}
-
-	if err = reader.Close(); err != nil {
-		f.log.Warn("Failed to close JSON file", "path", pluginJSONPath, "err", err)
 	}
 
 	if err = validatePluginJSON(plugin); err != nil {
@@ -213,12 +217,6 @@ func (f *FS) readPluginJSON(pluginJSONPath string) (plugins.JSONData, error) {
 	for _, include := range plugin.Includes {
 		if include.Role == "" {
 			include.Role = org.RoleViewer
-		}
-	}
-
-	for i, extension := range plugin.Extensions {
-		if !filepath.IsAbs(extension.Path) {
-			plugin.Extensions[i].Path = path.Join("/", extension.Path)
 		}
 	}
 
@@ -269,11 +267,6 @@ func collectFilesWithin(dir string) (map[string]struct{}, error) {
 		if info.IsDir() {
 			return nil
 		}
-
-		// Ignoring unsigned Chromium debug.log so it doesn't invalidate the signature for Renderer plugin running on Windows
-		//if runningWindows && plugin.IsRenderer() && strings.HasSuffix(path, filepath.Join("chrome-win", "debug.log")) {
-		//	return nil
-		//}
 
 		// verify that file is within plugin directory
 		file, err := filepath.Rel(dir, path)

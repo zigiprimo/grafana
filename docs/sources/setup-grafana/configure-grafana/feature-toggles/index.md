@@ -91,6 +91,7 @@ Alpha features might be changed or removed without prior notice.
 | `lokiQuerySplitting`               | Split large interval queries into subqueries with smaller time intervals                                                                                                     |
 | `individualCookiePreferences`      | Support overriding cookie preferences per user                                                                                                                               |
 | `drawerDataSourcePicker`           | Changes the user experience for data source selection to a drawer.                                                                                                           |
+| `traceqlSearch`                    | Enables the 'TraceQL Search' tab for the Tempo datasource which provides a UI to generate TraceQL queries                                                                    |
 
 ## Development feature toggles
 
@@ -101,7 +102,6 @@ The following toggles require explicitly setting Grafana's [app mode]({{< relref
 | `publicDashboardsEmailSharing` | Allows public dashboard sharing to be restricted to only allowed emails |
 | `k8s`                          | Explore native k8s integrations                                         |
 | `dashboardsFromStorage`        | Load dashboards from the generic storage interface                      |
-| `export`                       | Export grafana instance (to git, etc)                                   |
 | `grpcServer`                   | Run GRPC server                                                         |
 | `entityStore`                  | SQL-based entity store (requires storage flag also)                     |
 | `queryLibrary`                 | Reusable query library                                                  |
