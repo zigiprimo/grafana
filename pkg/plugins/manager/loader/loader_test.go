@@ -493,12 +493,15 @@ func TestLoader_Load(t *testing.T) {
 						},
 					},
 					FS: plugins.NewLocalFS(map[string]struct{}{
-						filepath.Join(parentDir, "testdata/cdn/plugin", "plugin.json"): {},
+						filepath.Join(parentDir, "testdata/cdn/plugin", "MANIFEST.txt"): {},
+						filepath.Join(parentDir, "testdata/cdn/plugin", "plugin.json"):  {},
 					}, filepath.Join(parentDir, "testdata/cdn/plugin")),
-					Class:     plugins.External,
-					Signature: plugins.SignatureValid,
-					BaseURL:   "plugin-cdn/grafana-worldmap-panel/0.3.3/public/plugins/grafana-worldmap-panel",
-					Module:    "plugin-cdn/grafana-worldmap-panel/0.3.3/public/plugins/grafana-worldmap-panel/module",
+					Class:         plugins.External,
+					Signature:     plugins.SignatureValid,
+					SignatureType: plugins.GrafanaSignature,
+					SignatureOrg:  "Grafana Labs",
+					BaseURL:       "plugin-cdn/grafana-worldmap-panel/0.3.3/public/plugins/grafana-worldmap-panel",
+					Module:        "plugin-cdn/grafana-worldmap-panel/0.3.3/public/plugins/grafana-worldmap-panel/module",
 				},
 			},
 		},
@@ -1256,7 +1259,7 @@ func newLoader(cfg *config.Cfg, cbs ...func(loader *Loader)) *Loader {
 	cdn := pluginscdn.ProvideService(cfg)
 	l := New(cfg, &fakes.FakeLicensingService{}, signature.NewUnsignedAuthorizer(cfg), fakes.NewFakePluginRegistry(),
 		fakes.NewFakeBackendProcessProvider(), fakes.NewFakeProcessManager(), fakes.NewFakePluginStorage(),
-		fakes.NewFakeRoleRegistry(), cdn, assetpath.ProvideService(cdn))
+		fakes.NewFakeRoleRegistry(), assetpath.ProvideService(cdn))
 
 	for _, cb := range cbs {
 		cb(l)

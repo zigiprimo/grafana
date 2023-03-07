@@ -76,7 +76,7 @@ func (m *PluginManifest) isV2() bool {
 	return strings.HasPrefix(m.ManifestVersion, "2.")
 }
 
-// readPluginManifest attempts to read and verify the plugin manifest
+// ReadPluginManifest attempts to read and verify the plugin manifest
 // if any error occurs or the manifest is not valid, this will return an error
 func ReadPluginManifest(body []byte) (*PluginManifest, error) {
 	block, _ := clearsign.Decode(body)
@@ -176,6 +176,14 @@ func Calculate(mlog log.Logger, class plugins.Class, plugin plugins.FoundPlugin)
 				Status: plugins.SignatureInvalid,
 			}, nil
 		}
+	}
+
+	if class == plugins.CDN {
+		return plugins.Signature{
+			Status:     plugins.SignatureValid,
+			Type:       manifest.SignatureType,
+			SigningOrg: manifest.SignedByOrgName,
+		}, nil
 	}
 
 	manifestFiles := make(map[string]struct{}, len(manifest.Files))

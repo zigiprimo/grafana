@@ -43,15 +43,15 @@ type Loader struct {
 
 func ProvideService(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLoaderAuthorizer,
 	pluginRegistry registry.Service, backendProvider plugins.BackendFactoryProvider,
-	roleRegistry plugins.RoleRegistry, pluginsCDNService *pluginscdn.Service, assetPath *assetpath.Service) *Loader {
+	roleRegistry plugins.RoleRegistry, assetPath *assetpath.Service) *Loader {
 	return New(cfg, license, authorizer, pluginRegistry, backendProvider, process.NewManager(pluginRegistry),
-		storage.FileSystem(log.NewPrettyLogger("loader.fs"), cfg.PluginsPath), roleRegistry, pluginsCDNService, assetPath)
+		storage.FileSystem(log.NewPrettyLogger("loader.fs"), cfg.PluginsPath), roleRegistry, assetPath)
 }
 
 func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLoaderAuthorizer,
 	pluginRegistry registry.Service, backendProvider plugins.BackendFactoryProvider,
 	processManager process.Service, pluginStorage storage.Manager, roleRegistry plugins.RoleRegistry,
-	pluginsCDNService *pluginscdn.Service, assetPath *assetpath.Service) *Loader {
+	assetPath *assetpath.Service) *Loader {
 	return &Loader{
 		pluginFinder:       finder.NewService(),
 		pluginRegistry:     pluginRegistry,
@@ -63,7 +63,6 @@ func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLo
 		log:                log.New("plugin.loader"),
 		roleRegistry:       roleRegistry,
 		cfg:                cfg,
-		pluginsCDN:         pluginsCDNService,
 		assetPath:          assetPath,
 	}
 }
@@ -85,17 +84,10 @@ func (l *Loader) loadPlugins(ctx context.Context, class plugins.Class, found []*
 			continue
 		}
 
-		var sig plugins.Signature
-		if l.pluginsCDN.PluginSupported(p.Primary.JSONData.ID) {
-			// CDN plugins have no signature checks for now.
-			sig = plugins.Signature{Status: plugins.SignatureValid}
-		} else {
-			var err error
-			sig, err = signature.Calculate(l.log, class, p.Primary)
-			if err != nil {
-				l.log.Warn("Could not calculate plugin signature state", "pluginID", p.Primary.JSONData.ID, "err", err)
-				continue
-			}
+		sig, err := signature.Calculate(l.log, class, p.Primary)
+		if err != nil {
+			l.log.Warn("Could not calculate plugin signature state", "pluginID", p.Primary.JSONData.ID, "err", err)
+			continue
 		}
 		plugin, err := l.createPluginBase(p.Primary.JSONData, class, p.Primary.FS)
 		if err != nil {
@@ -152,9 +144,12 @@ func (l *Loader) loadPlugins(ctx context.Context, class plugins.Class, found []*
 		if !plugin.IsRenderer() && !plugin.IsCorePlugin() {
 			_, err := plugin.FS.Open("module.js")
 			if err != nil {
-				if errors.Is(err, plugins.ErrFileNotExist) && !l.pluginsCDN.PluginSupported(plugin.ID) {
+				if errors.Is(err, plugins.ErrFileNotExist) {
 					l.log.Warn("Plugin missing module.js", "pluginID", plugin.ID,
 						"warning", "Missing module.js, If you loaded this plugin from git, make sure to compile it.")
+				}
+				if errors.Is(err, plugins.ErrPluginFileRead) {
+					l.log.Warn("Could not verify module.js", "pluginID", plugin.ID)
 				}
 			}
 		}

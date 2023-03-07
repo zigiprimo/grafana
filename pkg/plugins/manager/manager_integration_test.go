@@ -115,9 +115,8 @@ func TestIntegrationPluginManager(t *testing.T) {
 	cdn := pluginscdn.ProvideService(pCfg)
 
 	lic := plicensing.ProvideLicensing(cfg, &licensing.OSSLicensingService{Cfg: cfg})
-	l := loader.ProvideService(pCfg, lic, signature.NewUnsignedAuthorizer(pCfg),
-		reg, provider.ProvideService(coreRegistry), fakes.NewFakeRoleRegistry(),
-		cdn, assetpath.ProvideService(cdn))
+	l := loader.ProvideService(pCfg, lic, signature.NewUnsignedAuthorizer(pCfg), reg,
+		provider.ProvideService(coreRegistry), fakes.NewFakeRoleRegistry(), assetpath.ProvideService(cdn))
 	srcs := sources.ProvideService(cfg, pCfg)
 	ps, err := store.ProvideService(reg, srcs, l)
 	require.NoError(t, err)

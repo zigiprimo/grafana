@@ -20,7 +20,10 @@ import (
 	"github.com/grafana/grafana/pkg/util"
 )
 
-var ErrFileNotExist = errors.New("file does not exist")
+var (
+	ErrFileNotExist   = errors.New("file does not exist")
+	ErrPluginFileRead = errors.New("file could not be read")
+)
 
 type Plugin struct {
 	JSONData
