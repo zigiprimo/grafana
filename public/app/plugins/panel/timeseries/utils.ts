@@ -22,7 +22,7 @@ type ScaleKey = string;
 
 // this will re-enumerate all enum fields on the same scale to create one ordinal progression
 // e.g. ['a','b'][0,1,0] + ['c','d'][1,0,1] -> ['a','b'][0,1,0] + ['c','d'][3,2,3]
-function reEnumFields(frames: DataFrame[]) {
+function reEnumFields(theme: GrafanaTheme2, frames: DataFrame[]) {
   let allTextsByKey: Map<ScaleKey, string[]> = new Map();
 
   let frames2: DataFrame[] = frames.map((frame) => {
@@ -49,16 +49,25 @@ function reEnumFields(frames: DataFrame[]) {
           }
 
           allTexts.push(...txts);
-
-          // shared among all enum fields on same scale
-          field.config.type!.enum!.text! = allTexts;
-
-          return {
-            ...field,
-            values: new ArrayVector(idxs),
+          const { palette } = theme.visualization;
+          const seriesIndex = field.state?.seriesIndex ?? 0;
+          const seriesColor = palette[seriesIndex % palette.length];
+          field.config.type = {
+            enum: {
+              text: allTexts,
+              color: Array(allTexts.length).fill(seriesColor),
+            },
           };
 
-          // TODO: update displayProcessor?
+          return {
+            name: field.name,
+            type: FieldType.enum,
+            config: field.config,
+            values: new ArrayVector(idxs),
+            state: {
+              seriesIndex: field.state?.seriesIndex, // keep the index if it exists
+            },
+          };
         }
 
         return field;
@@ -89,9 +98,19 @@ export function prepareGraphableFields(
 
   loopy: for (let frame of series) {
     for (let field of frame.fields) {
-      if (field.type === FieldType.enum && ++enumFieldsCount > 1) {
-        series = reEnumFields(series);
-        break loopy;
+      if (field.type === FieldType.enum) {
+        if (++enumFieldsCount > 1) {
+          series = reEnumFields(theme, series);
+          break loopy;
+        }
+        // Update the single series color
+        const cfg = field.config.type?.enum;
+        if (cfg) {
+          const { palette } = theme.visualization;
+          const seriesIndex = field.state?.seriesIndex ?? 0;
+          const seriesColor = palette[seriesIndex % palette.length];
+          cfg.color = Array(cfg.text?.length).fill(seriesColor);
+        }
       }
     }
   }
