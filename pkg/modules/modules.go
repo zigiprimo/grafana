@@ -13,6 +13,7 @@ import (
 
 // List of available targets.
 const (
+	HTTPServer         string = "http-server"
 	BackgroundServices string = "background"
 	All                string = "all"
 )
@@ -65,7 +66,7 @@ func (m *service) Init(_ context.Context) error {
 	m.RegisterModule(All, nil)
 
 	// module dependencies
-	m.dependencyMap[All] = []string{BackgroundServices}
+	m.dependencyMap[All] = []string{BackgroundServices, HTTPServer}
 
 	for mod, targets := range m.dependencyMap {
 		if err := m.ModuleManager.AddDependency(mod, targets...); err != nil {
