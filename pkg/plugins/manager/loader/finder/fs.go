@@ -29,7 +29,7 @@ type FS struct {
 }
 
 func NewFS() *FS {
-	return &FS{log: log.New("fs")}
+	return &FS{log: log.New("fs.local")}
 }
 
 func (f *FS) Find(_ context.Context, pluginPaths ...string) ([]*plugins.FoundBundle, error) {
