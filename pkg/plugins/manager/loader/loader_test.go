@@ -1259,7 +1259,7 @@ func newLoader(cfg *config.Cfg, cbs ...func(loader *Loader)) *Loader {
 	cdn := pluginscdn.ProvideService(cfg)
 	l := New(cfg, &fakes.FakeLicensingService{}, signature.NewUnsignedAuthorizer(cfg), fakes.NewFakePluginRegistry(),
 		fakes.NewFakeBackendProcessProvider(), fakes.NewFakeProcessManager(), fakes.NewFakePluginStorage(),
-		fakes.NewFakeRoleRegistry(), assetpath.ProvideService(cdn), finder.NewFS())
+		fakes.NewFakeRoleRegistry(), assetpath.ProvideService(cdn), finder.NewLocalFinder())
 
 	for _, cb := range cbs {
 		cb(l)

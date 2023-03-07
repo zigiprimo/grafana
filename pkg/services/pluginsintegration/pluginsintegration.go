@@ -69,8 +69,8 @@ var WireExtensionSet = wire.NewSet(
 	wire.Bind(new(plugins.PluginLoaderAuthorizer), new(*signature.UnsignedPluginAuthorizer)),
 	wire.Bind(new(sources.Resolver), new(*sources.Service)),
 	sources.ProvideService,
-	wire.Bind(new(finder.Finder), new(*finder.FS)),
-	finder.NewFS,
+	wire.Bind(new(finder.Finder), new(*finder.Local)),
+	finder.NewLocalFinder,
 )
 
 func ProvideClientDecorator(cfg *setting.Cfg, pCfg *config.Cfg,
