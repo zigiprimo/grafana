@@ -395,7 +395,7 @@ func TestFinder_readPluginJSON(t *testing.T) {
 		name       string
 		pluginPath string
 		expected   plugins.JSONData
-		failed     bool
+		err        error
 	}{
 		{
 			name:       "Valid plugin",
@@ -443,27 +443,22 @@ func TestFinder_readPluginJSON(t *testing.T) {
 		},
 		{
 			name:       "Invalid plugin JSON",
-			pluginPath: "../testdata/invalid-plugin-json/plugin.json",
-			failed:     true,
-		},
-		{
-			name:       "Non-existing JSON file",
-			pluginPath: "nonExistingFile.json",
-			failed:     true,
+			pluginPath: "../../testdata/invalid-plugin-json/plugin.json",
+			err:        ErrInvalidPluginJSON,
 		},
 	}
 
-	f := NewLocalFinder()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := f.readPluginJSON(tt.pluginPath)
-			if (err != nil) && !tt.failed {
-				t.Errorf("readPluginJSON() error = %v, failed %v", err, tt.failed)
-				return
+			reader, err := os.Open(tt.pluginPath)
+			got, err := ReadPluginJSON(reader)
+			if tt.err != nil {
+				require.ErrorIs(t, err, tt.err)
 			}
 			if !cmp.Equal(got, tt.expected) {
 				t.Errorf("Unexpected pluginJSONData: %v", cmp.Diff(got, tt.expected))
 			}
+			require.NoError(t, reader.Close())
 		})
 	}
 }
