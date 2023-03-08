@@ -14,7 +14,7 @@ import { UnlinkModal } from 'app/features/library-panels/components/UnlinkModal/
 import { cleanUpPanelState } from 'app/features/panel/state/actions';
 import { dispatch } from 'app/store/store';
 
-import { ShowConfirmModalEvent, ShowModalReactEvent } from '../../../types/events';
+import { PanelExportEvent, ShowConfirmModalEvent, ShowModalReactEvent } from '../../../types/events';
 
 export const removePanel = (dashboard: DashboardModel, panel: PanelModel, ask: boolean) => {
   // confirm deletion
@@ -66,6 +66,17 @@ export const sharePanel = (dashboard: DashboardModel, panel: PanelModel) => {
         panel: panel,
       },
     })
+  );
+};
+
+export const exportPanel = (htmlElement: HTMLElement | null, panel: PanelModel) => {
+  if (!htmlElement) {
+    //TODO: throw error
+    return;
+  }
+
+  appEvents.publish(
+    new PanelExportEvent({ panel, htmlElement })
   );
 };
 

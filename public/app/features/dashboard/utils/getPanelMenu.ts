@@ -19,6 +19,7 @@ import {
   addLibraryPanel,
   copyPanel,
   duplicatePanel,
+  exportPanel,
   removePanel,
   sharePanel,
   toggleLegend,
@@ -56,6 +57,13 @@ export function getPanelMenu(
     event.preventDefault();
     sharePanel(dashboard, panel);
   };
+
+  const onExportPanel = (event: React.MouseEvent<any>) => {
+    event.preventDefault();
+    //todo avoid as
+    const exportHtmlElement: HTMLElement = event.target as HTMLElement;
+    exportPanel(exportHtmlElement.closest('.panel-container')?.querySelector('canvas')! , panel);
+  }
 
   const onAddLibraryPanel = (event: React.MouseEvent<any>) => {
     event.preventDefault();
@@ -150,6 +158,13 @@ export function getPanelMenu(
     iconClassName: 'share-alt',
     onClick: onSharePanel,
     shortcut: 'p s',
+  });
+
+  menu.push({
+    text: t('panel.header-menu.export', `Export`),
+    iconClassName: 'download-alt',
+    onClick: onExportPanel,
+    shortcut: 'p e',
   });
 
   if (contextSrv.hasAccessToExplore() && !(panel.plugin && panel.plugin.meta.skipDataQuery)) {
