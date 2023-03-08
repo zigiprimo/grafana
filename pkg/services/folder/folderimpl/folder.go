@@ -434,9 +434,17 @@ func (s *Service) Delete(ctx context.Context, cmd *folder.DeleteFolderCommand) e
 	}
 	result := []string{cmd.UID}
 	err := s.db.InTransaction(ctx, func(ctx context.Context) error {
+		// TODO modify Delete() to take into account the deletion via registry
+		for _, v := range s.registry {
+			// TODO: add guard etc to the deletion of dashboards
+			err := v.DeleteForRegistry(ctx, cmd.OrgID, cmd.UID)
+			if err != nil {
+				return err
+			}
+		}
+
 		if s.features.IsEnabled(featuremgmt.FlagNestedFolders) {
 			subfolders, err := s.nestedFolderDelete(ctx, cmd)
-
 			if err != nil {
 				logger.Error("the delete folder on folder table failed with err: ", "error", err)
 				return err
