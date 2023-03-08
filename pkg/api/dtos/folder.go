@@ -3,13 +3,13 @@ package dtos
 import (
 	"time"
 
-	kfolder "github.com/grafana/grafana/pkg/kinds/folder"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 )
 
 type Folder struct {
-	kfolder.Folder
 	Id            int64                  `json:"id"`
+	Uid           string                 `json:"uid"`
+	Title         string                 `json:"title"`
 	Url           string                 `json:"url"`
 	HasACL        bool                   `json:"hasAcl" xorm:"has_acl"`
 	CanSave       bool                   `json:"canSave"`
@@ -22,6 +22,8 @@ type Folder struct {
 	Updated       time.Time              `json:"updated"`
 	Version       int                    `json:"version,omitempty"`
 	AccessControl accesscontrol.Metadata `json:"accessControl,omitempty"`
+	// only used if nested folders are enabled
+	ParentUID string `json:"parentUid,omitempty"`
 }
 
 type FolderSearchHit struct {

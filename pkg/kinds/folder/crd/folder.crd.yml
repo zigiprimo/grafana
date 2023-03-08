@@ -22,15 +22,6 @@ spec:
                 properties:
                     spec:
                         properties:
-                            description:
-                                description: Folder description
-                                type: string
-                            parentUid:
-                                description: |-
-                                    Parend folder UID
-                                    TODO: ideally this should be identified the same way as dashboards+library panels
-                                    NOTE: only used when the nestedFolder feature flag is enabled
-                                type: string
                             title:
                                 description: Folder title (must be unique within the parent folder)
                                 minLength: 1

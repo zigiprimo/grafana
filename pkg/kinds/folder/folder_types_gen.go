@@ -12,14 +12,6 @@ package folder
 
 // Folder defines model for Folder.
 type Folder struct {
-	// Folder description
-	Description *string `json:"description,omitempty"`
-
-	// Parend folder UID
-	// TODO: ideally this should be identified the same way as dashboards+library panels
-	// NOTE: only used when the nestedFolder feature flag is enabled
-	ParentUid *string `json:"parentUid,omitempty"`
-
 	// Folder title (must be unique within the parent folder)
 	Title string `json:"title"`
 

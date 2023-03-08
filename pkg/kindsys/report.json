@@ -514,7 +514,7 @@
         0
       ],
       "description": "folder element",
-      "grafanaMaturityCount": 2,
+      "grafanaMaturityCount": 1,
       "lineageIsGroup": false,
       "links": {
         "docs": "https://grafana.com/docs/grafana/next/developers/kinds/core/folder/schema-reference",
