@@ -9,7 +9,6 @@ import (
 	"github.com/grafana/grafana/pkg/api/apierrors"
 	"github.com/grafana/grafana/pkg/api/dtos"
 	"github.com/grafana/grafana/pkg/api/response"
-	"github.com/grafana/grafana/pkg/kindsys"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/dashboards"
@@ -308,8 +307,10 @@ func (hs *HTTPServer) newToFolderDto(c *contextmodel.ReqContext, g guardian.Dash
 		updater = hs.getUserLogin(c.Req.Context(), folder.UpdatedBy)
 	}
 
-	f := dtos.Folder{
+	return dtos.Folder{
 		Id:            folder.ID,
+		Uid:           folder.UID,
+		Title:         folder.Title,
 		Url:           folder.URL,
 		HasACL:        folder.HasACL,
 		CanSave:       canSave,
@@ -322,14 +323,8 @@ func (hs *HTTPServer) newToFolderDto(c *contextmodel.ReqContext, g guardian.Dash
 		Updated:       folder.Updated,
 		Version:       folder.Version,
 		AccessControl: hs.getAccessControlMetadata(c, c.OrgID, dashboards.ScopeFoldersPrefix, folder.UID),
+		ParentUID:     folder.ParentUID,
 	}
-
-	f.Uid = folder.UID
-	f.Title = folder.Title
-	if folder.ParentUID != "" {
-		f.ParentUid = kindsys.Ptr(folder.ParentUID)
-	}
-	return f
 }
 
 func (hs *HTTPServer) searchFolders(c *contextmodel.ReqContext) ([]*folder.Folder, error) {
