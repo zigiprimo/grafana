@@ -13,10 +13,10 @@ import (
 
 func TestStore_ProvideService(t *testing.T) {
 	t.Run("Plugin sources are added in order", func(t *testing.T) {
-		var addedPaths []string
+		var addedSources []plugins.PluginSource
 		l := &fakes.FakeLoader{
-			LoadFunc: func(ctx context.Context, class plugins.Class, paths []string) ([]*plugins.Plugin, error) {
-				addedPaths = append(addedPaths, paths...)
+			LoadFunc: func(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
+				addedSources = append(addedSources, src)
 				return nil, nil
 			},
 		}
@@ -36,7 +36,10 @@ func TestStore_ProvideService(t *testing.T) {
 
 		_, err := ProvideService(fakes.NewFakePluginRegistry(), srcs, l)
 		require.NoError(t, err)
-		require.Equal(t, []string{"path1", "path2", "path3"}, addedPaths)
+		require.Equal(t, []plugins.PluginSource{
+			{Class: "bundled", Paths: []string{"path1"}},
+			{Class: "external", Paths: []string{"path2", "path3"}}},
+			addedSources)
 	})
 }
 

@@ -53,17 +53,16 @@ func TestLoader_Load(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		class        plugins.Class
+		src          plugins.PluginSource
 		cfg          *config.Cfg
 		pluginPaths  []string
 		want         []*plugins.Plugin
 		pluginErrors map[string]*plugins.Error
 	}{
 		{
-			name:        "Load a Core plugin",
-			class:       plugins.Core,
-			cfg:         &config.Cfg{},
-			pluginPaths: []string{filepath.Join(corePluginDir, "app/plugins/datasource/cloudwatch")},
+			name: "Load a Core plugin",
+			src:  plugins.PluginSource{Class: plugins.Core, Paths: []string{filepath.Join(corePluginDir, "app/plugins/datasource/cloudwatch")}},
+			cfg:  &config.Cfg{},
 			want: []*plugins.Plugin{
 				{
 					JSONData: plugins.JSONData{
@@ -111,10 +110,9 @@ func TestLoader_Load(t *testing.T) {
 			},
 		},
 		{
-			name:        "Load a Bundled plugin",
-			class:       plugins.Bundled,
-			cfg:         &config.Cfg{},
-			pluginPaths: []string{"../testdata/valid-v2-signature"},
+			name: "Load a Bundled plugin",
+			src:  plugins.PluginSource{Class: plugins.Bundled, Paths: []string{"../testdata/valid-v2-signature"}},
+			cfg:  &config.Cfg{},
 			want: []*plugins.Plugin{
 				{
 					JSONData: plugins.JSONData{
@@ -154,10 +152,9 @@ func TestLoader_Load(t *testing.T) {
 				},
 			},
 		}, {
-			name:        "Load plugin with symbolic links",
-			class:       plugins.External,
-			cfg:         &config.Cfg{},
-			pluginPaths: []string{"../testdata/symbolic-plugin-dirs"},
+			name: "Load plugin with symbolic links",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/symbolic-plugin-dirs"}},
+			cfg:  &config.Cfg{},
 			want: []*plugins.Plugin{
 				{
 					JSONData: plugins.JSONData{
@@ -240,12 +237,11 @@ func TestLoader_Load(t *testing.T) {
 				},
 			},
 		}, {
-			name:  "Load an unsigned plugin (development)",
-			class: plugins.External,
+			name: "Load an unsigned plugin (development)",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/unsigned-datasource"}},
 			cfg: &config.Cfg{
 				DevMode: true,
 			},
-			pluginPaths: []string{"../testdata/unsigned-datasource"},
 			want: []*plugins.Plugin{
 				{
 					JSONData: plugins.JSONData{
@@ -281,11 +277,10 @@ func TestLoader_Load(t *testing.T) {
 				},
 			},
 		}, {
-			name:        "Load an unsigned plugin (production)",
-			class:       plugins.External,
-			cfg:         &config.Cfg{},
-			pluginPaths: []string{"../testdata/unsigned-datasource"},
-			want:        []*plugins.Plugin{},
+			name: "Load an unsigned plugin (production)",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/unsigned-datasource"}},
+			cfg:  &config.Cfg{},
+			want: []*plugins.Plugin{},
 			pluginErrors: map[string]*plugins.Error{
 				"test-datasource": {
 					PluginID:  "test-datasource",
@@ -294,12 +289,11 @@ func TestLoader_Load(t *testing.T) {
 			},
 		},
 		{
-			name:  "Load an unsigned plugin using PluginsAllowUnsigned config (production)",
-			class: plugins.External,
+			name: "Load an unsigned plugin using PluginsAllowUnsigned config (production)",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/unsigned-datasource"}},
 			cfg: &config.Cfg{
 				PluginsAllowUnsigned: []string{"test-datasource"},
 			},
-			pluginPaths: []string{"../testdata/unsigned-datasource"},
 			want: []*plugins.Plugin{
 				{
 					JSONData: plugins.JSONData{
@@ -336,11 +330,10 @@ func TestLoader_Load(t *testing.T) {
 			},
 		},
 		{
-			name:        "Load a plugin with v1 manifest should return signatureInvalid",
-			class:       plugins.External,
-			cfg:         &config.Cfg{},
-			pluginPaths: []string{"../testdata/lacking-files"},
-			want:        []*plugins.Plugin{},
+			name: "Load a plugin with v1 manifest should return signatureInvalid",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/lacking-files"}},
+			cfg:  &config.Cfg{},
+			want: []*plugins.Plugin{},
 			pluginErrors: map[string]*plugins.Error{
 				"test-datasource": {
 					PluginID:  "test-datasource",
@@ -349,13 +342,12 @@ func TestLoader_Load(t *testing.T) {
 			},
 		},
 		{
-			name:  "Load a plugin with v1 manifest using PluginsAllowUnsigned config (production) should return signatureInvali",
-			class: plugins.External,
+			name: "Load a plugin with v1 manifest using PluginsAllowUnsigned config (production) should return signatureInvali",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/lacking-files"}},
 			cfg: &config.Cfg{
 				PluginsAllowUnsigned: []string{"test-datasource"},
 			},
-			pluginPaths: []string{"../testdata/lacking-files"},
-			want:        []*plugins.Plugin{},
+			want: []*plugins.Plugin{},
 			pluginErrors: map[string]*plugins.Error{
 				"test-datasource": {
 					PluginID:  "test-datasource",
@@ -364,13 +356,12 @@ func TestLoader_Load(t *testing.T) {
 			},
 		},
 		{
-			name:  "Load a plugin with manifest which has a file not found in plugin folder",
-			class: plugins.External,
+			name: "Load a plugin with manifest which has a file not found in plugin folder",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/invalid-v2-missing-file"}},
 			cfg: &config.Cfg{
 				PluginsAllowUnsigned: []string{"test-datasource"},
 			},
-			pluginPaths: []string{"../testdata/invalid-v2-missing-file"},
-			want:        []*plugins.Plugin{},
+			want: []*plugins.Plugin{},
 			pluginErrors: map[string]*plugins.Error{
 				"test-datasource": {
 					PluginID:  "test-datasource",
@@ -379,13 +370,12 @@ func TestLoader_Load(t *testing.T) {
 			},
 		},
 		{
-			name:  "Load a plugin with file which is missing from the manifest",
-			class: plugins.External,
+			name: "Load a plugin with file which is missing from the manifest",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/invalid-v2-extra-file"}},
 			cfg: &config.Cfg{
 				PluginsAllowUnsigned: []string{"test-datasource"},
 			},
-			pluginPaths: []string{"../testdata/invalid-v2-extra-file"},
-			want:        []*plugins.Plugin{},
+			want: []*plugins.Plugin{},
 			pluginErrors: map[string]*plugins.Error{
 				"test-datasource": {
 					PluginID:  "test-datasource",
@@ -394,12 +384,11 @@ func TestLoader_Load(t *testing.T) {
 			},
 		},
 		{
-			name:  "Load an app with includes",
-			class: plugins.External,
+			name: "Load an app with includes",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/test-app-with-includes"}},
 			cfg: &config.Cfg{
 				PluginsAllowUnsigned: []string{"test-app"},
 			},
-			pluginPaths: []string{"../testdata/test-app-with-includes"},
 			want: []*plugins.Plugin{
 				{JSONData: plugins.JSONData{
 					ID:   "test-app",
@@ -446,15 +435,14 @@ func TestLoader_Load(t *testing.T) {
 			},
 		},
 		{
-			name:  "Load CDN plugin",
-			class: plugins.External,
+			name: "Load CDN plugin",
+			src:  plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/cdn"}},
 			cfg: &config.Cfg{
 				PluginsCDNURLTemplate: "https://cdn.example.com",
 				PluginSettings: setting.PluginSettings{
 					"grafana-worldmap-panel": {"cdn": "true"},
 				},
 			},
-			pluginPaths: []string{"../testdata/cdn"},
 			want: []*plugins.Plugin{
 				{
 					JSONData: plugins.JSONData{
@@ -519,7 +507,7 @@ func TestLoader_Load(t *testing.T) {
 		})
 
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := l.Load(context.Background(), tt.class, tt.pluginPaths)
+			got, err := l.Load(context.Background(), tt.src)
 			require.NoError(t, err)
 			if !cmp.Equal(got, tt.want, compareOpts...) {
 				t.Fatalf("Result mismatch (-want +got):\n%s", cmp.Diff(got, tt.want, compareOpts...))
@@ -682,7 +670,7 @@ func TestLoader_Load_MultiplePlugins(t *testing.T) {
 				})
 				setting.AppUrl = tt.appURL
 
-				got, err := l.Load(context.Background(), plugins.External, tt.pluginPaths)
+				got, err := l.Load(context.Background(), plugins.PluginSource{Class: plugins.External, Paths: tt.pluginPaths})
 				require.NoError(t, err)
 				sort.SliceStable(got, func(i, j int) bool {
 					return got[i].ID < got[j].ID
@@ -795,7 +783,7 @@ func TestLoader_Load_RBACReady(t *testing.T) {
 			l.pluginInitializer = initializer.New(tt.cfg, procPrvdr, fakes.NewFakeLicensingService())
 		})
 
-		got, err := l.Load(context.Background(), plugins.External, tt.pluginPaths)
+		got, err := l.Load(context.Background(), plugins.PluginSource{Class: plugins.External, Paths: tt.pluginPaths})
 		require.NoError(t, err)
 
 		if !cmp.Equal(got, tt.want, compareOpts...) {
@@ -871,7 +859,7 @@ func TestLoader_Load_Signature_RootURL(t *testing.T) {
 			l.processManager = procMgr
 			l.pluginInitializer = initializer.New(&config.Cfg{}, procPrvdr, fakes.NewFakeLicensingService())
 		})
-		got, err := l.Load(context.Background(), plugins.External, paths)
+		got, err := l.Load(context.Background(), plugins.PluginSource{Class: plugins.External, Paths: paths})
 		require.NoError(t, err)
 
 		if !cmp.Equal(got, expected, compareOpts...) {
@@ -950,7 +938,7 @@ func TestLoader_Load_DuplicatePlugins(t *testing.T) {
 			l.processManager = procMgr
 			l.pluginInitializer = initializer.New(&config.Cfg{}, procPrvdr, fakes.NewFakeLicensingService())
 		})
-		got, err := l.Load(context.Background(), plugins.External, []string{pluginDir, pluginDir})
+		got, err := l.Load(context.Background(), plugins.PluginSource{Class: plugins.External, Paths: []string{pluginDir, pluginDir}})
 		require.NoError(t, err)
 
 		if !cmp.Equal(got, expected, compareOpts...) {
@@ -1049,7 +1037,7 @@ func TestLoader_Load_NestedPlugins(t *testing.T) {
 			l.pluginInitializer = initializer.New(&config.Cfg{}, procPrvdr, fakes.NewFakeLicensingService())
 		})
 
-		got, err := l.Load(context.Background(), plugins.External, []string{"../testdata/nested-plugins"})
+		got, err := l.Load(context.Background(), plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/nested-plugins"}})
 		require.NoError(t, err)
 
 		// to ensure we can compare with expected
@@ -1065,7 +1053,7 @@ func TestLoader_Load_NestedPlugins(t *testing.T) {
 		verifyState(t, expected, reg, procPrvdr, storage, procMgr)
 
 		t.Run("Load will exclude plugins that already exist", func(t *testing.T) {
-			got, err := l.Load(context.Background(), plugins.External, []string{"../testdata/nested-plugins"})
+			got, err := l.Load(context.Background(), plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/nested-plugins"}})
 			require.NoError(t, err)
 
 			// to ensure we can compare with expected
@@ -1216,7 +1204,7 @@ func TestLoader_Load_NestedPlugins(t *testing.T) {
 			l.processManager = procMgr
 			l.pluginInitializer = initializer.New(&config.Cfg{}, procPrvdr, fakes.NewFakeLicensingService())
 		})
-		got, err := l.Load(context.Background(), plugins.External, []string{"../testdata/app-with-child"})
+		got, err := l.Load(context.Background(), plugins.PluginSource{Class: plugins.External, Paths: []string{"../testdata/app-with-child"}})
 		require.NoError(t, err)
 
 		// to ensure we can compare with expected

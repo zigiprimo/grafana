@@ -7,5 +7,6 @@ import (
 )
 
 type Resolver interface {
+	Get(context.Context, plugins.Class) (plugins.PluginSource, bool)
 	List(context.Context) []plugins.PluginSource
 }

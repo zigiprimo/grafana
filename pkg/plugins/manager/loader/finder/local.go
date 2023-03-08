@@ -28,16 +28,14 @@ type Local struct {
 }
 
 func NewLocalFinder() *Local {
-	return &Local{log: log.New("finder.local")}
+	return &Local{
+		log: log.New("finder.local"),
+	}
 }
 
-func (l *Local) Find(_ context.Context, pluginPaths ...string) ([]*plugins.FoundBundle, error) {
-	if len(pluginPaths) == 0 {
-		return []*plugins.FoundBundle{}, nil
-	}
-
+func (l *Local) Find(_ context.Context, src plugins.PluginSource) ([]*plugins.FoundBundle, error) {
 	var pluginJSONPaths []string
-	for _, path := range pluginPaths {
+	for _, path := range src.Paths {
 		exists, err := fs.Exists(path)
 		if err != nil {
 			l.log.Warn("Skipping finding plugins as an error occurred", "path", path, "err", err)

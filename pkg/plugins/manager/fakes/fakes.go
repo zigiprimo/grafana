@@ -37,13 +37,13 @@ func (i *FakePluginInstaller) Remove(ctx context.Context, pluginID string) error
 }
 
 type FakeLoader struct {
-	LoadFunc   func(_ context.Context, _ plugins.Class, paths []string) ([]*plugins.Plugin, error)
+	LoadFunc   func(_ context.Context, _ plugins.PluginSource) ([]*plugins.Plugin, error)
 	UnloadFunc func(_ context.Context, _ string) error
 }
 
-func (l *FakeLoader) Load(ctx context.Context, class plugins.Class, paths []string) ([]*plugins.Plugin, error) {
+func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
 	if l.LoadFunc != nil {
-		return l.LoadFunc(ctx, class, paths)
+		return l.LoadFunc(ctx, src)
 	}
 	return nil, nil
 }
@@ -377,6 +377,7 @@ func (f *FakePluginFiles) Files() []string {
 }
 
 type FakeSources struct {
+	GetFunc  func(_ context.Context, _ plugins.Class) (plugins.PluginSource, bool)
 	ListFunc func(_ context.Context) []plugins.PluginSource
 }
 
@@ -385,4 +386,11 @@ func (s *FakeSources) List(ctx context.Context) []plugins.PluginSource {
 		return s.ListFunc(ctx)
 	}
 	return []plugins.PluginSource{}
+}
+
+func (s *FakeSources) Get(ctx context.Context, class plugins.Class) (plugins.PluginSource, bool) {
+	if s.ListFunc != nil {
+		return s.GetFunc(ctx, class)
+	}
+	return plugins.PluginSource{}, false
 }

@@ -11,25 +11,36 @@ import (
 )
 
 type Service struct {
-	gCfg *setting.Cfg
-	cfg  *config.Cfg
+	srcs map[plugins.Class]plugins.PluginSource
 	log  log.Logger
 }
 
 func ProvideService(gCfg *setting.Cfg, cfg *config.Cfg) *Service {
 	return &Service{
-		gCfg: gCfg,
-		cfg:  cfg,
-		log:  log.New("plugin.sources"),
+		srcs: map[plugins.Class]plugins.PluginSource{
+			plugins.Core:     {Class: plugins.Core, Paths: corePluginPaths(gCfg.StaticRootPath)},
+			plugins.Bundled:  {Class: plugins.Bundled, Paths: []string{gCfg.BundledPluginsPath}},
+			plugins.External: {Class: plugins.External, Paths: append([]string{cfg.PluginsPath}, pluginFSPaths(cfg.PluginSettings)...)},
+		},
+		log: log.New("plugin.sources"),
 	}
 }
 
 func (s *Service) List(_ context.Context) []plugins.PluginSource {
-	return []plugins.PluginSource{
-		{Class: plugins.Core, Paths: corePluginPaths(s.gCfg.StaticRootPath)},
-		{Class: plugins.Bundled, Paths: []string{s.gCfg.BundledPluginsPath}},
-		{Class: plugins.External, Paths: append([]string{s.cfg.PluginsPath}, pluginFSPaths(s.cfg.PluginSettings)...)},
+	var srcs []plugins.PluginSource
+	for _, src := range s.srcs {
+		srcs = append(srcs, src)
 	}
+
+	return srcs
+}
+
+func (s *Service) Get(_ context.Context, class plugins.Class) (plugins.PluginSource, bool) {
+	if srcs, exists := s.srcs[class]; exists {
+		return srcs, true
+	}
+
+	return plugins.PluginSource{}, false
 }
 
 // corePluginPaths provides a list of the Core plugin file system paths

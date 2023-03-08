@@ -278,7 +278,7 @@ func TestFinder_Find(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			f := NewLocalFinder()
-			pluginBundles, err := f.Find(context.Background(), tc.pluginDirs...)
+			pluginBundles, err := f.Find(context.Background(), plugins.PluginSource{Class: plugins.Bundled, Paths: tc.pluginDirs})
 			if (err != nil) && !errors.Is(err, tc.err) {
 				t.Errorf("Find() error = %v, expected error %v", err, tc.err)
 				return

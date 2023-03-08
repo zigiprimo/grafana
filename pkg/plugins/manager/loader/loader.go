@@ -65,13 +65,13 @@ func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLo
 	}
 }
 
-func (l *Loader) Load(ctx context.Context, class plugins.Class, paths []string) ([]*plugins.Plugin, error) {
-	found, err := l.pluginFinder.Find(ctx, paths...)
+func (l *Loader) Load(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
+	found, err := l.pluginFinder.Find(ctx, src)
 	if err != nil {
 		return nil, err
 	}
 
-	return l.loadPlugins(ctx, class, found)
+	return l.loadPlugins(ctx, src.Class, found)
 }
 
 func (l *Loader) loadPlugins(ctx context.Context, class plugins.Class, found []*plugins.FoundBundle) ([]*plugins.Plugin, error) {
