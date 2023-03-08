@@ -1,7 +1,7 @@
 import { Action, KBarProvider } from 'kbar';
 import React, { ComponentType } from 'react';
 import { Provider } from 'react-redux';
-import { Router, Route, Redirect, Switch } from 'react-router-dom';
+import { Router, Route, Navigate, Routes } from 'react-router-dom';
 
 import { config, locationService, navigationLogger, reportInteraction } from '@grafana/runtime';
 import { ErrorBoundaryAlert, GlobalStyles, ModalRoot, ModalsProvider, PortalContainer } from '@grafana/ui';
@@ -14,7 +14,7 @@ import { GrafanaApp } from './app';
 import { AppChrome } from './core/components/AppChrome/AppChrome';
 import { AppNotificationList } from './core/components/AppNotifications/AppNotificationList';
 import { GrafanaContext } from './core/context/GrafanaContext';
-import { GrafanaRoute } from './core/navigation/GrafanaRoute';
+import { GrafanaRoute, Props } from './core/navigation/GrafanaRoute';
 import { RouteDescriptor } from './core/navigation/types';
 import { contextSrv } from './core/services/context_srv';
 import { ThemeProvider } from './core/utils/ConfigProvider';
@@ -57,16 +57,14 @@ export class AppWrapper extends React.Component<AppWrapperProps, AppWrapperState
 
     return (
       <Route
-        exact={route.exact === undefined ? true : route.exact}
-        sensitive={route.sensitive === undefined ? false : route.sensitive}
         path={route.path}
         key={route.path}
-        render={(props) => {
+        element={(props: Props) => {
           navigationLogger('AppWrapper', false, 'Rendering route', route, 'with match', props.location);
           // TODO[Router]: test this logic
           if (roles?.length) {
             if (!roles.some((r: string) => contextSrv.hasRole(r))) {
-              return <Redirect to="/" />;
+              return <Navigate to="/" />;
             }
           }
 
@@ -77,7 +75,7 @@ export class AppWrapper extends React.Component<AppWrapperProps, AppWrapperState
   };
 
   renderRoutes() {
-    return <Switch>{getAppRoutes().map((r) => this.renderRoute(r))}</Switch>;
+    return <Routes>{getAppRoutes().map((r) => this.renderRoute(r))}</Routes>;
   }
 
   render() {

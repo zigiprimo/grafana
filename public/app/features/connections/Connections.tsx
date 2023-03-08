@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Redirect, Route, Switch } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { NavLandingPage } from 'app/core/components/AppChrome/NavLandingPage';
 import { DataSourcesRoutesContext } from 'app/features/datasources/state';
@@ -22,7 +22,7 @@ export default function Connections() {
   const YourConnectionsPage =
     navIndex['connections-your-connections'].children && navIndex['connections-your-connections'].children?.length > 1
       ? () => <NavLandingPage navId="connections-your-connections" />
-      : () => <Redirect to={ROUTES.DataSources} />;
+      : () => <Navigate to={ROUTES.DataSources} />;
 
   return (
     <DataSourcesRoutesContext.Provider
@@ -33,22 +33,22 @@ export default function Connections() {
         Dashboards: ROUTES.DataSourcesDashboards,
       }}
     >
-      <Switch>
+      <Routes>
         {/* Redirect to "Connect data" by default */}
-        <Route exact sensitive path={ROUTES.Base} component={() => <Redirect to={ROUTES.ConnectData} />} />
-        <Route exact sensitive path={ROUTES.YourConnections} component={YourConnectionsPage} />
-        <Route exact sensitive path={ROUTES.DataSources} component={DataSourcesListPage} />
-        <Route exact sensitive path={ROUTES.DataSourcesDetails} component={DataSourceDetailsPage} />
-        <Route exact sensitive path={ROUTES.DataSourcesNew} component={NewDataSourcePage} />
-        <Route exact sensitive path={ROUTES.DataSourcesEdit} component={EditDataSourcePage} />
-        <Route exact sensitive path={ROUTES.DataSourcesDashboards} component={DataSourceDashboardsPage} />
+        <Route caseSensitive path={ROUTES.Base} element={() => <Navigate to={ROUTES.ConnectData} />} />
+        <Route caseSensitive path={ROUTES.YourConnections} element={YourConnectionsPage} />
+        <Route caseSensitive path={ROUTES.DataSources} element={DataSourcesListPage} />
+        <Route caseSensitive path={ROUTES.DataSourcesDetails} element={DataSourceDetailsPage} />
+        <Route caseSensitive path={ROUTES.DataSourcesNew} element={NewDataSourcePage} />
+        <Route caseSensitive path={ROUTES.DataSourcesEdit} element={EditDataSourcePage} />
+        <Route caseSensitive path={ROUTES.DataSourcesDashboards} element={DataSourceDashboardsPage} />
 
         {/* "Connect data" page - we don't register a route in case a plugin already registers a standalone page for it */}
-        {!isConnectDataPageOverriden && <Route exact sensitive path={ROUTES.ConnectData} component={ConnectDataPage} />}
+        {!isConnectDataPageOverriden && <Route caseSensitive path={ROUTES.ConnectData} element={ConnectDataPage} />}
 
         {/* Not found */}
-        <Route component={() => <Redirect to="/notfound" />} />
-      </Switch>
+        <Route element={() => <Navigate to="/notfound" />} />
+      </Routes>
     </DataSourcesRoutesContext.Provider>
   );
 }

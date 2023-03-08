@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { Redirect, Route, RouteChildrenProps, Switch, useLocation } from 'react-router-dom';
+import { Navigate, Route, RouteChildrenProps, Routes, useLocation } from 'react-router-dom';
 
 import { Alert, withErrorBoundary } from '@grafana/ui';
 import { Silence } from 'app/plugins/datasource/alertmanager/types';
@@ -68,7 +68,7 @@ const Silences = () => {
         <NoAlertManagerWarning availableAlertManagers={alertManagers} />
       </AlertingPageWrapper>
     ) : (
-      <Redirect to="/alerting/silences" />
+      <Navigate to="/alerting/silences" />
     );
   }
 
@@ -99,19 +99,25 @@ const Silences = () => {
         </Alert>
       )}
       {result && !error && (
-        <Switch>
-          <Route exact path="/alerting/silences">
-            <SilencesTable
-              silences={result}
-              alertManagerAlerts={alertsRequest?.result ?? []}
-              alertManagerSourceName={alertManagerSourceName}
-            />
-          </Route>
-          <Route exact path="/alerting/silence/new">
-            <SilencesEditor alertManagerSourceName={alertManagerSourceName} />
-          </Route>
-          <Route exact path="/alerting/silence/:id/edit">
-            {({ match }: RouteChildrenProps<{ id: string }>) => {
+        <Routes>
+          <Route
+            path="/alerting/silences"
+            element={
+              <SilencesTable
+                silences={result}
+                alertManagerAlerts={alertsRequest?.result ?? []}
+                alertManagerSourceName={alertManagerSourceName}
+              />
+            }
+          />
+
+          <Route
+            path="/alerting/silence/new"
+            element={<SilencesEditor alertManagerSourceName={alertManagerSourceName} />}
+          />
+          <Route
+            path="/alerting/silence/:id/edit"
+            element={({ match }: RouteChildrenProps<{ id: string }>) => {
               return (
                 match?.params.id && (
                   <SilencesEditor
@@ -121,8 +127,8 @@ const Silences = () => {
                 )
               );
             }}
-          </Route>
-        </Switch>
+          />
+        </Routes>
       )}
     </AlertingPageWrapper>
   );

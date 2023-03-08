@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { Route, Redirect, Switch } from 'react-router-dom';
+import { Route, Navigate, Routes } from 'react-router-dom';
 
 import { Alert, LoadingPlaceholder } from '@grafana/ui';
 import { useQueryParams } from 'app/core/hooks/useQueryParams';
@@ -63,22 +63,21 @@ const MuteTimings = () => {
         </Alert>
       )}
       {result && !error && (
-        <Switch>
-          <Route exact path="/alerting/routes/mute-timing/new">
-            <MuteTimingForm />
-          </Route>
-          <Route exact path="/alerting/routes/mute-timing/edit">
-            {() => {
+        <Routes>
+          <Route path="/alerting/routes/mute-timing/new" element={<MuteTimingForm />} />
+          <Route
+            path="/alerting/routes/mute-timing/edit"
+            element={() => {
               if (queryParams['muteName']) {
                 const muteTiming = getMuteTimingByName(String(queryParams['muteName']));
                 const provenance = muteTiming?.provenance;
 
                 return <MuteTimingForm muteTiming={muteTiming} showError={!muteTiming} provenance={provenance} />;
               }
-              return <Redirect to="/alerting/routes" />;
+              return <Navigate to="/alerting/routes" />;
             }}
-          </Route>
-        </Switch>
+          />
+        </Routes>
       )}
     </>
   );

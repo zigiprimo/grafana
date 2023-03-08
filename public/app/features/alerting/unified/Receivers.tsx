@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import pluralize from 'pluralize';
 import React, { useEffect } from 'react';
-import { Redirect, Route, RouteChildrenProps, Switch, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Route, RouteChildrenProps, Routes, useLocation, useParams } from 'react-router-dom';
 
 import { GrafanaTheme2, NavModelItem } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
@@ -105,7 +105,7 @@ const Receivers = () => {
         <NoAlertManagerWarning availableAlertManagers={alertManagers} />
       </AlertingPageWrapper>
     ) : (
-      <Redirect to="/alerting/notifications" />
+      <Navigate to="/alerting/notifications" />
     );
   }
 
@@ -130,15 +130,18 @@ const Receivers = () => {
       <GrafanaAlertmanagerDeliveryWarning currentAlertmanager={alertManagerSourceName} />
       {loading && !config && <LoadingPlaceholder text="loading configuration..." />}
       {config && !error && (
-        <Switch>
-          <Route exact={true} path="/alerting/notifications">
-            <ReceiversAndTemplatesView config={config} alertManagerName={alertManagerSourceName} />
-          </Route>
-          <Route exact={true} path="/alerting/notifications/templates/new">
-            <NewTemplateView config={config} alertManagerSourceName={alertManagerSourceName} />
-          </Route>
-          <Route exact={true} path="/alerting/notifications/templates/:name/duplicate">
-            {({ match }: RouteChildrenProps<{ name: string }>) =>
+        <Routes>
+          <Route
+            path="/alerting/notifications"
+            element={<ReceiversAndTemplatesView config={config} alertManagerName={alertManagerSourceName} />}
+          />
+          <Route
+            path="/alerting/notifications/templates/new"
+            element={<NewTemplateView config={config} alertManagerSourceName={alertManagerSourceName} />}
+          />
+          <Route
+            path="/alerting/notifications/templates/:name/duplicate"
+            element={({ match }: RouteChildrenProps<{ name: string }>) =>
               match?.params.name && (
                 <DuplicateTemplateView
                   alertManagerSourceName={alertManagerSourceName}
@@ -147,9 +150,10 @@ const Receivers = () => {
                 />
               )
             }
-          </Route>
-          <Route exact={true} path="/alerting/notifications/templates/:name/edit">
-            {({ match }: RouteChildrenProps<{ name: string }>) =>
+          />
+          <Route
+            path="/alerting/notifications/templates/:name/edit"
+            element={({ match }: RouteChildrenProps<{ name: string }>) =>
               match?.params.name && (
                 <EditTemplateView
                   alertManagerSourceName={alertManagerSourceName}
@@ -158,12 +162,14 @@ const Receivers = () => {
                 />
               )
             }
-          </Route>
-          <Route exact={true} path="/alerting/notifications/receivers/new">
-            <NewReceiverView config={config} alertManagerSourceName={alertManagerSourceName} />
-          </Route>
-          <Route exact={true} path="/alerting/notifications/receivers/:name/edit">
-            {({ match }: RouteChildrenProps<{ name: string }>) =>
+          />
+          <Route
+            path="/alerting/notifications/receivers/new"
+            element={<NewReceiverView config={config} alertManagerSourceName={alertManagerSourceName} />}
+          />
+          <Route
+            path="/alerting/notifications/receivers/:name/edit"
+            element={({ match }: RouteChildrenProps<{ name: string }>) =>
               match?.params.name && (
                 <EditReceiverView
                   alertManagerSourceName={alertManagerSourceName}
@@ -172,11 +178,12 @@ const Receivers = () => {
                 />
               )
             }
-          </Route>
-          <Route exact={true} path="/alerting/notifications/global-config">
-            <GlobalConfigForm config={config} alertManagerSourceName={alertManagerSourceName} />
-          </Route>
-        </Switch>
+          />
+          <Route
+            path="/alerting/notifications/global-config"
+            element={<GlobalConfigForm config={config} alertManagerSourceName={alertManagerSourceName} />}
+          />
+        </Routes>
       )}
     </AlertingPageWrapper>
   );
