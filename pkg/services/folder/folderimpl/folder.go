@@ -469,6 +469,13 @@ func (s *Service) Delete(ctx context.Context, cmd *folder.DeleteFolderCommand) e
 				}
 				return dashboards.ErrFolderAccessDenied
 			}
+
+			// TODO modify Delete() to take into account the deletion via registry
+			err = s.deleteChildrenInFolder(ctx, cmd.OrgID, cmd.UID)
+			if err != nil {
+				return err
+			}
+
 			err = s.legacyDelete(ctx, cmd, dashFolder)
 			if err != nil {
 				return err
@@ -478,6 +485,17 @@ func (s *Service) Delete(ctx context.Context, cmd *folder.DeleteFolderCommand) e
 	})
 
 	return err
+}
+
+func (s *Service) deleteChildrenInFolder(ctx context.Context, orgID int64, UID string) error {
+	for _, v := range s.registry {
+		// TODO: add guard etc to the deletion of dashboards
+		err := v.DeleteInFolder(ctx, orgID, UID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (s *Service) legacyDelete(ctx context.Context, cmd *folder.DeleteFolderCommand, dashFolder *folder.Folder) error {
@@ -569,7 +587,12 @@ func (s *Service) nestedFolderDelete(ctx context.Context, cmd *folder.DeleteFold
 		}
 		result = append(result, subfolders...)
 	}
-	logger.Info("deleting folder", "org_id", cmd.OrgID, "uid", cmd.UID)
+
+	err = s.deleteChildrenInFolder(ctx, cmd.OrgID, cmd.UID)
+	if err != nil {
+		return result, err
+	}
+	logger.Info("deleting folder and its contents", "org_id", cmd.OrgID, "uid", cmd.UID)
 	err = s.store.Delete(ctx, cmd.UID, cmd.OrgID)
 	if err != nil {
 		logger.Info("failed deleting folder", "org_id", cmd.OrgID, "uid", cmd.UID, "err", err)
