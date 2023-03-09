@@ -2,6 +2,7 @@ package signature
 
 import (
 	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/log"
+	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -98,11 +100,9 @@ func ReadPluginManifest(body []byte) (*PluginManifest, error) {
 	return &manifest, nil
 }
 
-func Calculate(mlog log.Logger, class plugins.Class, plugin plugins.FoundPlugin) (plugins.Signature, error) {
-	if class == plugins.Core {
-		return plugins.Signature{
-			Status: plugins.SignatureInternal,
-		}, nil
+func Calculate(ctx context.Context, mlog log.Logger, src sources.Sourcer, plugin plugins.FoundPlugin) (plugins.Signature, error) {
+	if sig, exists := src.DefaultSignature(ctx); exists {
+		return sig, nil
 	}
 
 	if len(plugin.FS.Files()) == 0 {
@@ -176,14 +176,6 @@ func Calculate(mlog log.Logger, class plugins.Class, plugin plugins.FoundPlugin)
 				Status: plugins.SignatureInvalid,
 			}, nil
 		}
-	}
-
-	if class == plugins.CDN {
-		return plugins.Signature{
-			Status:     plugins.SignatureValid,
-			Type:       manifest.SignatureType,
-			SigningOrg: manifest.SignedByOrgName,
-		}, nil
 	}
 
 	manifestFiles := make(map[string]struct{}, len(manifest.Files))

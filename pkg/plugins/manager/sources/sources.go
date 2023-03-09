@@ -11,36 +11,27 @@ import (
 )
 
 type Service struct {
-	srcs map[plugins.Class]plugins.PluginSource
+	srcs []*LocalSource
 	log  log.Logger
 }
 
 func ProvideService(gCfg *setting.Cfg, cfg *config.Cfg) *Service {
 	return &Service{
-		srcs: map[plugins.Class]plugins.PluginSource{
-			plugins.Core:     {Class: plugins.Core, Paths: corePluginPaths(gCfg.StaticRootPath)},
-			plugins.Bundled:  {Class: plugins.Bundled, Paths: []string{gCfg.BundledPluginsPath}},
-			plugins.External: {Class: plugins.External, Paths: append([]string{cfg.PluginsPath}, pluginFSPaths(cfg.PluginSettings)...)},
+		srcs: []*LocalSource{
+			NewLocalSource(plugins.Core, corePluginPaths(gCfg.StaticRootPath)),
+			NewLocalSource(plugins.Bundled, []string{gCfg.BundledPluginsPath}),
+			NewLocalSource(plugins.External, append([]string{cfg.PluginsPath}, pluginFSPaths(cfg.PluginSettings)...)),
 		},
 		log: log.New("plugin.sources"),
 	}
 }
 
-func (s *Service) List(_ context.Context) []plugins.PluginSource {
-	var srcs []plugins.PluginSource
+func (s *Service) List(_ context.Context) []Sourcer {
+	var res []Sourcer
 	for _, src := range s.srcs {
-		srcs = append(srcs, src)
+		res = append(res, src)
 	}
-
-	return srcs
-}
-
-func (s *Service) Get(_ context.Context, class plugins.Class) (plugins.PluginSource, bool) {
-	if srcs, exists := s.srcs[class]; exists {
-		return srcs, true
-	}
-
-	return plugins.PluginSource{}, false
+	return res
 }
 
 // corePluginPaths provides a list of the Core plugin file system paths

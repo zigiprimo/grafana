@@ -13,11 +13,11 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/config"
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/manager/loader/assetpath"
-	"github.com/grafana/grafana/pkg/plugins/manager/loader/finder"
 	"github.com/grafana/grafana/pkg/plugins/manager/loader/initializer"
 	"github.com/grafana/grafana/pkg/plugins/manager/process"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/signature"
+	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 	"github.com/grafana/grafana/pkg/plugins/storage"
 	"github.com/grafana/grafana/pkg/util"
 )
@@ -25,7 +25,6 @@ import (
 var _ plugins.ErrorResolver = (*Loader)(nil)
 
 type Loader struct {
-	pluginFinder       finder.Finder
 	processManager     process.Service
 	pluginRegistry     registry.Service
 	roleRegistry       plugins.RoleRegistry
@@ -40,18 +39,17 @@ type Loader struct {
 }
 
 func ProvideService(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLoaderAuthorizer,
-	pluginRegistry registry.Service, backendProvider plugins.BackendFactoryProvider, pluginFinder finder.Finder,
+	pluginRegistry registry.Service, backendProvider plugins.BackendFactoryProvider,
 	roleRegistry plugins.RoleRegistry, assetPath *assetpath.Service) *Loader {
 	return New(cfg, license, authorizer, pluginRegistry, backendProvider, process.NewManager(pluginRegistry),
-		storage.FileSystem(log.NewPrettyLogger("loader.fs"), cfg.PluginsPath), roleRegistry, assetPath, pluginFinder)
+		storage.FileSystem(log.NewPrettyLogger("loader.fs"), cfg.PluginsPath), roleRegistry, assetPath)
 }
 
 func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLoaderAuthorizer,
 	pluginRegistry registry.Service, backendProvider plugins.BackendFactoryProvider,
 	processManager process.Service, pluginStorage storage.Manager, roleRegistry plugins.RoleRegistry,
-	assetPath *assetpath.Service, pluginFinder finder.Finder) *Loader {
+	assetPath *assetpath.Service) *Loader {
 	return &Loader{
-		pluginFinder:       pluginFinder,
 		pluginRegistry:     pluginRegistry,
 		pluginInitializer:  initializer.New(cfg, backendProvider, license),
 		signatureValidator: signature.NewValidator(authorizer),
@@ -65,16 +63,16 @@ func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLo
 	}
 }
 
-func (l *Loader) Load(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
-	found, err := l.pluginFinder.Find(ctx, src)
+func (l *Loader) Load(ctx context.Context, src sources.Sourcer) ([]*plugins.Plugin, error) {
+	found, err := src.Source(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	return l.loadPlugins(ctx, src.Class, found)
+	return l.loadPlugins(ctx, src, found)
 }
 
-func (l *Loader) loadPlugins(ctx context.Context, class plugins.Class, found []*plugins.FoundBundle) ([]*plugins.Plugin, error) {
+func (l *Loader) loadPlugins(ctx context.Context, src sources.Sourcer, found []*plugins.FoundBundle) ([]*plugins.Plugin, error) {
 	var loadedPlugins []*plugins.Plugin
 	for _, p := range found {
 		if _, exists := l.pluginRegistry.Plugin(ctx, p.Primary.JSONData.ID); exists {
@@ -82,11 +80,13 @@ func (l *Loader) loadPlugins(ctx context.Context, class plugins.Class, found []*
 			continue
 		}
 
-		sig, err := signature.Calculate(l.log, class, p.Primary)
+		sig, err := signature.Calculate(ctx, l.log, src, p.Primary)
 		if err != nil {
 			l.log.Warn("Could not calculate plugin signature state", "pluginID", p.Primary.JSONData.ID, "err", err)
 			continue
 		}
+
+		class := src.PluginClass(ctx)
 		plugin, err := l.createPluginBase(p.Primary.JSONData, class, p.Primary.FS)
 		if err != nil {
 			l.log.Error("Could not create primary plugin base", "pluginID", p.Primary.JSONData.ID, "err", err)

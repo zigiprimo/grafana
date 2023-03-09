@@ -12,6 +12,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/log"
+	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 	"github.com/grafana/grafana/pkg/plugins/repo"
 	"github.com/grafana/grafana/pkg/plugins/storage"
 )
@@ -37,11 +38,11 @@ func (i *FakePluginInstaller) Remove(ctx context.Context, pluginID string) error
 }
 
 type FakeLoader struct {
-	LoadFunc   func(_ context.Context, _ plugins.PluginSource) ([]*plugins.Plugin, error)
+	LoadFunc   func(_ context.Context, _ sources.Sourcer) ([]*plugins.Plugin, error)
 	UnloadFunc func(_ context.Context, _ string) error
 }
 
-func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
+func (l *FakeLoader) Load(ctx context.Context, src sources.Sourcer) ([]*plugins.Plugin, error) {
 	if l.LoadFunc != nil {
 		return l.LoadFunc(ctx, src)
 	}
@@ -382,20 +383,39 @@ func (f *FakePluginFiles) Files() []string {
 }
 
 type FakeSources struct {
-	GetFunc  func(_ context.Context, _ plugins.Class) (plugins.PluginSource, bool)
-	ListFunc func(_ context.Context) []plugins.PluginSource
+	ListFunc func(_ context.Context) []sources.Sourcer
 }
 
-func (s *FakeSources) List(ctx context.Context) []plugins.PluginSource {
+func (s *FakeSources) List(ctx context.Context) []sources.Sourcer {
 	if s.ListFunc != nil {
 		return s.ListFunc(ctx)
 	}
-	return []plugins.PluginSource{}
+	return nil
 }
 
-func (s *FakeSources) Get(ctx context.Context, class plugins.Class) (plugins.PluginSource, bool) {
-	if s.ListFunc != nil {
-		return s.GetFunc(ctx, class)
+type FakeSourcer struct {
+	SourceFunc           func(context.Context) ([]*plugins.FoundBundle, error)
+	PluginClassFunc      func(context.Context) plugins.Class
+	DefaultSignatureFunc func(context.Context) (plugins.Signature, bool)
+}
+
+func (s *FakeSourcer) Source(ctx context.Context) ([]*plugins.FoundBundle, error) {
+	if s.SourceFunc != nil {
+		return s.SourceFunc(ctx)
 	}
-	return plugins.PluginSource{}, false
+	return nil, nil
+}
+
+func (s *FakeSourcer) PluginClass(ctx context.Context) plugins.Class {
+	if s.PluginClassFunc != nil {
+		return s.PluginClassFunc(ctx)
+	}
+	return ""
+}
+
+func (s *FakeSourcer) DefaultSignature(ctx context.Context) (plugins.Signature, bool) {
+	if s.DefaultSignatureFunc != nil {
+		return s.DefaultSignatureFunc(ctx)
+	}
+	return plugins.Signature{}, false
 }

@@ -8,38 +8,41 @@ import (
 
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
+	"github.com/grafana/grafana/pkg/plugins/config"
 	"github.com/grafana/grafana/pkg/plugins/manager/fakes"
+	"github.com/grafana/grafana/pkg/plugins/manager/sources"
+	"github.com/grafana/grafana/pkg/setting"
 )
 
 func TestStore_ProvideService(t *testing.T) {
-	t.Run("Plugin sources are added in order", func(t *testing.T) {
-		var addedSources []plugins.PluginSource
+	t.Run("Plugin sources are added in specific class order by default", func(t *testing.T) {
+		var addedSourceClasses []plugins.Class
 		l := &fakes.FakeLoader{
-			LoadFunc: func(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
-				addedSources = append(addedSources, src)
+			LoadFunc: func(ctx context.Context, src sources.Sourcer) ([]*plugins.Plugin, error) {
+				addedSourceClasses = append(addedSourceClasses, src.PluginClass(ctx))
 				return nil, nil
 			},
 		}
 
-		srcs := &fakes.FakeSources{ListFunc: func(_ context.Context) []plugins.PluginSource {
-			return []plugins.PluginSource{
-				{
-					Class: plugins.Bundled,
-					Paths: []string{"path1"},
+		cfg := &setting.Cfg{
+			BundledPluginsPath: "path1",
+		}
+		pCfg := &config.Cfg{
+			PluginsPath: "path2",
+			PluginSettings: setting.PluginSettings{
+				"foo": map[string]string{
+					"path": "path3",
 				},
-				{
-					Class: plugins.External,
-					Paths: []string{"path2", "path3"},
+				"bar": map[string]string{
+					"url": "https://grafana.plugin",
 				},
-			}
-		}}
+			},
+		}
 
+		srcs := sources.ProvideService(cfg, pCfg)
 		_, err := ProvideService(fakes.NewFakePluginRegistry(), srcs, l)
 		require.NoError(t, err)
-		require.Equal(t, []plugins.PluginSource{
-			{Class: "bundled", Paths: []string{"path1"}},
-			{Class: "external", Paths: []string{"path2", "path3"}}},
-			addedSources)
+		require.Equal(t, []plugins.Class{plugins.Core, plugins.Bundled, plugins.External}, addedSourceClasses)
 	})
 }
 

@@ -12,7 +12,7 @@ import (
 )
 
 func TestSources_List(t *testing.T) {
-	t.Run("Plugin sources are added in order", func(t *testing.T) {
+	t.Run("Plugin sources are populated by default and listed in specific order", func(t *testing.T) {
 		cfg := &setting.Cfg{
 			BundledPluginsPath: "path1",
 		}
@@ -30,12 +30,13 @@ func TestSources_List(t *testing.T) {
 
 		s := ProvideService(cfg, pCfg)
 		srcs := s.List(context.Background())
+		expectedClasses := []plugins.Class{plugins.Core, plugins.Bundled, plugins.External}
 
-		expected := []plugins.PluginSource{
-			{Class: plugins.Core, Paths: []string{"app/plugins/datasource", "app/plugins/panel"}},
-			{Class: plugins.Bundled, Paths: []string{"path1"}},
-			{Class: plugins.External, Paths: []string{"path2", "path3"}},
+		var classes []plugins.Class
+		for _, src := range srcs {
+			classes = append(classes, src.PluginClass(context.Background()))
 		}
-		require.Equal(t, expected, srcs)
+
+		require.Equal(t, expectedClasses, classes)
 	})
 }
