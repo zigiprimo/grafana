@@ -1,6 +1,8 @@
 import { FeatureLike } from 'ol/Feature';
 
-import { FeatureRuleConfig, ComparisonOperation } from '../types';
+import { ComparisonOperation } from '@grafana/schema';
+
+import { FeatureRuleConfig } from '../types';
 
 /**
  * Check whether feature has property value that matches rule
@@ -10,19 +12,27 @@ import { FeatureRuleConfig, ComparisonOperation } from '../types';
  */
 export const checkFeatureMatchesStyleRule = (rule: FeatureRuleConfig, feature: FeatureLike) => {
   const val = feature.get(rule.property);
-  switch (rule.operation) {
+  return compareValues(val, rule.operation, rule.value);
+};
+
+export const compareValues = (
+  left: string | number | boolean,
+  op: ComparisonOperation,
+  right: string | number | boolean
+) => {
+  switch (op) {
     case ComparisonOperation.EQ:
-      return `${val}` === `${rule.value}`;
+      return `${left}` === `${right}`;
     case ComparisonOperation.NEQ:
-      return val !== rule.value;
+      return `${left}` !== `${right}`;
     case ComparisonOperation.GT:
-      return val > rule.value;
+      return left > right;
     case ComparisonOperation.GTE:
-      return val >= rule.value;
+      return left >= right;
     case ComparisonOperation.LT:
-      return val < rule.value;
+      return left < right;
     case ComparisonOperation.LTE:
-      return val <= rule.value;
+      return left <= right;
     default:
       return false;
   }

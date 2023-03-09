@@ -13,17 +13,50 @@ title: StatPanelCfg kind
 
 
 
-| Property           | Type                        | Required | Description |
-|--------------------|-----------------------------|----------|-------------|
-| `PanelFieldConfig` | [object](#panelfieldconfig) | **Yes**  |             |
-| `PanelOptions`     | [object](#paneloptions)     | **Yes**  |             |
+| Property             | Type                          | Required | Description                                    |
+|----------------------|-------------------------------|----------|------------------------------------------------|
+| `ConditionTestMode`  | string                        | **Yes**  | Possible values are: `value`, `field`, `true`. |
+| `ConditionTest`      | [object](#conditiontest)      | **Yes**  | Test the                                       |
+| `ConditionalDisplay` | [object](#conditionaldisplay) | **Yes**  |                                                |
+| `CustomDisplayValue` | [object](#customdisplayvalue) | **Yes**  | Optionally the calculated DisplayValue         |
+| `PanelFieldConfig`   | [object](#panelfieldconfig)   | **Yes**  |                                                |
+| `PanelOptions`       | [object](#paneloptions)       | **Yes**  |                                                |
 
-### PanelFieldConfig
+### ConditionTest
+
+Test the
+
+| Property  | Type   | Required | Description                                                 |
+|-----------|--------|----------|-------------------------------------------------------------|
+| `mode`    | string | **Yes**  | Possible values are: `value`, `field`, `true`.              |
+| `op`      | string | **Yes**  | Possible values are: `eq`, `neq`, `lt`, `lte`, `gt`, `gte`. |
+| `value`   |        | **Yes**  | Default: `0`.                                               |
+| `field`   | string | No       |                                                             |
+| `reducer` | string | No       |                                                             |
+
+### ConditionalDisplay
+
+| Property  | Type                                      | Required | Description                            |
+|-----------|-------------------------------------------|----------|----------------------------------------|
+| `display` | [CustomDisplayValue](#customdisplayvalue) | **Yes**  | Optionally the calculated DisplayValue |
+| `test`    | [ConditionTest](#conditiontest)           | **Yes**  | Test the                               |
+
+### CustomDisplayValue
+
+Optionally the calculated DisplayValue
 
 | Property | Type   | Required | Description |
 |----------|--------|----------|-------------|
+| `color`  | string | No       |             |
 | `prefix` | string | No       |             |
 | `suffix` | string | No       |             |
+| `text`   | string | No       |             |
+
+### PanelFieldConfig
+
+| Property     | Type                                        | Required | Description                                                     |
+|--------------|---------------------------------------------|----------|-----------------------------------------------------------------|
+| `conditions` | [ConditionalDisplay](#conditionaldisplay)[] | No       | The first matching test will be used to override display values |
 
 ### PanelOptions
 

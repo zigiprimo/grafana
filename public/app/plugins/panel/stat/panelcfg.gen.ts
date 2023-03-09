@@ -27,6 +27,49 @@ export const defaultPanelOptions: Partial<PanelOptions> = {
 };
 
 export interface PanelFieldConfig {
+  /**
+   * The first matching test will be used to override display values
+   */
+  conditions?: Array<ConditionalDisplay>;
+}
+
+export const defaultPanelFieldConfig: Partial<PanelFieldConfig> = {
+  conditions: [],
+};
+
+export interface ConditionalDisplay {
+  display: CustomDisplayValue;
+  test: ConditionTest;
+}
+
+export enum ConditionTestMode {
+  Field = 'field',
+  True = 'true',
+  Value = 'value',
+}
+
+/**
+ * Test the
+ */
+export interface ConditionTest {
+  field?: string;
+  mode: ConditionTestMode;
+  op: common.ComparisonOperation;
+  reducer?: string;
+  value: (number | string | boolean);
+}
+
+export const defaultConditionTest: Partial<ConditionTest> = {
+  mode: ConditionTestMode.Value,
+  value: 0,
+};
+
+/**
+ * Optionally the calculated DisplayValue
+ */
+export interface CustomDisplayValue {
+  color?: string;
   prefix?: string;
   suffix?: string;
+  text?: string;
 }

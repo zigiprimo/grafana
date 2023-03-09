@@ -33,9 +33,34 @@ composableKinds: PanelCfg: {
 							justifyMode: common.BigValueJustifyMode | *"auto"
 							textMode:    common.BigValueTextMode | *"auto"
 						} @cuetsy(kind="interface")
+
 						PanelFieldConfig: {
+							// The first matching test will be used to override display values 
+							conditions?: [...ConditionalDisplay]
+						} @cuetsy(kind="interface")
+
+						ConditionalDisplay: {
+							test:    ConditionTest
+							display: CustomDisplayValue
+						} @cuetsy(kind="interface")
+
+						ConditionTestMode: "value" | "field" | "true" @cuetsy(kind="enum")
+
+						// Test the 
+						ConditionTest: {
+							mode:     ConditionTestMode | *"value"
+							field?:   string // only used when mode == field
+							reducer?: string
+							op:       common.ComparisonOperation | "gte"
+							value:    number | string | bool | *0 // or string or bool?
+						} @cuetsy(kind="interface")
+
+						// Optionally the calculated DisplayValue
+						CustomDisplayValue: {
+							text?:   string
 							prefix?: string
 							suffix?: string
+							color?:  string
 						} @cuetsy(kind="interface")
 					},
 				]
@@ -43,3 +68,18 @@ composableKinds: PanelCfg: {
 		]
 	}
 }
+
+// [{
+//     condition: {
+//         field?: XXX;
+//         reducer?: string; // TrendUP | TrendDown
+//         op: {EQ/GT/LT}
+//         value?: number;
+//     },
+//     display: {
+//         text?: string;
+//         prefix?: string;
+//         suffix?: string;
+//         color?: string;
+//     }
+// }]

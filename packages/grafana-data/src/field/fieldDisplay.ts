@@ -20,6 +20,7 @@ import {
   TimeZone,
 } from '../types';
 import { ScopedVars } from '../types/ScopedVars';
+import { ArrayVector } from '../vector';
 
 import { getDisplayProcessor } from './displayProcessor';
 import { getFieldDisplayName } from './fieldState';
@@ -54,7 +55,6 @@ export interface FieldSparkline {
 
 export interface FieldDisplay {
   name: string; // The field name (title is in display)
-  field: FieldConfig;
   display: DisplayValue;
   sparkline?: FieldSparkline;
 
@@ -64,7 +64,12 @@ export interface FieldDisplay {
   rowIndex?: number; // only filled in when the value is from a row (ie, not a reduction)
   getLinks?: () => LinkModel[];
   hasLinks: boolean;
-  sourceField?: Field;
+
+  /** The field we are trying to display */
+  source: Field;
+
+  /** @deprecated use sourceField.config */
+  field: FieldConfig;
 }
 
 export interface GetFieldDisplayValuesOptions {
@@ -177,7 +182,7 @@ export const getFieldDisplayValues = (options: GetFieldDisplayValuesOptions): Fi
                   })
               : () => [],
             hasLinks: hasLinks(field),
-            sourceField: field,
+            source: field,
           });
 
           if (values.length >= limit) {
@@ -231,7 +236,7 @@ export const getFieldDisplayValues = (options: GetFieldDisplayValuesOptions): Fi
                   })
               : () => [],
             hasLinks: hasLinks(field),
-            sourceField: field,
+            source: field,
           });
         }
       }
@@ -366,14 +371,21 @@ function createNoValuesFieldDisplay(options: GetFieldDisplayValuesOptions): Fiel
 
   const display = displayProcessor(null);
   const text = getDisplayText(display, displayName);
-
-  return {
+  const source: Field = {
     name: displayName,
-    field: {
+    type: FieldType.number,
+    config: {
       ...defaults,
       max: defaults.max ?? 0,
       min: defaults.min ?? 0,
     },
+    values: new ArrayVector([]),
+  };
+
+  return {
+    name: displayName,
+    source,
+    field: source.config,
     display: {
       text,
       numeric: 0,
