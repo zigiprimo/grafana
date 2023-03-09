@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { Navigate, Route, RouteChildrenProps, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import { Alert, withErrorBoundary } from '@grafana/ui';
 import { Silence } from 'app/plugins/datasource/alertmanager/types';
@@ -59,6 +59,9 @@ const Silences = () => {
 
   const getSilenceById = useCallback((id: string) => result && result.find((silence) => silence.id === id), [result]);
 
+  const params = useParams();
+  const silence = params.id ? getSilenceById(params.id) : undefined;
+
   const mimirLazyInitError =
     error?.message?.includes('the Alertmanager is not configured') && amFeatures?.lazyConfigInit;
 
@@ -68,7 +71,7 @@ const Silences = () => {
         <NoAlertManagerWarning availableAlertManagers={alertManagers} />
       </AlertingPageWrapper>
     ) : (
-      <Navigate to="/alerting/silences" />
+      <Navigate to="/alerting/silences" replace />
     );
   }
 
@@ -117,16 +120,7 @@ const Silences = () => {
           />
           <Route
             path="/alerting/silence/:id/edit"
-            element={({ match }: RouteChildrenProps<{ id: string }>) => {
-              return (
-                match?.params.id && (
-                  <SilencesEditor
-                    silence={getSilenceById(match.params.id)}
-                    alertManagerSourceName={alertManagerSourceName}
-                  />
-                )
-              );
-            }}
+            element={<SilencesEditor silence={silence} alertManagerSourceName={alertManagerSourceName} />}
           />
         </Routes>
       )}

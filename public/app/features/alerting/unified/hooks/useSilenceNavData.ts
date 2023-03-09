@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useRouteMatch } from 'react-router-dom';
+import { useResolvedPath } from 'react-router-dom';
 
 import { NavModelItem } from '@grafana/data';
 
@@ -9,7 +9,7 @@ const defaultPageNav: Partial<NavModelItem> = {
 };
 
 export function useSilenceNavData() {
-  const { isExact, path } = useRouteMatch();
+  const path = useResolvedPath('').pathname;
   const [pageNav, setPageNav] = useState<Pick<NavModelItem, 'id' | 'text' | 'icon'> | undefined>();
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function useSilenceNavData() {
         text: 'Edit silence',
       });
     }
-  }, [path, isExact]);
+  }, [path]);
 
   return pageNav;
 }

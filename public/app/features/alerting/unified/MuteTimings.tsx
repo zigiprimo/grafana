@@ -74,7 +74,7 @@ const MuteTimings = () => {
 
                 return <MuteTimingForm muteTiming={muteTiming} showError={!muteTiming} provenance={provenance} />;
               }
-              return <Navigate to="/alerting/routes" />;
+              return <Navigate to="/alerting/routes" replace />;
             }}
           />
         </Routes>

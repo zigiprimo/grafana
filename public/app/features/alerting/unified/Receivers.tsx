@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import pluralize from 'pluralize';
 import React, { useEffect } from 'react';
-import { Navigate, Route, RouteChildrenProps, Routes, useLocation, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 
 import { GrafanaTheme2, NavModelItem } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
@@ -60,7 +60,7 @@ const Receivers = () => {
   const dispatch = useDispatch();
   const styles = useStyles2(getStyles);
 
-  const { id, type } = useParams<{ id?: string; type?: PageType }>();
+  const { id, name, type } = useParams<{ id?: string; type?: PageType; name?: string }>();
   const location = useLocation();
   const isRoot = location.pathname.endsWith('/alerting/notifications');
   const isduplicatingTemplate = isDuplicating(location);
@@ -105,7 +105,7 @@ const Receivers = () => {
         <NoAlertManagerWarning availableAlertManagers={alertManagers} />
       </AlertingPageWrapper>
     ) : (
-      <Navigate to="/alerting/notifications" />
+      <Navigate to="/alerting/notifications" replace />
     );
   }
 
@@ -141,24 +141,24 @@ const Receivers = () => {
           />
           <Route
             path="/alerting/notifications/templates/:name/duplicate"
-            element={({ match }: RouteChildrenProps<{ name: string }>) =>
-              match?.params.name && (
+            element={
+              name && (
                 <DuplicateTemplateView
                   alertManagerSourceName={alertManagerSourceName}
                   config={config}
-                  templateName={decodeURIComponent(match?.params.name)}
+                  templateName={decodeURIComponent(name)}
                 />
               )
             }
           />
           <Route
             path="/alerting/notifications/templates/:name/edit"
-            element={({ match }: RouteChildrenProps<{ name: string }>) =>
-              match?.params.name && (
+            element={
+              name && (
                 <EditTemplateView
                   alertManagerSourceName={alertManagerSourceName}
                   config={config}
-                  templateName={decodeURIComponent(match?.params.name)}
+                  templateName={decodeURIComponent(name)}
                 />
               )
             }
@@ -169,12 +169,12 @@ const Receivers = () => {
           />
           <Route
             path="/alerting/notifications/receivers/:name/edit"
-            element={({ match }: RouteChildrenProps<{ name: string }>) =>
-              match?.params.name && (
+            element={
+              name && (
                 <EditReceiverView
                   alertManagerSourceName={alertManagerSourceName}
                   config={config}
-                  receiverName={decodeURIComponent(match?.params.name)}
+                  receiverName={decodeURIComponent(name)}
                 />
               )
             }

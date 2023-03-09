@@ -2,7 +2,7 @@
 import { AnyAction, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import React, { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { createHtmlPortalNode, InPortal, OutPortal } from 'react-reverse-portal';
-import { useLocation, useRouteMatch } from 'react-router-dom';
+import { useLocation, useResolvedPath } from 'react-router-dom';
 
 import { AppEvents, AppPlugin, AppPluginMeta, NavModel, NavModelItem, PluginType } from '@grafana/data';
 import { config, locationSearchToObject } from '@grafana/runtime';
@@ -34,7 +34,7 @@ interface State {
 const initialState: State = { loading: true, pluginNav: null, plugin: null };
 
 export function AppRootPage({ pluginId, pluginNavSection }: Props) {
-  const match = useRouteMatch();
+  const basename = useResolvedPath('').pathname;
   const location = useLocation();
   const [state, dispatch] = useReducer(stateSlice.reducer, initialState);
   const portalNode = useMemo(() => createHtmlPortalNode(), []);
@@ -68,7 +68,7 @@ export function AppRootPage({ pluginId, pluginNavSection }: Props) {
   const pluginRoot = plugin.root && (
     <plugin.root
       meta={plugin.meta}
-      basename={match.url}
+      basename={basename}
       onNavChanged={onNavChanged}
       query={queryParams}
       path={location.pathname}

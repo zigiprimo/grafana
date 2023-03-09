@@ -314,17 +314,18 @@ export function getAppRoutes(): RouteDescriptor[] {
     // ADMIN
     {
       path: '/admin',
-      component: () => (config.featureToggles.topnav ? <NavLandingPage navId="cfg" /> : <Navigate to="/admin/users" />),
+      component: () =>
+        config.featureToggles.topnav ? <NavLandingPage navId="cfg" /> : <Navigate to="/admin/users" replace />,
     },
     {
       path: '/admin/access',
       component: () =>
-        config.featureToggles.topnav ? <NavLandingPage navId="admin/access" /> : <Navigate to="/admin/users" />,
+        config.featureToggles.topnav ? <NavLandingPage navId="admin/access" /> : <Navigate to="/admin/users" replace />,
     },
     {
       path: '/admin/config',
       component: () =>
-        config.featureToggles.topnav ? <NavLandingPage navId="admin/config" /> : <Navigate to="/admin/org" />,
+        config.featureToggles.topnav ? <NavLandingPage navId="admin/config" /> : <Navigate to="/admin/org" replace />,
     },
     {
       path: '/admin/settings',
@@ -400,7 +401,7 @@ export function getAppRoutes(): RouteDescriptor[] {
     {
       path: '/verify',
       component: !config.verifyEmailEnabled
-        ? () => <Navigate to="/signup" />
+        ? () => <Navigate to="/signup" replace />
         : SafeDynamicImport(
             () => import(/* webpackChunkName "VerifyEmailPage"*/ 'app/core/components/Signup/VerifyEmailPage')
           ),
@@ -410,7 +411,7 @@ export function getAppRoutes(): RouteDescriptor[] {
     {
       path: '/signup',
       component: config.disableUserSignUp
-        ? () => <Navigate to="/login" />
+        ? () => <Navigate to="/login" replace />
         : SafeDynamicImport(() => import(/* webpackChunkName "SignupPage"*/ 'app/core/components/Signup/SignupPage')),
       pageClass: 'login-page',
       chromeless: true,

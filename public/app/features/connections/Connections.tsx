@@ -22,7 +22,7 @@ export default function Connections() {
   const YourConnectionsPage =
     navIndex['connections-your-connections'].children && navIndex['connections-your-connections'].children?.length > 1
       ? () => <NavLandingPage navId="connections-your-connections" />
-      : () => <Navigate to={ROUTES.DataSources} />;
+      : () => <Navigate to={ROUTES.DataSources} replace />;
 
   return (
     <DataSourcesRoutesContext.Provider
@@ -35,7 +35,7 @@ export default function Connections() {
     >
       <Routes>
         {/* Redirect to "Connect data" by default */}
-        <Route caseSensitive path={ROUTES.Base} element={() => <Navigate to={ROUTES.ConnectData} />} />
+        <Route caseSensitive path={ROUTES.Base} element={() => <Navigate to={ROUTES.ConnectData} replace />} />
         <Route caseSensitive path={ROUTES.YourConnections} element={YourConnectionsPage} />
         <Route caseSensitive path={ROUTES.DataSources} element={DataSourcesListPage} />
         <Route caseSensitive path={ROUTES.DataSourcesDetails} element={DataSourceDetailsPage} />
@@ -47,7 +47,7 @@ export default function Connections() {
         {!isConnectDataPageOverriden && <Route caseSensitive path={ROUTES.ConnectData} element={ConnectDataPage} />}
 
         {/* Not found */}
-        <Route element={() => <Navigate to="/notfound" />} />
+        <Route element={() => <Navigate to="/notfound" replace />} />
       </Routes>
     </DataSourcesRoutesContext.Provider>
   );

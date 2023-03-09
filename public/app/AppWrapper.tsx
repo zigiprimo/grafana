@@ -64,7 +64,7 @@ export class AppWrapper extends React.Component<AppWrapperProps, AppWrapperState
           // TODO[Router]: test this logic
           if (roles?.length) {
             if (!roles.some((r: string) => contextSrv.hasRole(r))) {
-              return <Navigate to="/" />;
+              return <Navigate to="/" replace />;
             }
           }
 
