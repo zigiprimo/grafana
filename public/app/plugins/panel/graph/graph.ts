@@ -321,6 +321,7 @@ class GraphElement {
           ? getFieldLinksSupplier({
               display: fieldDisplay,
               name: field.name,
+              source: field,
               view: new DataFrameView(dataFrame),
               rowIndex: dataIndex,
               colIndex: item.series.fieldIndex,

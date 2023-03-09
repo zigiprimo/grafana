@@ -105,6 +105,7 @@ describe('getFieldLinksSupplier', () => {
     const fieldDisp: FieldDisplay = {
       name: 'hello',
       field: field.config,
+      source: field,
       view: new DataFrameView(data),
       rowIndex,
       colIndex,

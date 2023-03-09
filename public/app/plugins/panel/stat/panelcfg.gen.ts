@@ -56,12 +56,11 @@ export interface ConditionTest {
   mode: ConditionTestMode;
   op: common.ComparisonOperation;
   reducer?: string;
-  value: (number | string | boolean);
+  value?: (number | string | boolean);
 }
 
 export const defaultConditionTest: Partial<ConditionTest> = {
   mode: ConditionTestMode.Value,
-  value: 0,
 };
 
 /**

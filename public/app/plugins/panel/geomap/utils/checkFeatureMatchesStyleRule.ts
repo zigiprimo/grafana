@@ -16,10 +16,23 @@ export const checkFeatureMatchesStyleRule = (rule: FeatureRuleConfig, feature: F
 };
 
 export const compareValues = (
-  left: string | number | boolean,
+  left: string | number | boolean | null | undefined,
   op: ComparisonOperation,
-  right: string | number | boolean
+  right: string | number | boolean | null | undefined
 ) => {
+  // Normalize null|undefined values
+  if (left == null || right == null) {
+    if (left == null) {
+      left = 'null';
+    }
+    if (right == null) {
+      right = 'null';
+    }
+    if (op === ComparisonOperation.GTE || op === ComparisonOperation.LTE) {
+      op = ComparisonOperation.EQ; // check for equality
+    }
+  }
+
   switch (op) {
     case ComparisonOperation.EQ:
       return `${left}` === `${right}`;

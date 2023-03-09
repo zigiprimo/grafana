@@ -90,6 +90,16 @@ export function getTextDimensionFromData(
   return getTextDimension(undefined, cfg);
 }
 
+export function findFieldFrom(name: string, data: DataFrame[]): Field | undefined {
+  for (const frame of data) {
+    const field = findField(frame, name);
+    if (field) {
+      return field;
+    }
+  }
+  return undefined;
+}
+
 export function findField(frame?: DataFrame, name?: string): Field | undefined {
   if (!frame || !name?.length) {
     return undefined;

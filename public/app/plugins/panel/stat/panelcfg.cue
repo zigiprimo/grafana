@@ -52,7 +52,7 @@ composableKinds: PanelCfg: {
 							field?:   string // only used when mode == field
 							reducer?: string
 							op:       common.ComparisonOperation | "gte"
-							value:    number | string | bool | *0 // or string or bool?
+							value?:   number | string | bool
 						} @cuetsy(kind="interface")
 
 						// Optionally the calculated DisplayValue
