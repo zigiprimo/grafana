@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
-import React, { memo } from 'react';
+import React from 'react';
+import { useLocation, useParams } from 'react-router-dom';
 import { useAsync } from 'react-use';
 
 import { locationUtil, NavModelItem } from '@grafana/data';
@@ -7,7 +8,6 @@ import { locationService } from '@grafana/runtime';
 import { Page } from 'app/core/components/Page/Page';
 import { FolderDTO } from 'app/types';
 
-import { GrafanaRouteComponentProps } from '../../../core/navigation/types';
 import { loadFolderPage } from '../loaders';
 
 import ManageDashboardsNew from './ManageDashboardsNew';
@@ -17,11 +17,11 @@ export interface DashboardListPageRouteParams {
   slug?: string;
 }
 
-interface Props extends GrafanaRouteComponentProps<DashboardListPageRouteParams> {}
-
-export const DashboardListPage = memo(({ match, location }: Props) => {
+export const DashboardListPage = () => {
+  const location = useLocation();
+  const params = useParams();
   const { loading, value } = useAsync<() => Promise<{ folder?: FolderDTO; pageNav?: NavModelItem }>>(() => {
-    const uid = match.params.uid;
+    const uid = params.uid;
     const url = location.pathname;
     if (!uid || !url.startsWith('/dashboards')) {
       return Promise.resolve({});
@@ -36,7 +36,7 @@ export const DashboardListPage = memo(({ match, location }: Props) => {
 
       return { folder, pageNav: folderNav };
     });
-  }, [match.params.uid]);
+  }, [params.uid]);
 
   return (
     <Page navId="dashboards/browse" pageNav={value?.pageNav}>
@@ -52,7 +52,7 @@ export const DashboardListPage = memo(({ match, location }: Props) => {
       </Page.Contents>
     </Page>
   );
-});
+};
 
 DashboardListPage.displayName = 'DashboardListPage';
 

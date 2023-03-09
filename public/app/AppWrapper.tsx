@@ -1,7 +1,7 @@
 import { Action, KBarProvider } from 'kbar';
 import React, { ComponentType } from 'react';
 import { Provider } from 'react-redux';
-import { Router, Route, Navigate, Routes } from 'react-router-dom';
+import { Router, Route, Routes } from 'react-router-dom';
 
 import { config, locationService, navigationLogger, reportInteraction } from '@grafana/runtime';
 import { ErrorBoundaryAlert, GlobalStyles, ModalRoot, ModalsProvider, PortalContainer } from '@grafana/ui';
@@ -14,9 +14,8 @@ import { GrafanaApp } from './app';
 import { AppChrome } from './core/components/AppChrome/AppChrome';
 import { AppNotificationList } from './core/components/AppNotifications/AppNotificationList';
 import { GrafanaContext } from './core/context/GrafanaContext';
-import { GrafanaRoute, Props } from './core/navigation/GrafanaRoute';
+import { GrafanaRoute } from './core/navigation/GrafanaRoute';
 import { RouteDescriptor } from './core/navigation/types';
-import { contextSrv } from './core/services/context_srv';
 import { ThemeProvider } from './core/utils/ConfigProvider';
 import { LiveConnectionWarning } from './features/live/LiveConnectionWarning';
 
@@ -53,25 +52,7 @@ export class AppWrapper extends React.Component<AppWrapperProps, AppWrapperState
   }
 
   renderRoute = (route: RouteDescriptor) => {
-    const roles = route.roles ? route.roles() : [];
-
-    return (
-      <Route
-        path={route.path}
-        key={route.path}
-        element={(props: Props) => {
-          navigationLogger('AppWrapper', false, 'Rendering route', route, 'with match', props.location);
-          // TODO[Router]: test this logic
-          if (roles?.length) {
-            if (!roles.some((r: string) => contextSrv.hasRole(r))) {
-              return <Navigate to="/" replace />;
-            }
-          }
-
-          return <GrafanaRoute {...props} route={route} />;
-        }}
-      />
-    );
+    return <Route path={route.path} key={route.path} element={<GrafanaRoute route={route} />} />;
   };
 
   renderRoutes() {
@@ -104,7 +85,7 @@ export class AppWrapper extends React.Component<AppWrapperProps, AppWrapperState
                   <ModalsProvider>
                     <GlobalStyles />
                     <div className="grafana-app">
-                      <Router history={locationService.getHistory()}>
+                      <Router navigator={locationService.getHistory()} location={locationService.getLocation()}>
                         <AppChrome>
                           {pageBanners.map((Banner, index) => (
                             <Banner key={index.toString()} />

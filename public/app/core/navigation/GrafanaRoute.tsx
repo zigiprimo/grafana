@@ -1,4 +1,5 @@
 import React, { Suspense, useEffect, useLayoutEffect } from 'react';
+import { Navigate, useLocation } from 'react-router-dom';
 // @ts-ignore
 import Drop from 'tether-drop';
 
@@ -6,6 +7,7 @@ import { locationSearchToObject, navigationLogger, reportPageview } from '@grafa
 import { ErrorBoundary } from '@grafana/ui';
 
 import { useGrafana } from '../context/GrafanaContext';
+import { contextSrv } from '../services/context_srv';
 
 import { GrafanaRouteError } from './GrafanaRouteError';
 import { GrafanaRouteLoading } from './GrafanaRouteLoading';
@@ -13,23 +15,24 @@ import { GrafanaRouteComponentProps, RouteDescriptor } from './types';
 
 export interface Props extends Omit<GrafanaRouteComponentProps, 'queryParams'> {}
 
-export function GrafanaRoute(props: Props) {
+export function GrafanaRoute({ route }: Props) {
   const { chrome, keybindings } = useGrafana();
+  const location = useLocation();
 
-  chrome.setMatchedRoute(props.route);
+  chrome.setMatchedRoute(route);
 
   useLayoutEffect(() => {
-    keybindings.clearAndInitGlobalBindings(props.route);
-  }, [keybindings, props.route]);
+    keybindings.clearAndInitGlobalBindings(route);
+  }, [keybindings, route]);
 
   useEffect(() => {
-    updateBodyClassNames(props.route);
+    updateBodyClassNames(route);
     cleanupDOM();
-    navigationLogger('GrafanaRoute', false, 'Mounted', props.match);
+    navigationLogger('GrafanaRoute', false, 'Mounted', route);
 
     return () => {
-      navigationLogger('GrafanaRoute', false, 'Unmounted', props.route);
-      updateBodyClassNames(props.route, true);
+      navigationLogger('GrafanaRoute', false, 'Unmounted', route);
+      updateBodyClassNames(route, true);
     };
     // props.match instance change even though only query params changed so to make this effect only trigger on route mount we have to disable exhaustive-deps
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -38,10 +41,10 @@ export function GrafanaRoute(props: Props) {
   useEffect(() => {
     cleanupDOM();
     reportPageview();
-    navigationLogger('GrafanaRoute', false, 'Updated', props);
+    navigationLogger('GrafanaRoute', false, 'Updated', route);
   });
 
-  navigationLogger('GrafanaRoute', false, 'Rendered', props.route);
+  navigationLogger('GrafanaRoute', false, 'Rendered', route);
 
   return (
     <ErrorBoundary>
@@ -50,9 +53,15 @@ export function GrafanaRoute(props: Props) {
           return <GrafanaRouteError error={error} errorInfo={errorInfo} />;
         }
 
+        if (route.roles && route.roles().length) {
+          if (!route.roles().some((r: string) => contextSrv.hasRole(r))) {
+            return <Navigate to="/" replace />;
+          }
+        }
+
         return (
           <Suspense fallback={<GrafanaRouteLoading />}>
-            <props.route.component {...props} queryParams={locationSearchToObject(props.location.search)} />
+            <route.component route={route} queryParams={locationSearchToObject(location.search)} />
           </Suspense>
         );
       }}
