@@ -1,4 +1,4 @@
-import { isPluginExtensionCommand, isPluginExtensionLink, PanelMenuItem } from '@grafana/data';
+import { isPluginExtensionCommand, isPluginExtensionLink, PanelMenuItem, PluginExtension } from '@grafana/data';
 import {
   AngularComponent,
   getDataSourceSrv,
@@ -291,25 +291,67 @@ export function getPanelMenu(
     context: createExtensionContext(panel, dashboard),
   });
 
-  for (const extension of extensions) {
-    if (isPluginExtensionLink(extension)) {
-      subMenu.push({
-        text: truncateTitle(extension.title, 25),
-        href: extension.path,
-      });
-      continue;
-    }
+  // const extensionsByPlugin = groupBy(extensions, (extension) => extension.pluginName);
+  const extensionsByPlugin = extensions.reduce((prev, curr) => {
+    const pluginName = curr.pluginName;
+    const menuItem = getExtensionMenuItem(curr);
 
-    if (isPluginExtensionCommand(extension)) {
-      subMenu.push({
-        text: truncateTitle(extension.title, 25),
-        onClick: extension.callHandlerWithContext,
-      });
-      continue;
-    }
-  }
+    return {
+      ...prev,
+      [pluginName]: [...(prev[pluginName] || []), menuItem],
+    };
+  }, {});
+
+  console.log('FOO', { extensions, extensionsByPlugin })
+
+  // for (const extension of extensions) {
+  //   if (isPluginExtensionLink(extension)) {
+  //     subMenu.push({
+  //       text: truncateTitle(extension.title, 25),
+  //       href: extension.path,
+  //     });
+  //     continue;
+  //   }
+
+  //   if (isPluginExtensionCommand(extension)) {
+  //     subMenu.push({
+  //       text: truncateTitle(extension.title, 25),
+  //       onClick: extension.callHandlerWithContext,
+  //     });
+  //     continue;
+  //   }
+
+  //   const subSubMenu = subMenu.find((item) => item.text === extension.pluginName);
+
+  //   if (subSubMenu) {
+
+  //     subSubMenu.subMenu.push({
+  //       text: truncateTitle(extension.title, 25),
+  //       onClick: extension.callHandlerWithContext,
+  //     });
+  //     continue;
+  //   }
+  // }
 
   return menu;
+}
+
+function getExtensionMenuItem(extension: PluginExtension): PanelMenuItem | undefined {
+  if (isPluginExtensionLink(extension)) {
+    return {
+      text: truncateTitle(extension.title, 25),
+      href: extension.path,
+    };
+  }
+
+  if (isPluginExtensionCommand(extension)) {
+    return {
+      text: truncateTitle(extension.title, 25),
+      onClick: extension.callHandlerWithContext,
+    };
+  }
+
+  return undefined;
 }
 
 function truncateTitle(title: string, length: number): string {

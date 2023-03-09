@@ -9,6 +9,7 @@ export enum PluginExtensionTypes {
 
 export type PluginExtension = {
   type: PluginExtensionTypes;
+  pluginName: string;
   title: string;
   description: string;
   key: number;

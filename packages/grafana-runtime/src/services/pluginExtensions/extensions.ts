@@ -18,6 +18,8 @@ export function getPluginExtensions<T extends object = {}>(
   const registry = getPluginsExtensionRegistry();
   const configureFuncs = registry[placement] ?? [];
 
+  console.log('REGISTRY', registry)
+
   const extensions = configureFuncs.reduce<PluginExtension[]>((result, configure) => {
     const extension = configure(context);
     if (extension) {
