@@ -7,14 +7,13 @@ import { ColorSwatch } from '@grafana/ui/src/components/ColorPicker/ColorSwatch'
 
 export interface ColorValueEditorSettings {
   placeholder?: string;
-  enableNamedColors?: boolean; // defaults to true
-  isClearable?: boolean; // defaults to false
+  /** defaults to true */
+  enableNamedColors?: boolean;
+  /** defaults to false */
+  isClearable?: boolean;
 }
 
-/**
- * @alpha
- * */
-export interface ColorValueEditorProps {
+interface Props {
   value?: string;
   onChange: (value: string | undefined) => void;
   settings?: ColorValueEditorSettings;
@@ -26,7 +25,7 @@ export interface ColorValueEditorProps {
 /**
  * @alpha
  * */
-export const ColorValueEditor = ({ value, settings, onChange, details }: ColorValueEditorProps) => {
+export const ColorValueEditor = ({ value, settings, onChange, details }: Props) => {
   const theme = useTheme2();
   const styles = useStyles2(getStyles);
 
@@ -54,9 +53,7 @@ export const ColorValueEditor = ({ value, settings, onChange, details }: ColorVa
                     {settings?.placeholder ?? 'Select color'}
                   </span>
                 )}
-                {settings?.isClearable && value && (
-                  <IconButton className={styles.trashIcon} name="times" onClick={() => onChange(undefined)} />
-                )}
+                {settings?.isClearable && value && <IconButton name="times" onClick={() => onChange(undefined)} />}
               </>
             )}
           </div>
@@ -92,9 +89,6 @@ const getStyles = (theme: GrafanaTheme2) => {
     placeholderText: css`
       flex-grow: 2;
       color: ${theme.colors.text.secondary};
-    `,
-    trashIcon: css`
-      padding: 0 ${theme.spacing(1)};
     `,
   };
 };

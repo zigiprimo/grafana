@@ -57,8 +57,14 @@ func parseResponse(responses []*es.SearchResponse, targets []*Query, configuredF
 
 		queryRes := backend.DataResponse{}
 
-		if isDocumentQuery(target) {
-			err := processDocumentResponse(res, target, configuredFields, &queryRes)
+		if isRawDataQuery(target) {
+			err := processRawDataResponse(res, target, configuredFields, &queryRes)
+			if err != nil {
+				return &backend.QueryDataResponse{}, err
+			}
+			result.Responses[target.RefID] = queryRes
+		} else if isRawDocumentQuery(target) {
+			err := processRawDocumentResponse(res, target, &queryRes)
 			if err != nil {
 				return &backend.QueryDataResponse{}, err
 			}
@@ -76,7 +82,7 @@ func parseResponse(responses []*es.SearchResponse, targets []*Query, configuredF
 			if err != nil {
 				return &backend.QueryDataResponse{}, err
 			}
-			nameFields(queryRes, target)
+			nameFrames(queryRes, target)
 			trimDatapoints(queryRes, target)
 
 			result.Responses[target.RefID] = queryRes
@@ -132,7 +138,7 @@ func processLogsResponse(res *es.SearchResponse, target *Query, configuredFields
 	return nil
 }
 
-func processDocumentResponse(res *es.SearchResponse, target *Query, configuredFields es.ConfiguredFields, queryRes *backend.DataResponse) error {
+func processRawDataResponse(res *es.SearchResponse, target *Query, configuredFields es.ConfiguredFields, queryRes *backend.DataResponse) error {
 	propNames := make(map[string]bool)
 	docs := make([]map[string]interface{}, len(res.Hits.Hits))
 
@@ -148,7 +154,6 @@ func processDocumentResponse(res *es.SearchResponse, target *Query, configuredFi
 			"_index":    hit["_index"],
 			"sort":      hit["sort"],
 			"highlight": hit["highlight"],
-			"_source":   flattened,
 		}
 
 		for k, v := range flattened {
@@ -167,6 +172,62 @@ func processDocumentResponse(res *es.SearchResponse, target *Query, configuredFi
 
 	frames := data.Frames{}
 	frame := data.NewFrame("", fields...)
+	frames = append(frames, frame)
+
+	queryRes.Frames = frames
+	return nil
+}
+
+func processRawDocumentResponse(res *es.SearchResponse, target *Query, queryRes *backend.DataResponse) error {
+	docs := make([]map[string]interface{}, len(res.Hits.Hits))
+	for hitIdx, hit := range res.Hits.Hits {
+		doc := map[string]interface{}{
+			"_id":       hit["_id"],
+			"_type":     hit["_type"],
+			"_index":    hit["_index"],
+			"sort":      hit["sort"],
+			"highlight": hit["highlight"],
+		}
+
+		if hit["_source"] != nil {
+			source, ok := hit["_source"].(map[string]interface{})
+			if ok {
+				for k, v := range source {
+					doc[k] = v
+				}
+			}
+		}
+
+		if hit["fields"] != nil {
+			source, ok := hit["fields"].(map[string]interface{})
+			if ok {
+				for k, v := range source {
+					doc[k] = v
+				}
+			}
+		}
+
+		docs[hitIdx] = doc
+	}
+
+	fieldVector := make([]*json.RawMessage, len(res.Hits.Hits))
+	for i, doc := range docs {
+		bytes, err := json.Marshal(doc)
+		if err != nil {
+			// We skip docs that can't be marshalled
+			// should not happen
+			continue
+		}
+		value := json.RawMessage(bytes)
+		fieldVector[i] = &value
+	}
+
+	isFilterable := true
+	field := data.NewField(target.RefID, nil, fieldVector)
+	field.Config = &data.FieldConfig{Filterable: &isFilterable}
+
+	frames := data.Frames{}
+	frame := data.NewFrame(target.RefID, field)
 	frames = append(frames, frame)
 
 	queryRes.Frames = frames
@@ -320,8 +381,8 @@ func processBuckets(aggs map[string]interface{}, target *Query,
 
 func newTimeSeriesFrame(timeData []time.Time, tags map[string]string, values []*float64) *data.Frame {
 	frame := data.NewFrame("",
-		data.NewField("time", nil, timeData),
-		data.NewField("value", tags, values))
+		data.NewField(data.TimeSeriesTimeFieldName, nil, timeData),
+		data.NewField(data.TimeSeriesValueFieldName, tags, values))
 	frame.Meta = &data.FrameMeta{
 		Type: data.FrameTypeTimeSeriesMulti,
 	}
@@ -716,7 +777,7 @@ func getSortedLabelValues(labels data.Labels) []string {
 	return values
 }
 
-func nameFields(queryResult backend.DataResponse, target *Query) {
+func nameFrames(queryResult backend.DataResponse, target *Query) {
 	set := make(map[string]struct{})
 	frames := queryResult.Frames
 	for _, v := range frames {
@@ -735,9 +796,7 @@ func nameFields(queryResult backend.DataResponse, target *Query) {
 			// another is "number"
 			valueField := frame.Fields[1]
 			fieldName := getFieldName(*valueField, target, metricTypeCount)
-			if fieldName != "" {
-				valueField.SetConfig(&data.FieldConfig{DisplayNameFromDS: fieldName})
-			}
+			frame.Name = fieldName
 		}
 	}
 }
