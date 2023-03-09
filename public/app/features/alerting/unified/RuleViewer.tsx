@@ -1,10 +1,10 @@
 import { css } from '@emotion/css';
 import produce from 'immer';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useObservable, useToggle } from 'react-use';
 
-import { GrafanaTheme2, LoadingState, PanelData, RelativeTimeRange } from '@grafana/data';
-import { config } from '@grafana/runtime';
+import { dateTime, GrafanaTheme2, LoadingState, PanelData, RelativeTimeRange, dataFrameFromJSON } from '@grafana/data';
+import { config, PanelRenderer } from '@grafana/runtime';
 import {
   Alert,
   Button,
@@ -12,6 +12,7 @@ import {
   Icon,
   IconButton,
   LoadingPlaceholder,
+  Spinner,
   useStyles2,
   VerticalGroup,
   withErrorBoundary,
@@ -22,10 +23,11 @@ import { DEFAULT_PER_PAGE_PAGINATION } from '../../../core/constants';
 import { AlertQuery, GrafanaRuleDefinition } from '../../../types/unified-alerting-dto';
 
 import { GrafanaRuleQueryViewer, QueryPreview } from './GrafanaRuleQueryViewer';
+import { stateHistoryApi } from './api/historyApi';
 import { AlertLabels } from './components/AlertLabels';
 import { DetailsField } from './components/DetailsField';
 import { ProvisionedResource, ProvisioningAlert } from './components/Provisioning';
-import { RuleViewerLayout, RuleViewerLayoutContent } from './components/rule-viewer/RuleViewerLayout';
+import { RuleViewerLayout } from './components/rule-viewer/RuleViewerLayout';
 import { RuleDetailsActionButtons } from './components/rules/RuleDetailsActionButtons';
 import { RuleDetailsAnnotations } from './components/rules/RuleDetailsAnnotations';
 import { RuleDetailsDataSources } from './components/rules/RuleDetailsDataSources';
@@ -47,7 +49,6 @@ type RuleViewerProps = GrafanaRouteComponentProps<{ id?: string; sourceName?: st
 
 const errorMessage = 'Could not find data source for rule';
 const errorTitle = 'Could not view rule';
-const pageTitle = 'View rule';
 
 export function RuleViewer({ match }: RuleViewerProps) {
   const styles = useStyles2(getStyles);
@@ -108,7 +109,7 @@ export function RuleViewer({ match }: RuleViewerProps) {
 
   if (!identifier?.ruleSourceName) {
     return (
-      <RuleViewerLayout title={pageTitle}>
+      <RuleViewerLayout title={'Oops, something went wrong.'}>
         <Alert title={errorTitle}>
           <details className={styles.errorMessage}>{errorMessage}</details>
         </Alert>
@@ -120,7 +121,7 @@ export function RuleViewer({ match }: RuleViewerProps) {
 
   if (loading) {
     return (
-      <RuleViewerLayout title={pageTitle}>
+      <RuleViewerLayout>
         <LoadingPlaceholder text="Loading rule..." />
       </RuleViewerLayout>
     );
@@ -128,7 +129,7 @@ export function RuleViewer({ match }: RuleViewerProps) {
 
   if (error || !rulesSource) {
     return (
-      <RuleViewerLayout title={pageTitle}>
+      <RuleViewerLayout title={'Oops, something went wrong'}>
         <Alert title={errorTitle}>
           <details className={styles.errorMessage}>
             {error?.message ?? errorMessage}
@@ -142,7 +143,7 @@ export function RuleViewer({ match }: RuleViewerProps) {
 
   if (!rule) {
     return (
-      <RuleViewerLayout title={pageTitle}>
+      <RuleViewerLayout title={'Oops, something went wrong'}>
         <span>Rule could not be found.</span>
       </RuleViewerLayout>
     );
@@ -152,7 +153,7 @@ export function RuleViewer({ match }: RuleViewerProps) {
   const isProvisioned = isGrafanaRulerRule(rule.rulerRule) && Boolean(rule.rulerRule.grafana_alert.provenance);
 
   return (
-    <RuleViewerLayout wrapInContent={false} title={pageTitle}>
+    <RuleViewerLayout>
       {isFederatedRule && (
         <Alert severity="info" title="This rule is part of a federated rule group.">
           <VerticalGroup>
@@ -166,42 +167,41 @@ export function RuleViewer({ match }: RuleViewerProps) {
         </Alert>
       )}
       {isProvisioned && <ProvisioningAlert resource={ProvisionedResource.AlertRule} />}
-      <RuleViewerLayoutContent>
-        <div>
-          <h4>
-            <Icon name="bell" size="lg" /> {rule.name}
-          </h4>
-          <RuleState rule={rule} isCreating={false} isDeleting={false} />
-          <RuleDetailsActionButtons rule={rule} rulesSource={rulesSource} isViewMode={true} />
-        </div>
-        <div className={styles.details}>
-          <div className={styles.leftSide}>
-            {rule.promRule && (
-              <DetailsField label="Health" horizontal={true}>
-                <RuleHealth rule={rule.promRule} />
-              </DetailsField>
-            )}
-            {!!rule.labels && !!Object.keys(rule.labels).length && (
-              <DetailsField label="Labels" horizontal={true}>
-                <AlertLabels labels={rule.labels} className={styles.labels} />
-              </DetailsField>
-            )}
-            <RuleDetailsExpression rulesSource={rulesSource} rule={rule} annotations={annotations} />
-            <RuleDetailsAnnotations annotations={annotations} />
-          </div>
-          <div className={styles.rightSide}>
-            <RuleDetailsDataSources rule={rule} rulesSource={rulesSource} />
-            {isFederatedRule && <RuleDetailsFederatedSources group={rule.group} />}
-            <DetailsField label="Namespace / Group" className={styles.rightSideDetails}>
-              {rule.namespace.name} / {rule.group.name}
+
+      <div>
+        <h4>
+          <Icon name="bell" size="lg" /> {rule.name}
+        </h4>
+        <RuleState rule={rule} isCreating={false} isDeleting={false} />
+        <RuleDetailsActionButtons rule={rule} rulesSource={rulesSource} isViewMode={true} />
+      </div>
+      <div className={styles.details}>
+        <div className={styles.leftSide}>
+          {rule.promRule && (
+            <DetailsField label="Health" horizontal={true}>
+              <RuleHealth rule={rule.promRule} />
             </DetailsField>
-            {isGrafanaRulerRule(rule.rulerRule) && <GrafanaRuleUID rule={rule.rulerRule.grafana_alert} />}
-          </div>
+          )}
+          {!!rule.labels && !!Object.keys(rule.labels).length && (
+            <DetailsField label="Labels" horizontal={true}>
+              <AlertLabels labels={rule.labels} className={styles.labels} />
+            </DetailsField>
+          )}
+          <RuleDetailsExpression rulesSource={rulesSource} rule={rule} annotations={annotations} />
+          <RuleDetailsAnnotations annotations={annotations} />
         </div>
-        <div>
-          <RuleDetailsMatchingInstances rule={rule} pagination={{ itemsPerPage: DEFAULT_PER_PAGE_PAGINATION }} />
+        <div className={styles.rightSide}>
+          <RuleDetailsDataSources rule={rule} rulesSource={rulesSource} />
+          {isFederatedRule && <RuleDetailsFederatedSources group={rule.group} />}
+          <DetailsField label="Namespace / Group" className={styles.rightSideDetails}>
+            {rule.namespace.name} / {rule.group.name}
+          </DetailsField>
+          {isGrafanaRulerRule(rule.rulerRule) && <GrafanaRuleUID rule={rule.rulerRule.grafana_alert} />}
         </div>
-      </RuleViewerLayoutContent>
+      </div>
+      <div>
+        <RuleDetailsMatchingInstances rule={rule} pagination={{ itemsPerPage: DEFAULT_PER_PAGE_PAGINATION }} />
+      </div>
       <Collapse
         label="Query & Results"
         isOpen={expandQuery}
@@ -245,9 +245,52 @@ export function RuleViewer({ match }: RuleViewerProps) {
           </Alert>
         )}
       </Collapse>
+      {id ? <AlertStateHistory uid={id} /> : <></>}
     </RuleViewerLayout>
   );
 }
+
+type AlertStateHistoryProps = {
+  uid: string;
+};
+
+const AlertStateHistory: FC<AlertStateHistoryProps> = ({ uid }) => {
+  const fetchAlertStateHistory = stateHistoryApi.useGetHistoryQuery({ ruleUID: uid });
+
+  return (
+    <>
+      {fetchAlertStateHistory.isLoading && (
+        <>
+          <Spinner /> Loading history
+        </>
+      )}
+      {fetchAlertStateHistory.isError && (
+        <Alert title={'Failed to fetch alert state history'}>{fetchAlertStateHistory.error}</Alert>
+      )}
+      {fetchAlertStateHistory.isSuccess && (
+        <PanelRenderer
+          height={500}
+          width={800}
+          data={{
+            state: LoadingState.Done,
+            series: [dataFrameFromJSON(fetchAlertStateHistory.data)],
+            timeRange: {
+              from: dateTime(),
+              to: dateTime().subtract('10m'),
+              raw: {
+                from: dateTime(),
+                to: dateTime().subtract('10m')
+              }
+            }
+          }}
+          pluginId="state-timeline"
+          title="State History"
+          onOptionsChange={() => {}}
+        />
+      )}
+    </>
+  );
+};
 
 function GrafanaRuleUID({ rule }: { rule: GrafanaRuleDefinition }) {
   const styles = useStyles2(getStyles);
