@@ -22,13 +22,22 @@ export interface StyleRuleEditorSettings {
   layerInfo: Observable<LayerContentInfo>;
 }
 
-const comparators = [
+export const comparisonOptionsShort = [
   { label: '==', value: ComparisonOperation.EQ },
   { label: '!=', value: ComparisonOperation.NEQ },
   { label: '>', value: ComparisonOperation.GT },
   { label: '>=', value: ComparisonOperation.GTE },
   { label: '<', value: ComparisonOperation.LT },
   { label: '<=', value: ComparisonOperation.LTE },
+];
+
+export const comparisonOptionsLong = [
+  { label: 'Equals (==)', value: ComparisonOperation.EQ },
+  { label: 'Not equals (!=)', value: ComparisonOperation.NEQ },
+  { label: 'Greater than (>)', value: ComparisonOperation.GT },
+  { label: 'Greater than or equal (>=)', value: ComparisonOperation.GTE },
+  { label: 'Less than (<)', value: ComparisonOperation.LT },
+  { label: 'Less than or equal (<=)', value: ComparisonOperation.LTE },
 ];
 
 type Props = StandardEditorProps<FeatureStyleConfig, any, unknown, StyleRuleEditorSettings>;
@@ -149,8 +158,8 @@ export const StyleRuleEditor = ({ value, onChange, item, context }: Props) => {
         </InlineField>
         <InlineField className={styles.inline}>
           <Select
-            value={comparators.find((v) => v.value === check.operation)}
-            options={comparators}
+            value={comparisonOptionsShort.find((v) => v.value === check.operation)}
+            options={comparisonOptionsShort}
             onChange={onChangeComparison}
             aria-label={'Comparison operator'}
             width={8}

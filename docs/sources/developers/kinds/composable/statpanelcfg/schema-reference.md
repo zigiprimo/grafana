@@ -16,30 +16,29 @@ title: StatPanelCfg kind
 | Property             | Type                          | Required | Description                                    |
 |----------------------|-------------------------------|----------|------------------------------------------------|
 | `ConditionTestMode`  | string                        | **Yes**  | Possible values are: `value`, `field`, `true`. |
-| `ConditionTest`      | [object](#conditiontest)      | **Yes**  | Test the                                       |
+| `ConditionTest`      | [object](#conditiontest)      | **Yes**  | Check if the condition should be used          |
 | `ConditionalDisplay` | [object](#conditionaldisplay) | **Yes**  |                                                |
 | `CustomDisplayValue` | [object](#customdisplayvalue) | **Yes**  | Optionally the calculated DisplayValue         |
-| `PanelFieldConfig`   | [object](#panelfieldconfig)   | **Yes**  |                                                |
 | `PanelOptions`       | [object](#paneloptions)       | **Yes**  |                                                |
 
 ### ConditionTest
 
-Test the
+Check if the condition should be used
 
 | Property  | Type   | Required | Description                                                 |
 |-----------|--------|----------|-------------------------------------------------------------|
 | `mode`    | string | **Yes**  | Possible values are: `value`, `field`, `true`.              |
 | `op`      | string | **Yes**  | Possible values are: `eq`, `neq`, `lt`, `lte`, `gt`, `gte`. |
-| `value`   |        | **Yes**  | Default: `0`.                                               |
 | `field`   | string | No       |                                                             |
 | `reducer` | string | No       |                                                             |
+| `value`   |        | No       |                                                             |
 
 ### ConditionalDisplay
 
 | Property  | Type                                      | Required | Description                            |
 |-----------|-------------------------------------------|----------|----------------------------------------|
 | `display` | [CustomDisplayValue](#customdisplayvalue) | **Yes**  | Optionally the calculated DisplayValue |
-| `test`    | [ConditionTest](#conditiontest)           | **Yes**  | Test the                               |
+| `test`    | [ConditionTest](#conditiontest)           | **Yes**  | Check if the condition should be used  |
 
 ### CustomDisplayValue
 
@@ -52,25 +51,20 @@ Optionally the calculated DisplayValue
 | `suffix` | string | No       |             |
 | `text`   | string | No       |             |
 
-### PanelFieldConfig
-
-| Property     | Type                                        | Required | Description                                                     |
-|--------------|---------------------------------------------|----------|-----------------------------------------------------------------|
-| `conditions` | [ConditionalDisplay](#conditionaldisplay)[] | No       | The first matching test will be used to override display values |
-
 ### PanelOptions
 
 It extends [SingleStatBaseOptions](#singlestatbaseoptions).
 
-| Property        | Type                                            | Required | Description                                                                                                                                 |
-|-----------------|-------------------------------------------------|----------|---------------------------------------------------------------------------------------------------------------------------------------------|
-| `colorMode`     | string                                          | **Yes**  | TODO docs<br/>Possible values are: `value`, `background`, `none`.                                                                           |
-| `graphMode`     | string                                          | **Yes**  | TODO docs<br/>Possible values are: `none`, `line`, `area`.                                                                                  |
-| `justifyMode`   | string                                          | **Yes**  | TODO docs<br/>Possible values are: `auto`, `center`.                                                                                        |
-| `textMode`      | string                                          | **Yes**  | TODO docs<br/>Possible values are: `auto`, `value`, `value_and_name`, `name`, `none`.                                                       |
-| `orientation`   | string                                          | No       | *(Inherited from [SingleStatBaseOptions](#singlestatbaseoptions))*<br/>TODO docs<br/>Possible values are: `auto`, `vertical`, `horizontal`. |
-| `reduceOptions` | [ReduceDataOptions](#reducedataoptions)         | No       | *(Inherited from [SingleStatBaseOptions](#singlestatbaseoptions))*<br/>TODO docs                                                            |
-| `text`          | [VizTextDisplayOptions](#viztextdisplayoptions) | No       | *(Inherited from [SingleStatBaseOptions](#singlestatbaseoptions))*<br/>TODO docs                                                            |
+| Property        | Type                                            | Required | Description                                                                                                                                                                                                                                                                                                        |
+|-----------------|-------------------------------------------------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `colorMode`     | string                                          | **Yes**  | TODO docs<br/>Possible values are: `value`, `background`, `none`.                                                                                                                                                                                                                                                  |
+| `graphMode`     | string                                          | **Yes**  | TODO docs<br/>Possible values are: `none`, `line`, `area`.                                                                                                                                                                                                                                                         |
+| `justifyMode`   | string                                          | **Yes**  | TODO docs<br/>Possible values are: `auto`, `center`.                                                                                                                                                                                                                                                               |
+| `textMode`      | string                                          | **Yes**  | TODO docs<br/>Possible values are: `auto`, `value`, `value_and_name`, `name`, `none`.                                                                                                                                                                                                                              |
+| `conditions`    | [ConditionalDisplay](#conditionaldisplay)[]     | No       | The first matching test will be used to override display values<br/>TORN if this should be panel or field config... field config conceptually better, but:<br/>an panel config we get:<br/>- more efficient setup/execution with multiple fields<br/>- nested options are suported for panels (not yet for fields) |
+| `orientation`   | string                                          | No       | *(Inherited from [SingleStatBaseOptions](#singlestatbaseoptions))*<br/>TODO docs<br/>Possible values are: `auto`, `vertical`, `horizontal`.                                                                                                                                                                        |
+| `reduceOptions` | [ReduceDataOptions](#reducedataoptions)         | No       | *(Inherited from [SingleStatBaseOptions](#singlestatbaseoptions))*<br/>TODO docs                                                                                                                                                                                                                                   |
+| `text`          | [VizTextDisplayOptions](#viztextdisplayoptions) | No       | *(Inherited from [SingleStatBaseOptions](#singlestatbaseoptions))*<br/>TODO docs                                                                                                                                                                                                                                   |
 
 ### ReduceDataOptions
 

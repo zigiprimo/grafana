@@ -19,17 +19,6 @@ describe('conditional formatting functions', () => {
       title: 'A-series',
     },
   };
-  it('passes the untouched values when no tests exist', () => {
-    const input = {
-      name: 'testField',
-      field: {},
-      source: { type: FieldType.boolean, name: 'test13', config: {}, values: emptyArryVector },
-      ...mockSharedFieldValueProps,
-    };
-
-    const processed = processConditionalDisplayValues(input, [], replaceFunction);
-    expect(processed).toEqual(input);
-  });
 
   it('sucessfully apply the prefix, and leave the suffix unchanged', () => {
     const condition: ConditionalDisplay = {
@@ -50,17 +39,13 @@ describe('conditional formatting functions', () => {
       source: {
         type: FieldType.boolean,
         name: 'test13',
-        config: {
-          custom: {
-            conditions: [condition],
-          },
-        },
+        config: {},
         values: emptyArryVector,
       },
       ...mockSharedFieldValueProps,
     };
 
-    const processed = processConditionalDisplayValues(input, [], replaceFunction);
+    const processed = processConditionalDisplayValues([condition], [input], [], replaceFunction)[0];
     expect(processed.display.prefix).toBe('PREFIX');
     expect(processed.display.text).toBe('TEXT');
     expect(processed.display.suffix).toBe(input.display.suffix);

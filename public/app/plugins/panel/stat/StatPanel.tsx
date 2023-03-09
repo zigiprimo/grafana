@@ -105,7 +105,7 @@ export class StatPanel extends PureComponent<PanelProps<PanelOptions>> {
       }
     }
 
-    return getFieldDisplayValues({
+    const display = getFieldDisplayValues({
       fieldConfig,
       reduceOptions: options.reduceOptions,
       replaceVariables,
@@ -113,7 +113,17 @@ export class StatPanel extends PureComponent<PanelProps<PanelOptions>> {
       data: data.series,
       sparkline: options.graphMode !== BigValueGraphMode.None,
       timeZone,
-    }).map((v) => processConditionalDisplayValues(v, data.series, this.props.replaceVariables));
+    });
+    if (options.conditions?.[0].test?.mode) {
+      return processConditionalDisplayValues(
+        options.conditions,
+        display,
+        data.series,
+        this.props.replaceVariables,
+        config.theme2
+      );
+    }
+    return display;
   };
 
   render() {

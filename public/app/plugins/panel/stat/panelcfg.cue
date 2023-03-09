@@ -32,10 +32,12 @@ composableKinds: PanelCfg: {
 							colorMode:   common.BigValueColorMode | *"value"
 							justifyMode: common.BigValueJustifyMode | *"auto"
 							textMode:    common.BigValueTextMode | *"auto"
-						} @cuetsy(kind="interface")
 
-						PanelFieldConfig: {
 							// The first matching test will be used to override display values 
+							// TORN if this should be panel or field config... field config conceptually better, but:
+							// an panel config we get:
+							// - more efficient setup/execution with multiple fields
+							// - nested options are suported for panels (not yet for fields)
 							conditions?: [...ConditionalDisplay]
 						} @cuetsy(kind="interface")
 
@@ -46,7 +48,7 @@ composableKinds: PanelCfg: {
 
 						ConditionTestMode: "value" | "field" | "true" @cuetsy(kind="enum")
 
-						// Test the 
+						// Check if the condition should be used
 						ConditionTest: {
 							mode:     ConditionTestMode | *"value"
 							field?:   string // only used when mode == field
@@ -68,18 +70,3 @@ composableKinds: PanelCfg: {
 		]
 	}
 }
-
-// [{
-//     condition: {
-//         field?: XXX;
-//         reducer?: string; // TrendUP | TrendDown
-//         op: {EQ/GT/LT}
-//         value?: number;
-//     },
-//     display: {
-//         text?: string;
-//         prefix?: string;
-//         suffix?: string;
-//         color?: string;
-//     }
-// }]

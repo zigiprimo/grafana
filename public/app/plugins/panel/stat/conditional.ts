@@ -2,23 +2,21 @@
 
 import {
   FieldDisplay,
-  FieldConfigEditorBuilder,
   DataFrame,
   InterpolateFunction,
   ReducerID,
   reduceField,
+  PanelOptionsEditorBuilder,
+  StandardEditorContext,
+  GrafanaTheme2,
 } from '@grafana/data';
+import { ComparisonOperation } from '@grafana/schema';
 import { findFieldFrom } from 'app/features/dimensions';
 
+import { comparisonOptionsLong } from '../geomap/editor/StyleRuleEditor';
 import { compareValues } from '../geomap/utils/checkFeatureMatchesStyleRule';
 
-import {
-  ConditionalDisplay,
-  ConditionTest,
-  ConditionTestMode,
-  CustomDisplayValue,
-  PanelFieldConfig,
-} from './panelcfg.gen';
+import { ConditionalDisplay, ConditionTest, ConditionTestMode, CustomDisplayValue, PanelOptions } from './panelcfg.gen';
 
 // export function formatDisplayValuesWithCustomUnits(
 //   fieldValues: FieldDisplay[],
@@ -54,44 +52,133 @@ import {
 //   });
 // }
 
-export function addConditionalDisplayOptions(builder: FieldConfigEditorBuilder<PanelFieldConfig>) {
-  const category = ['Custom units'];
-  return builder
-    .addTextInput({
-      path: 'prefix',
-      name: 'Prefix',
-      defaultValue: '',
-      settings: {
-        placeholder: 'Enter custom prefix',
+export function addConditionalDisplayOptions(
+  builder: PanelOptionsEditorBuilder<PanelOptions>,
+  context: StandardEditorContext<PanelOptions>
+) {
+  const rootCategory = ['Conditional display'];
+  const displayCategory = ['Display'];
+  const testCategory = ['Test'];
+
+  for (let i = 0; i < 1; i++) {
+    const header = ['Condition: ' + (i + 1)];
+    builder.addNestedOptions({
+      category: rootCategory,
+      path: `conditions[${i}]`,
+      build: (wrap, c) => {
+        wrap.addNestedOptions<ConditionTest>({
+          category: header,
+          path: `test`,
+          build: (b, c) => {
+            b.addRadio({
+              path: 'mode',
+              name: 'Mode',
+              defaultValue: ConditionTestMode.Value,
+              settings: {
+                options: [
+                  { value: ConditionTestMode.Value, label: 'Value', description: 'The calculated value' },
+                  { value: ConditionTestMode.Field, label: 'Field', description: 'An explicit field' },
+                  { value: ConditionTestMode.True, label: 'True', description: 'Always true' },
+                ],
+              },
+              category: testCategory,
+            });
+            b.addFieldNamePicker({
+              path: 'field',
+              name: 'Field',
+              settings: {
+                placeholderText: 'Current field',
+                isClearable: true,
+              },
+              showIf: (v) => v?.mode === ConditionTestMode.Field,
+              category: testCategory,
+            });
+            b.addSelect({
+              path: 'op',
+              name: 'Operation',
+              defaultValue: ComparisonOperation.GTE,
+              settings: {
+                options: comparisonOptionsLong,
+              },
+              showIf: (v) => v?.mode !== ConditionTestMode.True,
+              category: testCategory,
+            });
+            b.addNumberInput({
+              path: 'value',
+              name: 'Value',
+              defaultValue: undefined,
+              settings: {
+                placeholder: 'Compare to',
+              },
+              showIf: (v) => v?.mode !== ConditionTestMode.True,
+              category: testCategory,
+            });
+          },
+        });
+        wrap.addNestedOptions<CustomDisplayValue>({
+          category: header,
+          path: `display`,
+          build: (b, c) => {
+            b.addTextInput({
+              path: 'text',
+              name: 'Text',
+              defaultValue: '',
+              settings: {
+                placeholder: 'Optional custom text',
+              },
+              category: displayCategory,
+            });
+            b.addTextInput({
+              path: 'prefix',
+              name: 'Prefix',
+              defaultValue: '',
+              settings: {
+                placeholder: 'Optional custom prefix',
+              },
+              category: displayCategory,
+            });
+            b.addTextInput({
+              path: 'suffix',
+              name: 'Suffix',
+              defaultValue: '',
+              settings: {
+                placeholder: 'Optional custom suffix',
+              },
+              category: displayCategory,
+            });
+            b.addColorPicker({
+              path: 'color',
+              name: 'Color',
+              defaultValue: undefined,
+              settings: {
+                isClearable: true,
+                placeholder: 'Optional custom color',
+              },
+              category: displayCategory,
+            });
+          },
+        });
       },
-      category,
-    })
-    .addTextInput({
-      path: 'suffix',
-      name: 'Suffix',
-      defaultValue: '',
-      settings: {
-        placeholder: 'Enter custom suffix',
-      },
-      category,
     });
+  }
 }
 
 export function processConditionalDisplayValues(
-  disp: FieldDisplay,
+  conditions: ConditionalDisplay[],
+  values: FieldDisplay[],
   data: DataFrame[],
-  replace: InterpolateFunction
-): FieldDisplay {
-  const conditions = disp.source?.config?.custom?.conditions as ConditionalDisplay[];
-  if (conditions?.[0].test?.mode) {
-    // has a valid first value set
+  replace: InterpolateFunction,
+  theme: GrafanaTheme2
+): FieldDisplay[] {
+  // future: this can be optimized so we only find fields once
+  return values.map((disp) => {
     for (const c of conditions) {
-      if (checkConditionTest(c.test, disp, data)) {
-        return applyFormatting(c.display, disp, replace);
+      if (checkConditionTest(c.test, disp, data) && c.display) {
+        return applyFormatting(c.display, disp, replace, theme);
       }
     }
-  }
-  return disp;
+    return disp;
+  });
 }
 
 function checkConditionTest(test: ConditionTest, disp: FieldDisplay, data: DataFrame[]): boolean {
@@ -113,7 +200,12 @@ function checkConditionTest(test: ConditionTest, disp: FieldDisplay, data: DataF
   return compareValues(left, test.op, test.value);
 }
 
-function applyFormatting(apply: CustomDisplayValue, field: FieldDisplay, replace: InterpolateFunction): FieldDisplay {
+function applyFormatting(
+  apply: CustomDisplayValue,
+  field: FieldDisplay,
+  replace: InterpolateFunction,
+  theme: GrafanaTheme2
+): FieldDisplay {
   const display = { ...field.display };
   if (apply.prefix) {
     display.prefix = replace(apply.prefix); // include original in scoped vars?
@@ -125,7 +217,7 @@ function applyFormatting(apply: CustomDisplayValue, field: FieldDisplay, replace
     display.text = replace(apply.text);
   }
   if (apply.color) {
-    display.color = apply.color; // convert it?
+    display.color = theme.visualization.getColorByName(apply.color);
   }
   return { ...field, display }; // copy with new display
 }

@@ -10,15 +10,13 @@ import { defaultPanelOptions, PanelOptions } from './panelcfg.gen';
 import { StatSuggestionsSupplier } from './suggestions';
 
 export const plugin = new PanelPlugin<PanelOptions>(StatPanel)
-  .useFieldConfig({
-    // Add a custom text fields for custom stat units
-    useCustomConfig: (builder) => addConditionalDisplayOptions(builder),
-  })
-  .setPanelOptions((builder) => {
+  .useFieldConfig()
+  .setPanelOptions((builder, context) => {
     const mainCategory = ['Stat styles'];
 
     addStandardDataReduceOptions(builder);
     addOrientationOption(builder, mainCategory);
+    addConditionalDisplayOptions(builder, context);
     commonOptionsBuilder.addTextSizeOptions(builder);
 
     builder.addSelect({

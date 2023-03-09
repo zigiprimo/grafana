@@ -14,6 +14,14 @@ export const PanelCfgModelVersion = Object.freeze([0, 0]);
 
 export interface PanelOptions extends common.SingleStatBaseOptions {
   colorMode: common.BigValueColorMode;
+  /**
+   * The first matching test will be used to override display values
+   * TORN if this should be panel or field config... field config conceptually better, but:
+   * an panel config we get:
+   * - more efficient setup/execution with multiple fields
+   * - nested options are suported for panels (not yet for fields)
+   */
+  conditions?: Array<ConditionalDisplay>;
   graphMode: common.BigValueGraphMode;
   justifyMode: common.BigValueJustifyMode;
   textMode: common.BigValueTextMode;
@@ -21,20 +29,10 @@ export interface PanelOptions extends common.SingleStatBaseOptions {
 
 export const defaultPanelOptions: Partial<PanelOptions> = {
   colorMode: common.BigValueColorMode.Value,
+  conditions: [],
   graphMode: common.BigValueGraphMode.Area,
   justifyMode: common.BigValueJustifyMode.Auto,
   textMode: common.BigValueTextMode.Auto,
-};
-
-export interface PanelFieldConfig {
-  /**
-   * The first matching test will be used to override display values
-   */
-  conditions?: Array<ConditionalDisplay>;
-}
-
-export const defaultPanelFieldConfig: Partial<PanelFieldConfig> = {
-  conditions: [],
 };
 
 export interface ConditionalDisplay {
@@ -49,7 +47,7 @@ export enum ConditionTestMode {
 }
 
 /**
- * Test the
+ * Check if the condition should be used
  */
 export interface ConditionTest {
   field?: string;
