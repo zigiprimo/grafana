@@ -7,6 +7,8 @@ import (
 	"github.com/google/wire"
 	sdkhttpclient "github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 
+	"github.com/grafana/grafana/pkg/services/password/passwordimpl"
+
 	"github.com/grafana/grafana/pkg/api"
 	"github.com/grafana/grafana/pkg/api/avatar"
 	"github.com/grafana/grafana/pkg/api/routing"
@@ -362,6 +364,7 @@ var wireBasicSet = wire.NewSet(
 	authnimpl.ProvideService,
 	wire.Bind(new(authn.Service), new(*authnimpl.Service)),
 	supportbundlesimpl.ProvideService,
+	passwordimpl.ProvideService,
 	modules.WireSet,
 )
 
