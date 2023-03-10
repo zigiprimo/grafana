@@ -17,8 +17,8 @@ describe('OrganizeFields Transformer', () => {
       name: 'A',
       fields: [
         { name: 'time', type: FieldType.time, values: [3000, 4000, 5000, 6000] },
-        { name: 'temperature', type: FieldType.number, values: [10.3, 10.4, 10.5, 10.6] },
         { name: 'humidity', type: FieldType.number, values: [10000.3, 10000.4, 10000.5, 10000.6] },
+        { name: 'temperature', type: FieldType.number, values: [10.3, 10.4, 10.5, 10.6] },
       ],
     });
 
