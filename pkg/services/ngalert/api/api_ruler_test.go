@@ -56,20 +56,6 @@ func TestRouteDeleteAlertRules(t *testing.T) {
 		for _, rule := range expectedRules {
 			require.Containsf(t, actualUIDs, rule.UID, "Rule %s was expected to be deleted but it wasn't", rule.UID)
 		}
-
-		notDeletedRules := make(map[models.AlertRuleKey]struct{}, len(expectedRules))
-		for _, rule := range expectedRules {
-			notDeletedRules[rule.GetKey()] = struct{}{}
-		}
-		for _, call := range scheduler.Calls {
-			require.Equal(t, "DeleteAlertRule", call.Method)
-			keys, ok := call.Arguments.Get(0).([]models.AlertRuleKey)
-			require.Truef(t, ok, "Expected AlertRuleKey but got something else")
-			for _, key := range keys {
-				delete(notDeletedRules, key)
-			}
-		}
-		require.Emptyf(t, notDeletedRules, "Not all rules were deleted")
 	}
 
 	orgID := rand.Int63()

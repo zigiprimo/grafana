@@ -205,7 +205,7 @@ func (srv PrometheusSrv) toRuleGroup(groupName string, folder *folder.Folder, ru
 			LastEvaluation: time.Time{},
 		}
 
-		for _, alertState := range srv.manager.GetStatesForRuleUID(rule.OrgID, rule.UID) {
+		for _, alertState := range srv.manager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version) {
 			activeAt := alertState.StartsAt
 			valString := ""
 			if alertState.State == eval.Alerting || alertState.State == eval.Pending {

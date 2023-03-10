@@ -2202,7 +2202,7 @@ func TestProcessEvalResults(t *testing.T) {
 				})
 			}
 
-			states := st.GetStatesForRuleUID(tc.alertRule.OrgID, tc.alertRule.UID)
+			states := st.GetStatesForRuleUID(tc.alertRule.OrgID, tc.alertRule.UID, tc.alertRule.Version)
 			assert.Len(t, states, len(tc.expectedStates))
 
 			for _, s := range tc.expectedStates {
@@ -2350,7 +2350,7 @@ func TestStaleResultsHandler(t *testing.T) {
 		ctx := context.Background()
 		st := state.NewManager(testMetrics.GetStateMetrics(), nil, dbstore, &state.NoopImageService{}, clock.New(), &state.FakeHistorian{})
 		st.Warm(ctx, dbstore)
-		existingStatesForRule := st.GetStatesForRuleUID(rule.OrgID, rule.UID)
+		existingStatesForRule := st.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)
 
 		// We have loaded the expected number of entries from the db
 		assert.Equal(t, tc.startingStateCount, len(existingStatesForRule))
@@ -2371,7 +2371,7 @@ func TestStaleResultsHandler(t *testing.T) {
 				assert.Equal(t, s, cachedState)
 			}
 		}
-		existingStatesForRule = st.GetStatesForRuleUID(rule.OrgID, rule.UID)
+		existingStatesForRule = st.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)
 
 		// The expected number of state entries remains after results are processed
 		assert.Equal(t, tc.finalStateCount, len(existingStatesForRule))
@@ -2442,7 +2442,7 @@ func TestStaleResults(t *testing.T) {
 		// Init
 		processed := st.ProcessEvalResults(ctx, clk.Now(), rule, initResults, nil)
 		checkExpectedStates(t, processed, initStates)
-		currentStates := st.GetStatesForRuleUID(orgID, rule.UID)
+		currentStates := st.GetStatesForRuleUID(orgID, rule.UID, rule.Version)
 		checkExpectedStates(t, currentStates, initStates)
 
 		staleDuration := 2 * time.Duration(rule.IntervalSeconds) * time.Second
@@ -2469,7 +2469,7 @@ func TestStaleResults(t *testing.T) {
 				break
 			}
 		}
-		currentStates = st.GetStatesForRuleUID(orgID, rule.UID)
+		currentStates = st.GetStatesForRuleUID(orgID, rule.UID, rule.Version)
 		checkExpectedStates(t, currentStates, map[string]struct{}{
 			getCacheID(t, rule, results[0]): {},
 		})

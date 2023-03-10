@@ -109,7 +109,7 @@ func TestRouteGetAlertStatuses(t *testing.T) {
 
 	t.Run("with two alerts", func(t *testing.T) {
 		_, fakeAIM, _, api := setupAPI(t)
-		fakeAIM.GenerateAlertInstances(1, util.GenerateShortUID(), 2)
+		fakeAIM.GenerateAlertInstances(1, util.GenerateShortUID(), 1, 2)
 		req, err := http.NewRequest("GET", "/api/v1/alerts", nil)
 		require.NoError(t, err)
 		c := &models.ReqContext{Context: &web.Context{Req: req}, SignedInUser: &user.SignedInUser{OrgID: orgID}}
@@ -151,7 +151,7 @@ func TestRouteGetAlertStatuses(t *testing.T) {
 
 	t.Run("with two firing alerts", func(t *testing.T) {
 		_, fakeAIM, _, api := setupAPI(t)
-		fakeAIM.GenerateAlertInstances(1, util.GenerateShortUID(), 2, withAlertingState())
+		fakeAIM.GenerateAlertInstances(1, util.GenerateShortUID(), 1, 2, withAlertingState())
 		req, err := http.NewRequest("GET", "/api/v1/alerts", nil)
 		require.NoError(t, err)
 		c := &models.ReqContext{Context: &web.Context{Req: req}, SignedInUser: &user.SignedInUser{OrgID: orgID}}
@@ -193,7 +193,7 @@ func TestRouteGetAlertStatuses(t *testing.T) {
 
 	t.Run("with the inclusion of internal labels", func(t *testing.T) {
 		_, fakeAIM, _, api := setupAPI(t)
-		fakeAIM.GenerateAlertInstances(orgID, util.GenerateShortUID(), 2)
+		fakeAIM.GenerateAlertInstances(orgID, util.GenerateShortUID(), 1, 2)
 		req, err := http.NewRequest("GET", "/api/v1/alerts?includeInternalLabels=true", nil)
 		require.NoError(t, err)
 		c := &models.ReqContext{Context: &web.Context{Req: req}, SignedInUser: &user.SignedInUser{OrgID: orgID}}
@@ -524,7 +524,7 @@ func generateRuleAndInstanceWithQuery(t *testing.T, orgID int64, fakeAIM *fakeAl
 
 	rules := ngmodels.GenerateAlertRules(1, ngmodels.AlertRuleGen(withOrgID(orgID), asFixture(), query))
 
-	fakeAIM.GenerateAlertInstances(orgID, rules[0].UID, 1, func(s *state.State) *state.State {
+	fakeAIM.GenerateAlertInstances(orgID, rules[0].UID, rules[0].Version, 1, func(s *state.State) *state.State {
 		s.Labels = data.Labels{
 			"job":                      "prometheus",
 			ngmodels.NamespaceUIDLabel: "test_namespace_uid",

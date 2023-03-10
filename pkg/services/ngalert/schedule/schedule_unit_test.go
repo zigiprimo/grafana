@@ -88,13 +88,13 @@ func TestProcessTicks(t *testing.T) {
 	t.Run("on 1st tick alert rule should be evaluated", func(t *testing.T) {
 		tick = tick.Add(cfg.BaseInterval)
 
-		scheduled, stopped := sched.processTick(ctx, dispatcherGroup, tick)
+		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
 
 		require.Len(t, scheduled, 1)
 		require.Equal(t, alertRule1, scheduled[0].rule)
 		require.Equal(t, tick, scheduled[0].scheduledAt)
 		require.Emptyf(t, stopped, "None rules are expected to be stopped")
-
+		require.Emptyf(t, updated, "None rules are expected to be updated")
 		assertEvalRun(t, evalAppliedCh, tick, alertRule1.GetKey())
 	})
 
@@ -104,18 +104,19 @@ func TestProcessTicks(t *testing.T) {
 
 	t.Run("on 2nd tick first alert rule should be evaluated", func(t *testing.T) {
 		tick = tick.Add(cfg.BaseInterval)
-		scheduled, stopped := sched.processTick(ctx, dispatcherGroup, tick)
+		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
 
 		require.Len(t, scheduled, 1)
 		require.Equal(t, alertRule1, scheduled[0].rule)
 		require.Equal(t, tick, scheduled[0].scheduledAt)
 		require.Emptyf(t, stopped, "None rules are expected to be stopped")
+		require.Emptyf(t, updated, "None rules are expected to be updated")
 		assertEvalRun(t, evalAppliedCh, tick, alertRule1.GetKey())
 	})
 
 	t.Run("on 3rd tick two alert rules should be evaluated", func(t *testing.T) {
 		tick = tick.Add(cfg.BaseInterval)
-		scheduled, stopped := sched.processTick(ctx, dispatcherGroup, tick)
+		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
 		require.Len(t, scheduled, 2)
 		var keys []models.AlertRuleKey
 		for _, item := range scheduled {
@@ -126,19 +127,19 @@ func TestProcessTicks(t *testing.T) {
 		require.Contains(t, keys, alertRule2.GetKey())
 
 		require.Emptyf(t, stopped, "None rules are expected to be stopped")
-
+		require.Emptyf(t, updated, "None rules are expected to be updated")
 		assertEvalRun(t, evalAppliedCh, tick, keys...)
 	})
 
 	t.Run("on 4th tick only one alert rule should be evaluated", func(t *testing.T) {
 		tick = tick.Add(cfg.BaseInterval)
-		scheduled, stopped := sched.processTick(ctx, dispatcherGroup, tick)
+		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
 
 		require.Len(t, scheduled, 1)
 		require.Equal(t, alertRule1, scheduled[0].rule)
 		require.Equal(t, tick, scheduled[0].scheduledAt)
 		require.Emptyf(t, stopped, "None rules are expected to be stopped")
-
+		require.Emptyf(t, updated, "None rules are expected to be updated")
 		assertEvalRun(t, evalAppliedCh, tick, alertRule1.GetKey())
 	})
 
@@ -147,11 +148,11 @@ func TestProcessTicks(t *testing.T) {
 
 		ruleStore.DeleteRule(alertRule1)
 
-		scheduled, stopped := sched.processTick(ctx, dispatcherGroup, tick)
+		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
 
 		require.Empty(t, scheduled)
 		require.Len(t, stopped, 1)
-
+		require.Emptyf(t, updated, "None rules are expected to be updated")
 		require.Contains(t, stopped, alertRule1.GetKey())
 
 		assertStopRun(t, stopAppliedCh, alertRule1.GetKey())
@@ -160,13 +161,13 @@ func TestProcessTicks(t *testing.T) {
 	t.Run("on 6th tick one alert rule should be evaluated", func(t *testing.T) {
 		tick = tick.Add(cfg.BaseInterval)
 
-		scheduled, stopped := sched.processTick(ctx, dispatcherGroup, tick)
+		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
 
 		require.Len(t, scheduled, 1)
 		require.Equal(t, alertRule2, scheduled[0].rule)
 		require.Equal(t, tick, scheduled[0].scheduledAt)
 		require.Emptyf(t, stopped, "None rules are expected to be stopped")
-
+		require.Emptyf(t, updated, "None rules are expected to be updated")
 		assertEvalRun(t, evalAppliedCh, tick, alertRule2.GetKey())
 	})
 
@@ -176,14 +177,33 @@ func TestProcessTicks(t *testing.T) {
 		ruleStore.PutRule(ctx, alertRule3)
 		tick = tick.Add(cfg.BaseInterval)
 
-		scheduled, stopped := sched.processTick(ctx, dispatcherGroup, tick)
+		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
 
 		require.Len(t, scheduled, 1)
 		require.Equal(t, alertRule3, scheduled[0].rule)
 		require.Equal(t, tick, scheduled[0].scheduledAt)
 		require.Emptyf(t, stopped, "None rules are expected to be stopped")
-
+		require.Emptyf(t, updated, "None rules are expected to be updated")
 		assertEvalRun(t, evalAppliedCh, tick, alertRule3.GetKey())
+	})
+	t.Run("on 11th tick rule2 should be updated", func(t *testing.T) {
+		newRule2 := models.CopyRule(alertRule2)
+		newRule2.Version++
+		expectedVersion := newRule2.Version
+		ruleStore.PutRule(context.Background(), newRule2)
+
+		tick = tick.Add(cfg.BaseInterval)
+		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
+
+		require.Len(t, scheduled, 1)
+		require.Equal(t, alertRule3, scheduled[0].rule)
+		require.Equal(t, tick, scheduled[0].scheduledAt)
+
+		require.Emptyf(t, stopped, "None rules are expected to be stopped")
+
+		require.Len(t, updated, 1)
+		require.Equal(t, expectedVersion, int64(updated[0].Version))
+		require.Equal(t, newRule2.IsPaused, updated[0].IsPaused)
 	})
 }
 
@@ -235,7 +255,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			require.Equal(t, expectedTime, actualTime)
 
 			t.Run("it should add extra labels", func(t *testing.T) {
-				states := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID)
+				states := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)
 				for _, s := range states {
 					assert.Equal(t, rule.UID, s.Labels[models.RuleUIDLabel])
 					assert.Equal(t, rule.NamespaceUID, s.Labels[models.NamespaceUIDLabel])
@@ -246,7 +266,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 
 			t.Run("it should process evaluation results via state manager", func(t *testing.T) {
 				// TODO rewrite when we are able to mock/fake state manager
-				states := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID)
+				states := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)
 				require.Len(t, states, 1)
 				s := states[0]
 				require.Equal(t, rule.UID, s.AlertRuleUID)
@@ -260,7 +280,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			})
 			t.Run("it should save alert instances to storage", func(t *testing.T) {
 				// TODO rewrite when we are able to mock/fake state manager
-				states := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID)
+				states := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)
 				require.Len(t, states, 1)
 				s := states[0]
 
@@ -327,7 +347,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 
 			rule := models.AlertRuleGen()()
 			_ = sch.stateManager.ProcessEvalResults(context.Background(), sch.clock.Now(), rule, eval.GenerateResults(rand.Intn(5)+1, eval.ResultGen(eval.WithEvaluatedAt(sch.clock.Now()))), nil)
-			expectedStates := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID)
+			expectedStates := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)
 			require.NotEmpty(t, expectedStates)
 
 			ctx, cancel := context.WithCancel(context.Background())
@@ -339,7 +359,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			cancel()
 			err := waitForErrChannel(t, stoppedChan)
 			require.NoError(t, err)
-			require.Equal(t, len(expectedStates), len(sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID)))
+			require.Equal(t, len(expectedStates), len(sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)))
 		})
 		t.Run("and clean up the state if delete is cancellation reason ", func(t *testing.T) {
 			stoppedChan := make(chan error)
@@ -347,7 +367,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 
 			rule := models.AlertRuleGen()()
 			_ = sch.stateManager.ProcessEvalResults(context.Background(), sch.clock.Now(), rule, eval.GenerateResults(rand.Intn(5)+1, eval.ResultGen(eval.WithEvaluatedAt(sch.clock.Now()))), nil)
-			require.NotEmpty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID))
+			require.NotEmpty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version))
 
 			ctx, cancel := util.WithCancelCause(context.Background())
 			go func() {
@@ -359,7 +379,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			err := waitForErrChannel(t, stoppedChan)
 			require.NoError(t, err)
 
-			require.Empty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID))
+			require.Empty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version))
 		})
 	})
 
@@ -407,7 +427,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		}
 		sch.stateManager.Put(states)
 
-		states = sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID)
+		states = sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)
 		expectedToBeSent := 0
 		for _, s := range states {
 			if s.State == eval.Normal || s.State == eval.Pending {
@@ -422,7 +442,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			updateChan <- ruleVersion(rule.Version)
 			updateChan <- ruleVersion(rule.Version) // second time just to make sure that previous messages were handled
 
-			actualStates := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID)
+			actualStates := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version)
 			require.Len(t, actualStates, len(states))
 
 			sender.AssertNotCalled(t, "Send", mock.Anything, mock.Anything)
@@ -435,7 +455,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 				return len(sender.Calls) > 0
 			}, 5*time.Second, 100*time.Millisecond)
 
-			require.Empty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID))
+			require.Empty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version))
 			sender.AssertNumberOfCalls(t, "Send", 1)
 			args, ok := sender.Calls[0].Arguments[1].(definitions.PostableAlerts)
 			require.Truef(t, ok, fmt.Sprintf("expected argument of function was supposed to be 'definitions.PostableAlerts' but got %T", sender.Calls[0].Arguments[1]))
@@ -574,7 +594,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 
 		sender.AssertNotCalled(t, "Send", mock.Anything, mock.Anything)
 
-		require.NotEmpty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID))
+		require.NotEmpty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID, rule.Version))
 	})
 }
 

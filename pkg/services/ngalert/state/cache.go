@@ -17,7 +17,8 @@ import (
 )
 
 type ruleStates struct {
-	states map[string]*State
+	ruleVersion int64
+	states      map[string]*State
 }
 
 type cache struct {
@@ -42,13 +43,23 @@ func (c *cache) getOrCreate(ctx context.Context, log log.Logger, alertRule *ngMo
 	}
 	var states *ruleStates
 	if states, ok = orgStates[alertRule.UID]; !ok {
-		states = &ruleStates{states: make(map[string]*State)}
+		states = &ruleStates{states: make(map[string]*State), ruleVersion: alertRule.Version}
 		c.states[alertRule.OrgID][alertRule.UID] = states
 	}
 	return states.getOrCreate(ctx, log, alertRule, result, extraLabels, externalURL)
 }
 
 func (rs *ruleStates) getOrCreate(ctx context.Context, log log.Logger, alertRule *ngModels.AlertRule, result eval.Result, extraLabels data.Labels, externalURL *url.URL) *State {
+	if alertRule.Version > rs.ruleVersion {
+		if len(rs.states) > 0 {
+			log.Debug("Rule version and state version is different but state was not reset.", "ruleVersion", alertRule.Version, "stateVersion", rs.ruleVersion)
+		}
+		rs.ruleVersion = alertRule.Version
+	} else if alertRule.Version < rs.ruleVersion && len(rs.states) > 0 {
+		// this never should happen only if state manager was updated from somewhere outside scheduler, which is not possible at this moment.
+		log.Debug("Rule version is less than state version!", "ruleVersion", alertRule.Version, "stateVersion", rs.ruleVersion)
+	}
+
 	ruleLabels, annotations := rs.expandRuleLabelsAndAnnotations(ctx, log, alertRule, result, extraLabels, externalURL)
 
 	values := make(map[string]float64)
@@ -221,7 +232,7 @@ func (c *cache) getAll(orgID int64) []*State {
 	return states
 }
 
-func (c *cache) getStatesForRuleUID(orgID int64, alertRuleUID string) []*State {
+func (c *cache) getStatesForRuleUID(orgID int64, alertRuleUID string, version int64) []*State {
 	var result []*State
 	c.mtxStates.RLock()
 	defer c.mtxStates.RUnlock()
@@ -231,6 +242,9 @@ func (c *cache) getStatesForRuleUID(orgID int64, alertRuleUID string) []*State {
 	}
 	rs, ok := orgRules[alertRuleUID]
 	if !ok {
+		return nil
+	}
+	if rs.ruleVersion != version {
 		return nil
 	}
 	for _, state := range rs.states {

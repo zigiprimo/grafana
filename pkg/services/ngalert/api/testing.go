@@ -12,17 +12,22 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 )
 
+type fakeStateVersion struct {
+	states  []*state.State
+	version int64
+}
+
 type fakeAlertInstanceManager struct {
 	mtx sync.Mutex
 	// orgID -> RuleID -> States
-	states map[int64]map[string][]*state.State
+	states map[int64]map[string]fakeStateVersion
 }
 
 func NewFakeAlertInstanceManager(t *testing.T) *fakeAlertInstanceManager {
 	t.Helper()
 
 	return &fakeAlertInstanceManager{
-		states: map[int64]map[string][]*state.State{},
+		states: map[int64]map[string]fakeStateVersion{},
 	}
 }
 
@@ -32,40 +37,46 @@ func (f *fakeAlertInstanceManager) GetAll(orgID int64) []*state.State {
 	var s []*state.State
 
 	for orgID := range f.states {
-		for _, states := range f.states[orgID] {
-			s = append(s, states...)
+		for _, f := range f.states[orgID] {
+			s = append(s, f.states...)
 		}
 	}
 
 	return s
 }
 
-func (f *fakeAlertInstanceManager) GetStatesForRuleUID(orgID int64, alertRuleUID string) []*state.State {
+func (f *fakeAlertInstanceManager) GetStatesForRuleUID(orgID int64, alertRuleUID string, version int64) []*state.State {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
-	return f.states[orgID][alertRuleUID]
+	v, ok := f.states[orgID][alertRuleUID]
+	if !ok || v.version != version {
+		return nil
+	}
+	return v.states
 }
 
 // forEachState represents the callback used when generating alert instances that allows us to modify the generated result
 type forEachState func(s *state.State) *state.State
 
-func (f *fakeAlertInstanceManager) GenerateAlertInstances(orgID int64, alertRuleUID string, count int, callbacks ...forEachState) {
+func (f *fakeAlertInstanceManager) GenerateAlertInstances(orgID int64, alertRuleUID string, version int64, count int, callbacks ...forEachState) {
 	f.mtx.Lock()
 	defer f.mtx.Unlock()
 
 	evaluationTime := timeNow()
 	evaluationDuration := 1 * time.Minute
 
-	for i := 0; i < count; i++ {
-		_, ok := f.states[orgID]
-		if !ok {
-			f.states[orgID] = map[string][]*state.State{}
-		}
-		_, ok = f.states[orgID][alertRuleUID]
-		if !ok {
-			f.states[orgID][alertRuleUID] = []*state.State{}
-		}
+	_, ok := f.states[orgID]
+	if !ok {
+		f.states[orgID] = map[string]fakeStateVersion{}
+	}
+	_, ok = f.states[orgID][alertRuleUID]
+	if !ok {
+		f.states[orgID][alertRuleUID] = fakeStateVersion{version: version}
+	}
 
+	rs := f.states[orgID][alertRuleUID]
+	rs.version = version
+	for i := 0; i < count; i++ {
 		newState := &state.State{
 			AlertRuleUID: alertRuleUID,
 			OrgID:        1,
@@ -100,6 +111,7 @@ func (f *fakeAlertInstanceManager) GenerateAlertInstances(orgID int64, alertRule
 			}
 		}
 
-		f.states[orgID][alertRuleUID] = append(f.states[orgID][alertRuleUID], newState)
+		rs.states = append(rs.states, newState)
 	}
+	f.states[orgID][alertRuleUID] = rs
 }

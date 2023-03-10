@@ -22,7 +22,7 @@ var (
 // AlertInstanceManager defines the interface for querying the current alert instances.
 type AlertInstanceManager interface {
 	GetAll(orgID int64) []*State
-	GetStatesForRuleUID(orgID int64, alertRuleUID string) []*State
+	GetStatesForRuleUID(orgID int64, alertRuleUID string, version int64) []*State
 }
 
 type Manager struct {
@@ -117,7 +117,7 @@ func (st *Manager) Warm(ctx context.Context, rulesReader RuleReader) {
 
 			rulesStates, ok := orgStates[entry.RuleUID]
 			if !ok {
-				rulesStates = &ruleStates{states: make(map[string]*State)}
+				rulesStates = &ruleStates{states: make(map[string]*State), ruleVersion: ruleForEntry.Version}
 				orgStates[entry.RuleUID] = rulesStates
 			}
 
@@ -266,8 +266,8 @@ func (st *Manager) GetAll(orgID int64) []*State {
 	return st.cache.getAll(orgID)
 }
 
-func (st *Manager) GetStatesForRuleUID(orgID int64, alertRuleUID string) []*State {
-	return st.cache.getStatesForRuleUID(orgID, alertRuleUID)
+func (st *Manager) GetStatesForRuleUID(orgID int64, alertRuleUID string, version int64) []*State {
+	return st.cache.getStatesForRuleUID(orgID, alertRuleUID, version)
 }
 
 func (st *Manager) Put(states []*State) {
