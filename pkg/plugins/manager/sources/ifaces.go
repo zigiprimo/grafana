@@ -7,11 +7,11 @@ import (
 )
 
 type Resolver interface {
-	List(context.Context) []Sourcer
+	List(context.Context) []Source
 }
 
-type Sourcer interface {
-	Source(ctx context.Context) ([]*plugins.FoundBundle, error)
+type Source interface {
+	Get(ctx context.Context) ([]*plugins.FoundBundle, error)
 	PluginClass(ctx context.Context) plugins.Class
 	DefaultSignature(ctx context.Context) (plugins.Signature, bool)
 }

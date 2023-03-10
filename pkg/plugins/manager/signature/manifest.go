@@ -100,7 +100,7 @@ func ReadPluginManifest(body []byte) (*PluginManifest, error) {
 	return &manifest, nil
 }
 
-func Calculate(ctx context.Context, mlog log.Logger, src sources.Sourcer, plugin plugins.FoundPlugin) (plugins.Signature, error) {
+func Calculate(ctx context.Context, mlog log.Logger, src sources.Source, plugin plugins.FoundPlugin) (plugins.Signature, error) {
 	if sig, exists := src.DefaultSignature(ctx); exists {
 		return sig, nil
 	}

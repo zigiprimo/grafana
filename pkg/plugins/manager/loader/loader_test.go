@@ -53,7 +53,7 @@ func TestLoader_Load(t *testing.T) {
 	}
 	tests := []struct {
 		name         string
-		src          sources.Sourcer
+		src          sources.Source
 		cfg          *config.Cfg
 		pluginPaths  []string
 		want         []*plugins.Plugin

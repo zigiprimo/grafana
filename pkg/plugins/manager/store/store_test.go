@@ -18,7 +18,7 @@ func TestStore_ProvideService(t *testing.T) {
 	t.Run("Plugin sources are added in specific class order by default", func(t *testing.T) {
 		var addedSourceClasses []plugins.Class
 		l := &fakes.FakeLoader{
-			LoadFunc: func(ctx context.Context, src sources.Sourcer) ([]*plugins.Plugin, error) {
+			LoadFunc: func(ctx context.Context, src sources.Source) ([]*plugins.Plugin, error) {
 				addedSourceClasses = append(addedSourceClasses, src.PluginClass(ctx))
 				return nil, nil
 			},

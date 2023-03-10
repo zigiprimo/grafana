@@ -38,11 +38,11 @@ func (i *FakePluginInstaller) Remove(ctx context.Context, pluginID string) error
 }
 
 type FakeLoader struct {
-	LoadFunc   func(_ context.Context, _ sources.Sourcer) ([]*plugins.Plugin, error)
+	LoadFunc   func(_ context.Context, _ sources.Source) ([]*plugins.Plugin, error)
 	UnloadFunc func(_ context.Context, _ string) error
 }
 
-func (l *FakeLoader) Load(ctx context.Context, src sources.Sourcer) ([]*plugins.Plugin, error) {
+func (l *FakeLoader) Load(ctx context.Context, src sources.Source) ([]*plugins.Plugin, error) {
 	if l.LoadFunc != nil {
 		return l.LoadFunc(ctx, src)
 	}
@@ -383,37 +383,37 @@ func (f *FakePluginFiles) Files() []string {
 }
 
 type FakeSources struct {
-	ListFunc func(_ context.Context) []sources.Sourcer
+	ListFunc func(_ context.Context) []sources.Source
 }
 
-func (s *FakeSources) List(ctx context.Context) []sources.Sourcer {
+func (s *FakeSources) List(ctx context.Context) []sources.Source {
 	if s.ListFunc != nil {
 		return s.ListFunc(ctx)
 	}
 	return nil
 }
 
-type FakeSourcer struct {
-	SourceFunc           func(context.Context) ([]*plugins.FoundBundle, error)
+type FakeSource struct {
+	GetFunc              func(context.Context) ([]*plugins.FoundBundle, error)
 	PluginClassFunc      func(context.Context) plugins.Class
 	DefaultSignatureFunc func(context.Context) (plugins.Signature, bool)
 }
 
-func (s *FakeSourcer) Source(ctx context.Context) ([]*plugins.FoundBundle, error) {
-	if s.SourceFunc != nil {
-		return s.SourceFunc(ctx)
+func (s *FakeSource) Get(ctx context.Context) ([]*plugins.FoundBundle, error) {
+	if s.GetFunc != nil {
+		return s.GetFunc(ctx)
 	}
 	return nil, nil
 }
 
-func (s *FakeSourcer) PluginClass(ctx context.Context) plugins.Class {
+func (s *FakeSource) PluginClass(ctx context.Context) plugins.Class {
 	if s.PluginClassFunc != nil {
 		return s.PluginClassFunc(ctx)
 	}
 	return ""
 }
 
-func (s *FakeSourcer) DefaultSignature(ctx context.Context) (plugins.Signature, bool) {
+func (s *FakeSource) DefaultSignature(ctx context.Context) (plugins.Signature, bool) {
 	if s.DefaultSignatureFunc != nil {
 		return s.DefaultSignatureFunc(ctx)
 	}

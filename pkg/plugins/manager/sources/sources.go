@@ -26,8 +26,8 @@ func ProvideService(gCfg *setting.Cfg, cfg *config.Cfg) *Service {
 	}
 }
 
-func (s *Service) List(_ context.Context) []Sourcer {
-	var res []Sourcer
+func (s *Service) List(_ context.Context) []Source {
+	var res []Source
 	for _, src := range s.srcs {
 		res = append(res, src)
 	}

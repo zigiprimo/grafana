@@ -63,8 +63,8 @@ func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLo
 	}
 }
 
-func (l *Loader) Load(ctx context.Context, src sources.Sourcer) ([]*plugins.Plugin, error) {
-	found, err := src.Source(ctx)
+func (l *Loader) Load(ctx context.Context, src sources.Source) ([]*plugins.Plugin, error) {
+	found, err := src.Get(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (l *Loader) Load(ctx context.Context, src sources.Sourcer) ([]*plugins.Plug
 	return l.loadPlugins(ctx, src, found)
 }
 
-func (l *Loader) loadPlugins(ctx context.Context, src sources.Sourcer, found []*plugins.FoundBundle) ([]*plugins.Plugin, error) {
+func (l *Loader) loadPlugins(ctx context.Context, src sources.Source, found []*plugins.FoundBundle) ([]*plugins.Plugin, error) {
 	var loadedPlugins []*plugins.Plugin
 	for _, p := range found {
 		if _, exists := l.pluginRegistry.Plugin(ctx, p.Primary.JSONData.ID); exists {

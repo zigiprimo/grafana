@@ -24,11 +24,6 @@ type Installer interface {
 	Remove(ctx context.Context, pluginID string) error
 }
 
-type PluginSource struct {
-	Class Class
-	Paths []string
-}
-
 type CompatOpts struct {
 	GrafanaVersion string
 	OS             string
