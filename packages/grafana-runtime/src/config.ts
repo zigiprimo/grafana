@@ -151,6 +151,7 @@ export class GrafanaBootConfig implements GrafanaConfig {
   rudderstackDataPlaneUrl: undefined;
   rudderstackSdkUrl: undefined;
   rudderstackConfigUrl: undefined;
+  enableMetricsEchoBackend = false;
 
   tokenExpirationDayLimit: undefined;
 

@@ -7833,7 +7833,33 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/otlp-transformer@npm:^0.35.0":
+"@opentelemetry/exporter-metrics-otlp-http@npm:^0.35.1":
+  version: 0.35.1
+  resolution: "@opentelemetry/exporter-metrics-otlp-http@npm:0.35.1"
+  dependencies:
+    "@opentelemetry/core": 1.9.1
+    "@opentelemetry/otlp-exporter-base": 0.35.1
+    "@opentelemetry/otlp-transformer": 0.35.1
+    "@opentelemetry/resources": 1.9.1
+    "@opentelemetry/sdk-metrics": 1.9.1
+  peerDependencies:
+    "@opentelemetry/api": ^1.3.0
+  checksum: 38a80435ffa42ceb1767493005e554697854001d526164bca7afc7757ee76a940fad5ec196542012f8f0c62353b9e00afbc33d3b6e457d8e05a34a8a8512fae4
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/otlp-exporter-base@npm:0.35.1":
+  version: 0.35.1
+  resolution: "@opentelemetry/otlp-exporter-base@npm:0.35.1"
+  dependencies:
+    "@opentelemetry/core": 1.9.1
+  peerDependencies:
+    "@opentelemetry/api": ^1.0.0
+  checksum: 94be3995792cd7bbe9a0672f0b726fe1b47cbfc48795612e5b37b4235a5dcfc84eec9ae595a1f319fb76c309c46ee6fa5692718ec623b64931f4549452d41b82
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/otlp-transformer@npm:0.35.1, @opentelemetry/otlp-transformer@npm:^0.35.0":
   version: 0.35.1
   resolution: "@opentelemetry/otlp-transformer@npm:0.35.1"
   dependencies:
@@ -7885,7 +7911,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-metrics@npm:1.9.1":
+"@opentelemetry/sdk-metrics@npm:1.9.1, @opentelemetry/sdk-metrics@npm:^1.9.1":
   version: 1.9.1
   resolution: "@opentelemetry/sdk-metrics@npm:1.9.1"
   dependencies:
@@ -22130,6 +22156,8 @@ __metadata:
     "@lezer/lr": 1.3.3
     "@opentelemetry/api": 1.4.0
     "@opentelemetry/exporter-collector": 0.25.0
+    "@opentelemetry/exporter-metrics-otlp-http": ^0.35.1
+    "@opentelemetry/sdk-metrics": ^1.9.1
     "@opentelemetry/semantic-conventions": 1.9.1
     "@pmmmwh/react-refresh-webpack-plugin": 0.5.10
     "@popperjs/core": 2.11.6

@@ -97,6 +97,7 @@ export async function loadAndInitDatasource(
     // removed or it is not provisioned anymore.
     instance = await getDatasourceSrv().get();
   }
+
   if (instance.init) {
     try {
       instance.init();

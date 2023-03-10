@@ -5,6 +5,8 @@ import { getEchoSrv, EchoEventType } from '../services/EchoSrv';
 import {
   ExperimentViewEchoEvent,
   InteractionEchoEvent,
+  MetricEchoEvent,
+  MetricEchoEventPayload,
   MetaAnalyticsEvent,
   MetaAnalyticsEventPayload,
   PageviewEchoEvent,
@@ -50,6 +52,18 @@ export const reportInteraction = (interactionName: string, properties?: Record<s
       interactionName,
       properties,
     },
+  });
+};
+
+/**
+ * Helper function to report metric events to the {@link EchoSrv}.
+ *
+ * @public
+ */
+export const reportMetric = (payload: MetricEchoEventPayload) => {
+  getEchoSrv().addEvent<MetricEchoEvent>({
+    type: EchoEventType.Metric,
+    payload,
   });
 };
 

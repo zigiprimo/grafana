@@ -14,6 +14,7 @@ import {
   getTemplateSrv,
   getLegacyAngularInjector,
   getBackendSrv,
+  reportMetric,
 } from '@grafana/runtime';
 import { ExpressionDatasourceRef } from '@grafana/runtime/src/utils/DataSourceWithBackend';
 import appEvents from 'app/core/app_events';
@@ -184,10 +185,39 @@ export class DatasourceSrv implements DataSourceService {
         (instance as any).getRef = DataSourceApi.prototype.getRef;
       }
 
+      // Proxy
+      const handler = {
+        get(target: DataSourceApi, prop: string, receiver: { get: () => {} }) {
+          const res = Reflect.get(target, prop, receiver);
+          if (prop === 'getRef' || typeof res !== 'function') {
+            return res;
+          }
+
+          console.log({ res, target, prop, receiver });
+
+          return function () {
+            try {
+              const start = window.performance.now();
+              const returnValue = res.call(target, ...arguments);
+              const end = window.performance.now();
+
+              reportMetric({ name: 'hello name', observe: 45.78 });
+
+              return returnValue;
+            } catch (err) {
+              throw err;
+            }
+          };
+        },
+      };
+
+      const proxy = new Proxy(instance, handler);
+
       // store in instance cache
-      this.datasources[key] = instance;
-      this.datasources[instance.uid] = instance;
-      return instance;
+      this.datasources[key] = proxy;
+      this.datasources[instance.uid] = proxy;
+
+      return proxy;
     } catch (err) {
       if (err instanceof Error) {
         appEvents.emit(AppEvents.alertError, [instanceSettings.name + ' plugin failed', err.toString()]);

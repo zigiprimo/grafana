@@ -112,6 +112,23 @@ export interface InteractionEchoEventPayload {
 export type InteractionEchoEvent = EchoEvent<EchoEventType.Interaction, InteractionEchoEventPayload>;
 
 /**
+ * Describes the payload of a metric event.
+ *
+ * @public
+ */
+export interface MetricEchoEventPayload {
+  name: string;
+  observe: number;
+}
+
+/**
+ * Describes metric event with predefined {@link EchoEventType.EchoEventType} type.
+ *
+ * @public
+ */
+export type MetricEchoEvent = EchoEvent<EchoEventType.Metric, MetricEchoEventPayload>;
+
+/**
  * Describes the payload of an experimentview event.
  *
  * @public

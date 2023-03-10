@@ -63,6 +63,7 @@ import { PerformanceBackend } from './core/services/echo/backends/PerformanceBac
 import { ApplicationInsightsBackend } from './core/services/echo/backends/analytics/ApplicationInsightsBackend';
 import { GA4EchoBackend } from './core/services/echo/backends/analytics/GA4Backend';
 import { GAEchoBackend } from './core/services/echo/backends/analytics/GABackend';
+import { MetricsEchoBackend } from './core/services/echo/backends/analytics/MetricsEchoBackend';
 import { RudderstackBackend } from './core/services/echo/backends/analytics/RudderstackBackend';
 import { GrafanaJavascriptAgentBackend } from './core/services/echo/backends/grafana-javascript-agent/GrafanaJavascriptAgentBackend';
 import { SentryEchoBackend } from './core/services/echo/backends/sentry/SentryBackend';
@@ -312,6 +313,15 @@ function initEchoSrv() {
   if (config.applicationInsightsConnectionString) {
     registerEchoBackend(
       new ApplicationInsightsBackend({
+        connectionString: config.applicationInsightsConnectionString,
+        endpointUrl: config.applicationInsightsEndpointUrl,
+      })
+    );
+  }
+
+  if (config.enableMetricsEchoBackend) {
+    registerEchoBackend(
+      new MetricsEchoBackend({
         connectionString: config.applicationInsightsConnectionString,
         endpointUrl: config.applicationInsightsEndpointUrl,
       })
