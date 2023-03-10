@@ -12,6 +12,7 @@ import { QueryEditorMode } from 'app/plugins/datasource/prometheus/querybuilder/
 
 import { lokiQueryEditorExplainKey, useFlag } from '../../prometheus/querybuilder/shared/hooks/useFlag';
 import { LabelBrowserModal } from '../querybuilder/components/LabelBrowserModal';
+import { LokiQueryAIEditor } from '../querybuilder/components/LokiQueryAIEditor';
 import { LokiQueryBuilderContainer } from '../querybuilder/components/LokiQueryBuilderContainer';
 import { LokiQueryBuilderOptions } from '../querybuilder/components/LokiQueryBuilderOptions';
 import { LokiQueryCodeEditor } from '../querybuilder/components/LokiQueryCodeEditor';
@@ -192,6 +193,9 @@ export const LokiQueryEditor = React.memo<LokiQueryEditorProps>((props) => {
             onRunQuery={props.onRunQuery}
             showExplain={explain}
           />
+        )}
+        {editorMode === QueryEditorMode.AI && (
+          <LokiQueryAIEditor {...props} query={query} onChange={onChangeInternal} />
         )}
         <LokiQueryBuilderOptions
           query={query}

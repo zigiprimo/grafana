@@ -245,7 +245,8 @@ async function expectRunQueriesButton() {
 function expectNoRunQueriesButton() {
   expect(screen.queryByRole('button', { name: /run queries/i })).not.toBeInTheDocument();
 }
-async function switchToMode(mode: QueryEditorMode) {
+
+async function switchToMode(mode: QueryEditorMode.Code | QueryEditorMode.Builder) {
   const label = {
     [QueryEditorMode.Code]: /Code/,
     [QueryEditorMode.Builder]: /Builder/,

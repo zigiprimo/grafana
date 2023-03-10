@@ -15,6 +15,7 @@ export const DataQueryModelVersion = Object.freeze([0, 0]);
 export enum QueryEditorMode {
   Builder = 'builder',
   Code = 'code',
+  AI = 'ai'
 }
 
 export type PromQueryFormat = ('time_series' | 'table' | 'heatmap');
