@@ -2,10 +2,8 @@ import { css } from '@emotion/css';
 import React from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
-import { useStyles2 } from '@grafana/ui';
+import { TextArea, useStyles2 } from '@grafana/ui';
 
-import { testIds } from '../../components/LokiQueryEditor';
-import { LokiQueryField } from '../../components/LokiQueryField';
 import { LokiQueryEditorProps } from '../../components/types';
 
 export function LokiQueryAIEditor({
@@ -22,17 +20,7 @@ export function LokiQueryAIEditor({
 
   return (
     <div className={styles.wrapper}>
-      <LokiQueryField
-        datasource={datasource}
-        query={query}
-        range={range}
-        onRunQuery={onRunQuery}
-        onChange={onChange}
-        history={history}
-        data={data}
-        app={app}
-        data-testid={testIds.editor}
-      />
+      <TextArea placeholder="Describe your query or request" />
     </div>
   );
 }
