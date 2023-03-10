@@ -14450,7 +14450,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^0.26.1":
+"axios@npm:^0.26.0, axios@npm:^0.26.1":
   version: 0.26.1
   resolution: "axios@npm:0.26.1"
   dependencies:
@@ -22451,6 +22451,7 @@ __metadata:
     node-notifier: 10.0.1
     ol: 7.2.2
     ol-ext: 4.0.6
+    openai: ^3.2.1
     papaparse: 5.3.2
     pluralize: ^8.0.0
     postcss: 8.4.21
@@ -29863,6 +29864,16 @@ __metadata:
     is-docker: ^2.1.1
     is-wsl: ^2.2.0
   checksum: e9545bec64cdbf30a0c35c1bdc310344adf8428a117f7d8df3c0af0a0a24c513b304916a6d9b11db0190ff7225c2d578885080b761ed46a3d5f6f1eebb98b63c
+  languageName: node
+  linkType: hard
+
+"openai@npm:^3.2.1":
+  version: 3.2.1
+  resolution: "openai@npm:3.2.1"
+  dependencies:
+    axios: ^0.26.0
+    form-data: ^4.0.0
+  checksum: ef3942e9b527cf27273c4355bb8fb9ebd94ae3a88c12eec0ac51c4ef0ad8c18864683759471597390816bcd822bdc9f2f1cea7a3eb1e432c9101f568f7c6d19a
   languageName: node
   linkType: hard
 
