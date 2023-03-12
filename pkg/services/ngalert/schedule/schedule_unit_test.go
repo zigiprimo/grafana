@@ -186,7 +186,7 @@ func TestProcessTicks(t *testing.T) {
 		require.Emptyf(t, updated, "None rules are expected to be updated")
 		assertEvalRun(t, evalAppliedCh, tick, alertRule3.GetKey())
 	})
-	t.Run("on 11th tick rule2 should be updated", func(t *testing.T) {
+	t.Run("on 8th tick rule2 should be updated", func(t *testing.T) {
 		newRule2 := models.CopyRule(alertRule2)
 		newRule2.Version++
 		expectedVersion := newRule2.Version
@@ -195,15 +195,12 @@ func TestProcessTicks(t *testing.T) {
 		tick = tick.Add(cfg.BaseInterval)
 		scheduled, stopped, updated := sched.processTick(ctx, dispatcherGroup, tick)
 
-		require.Len(t, scheduled, 1)
-		require.Equal(t, alertRule3, scheduled[0].rule)
-		require.Equal(t, tick, scheduled[0].scheduledAt)
-
+		require.Len(t, scheduled, 1) // rule3
+		require.Equal(t, "rule-3", scheduled[0].rule.Title)
 		require.Emptyf(t, stopped, "None rules are expected to be stopped")
 
 		require.Len(t, updated, 1)
-		require.Equal(t, expectedVersion, int64(updated[0].Version))
-		require.Equal(t, newRule2.IsPaused, updated[0].IsPaused)
+		require.Equal(t, expectedVersion, int64(updated[0].ruleVersion))
 	})
 }
 

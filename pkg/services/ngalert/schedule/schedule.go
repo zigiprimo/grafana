@@ -199,7 +199,12 @@ type readyToRunItem struct {
 	evaluation
 }
 
-func (sch *schedule) processTick(ctx context.Context, dispatcherGroup *errgroup.Group, tick time.Time) ([]readyToRunItem, map[ngmodels.AlertRuleKey]struct{}) {
+type readyToUpdateItem struct {
+	ruleInfo *alertRuleInfo
+	ruleVersion
+}
+
+func (sch *schedule) processTick(ctx context.Context, dispatcherGroup *errgroup.Group, tick time.Time) ([]readyToRunItem, map[ngmodels.AlertRuleKey]struct{}, []readyToUpdateItem) {
 	tickNum := tick.Unix() / int64(sch.baseInterval.Seconds())
 
 	// update the local registry. If there was a difference between the previous state and the current new state, rulesDiff will contains keys of rules that were updated.
@@ -272,10 +277,8 @@ func (sch *schedule) processTick(ctx context.Context, dispatcherGroup *errgroup.
 			if isUpdated {
 				sch.log.Debug("Rule has been updated. Notifying evaluation routine", key.LogContext()...)
 				needToUpdate = append(needToUpdate, readyToUpdateItem{ruleInfo: ruleInfo,
-					ruleVersionAndPauseStatus: ruleVersionAndPauseStatus{
-						Version:  ruleVersion(item.Version),
-						IsPaused: item.IsPaused,
-					}})
+					ruleVersion: ruleVersion(item.Version),
+				})
 			}
 		}
 
@@ -312,7 +315,7 @@ func (sch *schedule) processTick(ctx context.Context, dispatcherGroup *errgroup.
 
 	for _, item := range needToUpdate {
 		go func(i readyToUpdateItem) {
-			i.ruleInfo.update(i.ruleVersionAndPauseStatus)
+			i.ruleInfo.update(i.ruleVersion)
 		}(item)
 	}
 

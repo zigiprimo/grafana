@@ -3,12 +3,16 @@ package state
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/url"
+	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/exp/slices"
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/ngalert/eval"
@@ -187,15 +191,15 @@ func Test_getStatesForRuleUID(t *testing.T) {
 	}
 
 	t.Run("should return states if version matches", func(t *testing.T) {
-		actual := c.getStatesForRuleUID(orgID, ruleUID, version, false)
+		actual := c.getStatesForRuleUID(orgID, ruleUID, version)
 		slices.SortStableFunc(actual, func(a, b *State) bool {
 			return strings.Compare(a.CacheID, b.CacheID) == -1
 		})
 		require.EqualValues(t, expected, actual)
 	})
 	t.Run("should return empty result if version does not match", func(t *testing.T) {
-		assert.Emptyf(t, c.getStatesForRuleUID(orgID, ruleUID, version-1, false), "method should not return anything if version is less than state version. State version %d. Argument:%d", version, version-1)
-		assert.Emptyf(t, c.getStatesForRuleUID(orgID, ruleUID, version+1, false), "method should not return anything if version is greater than state version. State version %d. Argument:%d", version, version+1)
+		assert.Emptyf(t, c.getStatesForRuleUID(orgID, ruleUID, version-1), "method should not return anything if version is less than state version. State version %d. Argument:%d", version, version-1)
+		assert.Emptyf(t, c.getStatesForRuleUID(orgID, ruleUID, version+1), "method should not return anything if version is greater than state version. State version %d. Argument:%d", version, version+1)
 		// take 1000 random values within the range of possible values to make sure that the result is correct
 		for i := 0; i < 1000; i++ {
 			v := rand.Int63()
@@ -203,7 +207,7 @@ func Test_getStatesForRuleUID(t *testing.T) {
 				i--
 				continue
 			}
-			require.Emptyf(t, c.getStatesForRuleUID(orgID, ruleUID, version+1, false), "method should not return anything if version is not equal to current. State version %d. Argument:%d", version, v)
+			require.Emptyf(t, c.getStatesForRuleUID(orgID, ruleUID, version+1), "method should not return anything if version is not equal to current. State version %d. Argument:%d", version, v)
 		}
 	})
 }
