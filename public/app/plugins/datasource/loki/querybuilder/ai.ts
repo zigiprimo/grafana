@@ -2,12 +2,14 @@ const { Configuration, OpenAIApi } = require('openai');
 const configuration = new Configuration({});
 const openai = new OpenAIApi(configuration);
 
+const prependedText = 'You will only answer with Grafan Loki queries.';
+
 export async function ask(prompt: string) {
   let response;
   try {
     response = await openai.createCompletion({
       model: 'text-davinci-003',
-      prompt,
+      prompt: `${prependedText} ${prompt}`,
       temperature: 0.2,
       max_tokens: 30,
     });
