@@ -33,14 +33,21 @@ export const rowNumberToFieldTransformer: DataTransformerInfo<RowNumberToFieldTr
 };
 
 const renumberer = (frame: DataFrame): Field[] => {
-  const rowNumbers = frame.fields[0].values.toArray().map((value, index) => index + 1);
+  const rowNumberFieldIndex = frame.fields.findIndex((field) => field.name === 'row number');
+  const rowNumbers = frame.fields[0].values.toArray().map((_, index) => index + 1);
 
-  frame.fields.unshift({
+  const newField = {
     name: 'row number',
     type: FieldType.number,
     values: new ArrayVector(rowNumbers),
     config: {},
-  });
+  };
+
+  if (rowNumberFieldIndex > -1) {
+    frame.fields[rowNumberFieldIndex] = newField;
+  } else {
+    frame.fields.unshift(newField);
+  }
 
   return frame.fields;
 };
