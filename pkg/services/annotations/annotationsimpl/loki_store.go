@@ -2,9 +2,13 @@ package annotationsimpl
 
 import (
 	"context"
+<<<<<<< Updated upstream
 	"encoding/json"
 	"fmt"
 	"strconv"
+=======
+	"fmt"
+>>>>>>> Stashed changes
 	"time"
 
 	"github.com/grafana/grafana/pkg/infra/log"
@@ -87,6 +91,7 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 	}
 
 	items := make([]*annotations.ItemDTO, 0)
+<<<<<<< Updated upstream
 	for _, stream := range res.Data.Result {
 		for _, sample := range stream.Values {
 			a := annotations.Item{}
@@ -116,6 +121,13 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 			})
 		}
 	}
+=======
+	res, err := r.httpLokiClient.rangeQuery(ctx, []Selector{{Label: "key", Op: Eq, Value: "val"}}, time.Now().Add(-time.Hour).UnixNano(), time.Now().UnixNano())
+	if err != nil {
+		return []*annotations.ItemDTO{}, err
+	}
+	fmt.Println(">>>>>>>>>>", res.Data.Result)
+>>>>>>> Stashed changes
 	return items, nil
 }
 
