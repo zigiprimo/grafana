@@ -12,6 +12,7 @@ import {
 import { usePageNav } from 'app/core/components/Page/usePageNav';
 import { PluginPageContext, PluginPageContextType } from 'app/features/plugins/components/PluginPageContext';
 
+import { getDynamicVariablesScene } from './dynamicVariables';
 import {
   getOverviewScene,
   getHttpHandlerListScene,
@@ -65,6 +66,12 @@ export function getMainPageScene() {
         title: 'Logs',
         url: '/scenes/grafana-monitoring/logs',
         getScene: getOverviewLogsScene,
+        preserveUrlKeys: ['from', 'to', 'var-instance'],
+      }),
+      new SceneAppPage({
+        title: 'Dynamic vars',
+        url: '/scenes/grafana-monitoring/vars',
+        getScene: getDynamicVariablesScene,
         preserveUrlKeys: ['from', 'to', 'var-instance'],
       }),
     ],

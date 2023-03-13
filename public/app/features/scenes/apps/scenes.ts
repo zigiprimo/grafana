@@ -13,6 +13,7 @@ import {
   SceneVariableSet,
   QueryVariable,
   SceneControlsSpacer,
+  SceneRefreshPicker,
 } from '@grafana/scenes';
 import { PromQuery } from 'app/plugins/datasource/prometheus/types';
 
@@ -185,6 +186,7 @@ export function getHttpHandlerListScene(): EmbeddedScene {
       new SceneControlsSpacer(),
       sceneToggle,
       new SceneTimePicker({ isOnCanvas: true }),
+      new SceneRefreshPicker({}),
     ],
     body: layout,
   });
@@ -206,7 +208,12 @@ export function getHandlerDetailsScene(handler: string): EmbeddedScene {
   const scene = new EmbeddedScene({
     $variables: getVariablesDefinitions(),
     $timeRange: new SceneTimeRange({ from: 'now-1h', to: 'now' }),
-    controls: [new VariableValueSelectors({}), new SceneControlsSpacer(), new SceneTimePicker({ isOnCanvas: true })],
+    controls: [
+      new VariableValueSelectors({}),
+      new SceneControlsSpacer(),
+      new SceneTimePicker({ isOnCanvas: true }),
+      new SceneRefreshPicker({}),
+    ],
     body: new SceneFlexLayout({
       direction: 'column',
       children: [
@@ -232,7 +239,7 @@ export function getHandlerDetailsScene(handler: string): EmbeddedScene {
   return scene;
 }
 
-function getInstantQuery(query: Partial<PromQuery>): SceneQueryRunner {
+export function getInstantQuery(query: Partial<PromQuery>): SceneQueryRunner {
   return new SceneQueryRunner({
     datasource: { uid: 'gdev-prometheus' },
     queries: [
@@ -247,7 +254,7 @@ function getInstantQuery(query: Partial<PromQuery>): SceneQueryRunner {
   });
 }
 
-function getTimeSeriesQuery(query: Partial<PromQuery>): SceneQueryRunner {
+export function getTimeSeriesQuery(query: Partial<PromQuery>): SceneQueryRunner {
   return new SceneQueryRunner({
     datasource: { uid: 'gdev-prometheus' },
     queries: [
@@ -266,7 +273,12 @@ export function getOverviewScene(): EmbeddedScene {
   const scene = new EmbeddedScene({
     $variables: getVariablesDefinitions(),
     $timeRange: new SceneTimeRange({ from: 'now-1h', to: 'now' }),
-    controls: [new VariableValueSelectors({}), new SceneControlsSpacer(), new SceneTimePicker({ isOnCanvas: true })],
+    controls: [
+      new VariableValueSelectors({}),
+      new SceneControlsSpacer(),
+      new SceneTimePicker({ isOnCanvas: true }),
+      new SceneRefreshPicker({}),
+    ],
     body: new SceneFlexLayout({
       direction: 'column',
       children: [
@@ -394,7 +406,12 @@ export function getHandlerLogsScene(handler: string): EmbeddedScene {
   const scene = new EmbeddedScene({
     $variables: getVariablesDefinitions(),
     $timeRange: new SceneTimeRange({ from: 'now-1h', to: 'now' }),
-    controls: [new VariableValueSelectors({}), new SceneControlsSpacer(), new SceneTimePicker({ isOnCanvas: true })],
+    controls: [
+      new VariableValueSelectors({}),
+      new SceneControlsSpacer(),
+      new SceneTimePicker({ isOnCanvas: true }),
+      new SceneRefreshPicker({}),
+    ],
     body: new SceneFlexLayout({
       direction: 'column',
       children: [
@@ -447,7 +464,12 @@ export function getOverviewLogsScene(): EmbeddedScene {
   const scene = new EmbeddedScene({
     $variables: getVariablesDefinitions(),
     $timeRange: new SceneTimeRange({ from: 'now-1h', to: 'now' }),
-    controls: [new VariableValueSelectors({}), new SceneControlsSpacer(), new SceneTimePicker({ isOnCanvas: true })],
+    controls: [
+      new VariableValueSelectors({}),
+      new SceneControlsSpacer(),
+      new SceneTimePicker({ isOnCanvas: true }),
+      new SceneRefreshPicker({}),
+    ],
     body: new SceneFlexLayout({
       direction: 'column',
       children: [
