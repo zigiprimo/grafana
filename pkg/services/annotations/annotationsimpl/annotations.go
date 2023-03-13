@@ -2,10 +2,13 @@ package annotationsimpl
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/annotations"
+	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/tag"
 	"github.com/grafana/grafana/pkg/setting"
 )
@@ -14,16 +17,36 @@ type RepositoryImpl struct {
 	store store
 }
 
-func ProvideService(db db.DB, cfg *setting.Cfg, tagService tag.Service) *RepositoryImpl {
+func ProvideService(db db.DB, cfg *setting.Cfg, tagService tag.Service, datasourceSrv datasources.DataSourceService) (*RepositoryImpl, error) {
+	lokiDatasources, err := datasourceSrv.GetDataSourcesByType(context.TODO(), &datasources.GetDataSourcesByTypeQuery{
+		Type: "loki",
+	})
+	if err != nil {
+		// TODO change error to errutil
+		return nil, fmt.Errorf("failed to fetch loki data sources: %w", err)
+	}
+
+	if len(lokiDatasources) <= 0 {
+		// TODO change error to errutil
+		return nil, fmt.Errorf("no loki data sources found")
+	}
+
+	lokiCfg, err := newLokiConfig(lokiDatasources[0])
+	if err != nil {
+		// TODO change error to errutil
+		return nil, fmt.Errorf("failed to get loki config: %w", err)
+	}
+
+	// TODO fix me: use database or loki store depending on the configuration
 	return &RepositoryImpl{
-		store: &xormRepositoryImpl{
+		store: &lokiRepositoryImpl{
 			cfg:               cfg,
-			db:                db,
 			log:               log.New("annotations"),
 			tagService:        tagService,
 			maximumTagsLength: cfg.AnnotationMaximumTagsLength,
+			httpLokiClient:    newLokiClient(lokiCfg, &http.Client{}, log.New("annotations.loki")),
 		},
-	}
+	}, nil
 }
 
 func (r *RepositoryImpl) Save(ctx context.Context, item *annotations.Item) error {

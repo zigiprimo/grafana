@@ -12,14 +12,13 @@ import (
 	"time"
 
 	"github.com/grafana/grafana/pkg/infra/log"
-	"github.com/grafana/grafana/pkg/services/ngalert/metrics"
-	"github.com/grafana/grafana/pkg/setting"
+	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/weaveworks/common/http/client"
 )
 
 const defaultClientTimeout = 30 * time.Second
 
-type LokiConfig struct {
+type lokiConfig struct {
 	ReadPathURL       *url.URL
 	WritePathURL      *url.URL
 	BasicAuthUser     string
@@ -28,38 +27,27 @@ type LokiConfig struct {
 	ExternalLabels    map[string]string
 }
 
-func NewLokiConfig(cfg setting.UnifiedAlertingStateHistorySettings) (LokiConfig, error) {
-	read, write := cfg.LokiReadURL, cfg.LokiWriteURL
-	if read == "" {
-		read = cfg.LokiRemoteURL
-	}
-	if write == "" {
-		write = cfg.LokiRemoteURL
+func newLokiConfig(ds *datasources.DataSource) (lokiConfig, error) {
+	lokiURL, err := url.Parse(ds.URL)
+	if err != nil {
+		// TODO change error to errutil
+		return lokiConfig{}, fmt.Errorf("failed to parse loki URL: %s", ds.URL)
 	}
 
-	readURL, err := url.Parse(read)
-	if err != nil {
-		return LokiConfig{}, fmt.Errorf("failed to parse loki remote read URL: %w", err)
-	}
-	writeURL, err := url.Parse(write)
-	if err != nil {
-		return LokiConfig{}, fmt.Errorf("failed to parse loki remote write URL: %w", err)
-	}
-
-	return LokiConfig{
-		ReadPathURL:       readURL,
-		WritePathURL:      writeURL,
-		BasicAuthUser:     cfg.LokiBasicAuthUsername,
-		BasicAuthPassword: cfg.LokiBasicAuthPassword,
-		TenantID:          cfg.LokiTenantID,
+	return lokiConfig{
+		ReadPathURL:       lokiURL,
+		WritePathURL:      lokiURL,
+		BasicAuthUser:     ds.BasicAuthUser,
+		BasicAuthPassword: ds.BasicAuthPassword,
+		TenantID:          "?",
+		ExternalLabels:    make(map[string]string),
 	}, nil
 }
 
 type httpLokiClient struct {
-	client  client.Requester
-	cfg     LokiConfig
-	metrics *metrics.Historian
-	log     log.Logger
+	client client.Requester
+	cfg    lokiConfig
+	log    log.Logger
 }
 
 // Kind of Operation (=, !=, =~, !~)
@@ -84,13 +72,11 @@ type Selector struct {
 	Value string
 }
 
-func newLokiClient(cfg LokiConfig, req client.Requester, metrics *metrics.Historian, logger log.Logger) *httpLokiClient {
-	tc := client.NewTimedClient(req, metrics.WriteDuration)
+func newLokiClient(cfg lokiConfig, req client.Requester, logger log.Logger) *httpLokiClient {
 	return &httpLokiClient{
-		client:  tc,
-		cfg:     cfg,
-		metrics: metrics,
-		log:     logger.New("protocol", "http"),
+		client: req,
+		cfg:    cfg,
+		log:    logger.New("protocol", "http"),
 	}
 }
 
@@ -173,7 +159,6 @@ func (c *httpLokiClient) push(ctx context.Context, s []stream) error {
 	c.setAuthAndTenantHeaders(req)
 	req.Header.Add("content-type", "application/json")
 
-	c.metrics.BytesWritten.Add(float64(len(enc)))
 	req = req.WithContext(ctx)
 	resp, err := c.client.Do(req)
 	if resp != nil {
