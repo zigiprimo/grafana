@@ -1,3 +1,5 @@
+import { getValueFormat } from '@grafana/data';
+
 import { escapeLabelValueInExactSelector } from '../../../languageUtils';
 import { explainOperator } from '../../../querybuilder/operations';
 import { LokiOperationId } from '../../../querybuilder/types';
@@ -146,12 +148,34 @@ async function getLabelNamesForSelectorCompletions(
 ): Promise<Completion[]> {
   const labelNames = await dataProvider.getLabelNames(otherLabels);
 
-  return labelNames.map((label) => ({
-    type: 'LABEL_NAME',
-    label,
-    insertText: `${label}=`,
-    triggerOnInsert: true,
-  }));
+  const expr = `{${otherLabels.map((label) => `${label.name}${label.op}"${label.value}"`).join(',')}}`;
+  const currentBytes = await dataProvider.getQueryBytes(expr);
+
+  let bytesPerLabelName: { [key: string]: number } = {};
+
+  if (currentBytes) {
+    bytesPerLabelName = await dataProvider.getStatsForLabelNames(otherLabels);
+  }
+
+  const completionItems = labelNames.map((name) => {
+    const completionItem: Completion = {
+      type: 'LABEL_NAME',
+      label: name,
+      insertText: `${name}=`,
+      triggerOnInsert: true,
+      documentation: undefined,
+    };
+
+    if (currentBytes && bytesPerLabelName[name]) {
+      const { text, suffix } = getValueFormat('bytes')(bytesPerLabelName[name], 1);
+      const { text: currText, suffix: currSuffix } = getValueFormat('bytes')(currentBytes, 1);
+      completionItem.documentation = `${name} label is present in ${text + suffix}/${currText + currSuffix} logs.`;
+    }
+
+    return completionItem;
+  });
+
+  return completionItems;
 }
 
 async function getInGroupingCompletions(logQuery: string, dataProvider: CompletionDataProvider): Promise<Completion[]> {
@@ -272,11 +296,32 @@ async function getLabelValuesForMetricCompletions(
   dataProvider: CompletionDataProvider
 ): Promise<Completion[]> {
   const values = await dataProvider.getLabelValues(labelName, otherLabels);
-  return values.map((text) => ({
-    type: 'LABEL_VALUE',
-    label: text,
-    insertText: betweenQuotes ? escapeLabelValueInExactSelector(text) : `"${escapeLabelValueInExactSelector(text)}"`,
-  }));
+  const expr = `{${otherLabels.map((label) => `${label.name}${label.op}"${label.value}"`).join(',')}}`;
+  const currentBytes = await dataProvider.getQueryBytes(expr);
+  let bytesPerLabel: { [key: string]: number } = {};
+
+  if (currentBytes) {
+    bytesPerLabel = await dataProvider.getStatsForLabelValues(otherLabels, labelName);
+  }
+
+  const completionItems = values.map((value) => {
+    const completionItem: Completion = {
+      type: 'LABEL_VALUE',
+      label: value,
+      insertText: betweenQuotes
+        ? escapeLabelValueInExactSelector(value)
+        : `"${escapeLabelValueInExactSelector(value)}"`,
+      documentation: undefined,
+    };
+
+    if (currentBytes && bytesPerLabel[value]) {
+      const { text, suffix } = getValueFormat('bytes')(currentBytes - bytesPerLabel[value], 1);
+      completionItem.documentation = `Use ${value} label value to narrow down your search by ~${text + suffix}`;
+    }
+    return completionItem;
+  });
+
+  return completionItems;
 }
 
 async function getAfterUnwrapCompletions(
