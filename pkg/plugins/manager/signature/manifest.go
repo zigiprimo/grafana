@@ -25,7 +25,6 @@ import (
 
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/log"
-	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -100,7 +99,7 @@ func ReadPluginManifest(body []byte) (*PluginManifest, error) {
 	return &manifest, nil
 }
 
-func Calculate(ctx context.Context, mlog log.Logger, src sources.Source, plugin plugins.FoundPlugin) (plugins.Signature, error) {
+func Calculate(ctx context.Context, mlog log.Logger, src plugins.PluginSourceInstance, plugin plugins.FoundPlugin) (plugins.Signature, error) {
 	if sig, exists := src.DefaultSignature(ctx); exists {
 		return sig, nil
 	}

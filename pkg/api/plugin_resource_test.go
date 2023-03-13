@@ -61,8 +61,8 @@ func TestCallResource(t *testing.T) {
 	cdn := pluginscdn.ProvideService(pCfg)
 	l := loader.ProvideService(pCfg, fakes.NewFakeLicensingService(), signature.NewUnsignedAuthorizer(pCfg),
 		reg, provider.ProvideService(coreRegistry), fakes.NewFakeRoleRegistry(), assetpath.ProvideService(cdn))
-	srcs := sources.ProvideService(cfg, pCfg)
-	ps, err := store.ProvideService(reg, srcs, l)
+	srcs := sources.ProvideService(cfg, pCfg, l)
+	ps, err := store.ProvideService(reg, srcs)
 	require.NoError(t, err)
 
 	pcp := plugincontext.ProvideService(localcache.ProvideService(), ps, &datasources.FakeCacheService{}, &datasources.FakeDataSourceService{}, pluginSettings.ProvideService(db.InitTestDB(t), nil))

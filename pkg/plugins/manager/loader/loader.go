@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"path"
 	"strings"
-	"time"
-
-	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/grafana/grafana/pkg/infra/metrics"
 	"github.com/grafana/grafana/pkg/infra/slugify"
@@ -20,25 +17,11 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/process"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/signature"
-	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 	"github.com/grafana/grafana/pkg/plugins/storage"
 	"github.com/grafana/grafana/pkg/util"
 )
 
 var _ plugins.ErrorResolver = (*Loader)(nil)
-
-var (
-	pluginFetchDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "grafana_plugins",
-		Name:      "plugin_find_duration_milliseconds",
-		Help:      "Plugin finding/discovery duration per class",
-	}, []string{"class", "total"})
-	pluginLoadDuration = prometheus.NewHistogramVec(prometheus.HistogramOpts{
-		Namespace: "grafana_plugins",
-		Name:      "plugin_load_duration_milliseconds",
-		Help:      "Plugin loading duration per class",
-	}, []string{"class", "total"})
-)
 
 type Loader struct {
 	processManager     process.Service
@@ -79,33 +62,9 @@ func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLo
 	}
 }
 
-func (l *Loader) Load(ctx context.Context, src sources.Source) ([]*plugins.Plugin, error) {
-	startTime := time.Now()
-	found, err := src.GetPlugins(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	class := src.PluginClass(ctx)
-	pluginFetchDuration.WithLabelValues(class.String(), fmt.Sprintf("%d", len(found))).Observe(float64(time.Since(startTime).Milliseconds()))
-	l.log.Debug("Plugin find step complete", "class", class, "total", len(found), "duration", time.Since(startTime).Milliseconds())
-
-	startTime = time.Now()
-	loaded, err := l.loadPlugins(ctx, src, found)
-	if err != nil {
-		return nil, err
-	}
-	pluginLoadDuration.WithLabelValues(class.String(), fmt.Sprintf("%d", len(loaded))).Observe(float64(time.Since(startTime).Milliseconds()))
-	if err != nil {
-		return nil, err
-	}
-	l.log.Debug("Plugin load step complete", "class", class, "total", len(loaded), "duration", time.Since(startTime).Milliseconds())
-	return loaded, nil
-}
-
-func (l *Loader) loadPlugins(ctx context.Context, src sources.Source, found []*plugins.FoundBundle) ([]*plugins.Plugin, error) {
+func (l *Loader) Load(ctx context.Context, src plugins.PluginSourceInstance) ([]*plugins.Plugin, error) {
 	var loadedPlugins []*plugins.Plugin
-	for _, p := range found {
+	for _, p := range src.GetPlugins(ctx) {
 		if _, exists := l.pluginRegistry.Plugin(ctx, p.Primary.JSONData.ID); exists {
 			l.log.Warn("Skipping plugin loading as it's a duplicate", "pluginID", p.Primary.JSONData.ID)
 			continue

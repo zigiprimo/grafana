@@ -6,12 +6,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 )
 
-type Resolver interface {
-	List(context.Context) []Source
-}
-
-type Source interface {
-	GetPlugins(ctx context.Context) ([]*plugins.FoundBundle, error)
-	PluginClass(ctx context.Context) plugins.Class
-	DefaultSignature(ctx context.Context) (plugins.Signature, bool)
+type Registry interface {
+	List(context.Context) []plugins.Source
 }

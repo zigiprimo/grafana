@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"github.com/grafana/grafana/pkg/plugins"
-	"github.com/grafana/grafana/pkg/plugins/manager/loader"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 )
@@ -16,11 +15,10 @@ type Service struct {
 	pluginRegistry registry.Service
 }
 
-func ProvideService(pluginRegistry registry.Service, pluginSources sources.Resolver,
-	pluginLoader loader.Service) (*Service, error) {
+func ProvideService(pluginRegistry registry.Service, pluginSources sources.Registry) (*Service, error) {
 	ctx := context.Background()
 	for _, ps := range pluginSources.List(ctx) {
-		if _, err := pluginLoader.Load(ctx, ps); err != nil {
+		if _, err := ps.GetPlugins(ctx); err != nil {
 			return nil, err
 		}
 	}

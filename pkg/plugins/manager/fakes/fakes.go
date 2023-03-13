@@ -12,7 +12,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/log"
-	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 	"github.com/grafana/grafana/pkg/plugins/repo"
 	"github.com/grafana/grafana/pkg/plugins/storage"
 )
@@ -38,11 +37,11 @@ func (i *FakePluginInstaller) Remove(ctx context.Context, pluginID string) error
 }
 
 type FakeLoader struct {
-	LoadFunc   func(_ context.Context, _ sources.Source) ([]*plugins.Plugin, error)
+	LoadFunc   func(_ context.Context, _ plugins.PluginSourceInstance) ([]*plugins.Plugin, error)
 	UnloadFunc func(_ context.Context, _ string) error
 }
 
-func (l *FakeLoader) Load(ctx context.Context, src sources.Source) ([]*plugins.Plugin, error) {
+func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSourceInstance) ([]*plugins.Plugin, error) {
 	if l.LoadFunc != nil {
 		return l.LoadFunc(ctx, src)
 	}
@@ -383,10 +382,10 @@ func (f *FakePluginFiles) Files() []string {
 }
 
 type FakeSources struct {
-	ListFunc func(_ context.Context) []sources.Source
+	ListFunc func(_ context.Context) []plugins.Source
 }
 
-func (s *FakeSources) List(ctx context.Context) []sources.Source {
+func (s *FakeSources) List(ctx context.Context) []plugins.Source {
 	if s.ListFunc != nil {
 		return s.ListFunc(ctx)
 	}
@@ -394,26 +393,37 @@ func (s *FakeSources) List(ctx context.Context) []sources.Source {
 }
 
 type FakeSource struct {
-	GetPluginsFunc       func(context.Context) ([]*plugins.FoundBundle, error)
-	PluginClassFunc      func(context.Context) plugins.Class
-	DefaultSignatureFunc func(context.Context) (plugins.Signature, bool)
+	GetPluginsFunc func(context.Context) ([]*plugins.Plugin, error)
 }
 
-func (s *FakeSource) GetPlugins(ctx context.Context) ([]*plugins.FoundBundle, error) {
+func (s *FakeSource) GetPlugins(ctx context.Context) ([]*plugins.Plugin, error) {
 	if s.GetPluginsFunc != nil {
 		return s.GetPluginsFunc(ctx)
 	}
 	return nil, nil
 }
 
-func (s *FakeSource) PluginClass(ctx context.Context) plugins.Class {
+type FakeSourceInstance struct {
+	GetPluginsFunc       func(context.Context) []*plugins.FoundBundle
+	PluginClassFunc      func(context.Context) plugins.Class
+	DefaultSignatureFunc func(context.Context) (plugins.Signature, bool)
+}
+
+func (s *FakeSourceInstance) GetPlugins(ctx context.Context) []*plugins.FoundBundle {
+	if s.GetPluginsFunc != nil {
+		return s.GetPluginsFunc(ctx)
+	}
+	return nil
+}
+
+func (s *FakeSourceInstance) PluginClass(ctx context.Context) plugins.Class {
 	if s.PluginClassFunc != nil {
 		return s.PluginClassFunc(ctx)
 	}
 	return ""
 }
 
-func (s *FakeSource) DefaultSignature(ctx context.Context) (plugins.Signature, bool) {
+func (s *FakeSourceInstance) DefaultSignature(ctx context.Context) (plugins.Signature, bool) {
 	if s.DefaultSignatureFunc != nil {
 		return s.DefaultSignatureFunc(ctx)
 	}

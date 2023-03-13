@@ -24,6 +24,11 @@ type Installer interface {
 	Remove(ctx context.Context, pluginID string) error
 }
 
+type PluginSource struct {
+	Class Class
+	Paths []string
+}
+
 type CompatOpts struct {
 	GrafanaVersion string
 	OS             string
@@ -44,6 +49,17 @@ type FS interface {
 type FoundBundle struct {
 	Primary  FoundPlugin
 	Children []*FoundPlugin
+}
+
+type Source interface {
+	PluginClass(ctx context.Context) Class
+	GetPlugins(ctx context.Context) ([]*Plugin, error)
+}
+
+type PluginSourceInstance interface {
+	PluginClass(ctx context.Context) Class
+	GetPlugins(ctx context.Context) []*FoundBundle
+	DefaultSignature(ctx context.Context) (Signature, bool)
 }
 
 type FoundPlugin struct {

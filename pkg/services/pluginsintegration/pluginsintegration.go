@@ -64,7 +64,7 @@ var WireExtensionSet = wire.NewSet(
 	wire.Bind(new(plugins.BackendFactoryProvider), new(*provider.Service)),
 	signature.ProvideOSSAuthorizer,
 	wire.Bind(new(plugins.PluginLoaderAuthorizer), new(*signature.UnsignedPluginAuthorizer)),
-	wire.Bind(new(sources.Resolver), new(*sources.Service)),
+	wire.Bind(new(sources.Registry), new(*sources.Service)),
 	sources.ProvideService,
 )
 

@@ -18,7 +18,7 @@ func TestStore_ProvideService(t *testing.T) {
 	t.Run("Plugin sources are added in specific class order by default", func(t *testing.T) {
 		var addedSourceClasses []plugins.Class
 		l := &fakes.FakeLoader{
-			LoadFunc: func(ctx context.Context, src sources.Source) ([]*plugins.Plugin, error) {
+			LoadFunc: func(ctx context.Context, src plugins.PluginSourceInstance) ([]*plugins.Plugin, error) {
 				addedSourceClasses = append(addedSourceClasses, src.PluginClass(ctx))
 				return nil, nil
 			},
@@ -39,8 +39,8 @@ func TestStore_ProvideService(t *testing.T) {
 			},
 		}
 
-		srcs := sources.ProvideService(cfg, pCfg)
-		_, err := ProvideService(fakes.NewFakePluginRegistry(), srcs, l)
+		srcs := sources.ProvideService(cfg, pCfg, l)
+		_, err := ProvideService(fakes.NewFakePluginRegistry(), srcs)
 		require.NoError(t, err)
 		require.Equal(t, []plugins.Class{plugins.Core, plugins.Bundled, plugins.External}, addedSourceClasses)
 	})

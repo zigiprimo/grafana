@@ -4,18 +4,21 @@ import (
 	"context"
 
 	"github.com/grafana/grafana/pkg/plugins"
+	"github.com/grafana/grafana/pkg/plugins/manager/loader"
 	"github.com/grafana/grafana/pkg/plugins/manager/loader/finder"
 )
 
 type LocalSource struct {
-	class plugins.Class
-	paths []string
+	loader loader.Service
+	finder *finder.Local
+	class  plugins.Class
 }
 
-func NewLocalSource(class plugins.Class, paths []string) *LocalSource {
+func NewLocalSource(loader loader.Service, class plugins.Class, paths []string) *LocalSource {
 	return &LocalSource{
-		class: class,
-		paths: paths,
+		class:  class,
+		loader: loader,
+		finder: finder.NewLocalFinder(paths),
 	}
 }
 
@@ -23,8 +26,31 @@ func (s *LocalSource) PluginClass(_ context.Context) plugins.Class {
 	return s.class
 }
 
-func (s *LocalSource) DefaultSignature(_ context.Context) (plugins.Signature, bool) {
-	switch s.class {
+func (s *LocalSource) GetPlugins(ctx context.Context) ([]*plugins.Plugin, error) {
+	found, err := s.finder.Find(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.loader.Load(ctx, &localInstalledPlugins{
+		class:   s.PluginClass(ctx),
+		plugins: found,
+	})
+}
+
+var _ plugins.PluginSourceInstance = (*localInstalledPlugins)(nil)
+
+type localInstalledPlugins struct {
+	class   plugins.Class
+	plugins []*plugins.FoundBundle
+}
+
+func (p *localInstalledPlugins) PluginClass(_ context.Context) plugins.Class {
+	return p.class
+}
+
+func (p *localInstalledPlugins) DefaultSignature(_ context.Context) (plugins.Signature, bool) {
+	switch p.class {
 	case plugins.Core:
 		return plugins.Signature{
 			Status: plugins.SignatureInternal,
@@ -36,7 +62,6 @@ func (s *LocalSource) DefaultSignature(_ context.Context) (plugins.Signature, bo
 	}
 }
 
-func (s *LocalSource) GetPlugins(ctx context.Context) ([]*plugins.FoundBundle, error) {
-	f := finder.NewLocalFinder(s.paths)
-	return f.Find(ctx)
+func (p *localInstalledPlugins) GetPlugins(_ context.Context) []*plugins.FoundBundle {
+	return p.plugins
 }

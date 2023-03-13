@@ -7,27 +7,29 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/config"
 	"github.com/grafana/grafana/pkg/plugins/log"
+	"github.com/grafana/grafana/pkg/plugins/manager/loader"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
 type Service struct {
-	srcs []*LocalSource
-	log  log.Logger
+	loader loader.Service
+	srcs   []*LocalSource
+	log    log.Logger
 }
 
-func ProvideService(gCfg *setting.Cfg, cfg *config.Cfg) *Service {
+func ProvideService(gCfg *setting.Cfg, cfg *config.Cfg, loader loader.Service) *Service {
 	return &Service{
 		srcs: []*LocalSource{
-			NewLocalSource(plugins.Core, corePluginPaths(gCfg.StaticRootPath)),
-			NewLocalSource(plugins.Bundled, []string{gCfg.BundledPluginsPath}),
-			NewLocalSource(plugins.External, append([]string{cfg.PluginsPath}, pluginFSPaths(cfg.PluginSettings)...)),
+			NewLocalSource(loader, plugins.Core, corePluginPaths(gCfg.StaticRootPath)),
+			NewLocalSource(loader, plugins.Bundled, []string{gCfg.BundledPluginsPath}),
+			NewLocalSource(loader, plugins.External, append([]string{cfg.PluginsPath}, pluginFSPaths(cfg.PluginSettings)...)),
 		},
 		log: log.New("plugin.sources"),
 	}
 }
 
-func (s *Service) List(_ context.Context) []Source {
-	var res []Source
+func (s *Service) List(_ context.Context) []plugins.Source {
+	var res []plugins.Source
 	for _, src := range s.srcs {
 		res = append(res, src)
 	}

@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/config"
+	"github.com/grafana/grafana/pkg/plugins/manager/fakes"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -28,7 +29,7 @@ func TestSources_List(t *testing.T) {
 			},
 		}
 
-		s := ProvideService(cfg, pCfg)
+		s := ProvideService(cfg, pCfg, &fakes.FakeLoader{})
 		srcs := s.List(context.Background())
 		expectedClasses := []plugins.Class{plugins.Core, plugins.Bundled, plugins.External}
 
