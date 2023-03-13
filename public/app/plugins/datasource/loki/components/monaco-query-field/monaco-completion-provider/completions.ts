@@ -169,7 +169,7 @@ async function getLabelNamesForSelectorCompletions(
     if (currentBytes && bytesPerLabelName[name]) {
       const { text, suffix } = getValueFormat('bytes')(bytesPerLabelName[name], 1);
       const { text: currText, suffix: currSuffix } = getValueFormat('bytes')(currentBytes, 1);
-      completionItem.documentation = `${name} label is present in ${text + suffix}/${currText + currSuffix} logs.`;
+      completionItem.documentation = `"${name}" label is present in ${text + suffix}/${currText + currSuffix} logs.`;
     }
 
     return completionItem;
@@ -315,8 +315,9 @@ async function getLabelValuesForMetricCompletions(
     };
 
     if (currentBytes && bytesPerLabel[value]) {
-      const { text, suffix } = getValueFormat('bytes')(currentBytes - bytesPerLabel[value], 1);
-      completionItem.documentation = `Use ${value} label value to narrow down your search by ~${text + suffix}`;
+      const { text, suffix } = getValueFormat('bytes')(bytesPerLabel[value], 1);
+      const { text: currText, suffix: currSuffix } = getValueFormat('bytes')(currentBytes, 1);
+      completionItem.documentation = `"${value}" value is present in ${text + suffix}/${currText + currSuffix} logs.`;
     }
     return completionItem;
   });

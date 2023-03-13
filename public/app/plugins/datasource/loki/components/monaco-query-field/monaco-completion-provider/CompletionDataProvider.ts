@@ -394,7 +394,7 @@ export class CompletionDataProvider {
     const labelNames = await this.getLabelNames(selectedLabels);
 
     for (const labelName of labelNames) {
-      const newQuery = `{${expr}, ${labelName}=~".*"}`;
+      const newQuery = `{${expr}, ${labelName}=~".+"}`;
       const bytes = await this.getQueryBytes(newQuery);
       if (bytes !== undefined) {
         bytesForLabel[labelName] = bytes;
