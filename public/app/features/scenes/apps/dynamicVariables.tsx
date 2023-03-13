@@ -109,6 +109,8 @@ class DynamicVariablesManager extends SceneObjectBase<DynamicVariablesManagerSta
         new CustomVariable({
           name: key,
           query: Array.from(values).join(','),
+          includeAll: true,
+          defaultToAll: true,
         })
       );
     }
