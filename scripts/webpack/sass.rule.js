@@ -10,7 +10,7 @@ module.exports = function (options) {
     use: [
       MiniCssExtractPlugin.loader,
       {
-        loader: 'css-loader',
+        loader: require.resolve('css-loader'),
         options: {
           importLoaders: 2,
           url: options.preserveUrl,
@@ -18,7 +18,7 @@ module.exports = function (options) {
         },
       },
       {
-        loader: 'postcss-loader',
+        loader: require.resolve('postcss-loader'),
         options: {
           sourceMap: options.sourceMap,
           postcssOptions: {
@@ -27,7 +27,7 @@ module.exports = function (options) {
         },
       },
       {
-        loader: 'sass-loader',
+        loader: require.resolve('sass-loader'),
         options: {
           sourceMap: options.sourceMap,
         },

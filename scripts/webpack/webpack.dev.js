@@ -36,19 +36,22 @@ module.exports = (env = {}) =>
         {
           test: /\.tsx?$/,
           use: {
-            loader: 'esbuild-loader',
+            loader: require.resolve('esbuild-loader'),
             options: {
               loader: 'tsx',
               target: esbuildTargets,
             },
           },
-          exclude: /node_modules/,
         },
         require('./sass.rule.js')({
           sourceMap: false,
           preserveUrl: false,
         }),
       ],
+    },
+
+    stats: {
+      errorDetails: true,
     },
 
     // https://webpack.js.org/guides/build-performance/#output-without-path-info
@@ -66,13 +69,13 @@ module.exports = (env = {}) =>
     },
 
     // enable persistent cache for faster cold starts
-    cache: {
-      type: 'filesystem',
-      name: 'grafana-default-development',
-      buildDependencies: {
-        config: [__filename],
-      },
-    },
+    // cache: {
+    //   type: 'filesystem',
+    //   name: 'grafana-default-development',
+    //   buildDependencies: {
+    //     config: [__filename],
+    //   },
+    // },
 
     plugins: [
       parseInt(env.noTsCheck, 10)
@@ -88,11 +91,13 @@ module.exports = (env = {}) =>
               },
             },
           }),
-      new ESLintPlugin({
-        cache: true,
-        lintDirtyModulesOnly: true, // don't lint on start, only lint changed files
-        extensions: ['.ts', '.tsx'],
-      }),
+      parseInt(env.noTsCheck, 10)
+        ? new DefinePlugin({}) //
+        : new ESLintPlugin({
+            cache: true,
+            lintDirtyModulesOnly: true, // don't lint on start, only lint changed files
+            extensions: ['.ts', '.tsx'],
+          }),
       new MiniCssExtractPlugin({
         filename: 'grafana.[name].[contenthash].css',
       }),

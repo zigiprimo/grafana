@@ -6,9 +6,9 @@ const CorsWorkerPlugin = require('./plugins/CorsWorkerPlugin');
 
 module.exports = {
   target: 'web',
-  entry: {
-    app: './public/app/index.ts',
-  },
+  // entry: {
+  //   app: './public/app/index.ts',
+  // },
   output: {
     clean: true,
     path: path.resolve(__dirname, '../../public/build'),
@@ -23,7 +23,12 @@ module.exports = {
       // we want to have same Prism object in core and in grafana/ui
       prismjs: require.resolve('prismjs'),
     },
-    modules: ['node_modules', path.resolve('public')],
+    modules: [
+      // 'node_modules',
+      path.resolve('public'),
+      // we need full path to root node_modules for grafana-enterprise symlink to work
+      // path.resolve('node_modules'),
+    ],
     fallback: {
       buffer: false,
       fs: false,

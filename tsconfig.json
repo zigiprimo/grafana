@@ -10,7 +10,11 @@
     "useUnknownInCatchVariables": true,
     "incremental": true,
     "tsBuildInfoFile": "./tsconfig.tsbuildinfo",
-    "preserveSymlinks": true
+    "preserveSymlinks": true,
+    "paths": {
+      "app": ["app/"],
+      "sass": ["sass/"]
+    }
   },
   "extends": "@grafana/tsconfig/base.json",
   "include": [
