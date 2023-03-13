@@ -55,21 +55,21 @@ type Operator string
 
 const (
 	// Equal operator (=)
-	Eq Operator = "="
+	eq Operator = "="
 	// Not Equal operator (!=)
-	Neq Operator = "!="
+	neq Operator = "!="
 	// Equal operator supporting RegEx (=~)
-	EqRegEx Operator = "=~"
+	eqRegEx Operator = "=~"
 	// Not Equal operator supporting RegEx (!~)
-	NeqRegEx Operator = "!~"
+	neqRegEx Operator = "!~"
 )
 
-type Selector struct {
-	// Label to Select
-	Label string
-	Op    Operator
-	// Value that is expected
-	Value string
+type selector struct {
+	// label to Select
+	label string
+	op    Operator
+	// value that is expected
+	value string
 }
 
 func newLokiClient(cfg lokiConfig, req client.Requester, logger log.Logger) *httpLokiClient {
@@ -193,7 +193,7 @@ func (c *httpLokiClient) setAuthAndTenantHeaders(req *http.Request) {
 		req.Header.Add("X-Scope-OrgID", c.cfg.TenantID)
 	}
 }
-func (c *httpLokiClient) rangeQuery(ctx context.Context, selectors []Selector, start, end int64) (queryRes, error) {
+func (c *httpLokiClient) rangeQuery(ctx context.Context, selectors []selector, start, end int64) (queryRes, error) {
 	// Run the pre-flight checks for the query.
 	if len(selectors) == 0 {
 		return queryRes{}, fmt.Errorf("at least one selector required to query")
@@ -253,25 +253,25 @@ func (c *httpLokiClient) rangeQuery(ctx context.Context, selectors []Selector, s
 	return result, nil
 }
 
-func selectorString(selectors []Selector) string {
+func selectorString(selectors []selector) string {
 	if len(selectors) == 0 {
 		return "{}"
 	}
 	// Build the query selector.
 	query := ""
 	for _, s := range selectors {
-		query += fmt.Sprintf("%s%s%q,", s.Label, s.Op, s.Value)
+		query += fmt.Sprintf("%s%s%q,", s.label, s.op, s.value)
 	}
 	// Remove the last comma, as we append one to every selector.
 	query = query[:len(query)-1]
 	return "{" + query + "}"
 }
 
-func NewSelector(label, op, value string) (Selector, error) {
+func newSelector(label, op, value string) (selector, error) {
 	if !isValidOperator(op) {
-		return Selector{}, fmt.Errorf("'%s' is not a valid query operator", op)
+		return selector{}, fmt.Errorf("'%s' is not a valid query operator", op)
 	}
-	return Selector{Label: label, Op: Operator(op), Value: value}, nil
+	return selector{label: label, op: Operator(op), value: value}, nil
 }
 
 func isValidOperator(op string) bool {
