@@ -431,6 +431,10 @@ const (
 	CDN      Class = "cdn"
 )
 
+func (c Class) String() string {
+	return string(c)
+}
+
 var PluginTypes = []Type{
 	DataSource,
 	Panel,

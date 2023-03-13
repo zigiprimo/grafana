@@ -11,7 +11,7 @@ type Resolver interface {
 }
 
 type Source interface {
-	Get(ctx context.Context) ([]*plugins.FoundBundle, error)
+	GetPlugins(ctx context.Context) ([]*plugins.FoundBundle, error)
 	PluginClass(ctx context.Context) plugins.Class
 	DefaultSignature(ctx context.Context) (plugins.Signature, bool)
 }

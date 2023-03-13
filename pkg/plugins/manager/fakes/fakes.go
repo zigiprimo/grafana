@@ -394,14 +394,14 @@ func (s *FakeSources) List(ctx context.Context) []sources.Source {
 }
 
 type FakeSource struct {
-	GetFunc              func(context.Context) ([]*plugins.FoundBundle, error)
+	GetPluginsFunc       func(context.Context) ([]*plugins.FoundBundle, error)
 	PluginClassFunc      func(context.Context) plugins.Class
 	DefaultSignatureFunc func(context.Context) (plugins.Signature, bool)
 }
 
-func (s *FakeSource) Get(ctx context.Context) ([]*plugins.FoundBundle, error) {
-	if s.GetFunc != nil {
-		return s.GetFunc(ctx)
+func (s *FakeSource) GetPlugins(ctx context.Context) ([]*plugins.FoundBundle, error) {
+	if s.GetPluginsFunc != nil {
+		return s.GetPluginsFunc(ctx)
 	}
 	return nil, nil
 }

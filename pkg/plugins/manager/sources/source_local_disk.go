@@ -36,7 +36,7 @@ func (s *LocalSource) DefaultSignature(_ context.Context) (plugins.Signature, bo
 	}
 }
 
-func (s *LocalSource) Get(ctx context.Context) ([]*plugins.FoundBundle, error) {
+func (s *LocalSource) GetPlugins(ctx context.Context) ([]*plugins.FoundBundle, error) {
 	f := finder.NewLocalFinder(s.paths)
 	return f.Find(ctx)
 }
