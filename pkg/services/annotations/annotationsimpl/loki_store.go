@@ -30,7 +30,7 @@ func (r *lokiRepositoryImpl) Add(ctx context.Context, item *annotations.Item) er
 	// 	return err
 	// }
 
-	r.httpLokiClient.push(ctx, streams)
+	// r.httpLokiClient.push(ctx, streams)
 	return nil
 }
 
