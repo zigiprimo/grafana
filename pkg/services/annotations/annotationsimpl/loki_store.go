@@ -20,29 +20,50 @@ type lokiRepositoryImpl struct {
 
 func (r *lokiRepositoryImpl) Add(ctx context.Context, item *annotations.Item) error {
 	/*
-		tags := tag.ParseTagPairs(item.Tags)
-		item.Tags = tag.JoinTagPairs(tags)
-		item.Created = timeNow().UnixNano() / int64(time.Millisecond)
-		item.Updated = item.Created
-		if item.Epoch == 0 {
-			item.Epoch = item.Created
-		}
 		// if err := r.validateItem(item); err != nil {
 		// 	return err
 		// }
 	*/
+	item.Created = timeNow().UnixNano() / int64(time.Millisecond)
+	item.Updated = item.Created
+	if item.Epoch == 0 {
+		item.Epoch = item.Created
+	}
+
+	tags := tag.ParseTagPairs(item.Tags)
+
+	labels := map[string]string{
+		"org_id":       strconv.Itoa(int(item.OrgID)),
+		"alert_id":     strconv.Itoa(int(item.AlertID)),
+		"dashboard_id": strconv.Itoa(int(item.DashboardID)),
+		"panel_id":     strconv.Itoa(int(item.PanelID)),
+		"user_id":      strconv.Itoa(int(item.UserID)),
+		"type":         item.Type,
+	}
+
+	for _, t := range tags {
+		labels[t.Key] = t.Value
+	}
+
+	blob, err := json.Marshal(item)
+	if err != nil {
+		// fix me: return errutil instead
+		return fmt.Errorf("failed to marshal annotation: %w", err)
+	}
 
 	result := []stream{
 		{
-			Stream: map[string]string{"key": "val", "just": "testing"},
+			Stream: labels,
 			Values: []sample{
 				{
+					// fix me: use item.Epoch instead
 					T: time.Now(),
-					V: "hello world",
+					V: string(blob),
 				},
 			},
 		},
 	}
+	spew.Dump("<<<<", result)
 
 	return r.httpLokiClient.push(ctx, result)
 }
