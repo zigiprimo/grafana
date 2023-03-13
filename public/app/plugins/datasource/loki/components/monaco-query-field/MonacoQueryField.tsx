@@ -98,6 +98,8 @@ const MonacoQueryField = ({ history, onBlur, onRunQuery, initialValue, datasourc
   const onRunQueryRef = useLatest(onRunQuery);
   const onBlurRef = useLatest(onBlur);
 
+  const dataProviderRef = useRef<CompletionDataProvider>();
+
   const autocompleteCleanupCallback = useRef<(() => void) | null>(null);
 
   const theme = useTheme2();
@@ -152,6 +154,8 @@ const MonacoQueryField = ({ history, onBlur, onRunQuery, initialValue, datasourc
         value={initialValue}
         beforeMount={(monaco) => {
           ensureLogQL(monaco);
+
+          dataProviderRef.current = new CompletionDataProvider(langProviderRef.current, historyRef, initialValue);
         }}
         onMount={(editor, monaco) => {
           // Monaco has a bug where it runs actions on all instances (https://github.com/microsoft/monaco-editor/issues/2947), so we ensure actions are executed on instance-level with this ContextKey.
@@ -183,8 +187,7 @@ const MonacoQueryField = ({ history, onBlur, onRunQuery, initialValue, datasourc
             }));
             monaco.editor.setModelMarkers(model, 'owner', markers);
           });
-          const dataProvider = new CompletionDataProvider(langProviderRef.current, historyRef);
-          const completionProvider = getCompletionProvider(monaco, dataProvider);
+          const completionProvider = getCompletionProvider(monaco, dataProviderRef.current!);
 
           // completion-providers in monaco are not registered directly to editor-instances,
           // they are registered to languages. this makes it hard for us to have
@@ -243,6 +246,9 @@ const MonacoQueryField = ({ history, onBlur, onRunQuery, initialValue, datasourc
           });
 
           setPlaceholder(monaco, editor);
+        }}
+        onChange={(value, evt) => {
+          dataProviderRef.current?.updateLs(evt);
         }}
       />
     </div>
