@@ -19,19 +19,32 @@ type lokiRepositoryImpl struct {
 }
 
 func (r *lokiRepositoryImpl) Add(ctx context.Context, item *annotations.Item) error {
-	tags := tag.ParseTagPairs(item.Tags)
-	item.Tags = tag.JoinTagPairs(tags)
-	item.Created = timeNow().UnixNano() / int64(time.Millisecond)
-	item.Updated = item.Created
-	if item.Epoch == 0 {
-		item.Epoch = item.Created
-	}
-	// if err := r.validateItem(item); err != nil {
-	// 	return err
-	// }
+	/*
+		tags := tag.ParseTagPairs(item.Tags)
+		item.Tags = tag.JoinTagPairs(tags)
+		item.Created = timeNow().UnixNano() / int64(time.Millisecond)
+		item.Updated = item.Created
+		if item.Epoch == 0 {
+			item.Epoch = item.Created
+		}
+		// if err := r.validateItem(item); err != nil {
+		// 	return err
+		// }
+	*/
 
-	// r.httpLokiClient.push(ctx, streams)
-	return nil
+	result := []stream{
+		{
+			Stream: map[string]string{"key": "val", "just": "testing"},
+			Values: []sample{
+				{
+					T: time.Now(),
+					V: "hello world",
+				},
+			},
+		},
+	}
+
+	return r.httpLokiClient.push(ctx, result)
 }
 
 func (r *lokiRepositoryImpl) AddMany(ctx context.Context, items []annotations.Item) error {
