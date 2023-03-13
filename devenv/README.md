@@ -11,6 +11,9 @@ This folder contains useful scripts and configuration so you can:
 
 Grafana uses [Docker](https://docker.com) to make the task of setting up databases a little easier. If you do not have it already, make sure you [install Docker](https://docs.docker.com/docker-for-mac/install/) before proceeding to the next step.
 
+[Install Loki docker plugin](https://grafana.com/docs/loki/latest/clients/docker-driver/).
+
+
 ## Developer dashboards and data sources
 
 ```bash

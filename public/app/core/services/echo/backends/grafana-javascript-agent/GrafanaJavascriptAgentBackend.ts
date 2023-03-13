@@ -21,6 +21,8 @@ export interface GrafanaJavascriptAgentBackendOptions extends BrowserConfig {
   errorInstrumentalizationEnabled: boolean;
   consoleInstrumentalizationEnabled: boolean;
   webVitalsInstrumentalizationEnabled: boolean;
+  tracingEnabled: boolean;
+  otlpTracesEndpoint?: string;
 }
 
 export class GrafanaJavascriptAgentBackend
@@ -53,10 +55,7 @@ export class GrafanaJavascriptAgentBackend
     const grafanaJavaScriptAgentOptions: BrowserConfig = {
       globalObjectKey: options.globalObjectKey || 'faro',
       preventGlobalExposure: options.preventGlobalExposure || false,
-      app: {
-        version: options.buildInfo.version,
-        environment: options.buildInfo.env,
-      },
+      app: options.app,
       instrumentations,
       transports: [new EchoSrvTransport()],
       ignoreErrors: [
@@ -75,6 +74,17 @@ export class GrafanaJavascriptAgentBackend
       ],
     };
     this.faroInstance = initializeFaro(grafanaJavaScriptAgentOptions);
+
+    const otlpEndpoint = options.otlpTracesEndpoint;
+    if (options.tracingEnabled && otlpEndpoint) {
+      import('./tracing').then((tracing) => {
+        this.faroInstance.instrumentations.add(
+          tracing.initTracingInstrumentation({
+            otlpEndpoint,
+          })
+        );
+      });
+    }
 
     if (options.user) {
       this.faroInstance.api.setUser({

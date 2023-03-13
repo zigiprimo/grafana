@@ -268,6 +268,7 @@ function initEchoSrv() {
       new GrafanaJavascriptAgentBackend({
         ...config.grafanaJavascriptAgent,
         app: {
+          name: 'Grafana frontend',
           version: config.buildInfo.version,
           environment: config.buildInfo.env,
         },
