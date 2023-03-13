@@ -2,6 +2,7 @@ package annotationsimpl
 
 import (
 	"context"
+	"time"
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/annotations"
@@ -14,9 +15,22 @@ type lokiRepositoryImpl struct {
 	log               log.Logger
 	maximumTagsLength int64
 	tagService        tag.Service
+	httpLokiClient    *httpLokiClient
 }
 
 func (r *lokiRepositoryImpl) Add(ctx context.Context, item *annotations.Item) error {
+	tags := tag.ParseTagPairs(item.Tags)
+	item.Tags = tag.JoinTagPairs(tags)
+	item.Created = timeNow().UnixNano() / int64(time.Millisecond)
+	item.Updated = item.Created
+	if item.Epoch == 0 {
+		item.Epoch = item.Created
+	}
+	// if err := r.validateItem(item); err != nil {
+	// 	return err
+	// }
+
+	r.httpLokiClient.push(ctx, streams)
 	return nil
 }
 
