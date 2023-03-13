@@ -2,12 +2,16 @@ package annotationsimpl
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/annotations"
 	"github.com/grafana/grafana/pkg/services/tag"
 	"github.com/grafana/grafana/pkg/setting"
+	"k8s.io/utils/pointer"
 )
 
 type lokiRepositoryImpl struct {
@@ -63,7 +67,6 @@ func (r *lokiRepositoryImpl) Add(ctx context.Context, item *annotations.Item) er
 			},
 		},
 	}
-	spew.Dump("<<<<", result)
 
 	return r.httpLokiClient.push(ctx, result)
 }
@@ -77,7 +80,42 @@ func (r *lokiRepositoryImpl) Update(ctx context.Context, item *annotations.Item)
 }
 
 func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQuery) ([]*annotations.ItemDTO, error) {
+	selectors := []selector{}
+	res, err := r.httpLokiClient.rangeQuery(ctx, selectors, query.From, query.To)
+	if err != nil {
+		return nil, err
+	}
+
 	items := make([]*annotations.ItemDTO, 0)
+	for _, stream := range res.Data.Result {
+		for _, sample := range stream.Values {
+			a := annotations.Item{}
+			err := json.Unmarshal([]byte(sample.V), &a)
+			if err != nil {
+				r.log.Error("failed to unmarshal annotation item", "error", err, "value", sample.V)
+				continue
+			}
+
+			items = append(items, &annotations.ItemDTO{
+				AlertID:      a.AlertID,
+				DashboardID:  a.DashboardID,
+				AlertName:    "",
+				DashboardUID: pointer.String(""),
+				PanelID:      a.PanelID,
+				UserID:       a.UserID,
+				NewState:     a.NewState,
+				PrevState:    a.PrevState,
+				Created:      a.Created,
+				Updated:      a.Updated,
+				Text:         a.Text,
+				Tags:         a.Tags,
+				Login:        "",
+				Email:        "",
+				AvatarURL:    "",
+				Data:         a.Data,
+			})
+		}
+	}
 	return items, nil
 }
 
