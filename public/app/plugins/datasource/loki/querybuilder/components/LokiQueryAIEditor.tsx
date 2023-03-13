@@ -1,10 +1,13 @@
 import { css } from '@emotion/css';
-import React from 'react';
+import React, { useCallback } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
-import { TextArea, useStyles2 } from '@grafana/ui';
+import { useStyles2 } from '@grafana/ui';
 
 import { LokiQueryEditorProps } from '../../components/types';
+
+import { LokiQueryAIField } from './LokiQueryAIField';
+import { QueryPreview } from './QueryPreview';
 
 export function LokiQueryAIEditor({
   query,
@@ -18,9 +21,17 @@ export function LokiQueryAIEditor({
 }: LokiQueryEditorProps) {
   const styles = useStyles2(getStyles);
 
+  const handleChange = useCallback(
+    (expr: string) => {
+      onChange({ ...query, expr });
+    },
+    [onChange, query]
+  );
+
   return (
     <div className={styles.wrapper}>
-      <TextArea placeholder="Describe your query or request" />
+      <LokiQueryAIField onChange={handleChange} />
+      <QueryPreview query={query.expr} />
     </div>
   );
 }

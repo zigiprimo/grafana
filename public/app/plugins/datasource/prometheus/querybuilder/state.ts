@@ -26,6 +26,7 @@ function getDefaultEditorMode(expr: string, defaultEditor: QueryEditorMode = Que
   switch (value) {
     case QueryEditorMode.Builder:
     case QueryEditorMode.Code:
+    case QueryEditorMode.AI:
       return value;
     default:
       return defaultEditor;
