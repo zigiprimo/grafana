@@ -24,10 +24,6 @@ func (r *lokiRepositoryImpl) AddMany(ctx context.Context, items []annotations.It
 	return nil
 }
 
-func (r *lokiRepositoryImpl) synchronizeTags(ctx context.Context, item *annotations.Item) error {
-	return nil
-}
-
 func (r *lokiRepositoryImpl) Update(ctx context.Context, item *annotations.Item) error {
 	return nil
 }
@@ -44,16 +40,6 @@ func (r *lokiRepositoryImpl) Delete(ctx context.Context, params *annotations.Del
 func (r *lokiRepositoryImpl) GetTags(ctx context.Context, query *annotations.TagsQuery) (annotations.FindTagsResult, error) {
 
 	return annotations.FindTagsResult{}, nil
-}
-
-func (r *lokiRepositoryImpl) validateItem(item *annotations.Item) error {
-
-	return nil
-}
-
-func (r *lokiRepositoryImpl) validateTagsLength(item *annotations.Item) error {
-
-	return nil
 }
 
 func (r *lokiRepositoryImpl) CleanAnnotations(ctx context.Context, cfg setting.AnnotationCleanupSettings, annotationType string) (int64, error) {
