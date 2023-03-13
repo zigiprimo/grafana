@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/services/annotations"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/weaveworks/common/http/client"
 )
@@ -288,4 +289,38 @@ type queryRes struct {
 
 type queryData struct {
 	Result []stream `json:"result"`
+}
+
+// #TODO: figure out where to put these new bits. historian uses "orgID" format btw.
+// #TODO: could use the constants in the Add() method too
+const (
+	orgIDLabel       = "org_id"
+	dashboardIDLabel = "dashboard_id"
+	panelIDLabel     = "panel_id"
+)
+
+// #TODO: for now only include orgID, dashboardID, panelID.
+// Later update to include more selectors. Also make implementation less repetitive.
+func buildSelectors(query *annotations.ItemQuery) ([]selector, error) {
+	selectors := make([]selector, 3)
+
+	selector, err := newSelector(orgIDLabel, "=", fmt.Sprintf("%d", query.OrgID))
+	if err != nil {
+		return nil, err
+	}
+	selectors[0] = selector
+
+	selector, err = newSelector(dashboardIDLabel, "=", fmt.Sprintf("%d", query.DashboardID))
+	if err != nil {
+		return nil, err
+	}
+	selectors[1] = selector
+
+	selector, err = newSelector(panelIDLabel, "=", fmt.Sprintf("%d", query.PanelID))
+	if err != nil {
+		return nil, err
+	}
+	selectors[2] = selector
+
+	return selectors, nil
 }

@@ -80,7 +80,12 @@ func (r *lokiRepositoryImpl) Update(ctx context.Context, item *annotations.Item)
 
 func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQuery) ([]*annotations.ItemDTO, error) {
 	// res, err := r.httpLokiClient.rangeQuery(ctx, []Selector{{Label: "key", Op: Eq, Value: "val"}}, time.Now().Add(-time.Hour).UnixNano(), time.Now().UnixNano())
-	selectors := []selector{}
+
+	selectors, err := buildSelectors(query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the provided selectors: %w", err)
+	}
+
 	res, err := r.httpLokiClient.rangeQuery(ctx, selectors, query.From, query.To)
 	if err != nil {
 		return nil, err
