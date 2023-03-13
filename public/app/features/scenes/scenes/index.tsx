@@ -1,5 +1,6 @@
 import { DashboardScene } from '../dashboard/DashboardScene';
 
+import { getCanvasLayoutTest } from './canvas';
 import { getFlexLayoutTest, getRepeaterSceneWithFlexWrap, getScenePanelRepeaterTest } from './demo';
 import { getGridLayoutTest } from './grid';
 import { getGridWithMultipleTimeRanges } from './gridMultiTimeRange';
@@ -18,6 +19,7 @@ interface SceneDef {
 }
 export function getScenes(): SceneDef[] {
   return [
+    { title: 'Canvas layout test', getScene: getCanvasLayoutTest },
     { title: 'Flex layout test', getScene: getFlexLayoutTest },
     { title: 'Panel repeater test', getScene: getScenePanelRepeaterTest },
     { title: 'Panel repeater test flex wrap', getScene: getRepeaterSceneWithFlexWrap },
