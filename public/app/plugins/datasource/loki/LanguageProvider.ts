@@ -14,6 +14,7 @@ import {
 import { LokiDatasource } from './datasource';
 import {
   extractLabelKeysFromDataFrame,
+  extractLabelValuesFromDataFrame,
   extractLogParserFromDataFrame,
   extractUnwrapLabelKeysFromDataFrame,
 } from './responseUtils';
@@ -479,5 +480,15 @@ export default class LokiLanguageProvider extends LanguageProvider {
       hasJSON,
       hasLogfmt,
     };
+  }
+
+  async getParsedLabelValues(query: string, label: string): Promise<string[]> {
+    const series = await this.datasource.getDataSamples({ expr: query, refId: 'data-samples' });
+
+    if (!series.length) {
+      return [];
+    }
+
+    return extractLabelValuesFromDataFrame(series[0], label);
   }
 }

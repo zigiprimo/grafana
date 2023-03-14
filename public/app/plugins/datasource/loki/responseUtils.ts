@@ -47,6 +47,19 @@ export function extractLabelKeysFromDataFrame(frame: DataFrame): string[] {
   return Object.keys(labelsArray[0]);
 }
 
+export function extractLabelValuesFromDataFrame(frame: DataFrame, label: string): string[] {
+  const logLabelsArray = frame?.fields?.find((field) => field.name === 'labels')?.values.toArray() ?? [];
+  const values = new Set<string>();
+
+  for (const logLabels of logLabelsArray) {
+    if (logLabels[label]) {
+      values.add(logLabels[label]);
+    }
+  }
+
+  return [...values];
+}
+
 export function extractUnwrapLabelKeysFromDataFrame(frame: DataFrame): string[] {
   const labelsArray: Array<{ [key: string]: string }> | undefined =
     frame?.fields?.find((field) => field.name === 'labels')?.values.toArray() ?? [];

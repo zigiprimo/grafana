@@ -1,6 +1,7 @@
 import { getValueFormat } from '@grafana/data';
 
 import { escapeLabelValueInExactSelector } from '../../../languageUtils';
+import { isQueryWithParser } from '../../../queryUtils';
 import { explainOperator } from '../../../querybuilder/operations';
 import { LokiOperationId } from '../../../querybuilder/types';
 import { AGGREGATION_OPERATORS, RANGE_VEC_FUNCTIONS, BUILT_IN_FUNCTIONS } from '../../../syntax';
@@ -195,15 +196,17 @@ async function getParserCompletions(
   prefix: string,
   hasJSON: boolean,
   hasLogfmt: boolean,
-  extractedLabelKeys: string[]
+  extractedLabelKeys: string[],
+  hasParserInQuery: boolean
 ) {
   const allParsers = new Set(PARSERS);
   const completions: Completion[] = [];
+  // To improve documentation for when user has level info and we detect json or logfmt
   const hasLevelInExtractedLabels = extractedLabelKeys.some((key) => key === 'level');
 
   if (hasJSON) {
     allParsers.delete('json');
-    const extra = hasLevelInExtractedLabels ? '' : ' (detected)';
+    const extra = hasParserInQuery ? '' : ' (detected)';
     completions.push({
       type: 'PARSER',
       label: `json${extra}`,
@@ -216,7 +219,7 @@ async function getParserCompletions(
 
   if (hasLogfmt) {
     allParsers.delete('logfmt');
-    const extra = hasLevelInExtractedLabels ? '' : ' (detected)';
+    const extra = hasParserInQuery ? '' : ' (detected)';
     completions.push({
       type: 'PARSER',
       label: `logfmt${extra}`,
@@ -247,17 +250,26 @@ async function getAfterSelectorCompletions(
   dataProvider: CompletionDataProvider
 ): Promise<Completion[]> {
   const { extractedLabelKeys, hasJSON, hasLogfmt } = await dataProvider.getParserAndLabelKeys(logQuery);
+  const queryWithParser = isQueryWithParser(logQuery).queryWithParser;
 
   const prefix = `${hasSpace ? '' : ' '}${afterPipe ? '' : '| '}`;
-  const completions: Completion[] = await getParserCompletions(prefix, hasJSON, hasLogfmt, extractedLabelKeys);
+  const completions: Completion[] = await getParserCompletions(
+    prefix,
+    hasJSON,
+    hasLogfmt,
+    extractedLabelKeys,
+    queryWithParser
+  );
 
-  extractedLabelKeys.forEach((key) => {
-    completions.push({
-      type: 'PIPE_OPERATION',
-      label: `unwrap ${key}`,
-      insertText: `${prefix}unwrap ${key}`,
+  if (queryWithParser) {
+    extractedLabelKeys.forEach((key) => {
+      completions.push({
+        type: 'LABEL_NAME',
+        label: `${key}`,
+        insertText: `${prefix} ${key}`,
+      });
     });
-  });
+  }
 
   completions.push({
     type: 'PIPE_OPERATION',
@@ -282,11 +294,27 @@ async function getAfterSelectorCompletions(
     documentation: explainOperator(LokiOperationId.LabelFormat),
   });
 
+  if (queryWithParser) {
+    return [...completions];
+  }
+
   // With a space between the pipe and the cursor, we omit line filters
   // E.g. `{label="value"} | `
   const lineFilters = afterPipe && hasSpace ? [] : getLineFilterCompletions(afterPipe);
 
   return [...lineFilters, ...completions];
+}
+
+async function getLabelFilterMatcherCompletions(
+  logsQuery: string,
+  dataProvider: CompletionDataProvider
+): Promise<Completion[]> {
+  const result = await dataProvider.getPipelineLabelValues(logsQuery);
+  return result.map((text) => ({
+    type: 'LABEL_VALUE',
+    label: text,
+    insertText: `\`${text}\``,
+  }));
 }
 
 async function getLabelValuesForMetricCompletions(
@@ -375,6 +403,8 @@ export async function getCompletions(
       return getAfterUnwrapCompletions(situation.logQuery, dataProvider);
     case 'IN_AGGREGATION':
       return [...FUNCTION_COMPLETIONS, ...AGGREGATION_COMPLETIONS];
+    case 'IN_LABEL_FILTER_MATCHER':
+      return getLabelFilterMatcherCompletions(situation.logQuery, dataProvider);
     default:
       throw new NeverCaseError(situation);
   }
