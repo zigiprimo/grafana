@@ -3,11 +3,13 @@ package annotationsimpl
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/grafana/grafana/pkg/infra/log"
+	ac "github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/annotations"
 	"github.com/grafana/grafana/pkg/services/tag"
 	"github.com/grafana/grafana/pkg/services/user"
@@ -87,6 +89,13 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 		return nil, fmt.Errorf("failed to build the provided selectors: %w", err)
 	}
 
+	if !ac.IsDisabled(r.cfg) {
+		selectors, err = filterByAccessControl(selectors, query.SignedInUser)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	res, err := r.httpLokiClient.rangeQuery(ctx, selectors, query.From, query.To)
 	if err != nil {
 		return nil, err
@@ -122,12 +131,36 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 			})
 		}
 	}
-	return filterByAccessControl(items, query.SignedInUser)
+	return items, nil
 }
 
-// TODO: fill in implementation
-func filterByAccessControl(items []*annotations.ItemDTO, user *user.SignedInUser) ([]*annotations.ItemDTO, error) {
-	return items, nil
+func filterByAccessControl(selectors []selector, user *user.SignedInUser) ([]selector, error) {
+	if user == nil || user.Permissions[user.OrgID] == nil {
+		return nil, errors.New("missing permissions")
+	}
+	scopes, has := user.Permissions[user.OrgID][ac.ActionAnnotationsRead]
+	if !has {
+		return nil, errors.New("missing permissions")
+	}
+	types, hasWildcardScope := ac.ParseScopes(ac.ScopeAnnotationsProvider.GetResourceScopeType(""), scopes)
+	if hasWildcardScope {
+		types = map[interface{}]struct{}{annotations.Dashboard.String(): {}, annotations.Organization.String(): {}}
+	}
+
+	for t := range types {
+		// annotation read permission with scope annotations:type:organization allows listing annotations that are not associated with a dashboard
+		if t == annotations.Organization.String() {
+			// TODO: improve the creation of the new selector here (using labels, newSelector etc)
+			selectors = append(selectors, selector{label: "dashboard_id", op: eq, value: "0"})
+		}
+		// annotation read permission with scope annotations:type:dashboard allows listing annotations from dashboards which the user can view
+		if t == annotations.Dashboard.String() {
+			// TODO: as a first step make a database call to find all dashboards for which the user has permissions
+			// use this to add the appropriate selectors
+			// next step would be to pass dashboard_uid as a label in the call to Add() and then use that when filtering
+		}
+	}
+	return selectors, nil
 }
 
 func (r *lokiRepositoryImpl) Delete(ctx context.Context, params *annotations.DeleteParams) error {
