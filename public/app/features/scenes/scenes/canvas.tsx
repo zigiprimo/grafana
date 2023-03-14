@@ -18,6 +18,13 @@ export function getCanvasLayoutTest(): DashboardScene {
     title: 'Canvas layout test',
     body: new SceneCanvasLayout({
       children: [
+        panelBuilders.newCanvas({
+          title: 'Canvas test',
+          background: { color: 'rgba(200,0,0,0.5)' },
+          placement: { left: 100, top: 100, width: 500, height: 500 },
+          border: { color: 'green', width: 2 },
+          constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+        }),
         new SceneCanvasText({
           background: { image: 'https://i.redd.it/kg3cgpznfql01.jpg' },
           placement: { left: 100, bottom: 100, width: 200, height: 200 },
