@@ -62,7 +62,7 @@ describe('CompletionDataProvider', () => {
     datasource = createLokiDatasource();
     languageProvider = new LokiLanguageProvider(datasource);
     historyRef.current = history;
-    completionProvider = new CompletionDataProvider(languageProvider, historyRef);
+    completionProvider = new CompletionDataProvider(datasource, languageProvider, historyRef, '');
 
     jest.spyOn(languageProvider, 'getLabelKeys').mockReturnValue(labelKeys);
     jest.spyOn(languageProvider, 'getLabelValues').mockResolvedValue(labelValues);
