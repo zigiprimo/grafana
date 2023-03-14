@@ -155,7 +155,12 @@ const MonacoQueryField = ({ history, onBlur, onRunQuery, initialValue, datasourc
         beforeMount={(monaco) => {
           ensureLogQL(monaco);
 
-          dataProviderRef.current = new CompletionDataProvider(langProviderRef.current, historyRef, initialValue);
+          dataProviderRef.current = new CompletionDataProvider(
+            datasource,
+            langProviderRef.current,
+            historyRef,
+            initialValue
+          );
         }}
         onMount={(editor, monaco) => {
           // Monaco has a bug where it runs actions on all instances (https://github.com/microsoft/monaco-editor/issues/2947), so we ensure actions are executed on instance-level with this ContextKey.

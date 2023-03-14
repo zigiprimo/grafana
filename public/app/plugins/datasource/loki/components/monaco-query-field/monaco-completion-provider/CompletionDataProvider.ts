@@ -5,6 +5,7 @@ import type { monacoTypes } from '@grafana/ui';
 import { escapeLabelValueInExactSelector } from 'app/plugins/datasource/prometheus/language_utils';
 
 import LanguageProvider from '../../../LanguageProvider';
+import { LokiDatasource } from '../../../datasource';
 import { LokiQuery } from '../../../types';
 
 import { Label } from './situation';
@@ -19,6 +20,7 @@ export class CompletionDataProvider {
   webSocketId = 0;
 
   constructor(
+    private datasource: LokiDatasource,
     private languageProvider: LanguageProvider,
     private historyRef: HistoryRef = { current: [] },
     initialValue: string
@@ -358,6 +360,48 @@ export class CompletionDataProvider {
     const usedLabelNames = new Set(otherLabels.map((l) => l.name)); // names used in the query
     return possibleLabelNames.filter((label) => !usedLabelNames.has(label));
   }
+
+  getQueryBytes = async (expr: string): Promise<number | undefined> => {
+    const query = { expr, refId: 'stats' + expr };
+    const stats = await this.datasource.getQueryStats(query);
+    if (stats.bytes !== undefined) {
+      return stats.bytes;
+    }
+    return;
+  };
+
+  getStatsForLabelValues = async (
+    selectedLabels: Label[] = [],
+    labelName: string
+  ): Promise<{ [key: string]: number }> => {
+    const bytesForLabel: { [key: string]: number } = {};
+    const expr = selectedLabels.map((label) => `${label.name}${label.op}"${label.value}"`).join(',');
+    const labelValues = await this.getLabelValues(labelName, []);
+
+    for (const labelValue of labelValues) {
+      const newQuery = `{${expr}, ${labelName}="${labelValue}"}`;
+      const bytes = await this.getQueryBytes(newQuery);
+      if (bytes !== undefined) {
+        bytesForLabel[labelValue] = bytes;
+      }
+    }
+    return bytesForLabel;
+  };
+
+  getStatsForLabelNames = async (selectedLabels: Label[] = []): Promise<{ [key: string]: number }> => {
+    const bytesForLabel: { [key: string]: number } = {};
+    const expr = selectedLabels.map((label) => `${label.name}${label.op}"${label.value}"`).join(',');
+    const labelNames = await this.getLabelNames(selectedLabels);
+
+    for (const labelName of labelNames) {
+      const newQuery = `{${expr}, ${labelName}=~".*"}`;
+      const bytes = await this.getQueryBytes(newQuery);
+      if (bytes !== undefined) {
+        bytesForLabel[labelName] = bytes;
+      }
+    }
+    return bytesForLabel;
+  };
 
   async getLabelValues(labelName: string, otherLabels: Label[]) {
     if (otherLabels.length === 0) {
