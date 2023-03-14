@@ -10,6 +10,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/annotations"
 	"github.com/grafana/grafana/pkg/services/tag"
+	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
 	"k8s.io/utils/pointer"
 )
@@ -121,6 +122,11 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 			})
 		}
 	}
+	return filterByAccessControl(items, query.SignedInUser)
+}
+
+// TODO: fill in implementation
+func filterByAccessControl(items []*annotations.ItemDTO, user *user.SignedInUser) ([]*annotations.ItemDTO, error) {
 	return items, nil
 }
 
