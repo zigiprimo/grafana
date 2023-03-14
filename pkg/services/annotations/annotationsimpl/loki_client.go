@@ -293,34 +293,61 @@ type queryData struct {
 
 // #TODO: figure out where to put these new bits. historian uses "orgID" format btw.
 // #TODO: could use the constants in the Add() method too
+// #TODO: add remaining labels
 const (
 	orgIDLabel       = "org_id"
 	dashboardIDLabel = "dashboard_id"
 	panelIDLabel     = "panel_id"
 )
 
-// #TODO: for now only include orgID, dashboardID, panelID.
-// Later update to include more selectors. Also make implementation less repetitive.
 func buildSelectors(query *annotations.ItemQuery) ([]selector, error) {
-	selectors := make([]selector, 3)
+	m := make(map[string]string)
 
-	selector, err := newSelector(orgIDLabel, "=", fmt.Sprintf("%d", query.OrgID))
-	if err != nil {
-		return nil, err
-	}
-	selectors[0] = selector
+	m[orgIDLabel] = fmt.Sprintf("%d", query.OrgID)
 
-	selector, err = newSelector(dashboardIDLabel, "=", fmt.Sprintf("%d", query.DashboardID))
-	if err != nil {
-		return nil, err
+	if query.AnnotationID != 0 {
+		m["annotation_id"] = fmt.Sprintf("%d", query.AnnotationID)
 	}
-	selectors[1] = selector
 
-	selector, err = newSelector(panelIDLabel, "=", fmt.Sprintf("%d", query.PanelID))
-	if err != nil {
-		return nil, err
+	if query.AlertID != 0 {
+		m["alert_id"] = fmt.Sprintf("%d", query.AlertID)
 	}
-	selectors[2] = selector
+
+	if query.DashboardID != 0 {
+		m["dashboard_id"] = fmt.Sprintf("%d", query.DashboardID)
+	}
+
+	if query.PanelID != 0 {
+		m["panel_id"] = fmt.Sprintf("%d", query.PanelID)
+	}
+
+	if query.UserID != 0 {
+		m["user_id"] = fmt.Sprintf("%d", query.UserID)
+	}
+
+	// #TODO: figure out what we want in this case. Loki defaults to the past hour otherwise
+	// https://grafana.com/docs/loki/latest/api/#query-loki-over-a-range-of-time
+	// Could make the period from now all the way back to beginning of retention period perhaps.
+	if query.From > 0 && query.To > 0 {
+		// #TODO: label naming here
+		m["from"] = fmt.Sprintf("%d", query.From)
+		m["to"] = fmt.Sprintf("%d", query.To)
+	}
+
+	// #TODO: handle the check for query.Type. Is it worth doing the check ahead of time though?
+	// an option would be to do some filtering on the returned results instead.
+
+	selectors := make([]selector, len(m))
+
+	var i int
+	for k, v := range m {
+		selector, err := newSelector(k, "=", v)
+		if err != nil {
+			return nil, err
+		}
+		selectors[i] = selector
+		i++
+	}
 
 	return selectors, nil
 }
