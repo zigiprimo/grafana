@@ -63,6 +63,14 @@ const prependedText = `// Sample LogQL loki queries:
 {job="mysql"} | logfmt
 // Logs of test 123 log format
 {job="mysql"} | logfmt
+// Logs of test 123 unpack parser
+{job="mysql"} | unpack
+// Logs of label container value frontend logfmt parser and format query duration
+{container="frontend"} | logfmt | line_format "{{.query}} {{.duration}}"
+// Logs of label container value frontend json parser and rewrite query duration labels
+{container="frontend"} | json | line_format "{{.query}} {{.duration}}"
+// Logs of label container value frontend json parser and line format  "{{.query}} {{.duration}}"
+{container="frontend"} | json | line_format "{{.query}} {{.duration}}"
 
 `;
 
