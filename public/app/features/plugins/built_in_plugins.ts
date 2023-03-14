@@ -44,6 +44,7 @@ const parcaPlugin = async () =>
 
 import * as alertGroupsPanel from 'app/plugins/panel/alertGroups/module';
 import * as alertListPanel from 'app/plugins/panel/alertlist/module';
+import * as alertRulePanel from 'app/plugins/panel/alertrule/module';
 import * as annoListPanel from 'app/plugins/panel/annolist/module';
 import * as barChartPanel from 'app/plugins/panel/barchart/module';
 import * as barGaugePanel from 'app/plugins/panel/bargauge/module';
@@ -116,6 +117,7 @@ const builtInPlugins: any = {
   'app/plugins/panel/icon/module': iconPanel,
   'app/plugins/panel/dashlist/module': dashListPanel,
   'app/plugins/panel/alertlist/module': alertListPanel,
+  'app/plugins/panel/alertrule/module': alertRulePanel,
   'app/plugins/panel/annolist/module': annoListPanel,
   'app/plugins/panel/heatmap/module': heatmapPanel,
   'app/plugins/panel/table/module': tablePanel,

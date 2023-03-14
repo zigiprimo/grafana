@@ -90,6 +90,28 @@
       "pluralName": "AlertmanagerDataSourceCfgs",
       "schemaInterface": "DataSourceCfg"
     },
+    "alertrulepanelcfg": {
+      "category": "composable",
+      "codeowners": [],
+      "currentVersion": [
+        0,
+        0
+      ],
+      "grafanaMaturityCount": 0,
+      "lineageIsGroup": true,
+      "links": {
+        "docs": "n/a",
+        "go": "n/a",
+        "schema": "n/a",
+        "ts": "n/a"
+      },
+      "machineName": "alertrulepanelcfg",
+      "maturity": "planned",
+      "name": "AlertRulePanelCfg",
+      "pluralMachineName": "alertrulepanelcfgs",
+      "pluralName": "AlertRulePanelCfgs",
+      "schemaInterface": "PanelCfg"
+    },
     "annotationslistpanelcfg": {
       "category": "composable",
       "codeowners": [
@@ -1946,6 +1968,7 @@
           "alertlistpanelcfg",
           "alertmanagerdataquery",
           "alertmanagerdatasourcecfg",
+          "alertrulepanelcfg",
           "annotationslistpanelcfg",
           "azuremonitordataquery",
           "azuremonitordatasourcecfg",
@@ -2010,7 +2033,7 @@
           "zipkindataquery",
           "zipkindatasourcecfg"
         ],
-        "count": 67
+        "count": 68
       },
       "core": {
         "name": "core",
@@ -2093,6 +2116,7 @@
           "alertlistpanelcfg",
           "alertmanagerdataquery",
           "alertmanagerdatasourcecfg",
+          "alertrulepanelcfg",
           "apikey",
           "azuremonitordatasourcecfg",
           "cloudwatchdatasourcecfg",
@@ -2136,7 +2160,7 @@
           "zipkindataquery",
           "zipkindatasourcecfg"
         ],
-        "count": 45
+        "count": 46
       },
       "stable": {
         "name": "stable",
