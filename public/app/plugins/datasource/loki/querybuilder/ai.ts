@@ -7,6 +7,12 @@ const configuration = new Configuration({});
 const openai = new OpenAIApi(configuration);
 
 const prependedText = `// Sample LogQL loki queries:
+// For test = 123
+{test="123"}
+// Logs of test 123
+{test="123"}
+// {test="123"}
+{test="123"}
 // Select log lines from the stream test and value 123
 {test="123"}
 // Select log lines of test 123
@@ -71,6 +77,24 @@ const prependedText = `// Sample LogQL loki queries:
 {container="frontend"} | json | line_format "{{.query}} {{.duration}}"
 // Logs of label container value frontend json parser and line format  "{{.query}} {{.duration}}"
 {container="frontend"} | json | line_format "{{.query}} {{.duration}}"
+// Count all the log lines within the last five minutes for the MySQL job
+count_over_time({job="mysql"}[5m])
+// Count log lines from job = mysql in the last 10 minutes
+count_over_time({job="mysql"}[5m])
+// Count log lines from job = mysql in the current interval
+count_over_time({job="mysql"}[$__interval])
+// Count all the log lines within the last five minutes for the MySQL job containing 
+count_over_time({job="mysql"}[5m])
+// Rate per second for the mysql job in a minute
+rate({job="mysql"}[1m])
+// Rate per second of mysql job within a minute
+rate({job="mysql"}[1m])
+// Rate per second of test = 123 in 1 minute
+rate({test="123"}[1m])
+// Rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute for the mysql job
+sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
+// For job = mysql calculate the rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute
+sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
 
 `;
 
