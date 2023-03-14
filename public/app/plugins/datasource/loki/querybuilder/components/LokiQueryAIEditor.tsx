@@ -24,8 +24,9 @@ export function LokiQueryAIEditor({
   const handleChange = useCallback(
     (expr: string) => {
       onChange({ ...query, expr });
+      onRunQuery();
     },
-    [onChange, query]
+    [onChange, onRunQuery, query]
   );
 
   return (
