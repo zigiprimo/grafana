@@ -25,6 +25,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/secrets"
 	"github.com/grafana/grafana/pkg/services/secrets/fakes"
 	secretskvs "github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	secretskvsImpl "github.com/grafana/grafana/pkg/services/secrets/kvstore/kvstoreimpl"
 	secretsmng "github.com/grafana/grafana/pkg/services/secrets/manager"
 	"github.com/grafana/grafana/pkg/setting"
 )
@@ -264,7 +265,7 @@ func TestService_GetHttpTransport(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -301,7 +302,7 @@ func TestService_GetHttpTransport(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -352,7 +353,7 @@ func TestService_GetHttpTransport(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -400,7 +401,7 @@ func TestService_GetHttpTransport(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -452,7 +453,7 @@ func TestService_GetHttpTransport(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -487,7 +488,7 @@ func TestService_GetHttpTransport(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -556,7 +557,7 @@ func TestService_GetHttpTransport(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -592,7 +593,7 @@ func TestService_GetHttpTransport(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -631,7 +632,7 @@ func TestService_getTimeout(t *testing.T) {
 
 	sqlStore := db.InitTestDB(t)
 	secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+	secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	quotaService := quotatest.New(false, nil)
 	dsService, err := ProvideService(sqlStore, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 	require.NoError(t, err)
@@ -654,7 +655,7 @@ func TestService_GetDecryptedValues(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, nil, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -682,7 +683,7 @@ func TestService_GetDecryptedValues(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := ProvideService(sqlStore, secretsService, secretsStore, nil, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)

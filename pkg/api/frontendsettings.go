@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/licensing"
 	"github.com/grafana/grafana/pkg/services/pluginsettings"
-	"github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	kvstore "github.com/grafana/grafana/pkg/services/secrets/kvstore/kvstoreimpl"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/tsdb/grafanads"
 	"github.com/grafana/grafana/pkg/util"

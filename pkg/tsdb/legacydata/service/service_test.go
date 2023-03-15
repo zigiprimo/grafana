@@ -17,7 +17,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/quota/quotatest"
 	"github.com/grafana/grafana/pkg/services/secrets/fakes"
-	secretskvs "github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	secretskvs "github.com/grafana/grafana/pkg/services/secrets/kvstore/kvstoreimpl"
 	secretsmng "github.com/grafana/grafana/pkg/services/secrets/manager"
 	"github.com/grafana/grafana/pkg/tsdb/legacydata"
 )

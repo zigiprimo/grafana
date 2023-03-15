@@ -17,6 +17,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/quota/quotatest"
 	"github.com/grafana/grafana/pkg/services/secrets/fakes"
 	secretskvs "github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	secretskvsImpl "github.com/grafana/grafana/pkg/services/secrets/kvstore/kvstoreimpl"
 	secretsmng "github.com/grafana/grafana/pkg/services/secrets/manager"
 	"github.com/grafana/grafana/pkg/setting"
 )
@@ -41,7 +42,7 @@ func TestMigrate(t *testing.T) {
 		sqlStore := db.InitTestDB(t)
 		kvStore := kvstore.ProvideService(sqlStore)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		migService := SetupTestDataSourceSecretMigrationService(t, sqlStore, kvStore, secretsStore, false)
 		ds := dsservice.CreateStore(sqlStore, log.NewNopLogger())
 		dataSourceName := "Test"
@@ -105,7 +106,7 @@ func TestMigrate(t *testing.T) {
 		sqlStore := db.InitTestDB(t)
 		kvStore := kvstore.ProvideService(sqlStore)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		migService := SetupTestDataSourceSecretMigrationService(t, sqlStore, kvStore, secretsStore, true)
 		ds := dsservice.CreateStore(sqlStore, log.NewNopLogger())
 		dataSourceName := "Test"
@@ -172,7 +173,7 @@ func TestMigrate(t *testing.T) {
 
 		kvStore := kvstore.ProvideService(sqlStore)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		migService := SetupTestDataSourceSecretMigrationService(t, sqlStore, kvStore, secretsStore, false)
 		ds := dsservice.CreateStore(sqlStore, log.NewNopLogger())
 
@@ -263,7 +264,7 @@ func TestMigrate(t *testing.T) {
 		sqlStore := db.InitTestDB(t)
 		kvStore := kvstore.ProvideService(sqlStore)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		migService := SetupTestDataSourceSecretMigrationService(t, sqlStore, kvStore, secretsStore, true)
 		ds := dsservice.CreateStore(sqlStore, log.NewNopLogger())
 

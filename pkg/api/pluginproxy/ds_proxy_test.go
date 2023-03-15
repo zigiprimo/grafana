@@ -38,6 +38,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/secrets"
 	"github.com/grafana/grafana/pkg/services/secrets/fakes"
 	secretskvs "github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	secretskvsImpl "github.com/grafana/grafana/pkg/services/secrets/kvstore/kvstoreimpl"
 	secretsmng "github.com/grafana/grafana/pkg/services/secrets/manager"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
@@ -103,7 +104,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		key, err := secretsService.Encrypt(context.Background(), []byte("123"), secrets.WithoutScope())
 		require.NoError(t, err)
 
@@ -271,7 +272,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		key, err := secretsService.Encrypt(context.Background(), []byte("123"), secrets.WithoutScope())
 		require.NoError(t, err)
 
@@ -377,7 +378,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -406,7 +407,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -434,7 +435,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -466,7 +467,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 		var pluginRoutes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -493,7 +494,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -546,7 +547,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -603,7 +604,7 @@ func TestDataSourceProxy_routeRule(t *testing.T) {
 	t.Run("When proxying data source proxy should handle authentication", func(t *testing.T) {
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 
 		tests := []*testCase{
 			createAuthTest(t, secretsStore, datasources.DS_INFLUXDB_08, "http://localhost:9090", authTypePassword, authCheckQuery),
@@ -685,7 +686,7 @@ func TestDataSourceProxy_requestHandling(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -707,7 +708,7 @@ func TestDataSourceProxy_requestHandling(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -725,7 +726,7 @@ func TestDataSourceProxy_requestHandling(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -751,7 +752,7 @@ func TestDataSourceProxy_requestHandling(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -780,7 +781,7 @@ func TestDataSourceProxy_requestHandling(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -808,7 +809,7 @@ func TestDataSourceProxy_requestHandling(t *testing.T) {
 		var routes []*plugins.Route
 		sqlStore := db.InitTestDB(t)
 		secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-		secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+		secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 		quotaService := quotatest.New(false, nil)
 		dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 		require.NoError(t, err)
@@ -836,7 +837,7 @@ func TestNewDataSourceProxy_InvalidURL(t *testing.T) {
 	var routes []*plugins.Route
 	sqlStore := db.InitTestDB(t)
 	secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+	secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	quotaService := quotatest.New(false, nil)
 	var err error
 	dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
@@ -861,7 +862,7 @@ func TestNewDataSourceProxy_ProtocolLessURL(t *testing.T) {
 	var routes []*plugins.Route
 	sqlStore := db.InitTestDB(t)
 	secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+	secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	quotaService := quotatest.New(false, nil)
 	dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 	require.NoError(t, err)
@@ -907,7 +908,7 @@ func TestNewDataSourceProxy_MSSQL(t *testing.T) {
 			var routes []*plugins.Route
 			sqlStore := db.InitTestDB(t)
 			secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-			secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+			secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 			quotaService := quotatest.New(false, nil)
 			dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 			require.NoError(t, err)
@@ -937,7 +938,7 @@ func getDatasourceProxiedRequest(t *testing.T, ctx *contextmodel.ReqContext, cfg
 	var routes []*plugins.Route
 	sqlStore := db.InitTestDB(t)
 	secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+	secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	quotaService := quotatest.New(false, nil)
 	dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 	require.NoError(t, err)
@@ -1102,7 +1103,7 @@ func Test_PathCheck(t *testing.T) {
 	ctx, _ := setUp()
 	sqlStore := db.InitTestDB(t)
 	secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
-	secretsStore := secretskvs.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
+	secretsStore := secretskvsImpl.NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 	quotaService := quotatest.New(false, nil)
 	dsService, err := datasourceservice.ProvideService(nil, secretsService, secretsStore, cfg, featuremgmt.WithFeatures(), acmock.New(), acmock.NewMockedPermissionsService(), quotaService)
 	require.NoError(t, err)

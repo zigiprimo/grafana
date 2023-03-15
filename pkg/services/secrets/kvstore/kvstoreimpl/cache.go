@@ -8,6 +8,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/infra/localcache"
 	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/services/secrets/kvstore"
 )
 
 var errSecretStoreIsNotCached = errors.New("SecretsKVStore is not a CachedKVStore")
@@ -15,10 +16,10 @@ var errSecretStoreIsNotCached = errors.New("SecretsKVStore is not a CachedKVStor
 type CachedKVStore struct {
 	log   log.Logger
 	cache *localcache.CacheService
-	store SecretsKVStore
+	store kvstore.SecretsKVStore
 }
 
-func WithCache(store SecretsKVStore, defaultExpiration time.Duration, cleanupInterval time.Duration) *CachedKVStore {
+func WithCache(store kvstore.SecretsKVStore, defaultExpiration time.Duration, cleanupInterval time.Duration) *CachedKVStore {
 	return &CachedKVStore{
 		log:   log.New("secrets.kvstore"),
 		cache: localcache.New(defaultExpiration, cleanupInterval),
@@ -62,7 +63,7 @@ func (kv *CachedKVStore) Del(ctx context.Context, orgId int64, namespace string,
 	return nil
 }
 
-func (kv *CachedKVStore) Keys(ctx context.Context, orgId int64, namespace string, typ string) ([]Key, error) {
+func (kv *CachedKVStore) Keys(ctx context.Context, orgId int64, namespace string, typ string) ([]kvstore.Key, error) {
 	return kv.store.Keys(ctx, orgId, namespace, typ)
 }
 
@@ -80,11 +81,11 @@ func (kv *CachedKVStore) Rename(ctx context.Context, orgId int64, namespace stri
 	return nil
 }
 
-func (kv *CachedKVStore) GetAll(ctx context.Context) ([]Item, error) {
+func (kv *CachedKVStore) GetAll(ctx context.Context) ([]kvstore.Item, error) {
 	return kv.store.GetAll(ctx)
 }
 
-func GetUnwrappedStoreFromCache(kv SecretsKVStore) (SecretsKVStore, error) {
+func GetUnwrappedStoreFromCache(kv kvstore.SecretsKVStore) (kvstore.SecretsKVStore, error) {
 	if cache, ok := kv.(*CachedKVStore); ok {
 		return cache.store, nil
 	}

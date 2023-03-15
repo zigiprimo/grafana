@@ -6,7 +6,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/api/response"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
-	skv "github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	skv "github.com/grafana/grafana/pkg/services/secrets/kvstore/kvstoreimpl"
 )
 
 func (hs *HTTPServer) AdminRotateDataEncryptionKeys(c *contextmodel.ReqContext) response.Response {

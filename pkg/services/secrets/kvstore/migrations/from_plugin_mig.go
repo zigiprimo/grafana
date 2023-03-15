@@ -10,7 +10,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin/secretsmanagerplugin"
 	"github.com/grafana/grafana/pkg/services/secrets"
-	secretskvs "github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	secretskvsImpl "github.com/grafana/grafana/pkg/services/secrets/kvstore/kvstoreimpl"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -45,7 +45,7 @@ func ProvideMigrateFromPluginService(
 func (s *MigrateFromPluginService) Migrate(ctx context.Context) error {
 	logger.Debug("starting migration of plugin secrets to unified secrets")
 	// access the plugin directly
-	plugin, err := secretskvs.StartAndReturnPlugin(s.manager, context.Background())
+	plugin, err := secretskvsImpl.StartAndReturnPlugin(s.manager, context.Background())
 	if err != nil {
 		return errPluginUnavailable
 	}
@@ -58,7 +58,7 @@ func (s *MigrateFromPluginService) Migrate(ctx context.Context) error {
 	totalSecrets := len(res.Items)
 	logger.Debug("retrieved all secrets from plugin", "num secrets", totalSecrets)
 	// create a secret sql store manually
-	secretsSql := secretskvs.NewSQLSecretsKVStore(s.sqlStore, s.secretsService, logger)
+	secretsSql := secretskvsImpl.NewSQLSecretsKVStore(s.sqlStore, s.secretsService, logger)
 	for i, item := range res.Items {
 		logger.Debug(fmt.Sprintf("Migrating secret %d of %d", i+1, totalSecrets), "current", i+1, "secretCount", totalSecrets)
 		// Add to sql store
@@ -88,12 +88,12 @@ func (s *MigrateFromPluginService) Migrate(ctx context.Context) error {
 	logger.Debug("Completed migration of secrets from plugin")
 
 	// The plugin is no longer needed at the moment
-	err = secretskvs.SetPluginStartupErrorFatal(ctx, secretskvs.GetNamespacedKVStore(s.kvstore), false)
+	err = secretskvsImpl.SetPluginStartupErrorFatal(ctx, secretskvsImpl.GetNamespacedKVStore(s.kvstore), false)
 	if err != nil {
 		logger.Error("Failed to remove plugin error fatal flag", "error", err.Error())
 	}
 	// Reset the fatal flag setter in case another secret is created on the plugin
-	secretskvs.ResetPlugin()
+	secretskvsImpl.ResetPlugin()
 
 	logger.Debug("Shutting down secrets plugin now that migration is complete")
 	// if `use_plugin` wasn't set, stop the plugin after migration

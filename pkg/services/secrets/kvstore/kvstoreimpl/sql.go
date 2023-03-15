@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/secrets"
+	"github.com/grafana/grafana/pkg/services/secrets/kvstore"
 )
 
 // SecretsKVStoreSQL provides a key/value store backed by the Grafana database
@@ -44,7 +45,7 @@ func NewSQLSecretsKVStore(sqlStore db.DB, secretsService secrets.Service, logger
 
 // Get an item from the store
 func (kv *SecretsKVStoreSQL) Get(ctx context.Context, orgId int64, namespace string, typ string) (string, bool, error) {
-	item := Item{
+	item := kvstore.Item{
 		OrgId:     &orgId,
 		Namespace: &namespace,
 		Type:      &typ,
@@ -87,7 +88,7 @@ func (kv *SecretsKVStoreSQL) Set(ctx context.Context, orgId int64, namespace str
 	}
 	encodedValue := b64.EncodeToString(encryptedValue)
 	return kv.sqlStore.WithTransactionalDbSession(ctx, func(dbSession *db.Session) error {
-		item := Item{
+		item := kvstore.Item{
 			OrgId:     &orgId,
 			Namespace: &namespace,
 			Type:      &typ,
@@ -139,7 +140,7 @@ func (kv *SecretsKVStoreSQL) Set(ctx context.Context, orgId int64, namespace str
 // Del deletes an item from the store.
 func (kv *SecretsKVStoreSQL) Del(ctx context.Context, orgId int64, namespace string, typ string) error {
 	err := kv.sqlStore.WithDbSession(ctx, func(dbSession *db.Session) error {
-		item := Item{
+		item := kvstore.Item{
 			OrgId:     &orgId,
 			Namespace: &namespace,
 			Type:      &typ,
@@ -171,8 +172,8 @@ func (kv *SecretsKVStoreSQL) Del(ctx context.Context, orgId int64, namespace str
 
 // Keys get all keys for a given namespace. To query for all
 // organizations the constant 'kvstore.AllOrganizations' can be passed as orgId.
-func (kv *SecretsKVStoreSQL) Keys(ctx context.Context, orgId int64, namespace string, typ string) ([]Key, error) {
-	var keys []Key
+func (kv *SecretsKVStoreSQL) Keys(ctx context.Context, orgId int64, namespace string, typ string) ([]kvstore.Key, error) {
+	var keys []kvstore.Key
 	err := kv.sqlStore.WithDbSession(ctx, func(dbSession *db.Session) error {
 		query := dbSession.Where("namespace = ?", namespace).And("type = ?", typ)
 		if orgId != AllOrganizations {
@@ -186,7 +187,7 @@ func (kv *SecretsKVStoreSQL) Keys(ctx context.Context, orgId int64, namespace st
 // Rename an item in the store
 func (kv *SecretsKVStoreSQL) Rename(ctx context.Context, orgId int64, namespace string, typ string, newNamespace string) error {
 	return kv.sqlStore.WithTransactionalDbSession(ctx, func(dbSession *db.Session) error {
-		item := Item{
+		item := kvstore.Item{
 			OrgId:     &orgId,
 			Namespace: &namespace,
 			Type:      &typ,
@@ -218,8 +219,8 @@ func (kv *SecretsKVStoreSQL) Rename(ctx context.Context, orgId int64, namespace 
 
 // GetAll this returns all the secrets stored in the database. This is not part of the kvstore interface as we
 // only need it for migration from sql to plugin at this moment
-func (kv *SecretsKVStoreSQL) GetAll(ctx context.Context) ([]Item, error) {
-	var items []Item
+func (kv *SecretsKVStoreSQL) GetAll(ctx context.Context) ([]kvstore.Item, error) {
+	var items []kvstore.Item
 	err := kv.sqlStore.WithDbSession(ctx, func(dbSession *db.Session) error {
 		return dbSession.Find(&items)
 	})
@@ -240,7 +241,7 @@ func (kv *SecretsKVStoreSQL) GetAll(ctx context.Context) ([]Item, error) {
 	return items, err
 }
 
-func (kv *SecretsKVStoreSQL) getDecryptedValue(ctx context.Context, item Item) ([]byte, error) {
+func (kv *SecretsKVStoreSQL) getDecryptedValue(ctx context.Context, item kvstore.Item) ([]byte, error) {
 	kv.decryptionCache.Lock()
 	defer kv.decryptionCache.Unlock()
 	var decryptedValue []byte

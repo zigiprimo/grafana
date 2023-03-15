@@ -18,6 +18,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/backendplugin/secretsmanagerplugin"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/secrets/fakes"
+	kvstoreService "github.com/grafana/grafana/pkg/services/secrets/kvstore"
 	secretsmng "github.com/grafana/grafana/pkg/services/secrets/manager"
 	"github.com/grafana/grafana/pkg/setting"
 )
@@ -29,7 +30,7 @@ func NewFakeSQLSecretsKVStore(t *testing.T) *SecretsKVStoreSQL {
 	return NewSQLSecretsKVStore(sqlStore, secretsService, log.New("test.logger"))
 }
 
-func NewFakePluginSecretsKVStore(t *testing.T, features featuremgmt.FeatureToggles, fallback SecretsKVStore) *SecretsKVStorePlugin {
+func NewFakePluginSecretsKVStore(t *testing.T, features featuremgmt.FeatureToggles, fallback kvstoreService.SecretsKVStore) *SecretsKVStorePlugin {
 	t.Helper()
 	sqlStore := db.InitTestDB(t)
 	secretsService := secretsmng.SetupTestService(t, fakes.NewFakeSecretsStore())
@@ -42,13 +43,13 @@ func NewFakePluginSecretsKVStore(t *testing.T, features featuremgmt.FeatureToggl
 
 // In memory kv store used for testing
 type FakeSecretsKVStore struct {
-	store    map[Key]string
+	store    map[kvstoreService.Key]string
 	delError bool
-	fallback SecretsKVStore
+	fallback kvstoreService.SecretsKVStore
 }
 
 func NewFakeSecretsKVStore() *FakeSecretsKVStore {
-	return &FakeSecretsKVStore{store: make(map[Key]string)}
+	return &FakeSecretsKVStore{store: make(map[kvstoreService.Key]string)}
 }
 
 func (f *FakeSecretsKVStore) DeletionError(shouldErr bool) {
@@ -75,8 +76,8 @@ func (f *FakeSecretsKVStore) Del(ctx context.Context, orgId int64, namespace str
 }
 
 // List all keys with an optional filter. If default values are provided, filter is not applied.
-func (f *FakeSecretsKVStore) Keys(ctx context.Context, orgId int64, namespace string, typ string) ([]Key, error) {
-	res := make([]Key, 0)
+func (f *FakeSecretsKVStore) Keys(ctx context.Context, orgId int64, namespace string, typ string) ([]kvstoreService.Key, error) {
+	res := make([]kvstoreService.Key, 0)
 	for k := range f.store {
 		if orgId == AllOrganizations && namespace == "" && typ == "" {
 			res = append(res, k)
@@ -93,13 +94,13 @@ func (f *FakeSecretsKVStore) Rename(ctx context.Context, orgId int64, namespace 
 	return nil
 }
 
-func (f *FakeSecretsKVStore) GetAll(ctx context.Context) ([]Item, error) {
-	items := make([]Item, 0)
+func (f *FakeSecretsKVStore) GetAll(ctx context.Context) ([]kvstoreService.Item, error) {
+	items := make([]kvstoreService.Item, 0)
 	for k := range f.store {
 		orgId := k.OrgId
 		namespace := k.Namespace
 		typ := k.Type
-		items = append(items, Item{
+		items = append(items, kvstoreService.Item{
 			OrgId:     &orgId,
 			Namespace: &namespace,
 			Type:      &typ,
@@ -109,24 +110,24 @@ func (f *FakeSecretsKVStore) GetAll(ctx context.Context) ([]Item, error) {
 	return items, nil
 }
 
-func (f *FakeSecretsKVStore) Fallback() SecretsKVStore {
+func (f *FakeSecretsKVStore) Fallback() kvstoreService.SecretsKVStore {
 	return f.fallback
 }
 
-func (f *FakeSecretsKVStore) SetFallback(store SecretsKVStore) error {
+func (f *FakeSecretsKVStore) SetFallback(store kvstoreService.SecretsKVStore) error {
 	f.fallback = store
 	return nil
 }
 
-func buildKey(orgId int64, namespace string, typ string) Key {
-	return Key{
+func buildKey(orgId int64, namespace string, typ string) kvstoreService.Key {
+	return kvstoreService.Key{
 		OrgId:     orgId,
 		Namespace: namespace,
 		Type:      typ,
 	}
 }
 
-func internalToProtoKey(k Key) *secretsmanagerplugin.Key {
+func internalToProtoKey(k kvstoreService.Key) *secretsmanagerplugin.Key {
 	return &secretsmanagerplugin.Key{
 		OrgId:     k.OrgId,
 		Namespace: k.Namespace,
@@ -152,7 +153,7 @@ func (f fakeFeatureToggles) IsEnabled(feature string) bool {
 
 // Fake grpc secrets plugin impl
 type fakeGRPCSecretsPlugin struct {
-	kv map[Key]string
+	kv map[kvstoreService.Key]string
 }
 
 func (c *fakeGRPCSecretsPlugin) GetSecret(ctx context.Context, in *secretsmanagerplugin.GetSecretRequest, opts ...grpc.CallOption) (*secretsmanagerplugin.GetSecretResponse, error) {
@@ -208,7 +209,7 @@ func (c *fakeGRPCSecretsPlugin) GetAllSecrets(ctx context.Context, in *secretsma
 	}, nil
 }
 
-var _ SecretsKVStore = &FakeSecretsKVStore{}
+var _ kvstoreService.SecretsKVStore = &FakeSecretsKVStore{}
 var _ secretsmanagerplugin.SecretsManagerPlugin = &fakeGRPCSecretsPlugin{}
 
 // Fake plugin manager
@@ -223,7 +224,7 @@ func (mg *fakePluginManager) SecretsManager(_ context.Context) *plugins.Plugin {
 	}
 	p := &plugins.Plugin{
 		SecretsManager: &fakeGRPCSecretsPlugin{
-			kv: make(map[Key]string),
+			kv: make(map[kvstoreService.Key]string),
 		},
 	}
 	p.RegisterClient(&fakePluginClient{
@@ -286,7 +287,7 @@ func SetupFatalCrashTest(
 }
 
 type fatalCrashTestFields struct {
-	SecretsKVStore SecretsKVStore
+	SecretsKVStore kvstoreService.SecretsKVStore
 	PluginManager  plugins.SecretsPluginManager
 	KVStore        kvstore.KVStore
 	SqlStore       db.DB
@@ -303,7 +304,7 @@ func SetupTestConfig(t *testing.T) *setting.Cfg {
 	return &setting.Cfg{Raw: raw}
 }
 
-func ReplaceFallback(t *testing.T, kv SecretsKVStore, fb SecretsKVStore) error {
+func ReplaceFallback(t *testing.T, kv kvstoreService.SecretsKVStore, fb kvstoreService.SecretsKVStore) error {
 	t.Helper()
 	if store, ok := kv.(*CachedKVStore); ok {
 		kv = store.store

@@ -95,7 +95,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/searchV2"
 	"github.com/grafana/grafana/pkg/services/secrets"
 	secretsDatabase "github.com/grafana/grafana/pkg/services/secrets/database"
-	secretsStore "github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	secretsStore "github.com/grafana/grafana/pkg/services/secrets/kvstore/kvstoreimpl"
 	secretsManager "github.com/grafana/grafana/pkg/services/secrets/manager"
 	secretsMigrator "github.com/grafana/grafana/pkg/services/secrets/migrator"
 	"github.com/grafana/grafana/pkg/services/serviceaccounts"

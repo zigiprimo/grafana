@@ -13,6 +13,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/secrets"
+	kvstoreService "github.com/grafana/grafana/pkg/services/secrets/kvstore"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -32,7 +33,7 @@ type SecretsKVStorePlugin struct {
 	kvstore                        *kvstore.NamespacedKVStore
 	backwardsCompatibilityDisabled bool
 	fallbackEnabled                bool
-	fallbackStore                  SecretsKVStore
+	fallbackStore                  kvstoreService.SecretsKVStore
 }
 
 func NewPluginSecretsKVStore(
@@ -40,7 +41,7 @@ func NewPluginSecretsKVStore(
 	secretsService secrets.Service,
 	kvstore *kvstore.NamespacedKVStore,
 	features featuremgmt.FeatureToggles,
-	fallback SecretsKVStore,
+	fallback kvstoreService.SecretsKVStore,
 	logger log.Logger,
 ) *SecretsKVStorePlugin {
 	return &SecretsKVStorePlugin{
@@ -124,7 +125,7 @@ func (kv *SecretsKVStorePlugin) Del(ctx context.Context, orgId int64, namespace 
 
 // Keys get all keys for a given namespace. To query for all
 // organizations the constant 'kvstore.AllOrganizations' can be passed as orgId.
-func (kv *SecretsKVStorePlugin) Keys(ctx context.Context, orgId int64, namespace string, typ string) ([]Key, error) {
+func (kv *SecretsKVStorePlugin) Keys(ctx context.Context, orgId int64, namespace string, typ string) ([]kvstoreService.Key, error) {
 	req := &smp.ListSecretsRequest{
 		KeyDescriptor: &smp.Key{
 			OrgId:     orgId,
@@ -163,7 +164,7 @@ func (kv *SecretsKVStorePlugin) Rename(ctx context.Context, orgId int64, namespa
 	return err
 }
 
-func (kv *SecretsKVStorePlugin) GetAll(ctx context.Context) ([]Item, error) {
+func (kv *SecretsKVStorePlugin) GetAll(ctx context.Context) ([]kvstoreService.Item, error) {
 	req := &smp.GetAllSecretsRequest{}
 
 	res, err := kv.secretsPlugin.GetAllSecrets(ctx, req)
@@ -176,7 +177,7 @@ func (kv *SecretsKVStorePlugin) GetAll(ctx context.Context) ([]Item, error) {
 	return parseItems(res.Items), err
 }
 
-func (kv *SecretsKVStorePlugin) Fallback() SecretsKVStore {
+func (kv *SecretsKVStorePlugin) Fallback() kvstoreService.SecretsKVStore {
 	return kv.fallbackStore
 }
 
@@ -189,22 +190,22 @@ func (kv *SecretsKVStorePlugin) WithFallbackEnabled(fn func() error) error {
 	return err
 }
 
-func parseKeys(keys []*smp.Key) []Key {
-	newKeys := make([]Key, 0, len(keys))
+func parseKeys(keys []*smp.Key) []kvstoreService.Key {
+	newKeys := make([]kvstoreService.Key, 0, len(keys))
 
 	for _, k := range keys {
-		newKey := Key{OrgId: k.OrgId, Namespace: k.Namespace, Type: k.Type}
+		newKey := kvstoreService.Key{OrgId: k.OrgId, Namespace: k.Namespace, Type: k.Type}
 		newKeys = append(newKeys, newKey)
 	}
 
 	return newKeys
 }
 
-func parseItems(items []*smp.Item) []Item {
-	newItems := make([]Item, 0, len(items))
+func parseItems(items []*smp.Item) []kvstoreService.Item {
+	newItems := make([]kvstoreService.Item, 0, len(items))
 
 	for _, i := range items {
-		newItem := Item{OrgId: &i.Key.OrgId, Namespace: &i.Key.Namespace, Type: &i.Key.Type, Value: i.Value}
+		newItem := kvstoreService.Item{OrgId: &i.Key.OrgId, Namespace: &i.Key.Namespace, Type: &i.Key.Type, Value: i.Value}
 		newItems = append(newItems, newItem)
 	}
 
@@ -237,22 +238,22 @@ func wrapUserFriendlySecretError(ufe string) datasources.ErrDatasourceSecretsPlu
 }
 
 func GetNamespacedKVStore(kv kvstore.KVStore) *kvstore.NamespacedKVStore {
-	return kvstore.WithNamespace(kv, kvstore.AllOrganizations, PluginNamespace)
+	return kvstore.WithNamespace(kv, kvstore.AllOrganizations, kvstoreService.PluginNamespace)
 }
 
 func IsPluginStartupErrorFatal(ctx context.Context, kvstore *kvstore.NamespacedKVStore) (bool, error) {
-	_, exists, err := kvstore.Get(ctx, QuitOnPluginStartupFailureKey)
+	_, exists, err := kvstore.Get(ctx, kvstoreService.QuitOnPluginStartupFailureKey)
 	if err != nil {
-		return false, fmt.Errorf("error retrieving key %s from kvstore. error: %w", QuitOnPluginStartupFailureKey, err)
+		return false, fmt.Errorf("error retrieving key %s from kvstore. error: %w", kvstoreService.QuitOnPluginStartupFailureKey, err)
 	}
 	return exists, nil
 }
 
 func SetPluginStartupErrorFatal(ctx context.Context, kvstore *kvstore.NamespacedKVStore, isFatal bool) error {
 	if !isFatal {
-		return kvstore.Del(ctx, QuitOnPluginStartupFailureKey)
+		return kvstore.Del(ctx, kvstoreService.QuitOnPluginStartupFailureKey)
 	}
-	return kvstore.Set(ctx, QuitOnPluginStartupFailureKey, "true")
+	return kvstore.Set(ctx, kvstoreService.QuitOnPluginStartupFailureKey, "true")
 }
 
 func EvaluateRemoteSecretsPlugin(ctx context.Context, mg plugins.SecretsPluginManager, cfg *setting.Cfg) error {
