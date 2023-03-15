@@ -12,7 +12,6 @@ import { Props } from './MonacoQueryFieldProps';
 import { getOverrideServices } from './getOverrideServices';
 import { getCompletionProvider, getSuggestOptions } from './monaco-completion-provider';
 import { CompletionDataProvider } from './monaco-completion-provider/CompletionDataProvider';
-import { placeHolderScopedVars, validateQuery } from './monaco-completion-provider/validation';
 
 const options: monacoTypes.editor.IStandaloneEditorConstructionOptions = {
   codeLens: false,
@@ -170,28 +169,9 @@ const MonacoQueryField = ({ history, onBlur, onRunQuery, initialValue, datasourc
             isEditorFocused.set(false);
             onBlurRef.current(editor.getValue());
           });
-          editor.onDidChangeModelContent((e) => {
-            const model = editor.getModel();
-            if (!model) {
-              return;
-            }
-            const query = model.getValue();
-            const errors =
-              validateQuery(
-                query,
-                datasource.interpolateString(query, placeHolderScopedVars),
-                model.getLinesContent()
-              ) || [];
 
-            const markers = errors.map(({ error, ...boundary }) => ({
-              message: `${
-                error ? `Error parsing "${error}"` : 'Parse error'
-              }. The query appears to be incorrect and could fail to be executed.`,
-              severity: monaco.MarkerSeverity.Error,
-              ...boundary,
-            }));
-            monaco.editor.setModelMarkers(model, 'owner', markers);
-          });
+          dataProviderRef.current?.startLsDiagnostics(monaco, editor.getModel());
+
           const completionProvider = getCompletionProvider(monaco, dataProviderRef.current!);
 
           // completion-providers in monaco are not registered directly to editor-instances,

@@ -633,7 +633,7 @@ export class LokiDatasource
       }
       case 'ADD_LINE_FILTER': {
         const value = action.options?.value ? escapeLabelValueInSelector(action.options.value) : '';
-        const operator = action.options?.operator ?? '';
+        const operator = action.options?.operator ?? '=';
         expression = addLineFilter(expression, value, operator);
         break;
       }

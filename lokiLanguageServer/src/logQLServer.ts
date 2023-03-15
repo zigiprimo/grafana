@@ -1,52 +1,26 @@
 import { readFile } from 'fs';
 import requestLight from 'request-light';
-import { getLanguageService, LanguageService, JSONDocument } from 'vscode-json-languageservice';
-import { TextDocumentPositionParams, TextDocumentSyncKind } from 'vscode-languageserver-protocol';
+import { TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionList, CompletionItem } from 'vscode-languageserver-types';
-import { _Connection, TextDocuments } from 'vscode-languageserver/lib/node/main.js';
+import { _Connection, Diagnostic, TextDocuments } from 'vscode-languageserver/lib/node/main.js';
 import URI from 'vscode-uri';
 
-export class JsonServer {
+import { getLanguageService, LanguageService } from './languageService.js';
+
+export class LogQLServer {
   protected workspaceRoot: URI.URI | undefined;
 
   protected readonly documents = new TextDocuments(TextDocument);
 
-  protected readonly jsonService: LanguageService = getLanguageService({
-    schemaRequestService: this.resolveSchema.bind(this),
-  });
+  protected readonly logqlService: LanguageService = getLanguageService();
 
   protected readonly pendingValidationRequests = new Map<string, NodeJS.Timeout>();
 
   constructor(protected readonly connection: _Connection) {
     this.documents.listen(this.connection);
 
-    this.connection.onInitialize((params) => {
-      if (params.rootPath) {
-        this.workspaceRoot = URI.URI.file(params.rootPath);
-      } else if (params.rootUri) {
-        this.workspaceRoot = URI.URI.parse(params.rootUri);
-      }
-
-      return {
-        capabilities: {
-          textDocumentSync: TextDocumentSyncKind.Incremental,
-          codeActionProvider: true,
-          completionProvider: {
-            resolveProvider: true,
-            triggerCharacters: ['"', ':'],
-          },
-          hoverProvider: true,
-          documentSymbolProvider: true,
-          documentRangeFormattingProvider: true,
-          executeCommandProvider: {
-            commands: ['json.documentUpper'],
-          },
-          colorProvider: true,
-          foldingRangeProvider: true,
-        },
-      };
-    });
+    this.documents.onDidChangeContent((change) => this.validate(change.document));
 
     this.connection.onCompletion((params) => this.completion(params));
     this.connection.onCompletionResolve((item) => this.resolveCompletion(item));
@@ -81,7 +55,7 @@ export class JsonServer {
   }
 
   protected resolveCompletion(item: CompletionItem): Thenable<CompletionItem> {
-    return this.jsonService.doResolve(item);
+    return this.logqlService.doResolve(item);
   }
 
   protected completion(params: TextDocumentPositionParams): Thenable<CompletionList | null> {
@@ -91,12 +65,25 @@ export class JsonServer {
       return Promise.resolve(null);
     }
 
-    const jsonDocument = this.getJSONDocument(document);
-
-    return this.jsonService.doComplete(document, params.position, jsonDocument);
+    return this.logqlService.doComplete(document, params.position);
   }
 
-  protected getJSONDocument(document: TextDocument): JSONDocument {
-    return this.jsonService.parseJSONDocument(document);
+  protected validate(document: TextDocument): void {
+    if (document.getText().length === 0) {
+      return;
+    }
+
+    this.logqlService.doValidation(document).then((diagnostics) => this.sendDiagnostics(document, diagnostics));
+  }
+
+  protected cleanDiagnostics(document: TextDocument): void {
+    this.sendDiagnostics(document, []);
+  }
+
+  protected sendDiagnostics(document: TextDocument, diagnostics: Diagnostic[]): void {
+    this.connection.sendDiagnostics({
+      uri: document.uri,
+      diagnostics,
+    });
   }
 }

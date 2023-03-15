@@ -4911,7 +4911,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grafana/data@9.5.0-pre, @grafana/data@workspace:*, @grafana/data@workspace:packages/grafana-data":
+"@grafana/data@9.5.0-pre, @grafana/data@workspace:*, @grafana/data@workspace:^, @grafana/data@workspace:packages/grafana-data":
   version: 0.0.0-use.local
   resolution: "@grafana/data@workspace:packages/grafana-data"
   dependencies:
@@ -5144,7 +5144,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grafana/lezer-logql@npm:0.1.2":
+"@grafana/lezer-logql@npm:0.1.2, @grafana/lezer-logql@npm:^0.1.2":
   version: 0.1.2
   resolution: "@grafana/lezer-logql@npm:0.1.2"
   peerDependencies:
@@ -5157,12 +5157,18 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@grafana/loki-language-server@workspace:lokiLanguageServer"
   dependencies:
+    "@grafana/data": "workspace:^"
+    "@grafana/lezer-logql": ^0.1.2
+    "@grafana/ui": "workspace:^"
+    "@lezer/common": ^1.0.2
     "@types/express": ^4.17.17
     "@types/node": ^18.15.3
+    "@types/prismjs": ^1
     "@types/ws": ^8.5.4
     express: ^4.18.2
     nodemon: ^2.0.21
     npm-run-all: ^4.1.5
+    prismjs: ^1.29.0
     request-light: ^0.7.0
     tslib: ^2.5.0
     typescript: ^4.9.5
@@ -5366,7 +5372,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grafana/ui@9.5.0-pre, @grafana/ui@workspace:*, @grafana/ui@workspace:packages/grafana-ui":
+"@grafana/ui@9.5.0-pre, @grafana/ui@workspace:*, @grafana/ui@workspace:^, @grafana/ui@workspace:packages/grafana-ui":
   version: 0.0.0-use.local
   resolution: "@grafana/ui@workspace:packages/grafana-ui"
   dependencies:
@@ -7174,7 +7180,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@lezer/common@npm:1.0.2, @lezer/common@npm:^1.0.0":
+"@lezer/common@npm:1.0.2, @lezer/common@npm:^1.0.0, @lezer/common@npm:^1.0.2":
   version: 1.0.2
   resolution: "@lezer/common@npm:1.0.2"
   checksum: bbcc58e07be02652bf0700d2856042ec089d5be0b95893d628b3e18192ade864fac83b61b19653e10b9f1472261a178b12318d934e9004edd5483a577c0db56b
@@ -11885,7 +11891,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/prismjs@npm:1.26.0":
+"@types/prismjs@npm:1.26.0, @types/prismjs@npm:^1":
   version: 1.26.0
   resolution: "@types/prismjs@npm:1.26.0"
   checksum: cd5e7a6214c1f4213ec512a5fcf6d8fe37a56b813fc57ac95b5ff5ee074742bfdbd2f2730d9fd985205bf4586728e09baa97023f739e5aa1c9735a7c1ecbd11a
@@ -31989,7 +31995,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prismjs@npm:1.29.0, prismjs@npm:^1.27.0":
+"prismjs@npm:1.29.0, prismjs@npm:^1.27.0, prismjs@npm:^1.29.0":
   version: 1.29.0
   resolution: "prismjs@npm:1.29.0"
   checksum: 007a8869d4456ff8049dc59404e32d5666a07d99c3b0e30a18bd3b7676dfa07d1daae9d0f407f20983865fd8da56de91d09cb08e6aa61f5bc420a27c0beeaf93

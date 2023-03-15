@@ -266,6 +266,29 @@ export class CompletionDataProvider {
     });
   }
 
+  startLsDiagnostics(monaco: any, model: any) {
+    this.webSocket.addEventListener('message', (event) => {
+      try {
+        const response = JSON.parse(event.data);
+
+        if (response.method === 'textDocument/publishDiagnostics') {
+          const markers = response.params.diagnostics.map(({ message, range }: any) => ({
+            message: `${
+              message ? `Error parsing "${message}"` : 'Parse error'
+            }. The query appears to be incorrect and could fail to be executed.`,
+            severity: monaco.MarkerSeverity.Error,
+            startLineNumber: range.start.line + 1,
+            startColumn: range.start.character + 1,
+            endLineNumber: range.end.line + 1,
+            endColumn: range.end.character + 1,
+          }));
+
+          monaco.editor.setModelMarkers(model, 'owner', markers);
+        }
+      } catch (err) {}
+    });
+  }
+
   private buildSelector(labels: Label[]): string {
     const allLabelTexts = labels.map(
       (label) => `${label.name}${label.op}"${escapeLabelValueInExactSelector(label.value)}"`
