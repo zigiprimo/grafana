@@ -92,7 +92,7 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 	}
 
 	if !ac.IsDisabled(r.cfg) {
-		selectors, err = filterByAccessControl(selectors, query.SignedInUser)
+		selectors, err = r.filterByAccessControl(ctx, selectors, query.SignedInUser)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 	return items, nil
 }
 
-func filterByAccessControl(selectors []selector, user *user.SignedInUser) ([]selector, error) {
+func (r *lokiRepositoryImpl) filterByAccessControl(ctx context.Context, selectors []selector, user *user.SignedInUser) ([]selector, error) {
 	if user == nil || user.Permissions[user.OrgID] == nil {
 		return nil, errors.New("missing permissions")
 	}
@@ -157,9 +157,27 @@ func filterByAccessControl(selectors []selector, user *user.SignedInUser) ([]sel
 		}
 		// annotation read permission with scope annotations:type:dashboard allows listing annotations from dashboards which the user can view
 		if t == annotations.Dashboard.String() {
-			// TODO: as a first step make a database call to find all dashboards for which the user has permissions
-			// use this to add the appropriate selectors
-			// next step would be to pass dashboard_uid as a label in the call to Add() and then use that when filtering
+			var sql bytes.Buffer
+			dashboardFilter, dashboardParams := permissions.NewAccessControlDashboardPermissionFilter(user, dashboards.PERMISSION_VIEW, searchstore.TypeDashboard).Where()
+			sql.WriteString(fmt.Sprintf("SELECT id FROM dashboard WHERE %s", dashboardFilter))
+
+			err := r.db.WithDbSession(ctx, func(sess *db.Session) error {
+				ids := make([]string, 0)
+				if err := sess.SQL(sql.String(), dashboardParams...).Find(&ids); err != nil {
+					ids = nil
+					return err
+				}
+				// #TODO: as a first step make a database call to find all dashboards for which the user has permissions
+				// use this to add the appropriate selectors
+				// next step would be to pass dashboard_uid as a label in the call to Add() and then use that when filtering
+				// EDIT about passing dashboard_uid: considering user.Permissions aren't to be relied on, we still need to
+				// query the permissions table either way so we might as well continuing querying the dashboards table. Passing the
+				// dashboard_uid label is no longer required for filtering purposes.
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	return selectors, nil
