@@ -2,11 +2,11 @@ package notifier
 
 import (
 	"context"
-	"encoding/json"
 	"net/url"
 	"os"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/grafana/alerting/images"
 	alertingLogging "github.com/grafana/alerting/logging"
 	"github.com/grafana/alerting/receivers"
@@ -188,40 +188,31 @@ func TestEmailNotifierIntegration(t *testing.T) {
 	}
 }
 
-func createSut(t *testing.T, messageTmpl string, subjectTmpl string, emailTmpl *template.Template, ns receivers.NotificationSender) *alertingEmail.Notifier {
+func createSut(t *testing.T, messageTmpl string, subjectTmpl string, emailTmpl *template.Template, ns receivers.EmailSender) *alertingEmail.Notifier {
 	t.Helper()
-
-	jsonData := map[string]interface{}{
-		"addresses":   "someops@example.com;somedev@example.com",
-		"singleEmail": true,
+	cfg := alertingEmail.Config{
+		SingleEmail: true,
+		Addresses: []string{
+			"someops@example.com",
+			"somedev@example.com",
+		},
+		Message: "",
+		Subject: alertingTemplates.DefaultMessageTitleEmbed,
 	}
 	if messageTmpl != "" {
-		jsonData["message"] = messageTmpl
+		cfg.Message = messageTmpl
 	}
-
 	if subjectTmpl != "" {
-		jsonData["subject"] = subjectTmpl
+		cfg.Subject = subjectTmpl
 	}
-	bytes, err := json.Marshal(jsonData)
-	require.NoError(t, err)
 
-	fc := receivers.FactoryConfig{
-		Config: &receivers.NotificationChannelConfig{
-			Name:     "ops",
-			Type:     "alertingEmail",
-			Settings: json.RawMessage(bytes),
-		},
-		NotificationService: ns,
-		DecryptFunc: func(ctx context.Context, sjd map[string][]byte, key string, fallback string) string {
-			return fallback
-		},
-		ImageStore: &images.UnavailableImageStore{},
-		Template:   emailTmpl,
-		Logger:     &alertingLogging.FakeLogger{},
+	meta := receivers.Metadata{
+		UID:                   uuid.New().String(),
+		Name:                  "ops",
+		Type:                  "email",
+		DisableResolveMessage: false,
 	}
-	emailNotifier, err := alertingEmail.New(fc)
-	require.NoError(t, err)
-	return emailNotifier
+	return alertingEmail.New(cfg, meta, emailTmpl, ns, &images.UnavailableImageStore{}, &alertingLogging.FakeLogger{})
 }
 
 func getSingleSentMessage(t *testing.T, ns *emailSender) *notifications.Message {

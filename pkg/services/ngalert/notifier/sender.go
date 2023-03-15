@@ -51,6 +51,6 @@ func (s sender) SendEmail(ctx context.Context, cmd *receivers.SendEmailSettings)
 	})
 }
 
-func NewNotificationSender(ns notifications.Service) receivers.NotificationSender {
+func NewNotificationSender(ns notifications.Service) *sender {
 	return &sender{ns: ns}
 }

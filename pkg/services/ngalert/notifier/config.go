@@ -1,12 +1,15 @@
 package notifier
 
 import (
+	"context"
 	"crypto/md5"
 	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/grafana/alerting/images"
+	alertingLogging "github.com/grafana/alerting/logging"
 	alertingNotify "github.com/grafana/alerting/notify"
 	"github.com/grafana/alerting/receivers"
 
@@ -92,14 +95,16 @@ func Load(rawConfig []byte) (*api.PostableUserConfig, error) {
 // AlertingConfiguration provides configuration for an Alertmanager.
 // It implements the notify.Configuration interface.
 type AlertingConfiguration struct {
+	DecryptFn             alertingNotify.GetDecryptedValueFn
+	ImageStore            images.ImageStore
 	AlertmanagerConfig    api.PostableApiAlertingConfig
 	RawAlertmanagerConfig []byte
-
+	ReceiversConfig       []alertingNotify.GrafanaReceiverConfig
 	AlertmanagerTemplates *alertingNotify.Template
-
-	IntegrationsFunc func(receivers []*alertingNotify.APIReceiver, templates *alertingNotify.Template) (map[string][]*alertingNotify.Integration, error)
-
-	Sender receivers.NotificationSender
+	Sender                *sender
+	Version               string
+	LoggerFactory         alertingLogging.LoggerFactory
+	OrgID                 int64
 }
 
 func (a AlertingConfiguration) DispatcherLimits() alertingNotify.DispatcherLimits {
@@ -115,7 +120,52 @@ func (a AlertingConfiguration) MuteTimeIntervals() []alertingNotify.MuteTimeInte
 }
 
 func (a AlertingConfiguration) ReceiverIntegrations() (map[string][]*alertingNotify.Integration, error) {
-	return a.IntegrationsFunc(a.AlertmanagerConfig.ApiReceivers(), a.AlertmanagerTemplates)
+	result := make(map[string][]*alertingNotify.Integration, len(a.ReceiversConfig))
+	for _, receiverConfig := range a.ReceiversConfig {
+		integrations, err := a.buildIntegrations(receiverConfig)
+		if err != nil {
+			return nil, err
+		}
+		result[receiverConfig.Name] = integrations
+	}
+	return result, nil
+}
+
+func (a AlertingConfiguration) BuildIntegration(notifierConfig *alertingNotify.GrafanaReceiver) (*alertingNotify.Integration, error) {
+	cfg, err := alertingNotify.BuildReceiverConfiguration(context.Background(), &alertingNotify.APIReceiver{
+		ConfigReceiver: alertingNotify.ConfigReceiver{},
+		GrafanaReceivers: alertingNotify.GrafanaReceivers{
+			Receivers: []*alertingNotify.GrafanaReceiver{notifierConfig},
+		},
+	}, a.DecryptFn)
+	if err != nil {
+		return nil, err
+	}
+	integrations, err := a.buildIntegrations(cfg)
+	if err != nil {
+		return nil, err
+	}
+	if len(integrations) == 0 {
+		return nil, fmt.Errorf("builder failed to create integration for notifier %s of type %s", notifierConfig.Name, notifierConfig.Type)
+	}
+	return integrations[0], nil
+}
+
+func (a AlertingConfiguration) buildIntegrations(receiverConfig alertingNotify.GrafanaReceiverConfig) ([]*alertingNotify.Integration, error) {
+	return alertingNotify.BuildReceiverIntegrations(
+		receiverConfig,
+		a.AlertmanagerTemplates,
+		a.ImageStore,
+		a.LoggerFactory,
+		func(n receivers.Metadata) (receivers.WebhookSender, error) {
+			return a.Sender, nil
+		},
+		func(n receivers.Metadata) (receivers.EmailSender, error) {
+			return a.Sender, nil
+		},
+		a.OrgID,
+		a.Version,
+	)
 }
 
 func (a AlertingConfiguration) RoutingTree() *alertingNotify.Route {

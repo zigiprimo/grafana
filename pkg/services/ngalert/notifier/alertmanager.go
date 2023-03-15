@@ -3,16 +3,13 @@ package notifier
 import (
 	"context"
 	"crypto/md5"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"strconv"
 	"time"
 
 	alertingNotify "github.com/grafana/alerting/notify"
-	"github.com/grafana/alerting/receivers"
 	alertingTemplates "github.com/grafana/alerting/templates"
 
 	amv2 "github.com/prometheus/alertmanager/api/v2/models"
@@ -49,13 +46,13 @@ type Alertmanager struct {
 	Base   *alertingNotify.GrafanaAlertmanager
 	logger log.Logger
 
-	Settings            *setting.Cfg
-	Store               AlertingStore
-	fileStore           *FileStore
-	NotificationService receivers.NotificationSender
+	Settings  *setting.Cfg
+	Store     AlertingStore
+	fileStore *FileStore
 
-	decryptFn receivers.GetDecryptedValueFn
-	orgID     int64
+	decryptFn           alertingNotify.GetDecryptedValueFn
+	orgID               int64
+	notificationService notifications.Service
 }
 
 // maintenanceOptions represent the options for components that need maintenance on a frequency within the Alertmanager.
@@ -84,7 +81,7 @@ func (m maintenanceOptions) MaintenanceFunc(state alertingNotify.State) (int64, 
 }
 
 func newAlertmanager(ctx context.Context, orgID int64, cfg *setting.Cfg, store AlertingStore, kvStore kvstore.KVStore,
-	peer alertingNotify.ClusterPeer, decryptFn receivers.GetDecryptedValueFn, ns notifications.Service,
+	peer alertingNotify.ClusterPeer, decryptFn alertingNotify.GetDecryptedValueFn, ns notifications.Service,
 	m *metrics.Alertmanager) (*Alertmanager, error) {
 	workingPath := filepath.Join(cfg.DataPath, workingDir, strconv.Itoa(int(orgID)))
 	fileStore := NewFileStore(orgID, kvStore, workingPath)
@@ -136,7 +133,7 @@ func newAlertmanager(ctx context.Context, orgID int64, cfg *setting.Cfg, store A
 		Base:                gam,
 		Settings:            cfg,
 		Store:               store,
-		NotificationService: NewNotificationSender(ns),
+		notificationService: ns,
 		orgID:               orgID,
 		decryptFn:           decryptFn,
 		fileStore:           fileStore,
@@ -253,8 +250,14 @@ func (am *Alertmanager) applyConfig(cfg *apimodels.PostableUserConfig, rawConfig
 		rawConfig = enc
 	}
 
-	if am.Base.ConfigHash() != md5.Sum(rawConfig) {
+	currentConfig := am.Base.Config()
+	if currentConfig != nil && currentConfig.Hash() != md5.Sum(rawConfig) {
 		amConfigChanged = true
+	}
+
+	receiverConfigs, err := postableReceiverToGrafanaReceiverConfig(context.Background(), cfg.AlertmanagerConfig.Receivers, am.decryptFn)
+	if err != nil {
+		return false, err
 	}
 
 	if cfg.TemplateFiles == nil {
@@ -280,15 +283,17 @@ func (am *Alertmanager) applyConfig(cfg *apimodels.PostableUserConfig, rawConfig
 		return false, err
 	}
 
-	receivers.NewFactoryConfig(cfg, NewNotificationSender(am.NotificationService), am.decryptFn, tmpl, newImageStore(am.Store), LoggerFactory, setting.BuildVersion)
-
 	err = am.Base.ApplyConfig(AlertingConfiguration{
-
-		Sender:                am.NotificationService,
 		RawAlertmanagerConfig: rawConfig,
 		AlertmanagerConfig:    cfg.AlertmanagerConfig,
 		AlertmanagerTemplates: tmpl,
-		IntegrationsFunc:      am.buildIntegrationsMap,
+		ReceiversConfig:       receiverConfigs,
+		DecryptFn:             am.decryptFn,
+		ImageStore:            newImageStore(am.Store),
+		LoggerFactory:         LoggerFactory,
+		Sender:                NewNotificationSender(am.notificationService),
+		Version:               setting.BuildVersion,
+		OrgID:                 am.orgID,
 	})
 	if err != nil {
 		return false, err
@@ -317,83 +322,6 @@ func (am *Alertmanager) applyAndMarkConfig(ctx context.Context, hash string, cfg
 
 func (am *Alertmanager) WorkingDirPath() string {
 	return filepath.Join(am.Settings.DataPath, workingDir, strconv.Itoa(int(am.orgID)))
-}
-
-// buildIntegrationsMap builds a map of name to the list of Grafana integration notifiers off of a list of receiver config.
-func (am *Alertmanager) buildIntegrationsMap(receivers []*alertingNotify.APIReceiver, templates *alertingNotify.Template) (map[string][]*alertingNotify.Integration, error) {
-	integrationsMap := make(map[string][]*alertingNotify.Integration, len(receivers))
-	for _, receiver := range receivers {
-		integrations, err := am.buildReceiverIntegrations(receiver, templates)
-		if err != nil {
-			return nil, err
-		}
-		integrationsMap[receiver.Name] = integrations
-	}
-
-	return integrationsMap, nil
-}
-
-// buildReceiverIntegrations builds a list of integration notifiers off of a receiver config.
-func (am *Alertmanager) buildReceiverIntegrations(receiver *alertingNotify.APIReceiver, tmpl *alertingNotify.Template) ([]*alertingNotify.Integration, error) {
-	integrations := make([]*alertingNotify.Integration, 0, len(receiver.GrafanaReceivers.Receivers))
-	for i, r := range receiver.GrafanaReceivers.Receivers {
-		n, err := am.buildReceiverIntegration(r, tmpl)
-		if err != nil {
-			return nil, err
-		}
-		integrations = append(integrations, alertingNotify.NewIntegration(n, n, r.Type, i))
-	}
-	return integrations, nil
-}
-
-func (am *Alertmanager) buildReceiverIntegration(r *alertingNotify.GrafanaReceiver, tmpl *alertingNotify.Template) (alertingNotify.NotificationChannel, error) {
-	// secure settings are already encrypted at this point
-	secureSettings := make(map[string][]byte, len(r.SecureSettings))
-
-	for k, v := range r.SecureSettings {
-		d, err := base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			return nil, alertingNotify.InvalidReceiverError{
-				Receiver: r,
-				Err:      errors.New("failed to decode secure setting"),
-			}
-		}
-		secureSettings[k] = d
-	}
-
-	var (
-		cfg = &receivers.NotificationChannelConfig{
-			UID:                   r.UID,
-			OrgID:                 am.orgID,
-			Name:                  r.Name,
-			Type:                  r.Type,
-			DisableResolveMessage: r.DisableResolveMessage,
-			Settings:              r.Settings,
-			SecureSettings:        secureSettings,
-		}
-	)
-	factoryConfig, err := receivers.NewFactoryConfig(cfg, NewNotificationSender(am.NotificationService), am.decryptFn, tmpl, newImageStore(am.Store), LoggerFactory, setting.BuildVersion)
-	if err != nil {
-		return nil, alertingNotify.InvalidReceiverError{
-			Receiver: r,
-			Err:      err,
-		}
-	}
-	receiverFactory, exists := alertingNotify.Factory(r.Type)
-	if !exists {
-		return nil, alertingNotify.InvalidReceiverError{
-			Receiver: r,
-			Err:      fmt.Errorf("notifier %s is not supported", r.Type),
-		}
-	}
-	n, err := receiverFactory(factoryConfig)
-	if err != nil {
-		return nil, alertingNotify.InvalidReceiverError{
-			Receiver: r,
-			Err:      err,
-		}
-	}
-	return n, nil
 }
 
 // PutAlerts receives the alerts and then sends them through the corresponding route based on whenever the alert has a receiver embedded or not
@@ -432,3 +360,35 @@ func (e AlertValidationError) Error() string {
 type nilLimits struct{}
 
 func (n nilLimits) MaxNumberOfAggregationGroups() int { return 0 }
+
+func postableReceiverToGrafanaReceiverConfig(ctx context.Context, receivers []*apimodels.PostableApiReceiver, decryptFn alertingNotify.GetDecryptedValueFn) ([]alertingNotify.GrafanaReceiverConfig, error) {
+	result := make([]alertingNotify.GrafanaReceiverConfig, 0, len(receivers))
+	for _, receiver := range receivers {
+		grafanaReceivers := make([]*alertingNotify.GrafanaReceiver, 0, len(receiver.GrafanaManagedReceivers))
+		for _, managedReceiver := range receiver.GrafanaManagedReceivers {
+			grafanaReceivers = append(grafanaReceivers, &alertingNotify.GrafanaReceiver{
+				UID:                   managedReceiver.UID,
+				Name:                  managedReceiver.Name,
+				Type:                  managedReceiver.Type,
+				DisableResolveMessage: managedReceiver.DisableResolveMessage,
+				Settings:              json.RawMessage(managedReceiver.Settings),
+				SecureSettings:        managedReceiver.SecureSettings,
+			})
+		}
+
+		apiReceiver := &alertingNotify.APIReceiver{
+			ConfigReceiver: receiver.Receiver,
+			GrafanaReceivers: alertingNotify.GrafanaReceivers{
+				Receivers: grafanaReceivers,
+			},
+		}
+
+		pasedCfg, err := alertingNotify.BuildReceiverConfiguration(ctx, apiReceiver, decryptFn)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, pasedCfg)
+	}
+
+	return result, nil
+}

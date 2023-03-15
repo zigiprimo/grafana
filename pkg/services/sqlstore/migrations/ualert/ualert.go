@@ -2,7 +2,6 @@ package ualert
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,9 +11,7 @@ import (
 	"strings"
 	"time"
 
-	alertingLogging "github.com/grafana/alerting/logging"
 	alertingNotify "github.com/grafana/alerting/notify"
-	"github.com/grafana/alerting/receivers"
 	pb "github.com/prometheus/alertmanager/silence/silencepb"
 	"xorm.io/xorm"
 
@@ -461,65 +458,49 @@ func (m *migration) writeAlertmanagerConfig(orgID int64, amConfig *PostableUserC
 }
 
 // validateAlertmanagerConfig validates the alertmanager configuration produced by the migration against the receivers.
-func (m *migration) validateAlertmanagerConfig(orgID int64, config *PostableUserConfig) error {
-	for _, r := range config.AlertmanagerConfig.Receivers {
-		for _, gr := range r.GrafanaManagedReceivers {
-			// First, let's decode the secure settings - given they're stored as base64.
-			secureSettings := make(map[string][]byte, len(gr.SecureSettings))
-			for k, v := range gr.SecureSettings {
-				d, err := base64.StdEncoding.DecodeString(v)
-				if err != nil {
-					return err
-				}
-				secureSettings[k] = d
+func (m *migration) validateAlertmanagerConfig(config *PostableUserConfig) error {
+	// decryptFunc represents the legacy way of decrypting data. Before the migration, we don't need any new way,
+	// given that the previous alerting will never support it.
+	decryptFunc := func(_ context.Context, sjd map[string][]byte, key string, fallback string) string {
+		if value, ok := sjd[key]; ok {
+			decryptedData, err := util.Decrypt(value, setting.SecretKey)
+			if err != nil {
+				m.mg.Logger.Warn("unable to decrypt key '%s'. Returning fallback.", key)
+				return fallback
 			}
+			return string(decryptedData)
+		}
+		return fallback
+	}
 
+	for _, r := range config.AlertmanagerConfig.Receivers {
+		notifiers := make([]*alertingNotify.GrafanaReceiver, 0, len(r.GrafanaManagedReceivers))
+		for _, gr := range r.GrafanaManagedReceivers {
 			data, err := gr.Settings.MarshalJSON()
 			if err != nil {
 				return err
 			}
-			var (
-				cfg = &receivers.NotificationChannelConfig{
-					UID:                   gr.UID,
-					OrgID:                 orgID,
-					Name:                  gr.Name,
-					Type:                  gr.Type,
-					DisableResolveMessage: gr.DisableResolveMessage,
-					Settings:              data,
-					SecureSettings:        secureSettings,
-				}
-			)
-
-			// decryptFunc represents the legacy way of decrypting data. Before the migration, we don't need any new way,
-			// given that the previous alerting will never support it.
-			decryptFunc := func(_ context.Context, sjd map[string][]byte, key string, fallback string) string {
-				if value, ok := sjd[key]; ok {
-					decryptedData, err := util.Decrypt(value, setting.SecretKey)
-					if err != nil {
-						m.mg.Logger.Warn("unable to decrypt key '%s' for %s receiver with uid %s, returning fallback.", key, gr.Type, gr.UID)
-						return fallback
-					}
-					return string(decryptedData)
-				}
-				return fallback
+			cfg := &alertingNotify.GrafanaReceiver{
+				UID:                   gr.UID,
+				Name:                  gr.Name,
+				Type:                  gr.Type,
+				DisableResolveMessage: gr.DisableResolveMessage,
+				Settings:              data,
+				SecureSettings:        gr.SecureSettings,
 			}
-			receiverFactory, exists := alertingNotify.Factory(gr.Type)
-			if !exists {
-				return fmt.Errorf("notifier %s is not supported", gr.Type)
-			}
-			factoryConfig, err := receivers.NewFactoryConfig(cfg, nil, decryptFunc, nil, nil, func(ctx ...interface{}) alertingLogging.Logger {
-				return &alertingLogging.FakeLogger{}
-			}, setting.BuildVersion)
-			if err != nil {
-				return err
-			}
-			_, err = receiverFactory(factoryConfig)
-			if err != nil {
-				return err
-			}
+			notifiers = append(notifiers, cfg)
+		}
+		receiver := &alertingNotify.APIReceiver{
+			ConfigReceiver: alertingNotify.ConfigReceiver{
+				Name: r.Name,
+			},
+			GrafanaReceivers: alertingNotify.GrafanaReceivers{Receivers: notifiers},
+		}
+		_, err := alertingNotify.BuildReceiverConfiguration(context.Background(), receiver, decryptFunc)
+		if err != nil {
+			return err
 		}
 	}
-
 	return nil
 }
 
