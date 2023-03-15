@@ -344,7 +344,7 @@ async function getLabelValuesForMetricCompletions(
       documentation: undefined,
     };
 
-    if (currentBytes && bytesPerLabel[value]) {
+    if (currentBytes !== undefined && bytesPerLabel[value] !== undefined) {
       const { text, suffix } = getValueFormat('bytes')(bytesPerLabel[value], 1);
       const { text: currText, suffix: currSuffix } = getValueFormat('bytes')(currentBytes, 1);
       completionItem.documentation = `"${value}" value is present in ${text + suffix}/${currText + currSuffix} logs.`;
