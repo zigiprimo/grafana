@@ -41,6 +41,7 @@ func ProvideService(db db.DB, cfg *setting.Cfg, tagService tag.Service, datasour
 	return &RepositoryImpl{
 		store: &lokiRepositoryImpl{
 			cfg:               cfg,
+			db:                db,
 			log:               log.New("annotations"),
 			tagService:        tagService,
 			maximumTagsLength: cfg.AnnotationMaximumTagsLength,

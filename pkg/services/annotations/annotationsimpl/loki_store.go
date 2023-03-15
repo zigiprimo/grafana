@@ -23,6 +23,7 @@ type lokiRepositoryImpl struct {
 	maximumTagsLength int64
 	tagService        tag.Service
 	httpLokiClient    *httpLokiClient
+	db                db.DB
 }
 
 func (r *lokiRepositoryImpl) Add(ctx context.Context, item *annotations.Item) error {
