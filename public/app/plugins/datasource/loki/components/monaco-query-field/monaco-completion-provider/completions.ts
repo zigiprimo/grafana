@@ -265,8 +265,9 @@ async function getAfterSelectorCompletions(
     extractedLabelKeys.forEach((key) => {
       completions.push({
         type: 'LABEL_NAME',
-        label: `${key}`,
+        label: `${key} (detected)`,
         insertText: `${prefix} ${key}`,
+        documentation: `${key} label was detected from sampled log lines.`,
       });
     });
   }
@@ -312,8 +313,9 @@ async function getLabelFilterMatcherCompletions(
   const result = await dataProvider.getPipelineLabelValues(logsQuery);
   return result.map((text) => ({
     type: 'LABEL_VALUE',
-    label: text,
+    label: `${text} (detected)`,
     insertText: `\`${text}\``,
+    documentation: `${text} value was detected from sampled log lines.`,
   }));
 }
 
@@ -342,7 +344,7 @@ async function getLabelValuesForMetricCompletions(
       documentation: undefined,
     };
 
-    if (currentBytes && bytesPerLabel[value]) {
+    if (currentBytes !== undefined && bytesPerLabel[value] !== undefined) {
       const { text, suffix } = getValueFormat('bytes')(bytesPerLabel[value], 1);
       const { text: currText, suffix: currSuffix } = getValueFormat('bytes')(currentBytes, 1);
       completionItem.documentation = `"${value}" value is present in ${text + suffix}/${currText + currSuffix} logs.`;
