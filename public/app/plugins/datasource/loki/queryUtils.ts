@@ -25,6 +25,7 @@ import {
   MetricExpr,
   Matcher,
   Identifier,
+  PipelineStage,
 } from '@grafana/lezer-logql';
 
 import { ErrorId } from '../prometheus/querybuilder/shared/parsingUtils';
@@ -229,6 +230,48 @@ export function isQueryWithLabelFormat(query: string): boolean {
     },
   });
   return queryWithLabelFormat;
+}
+
+export function removeTrailingPipeline(query: string): string {
+  let finalQuery = query;
+  const tree = parser.parse(query);
+  tree.iterate({
+    enter: ({ node, type, from, to }): false | void => {
+      if (type.id === PipelineStage) {
+        const pipelineExpr = query.substring(from, to).trim();
+        if (pipelineExpr === '|') {
+          finalQuery = query.substring(0, from - 1) + query.substring(to, query.length);
+        }
+      }
+    },
+  });
+  return finalQuery;
+}
+
+export function getQueryWithoutTrailingLabelFilter(query: string): { query: string; label: string } {
+  let finalQuery = query;
+  let finalLabel = '';
+  // TODO: This is quite hacky, it can be done easier probably
+  const tree = parser.parse(query);
+  tree.iterate({
+    enter: ({ node, type, from, to }): false | void => {
+      if (type.id === LabelFilter) {
+        const hasError = node.getChild(Matcher)?.getChild(ErrorId);
+        if (hasError) {
+          const labelFilterEndsWithEquals = query.substring(from, to).trim();
+          if (labelFilterEndsWithEquals[labelFilterEndsWithEquals.length - 1] === '=') {
+            const labelNameNode = node.getChild(Matcher)?.getChild(Identifier);
+            if (labelNameNode) {
+              // We set these only if we know that last character is "=" and we have a label name
+              finalQuery = query.substring(0, from) + query.substring(to, query.length);
+              finalLabel = query.substring(labelNameNode.from, labelNameNode.to);
+            }
+          }
+        }
+      }
+    },
+  });
+  return { query: finalQuery, label: finalLabel };
 }
 
 export function getLogQueryFromMetricsQuery(query: string): string {

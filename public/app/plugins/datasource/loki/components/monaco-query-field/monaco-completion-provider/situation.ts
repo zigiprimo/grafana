@@ -20,6 +20,7 @@ import {
   LiteralExpr,
   MetricExpr,
   UnwrapExpr,
+  LabelFilter,
 } from '@grafana/lezer-logql';
 
 import { getLogQueryFromMetricsQuery } from '../../../queryUtils';
@@ -125,6 +126,10 @@ export type Situation =
   | {
       type: 'AFTER_UNWRAP';
       logQuery: string;
+    }
+  | {
+      type: 'IN_LABEL_FILTER_MATCHER';
+      logQuery: string;
     };
 
 type Resolver = {
@@ -160,7 +165,7 @@ const RESOLVERS: Resolver[] = [
     fun: resolveLogRange,
   },
   {
-    path: [ERROR_NODE_ID, Matcher],
+    path: [ERROR_NODE_ID, Matcher, Matchers, Selector],
     fun: resolveMatcher,
   },
   {
@@ -186,6 +191,10 @@ const RESOLVERS: Resolver[] = [
   {
     path: [UnwrapExpr],
     fun: resolveAfterUnwrap,
+  },
+  {
+    path: [ERROR_NODE_ID, Matcher, LabelFilter, PipelineStage],
+    fun: resolveInLabelFilterMatcher,
   },
 ];
 
@@ -267,6 +276,13 @@ function getLabels(selectorNode: SyntaxNode, text: string): Label[] {
 function resolveAfterUnwrap(node: SyntaxNode, text: string, pos: number): Situation | null {
   return {
     type: 'AFTER_UNWRAP',
+    logQuery: getLogQueryFromMetricsQuery(text).trim(),
+  };
+}
+
+function resolveInLabelFilterMatcher(node: SyntaxNode, text: string, pos: number): Situation | null {
+  return {
+    type: 'IN_LABEL_FILTER_MATCHER',
     logQuery: getLogQueryFromMetricsQuery(text).trim(),
   };
 }

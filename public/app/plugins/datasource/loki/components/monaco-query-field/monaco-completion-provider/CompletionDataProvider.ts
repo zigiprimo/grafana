@@ -6,6 +6,7 @@ import { escapeLabelValueInExactSelector } from 'app/plugins/datasource/promethe
 
 import LanguageProvider from '../../../LanguageProvider';
 import { LokiDatasource } from '../../../datasource';
+import { getQueryWithoutTrailingLabelFilter, removeTrailingPipeline } from '../../../queryUtils';
 import { LokiQuery } from '../../../types';
 
 import { Label } from './situation';
@@ -398,7 +399,7 @@ export class CompletionDataProvider {
     const labelNames = await this.getLabelNames(selectedLabels);
 
     for (const labelName of labelNames) {
-      const newQuery = `{${expr}, ${labelName}=~".*"}`;
+      const newQuery = `{${expr}, ${labelName}=~".+"}`;
       const bytes = await this.getQueryBytes(newQuery);
       if (bytes !== undefined) {
         bytesForLabel[labelName] = bytes;
@@ -418,10 +419,16 @@ export class CompletionDataProvider {
   }
 
   async getParserAndLabelKeys(logQuery: string) {
-    return await this.languageProvider.getParserAndLabelKeys(logQuery);
+    const query = removeTrailingPipeline(logQuery);
+    return await this.languageProvider.getParserAndLabelKeys(query);
   }
 
   async getSeriesLabels(labels: Label[]) {
     return await this.languageProvider.getSeriesLabels(this.buildSelector(labels)).then((data) => data ?? {});
+  }
+
+  async getPipelineLabelValues(logQuery: string) {
+    const { query, label } = getQueryWithoutTrailingLabelFilter(logQuery);
+    return await this.languageProvider.getParsedLabelValues(removeTrailingPipeline(query), label);
   }
 }
