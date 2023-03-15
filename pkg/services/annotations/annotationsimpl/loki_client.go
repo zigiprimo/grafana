@@ -207,13 +207,12 @@ func (c *httpLokiClient) rangeQuery(ctx context.Context, selectors []selector, s
 
 	values := url.Values{}
 	values.Set("query", selectorString(selectors))
-	// #TODO: for some reason I'm not getting results that are supposed to be there when we set the start and end.
-	// I suggest disabling this for now. It might also be worth considering what to do if they aren't set.
+	// #TODO: It might be worth considering what to do if "start" and "end" aren't set.
 	// Seems we account for this case in the other store:
 	// https://github.com/grafana/grafana/blob/main/pkg/services/annotations/annotationsimpl/xorm_store.go#L259
 	// Would it be worth considering the entire retention period if they are unset?
-	// values.Set("start", fmt.Sprintf("%d", start))
-	// values.Set("end", fmt.Sprintf("%d", end))
+	values.Set("start", fmt.Sprintf("%d", start))
+	values.Set("end", fmt.Sprintf("%d", end))
 
 	queryURL.RawQuery = values.Encode()
 

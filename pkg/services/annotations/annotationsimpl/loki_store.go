@@ -103,7 +103,9 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 		}
 	}
 
-	res, err := r.httpLokiClient.rangeQuery(ctx, selectors, query.From, query.To)
+	from := query.From * int64(time.Millisecond)
+	to := query.To * int64(time.Millisecond)
+	res, err := r.httpLokiClient.rangeQuery(ctx, selectors, from, to)
 	if err != nil {
 		return nil, err
 	}
