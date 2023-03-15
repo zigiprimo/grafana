@@ -6,7 +6,7 @@ const configuration = new Configuration({});
 
 const openai = new OpenAIApi(configuration);
 
-const prependedText = `// Sample LogQL loki queries:
+const prependedText = `// Example LogQL queries:
 // For test = 123
 {test="123"}
 // Logs of test 123
@@ -23,6 +23,8 @@ const prependedText = `// Sample LogQL loki queries:
 {test="123"}
 // Show logs of test 123
 {test="123"}
+// Show logs of test = 123
+{test="123"}
 // When test is not 123
 {test!="123"}
 // When test is different than 123
@@ -33,9 +35,9 @@ const prependedText = `// Sample LogQL loki queries:
 {test~="mysql.+"}
 // Show logs not matching test mysql.+ regexp
 {test!~"mysql.+"} 
-// Select test 123 logs and filter lines that contain text
+// Select test 123 logs and filter lines containing text
 {test="123"} |= "text"
-// Show test 123 lines that contain text
+// Show test 123 lines that contain "text"
 {test="123"} |= "text"
 // Filter test different 123 not containing text
 {test!="123"} != "text"
@@ -83,7 +85,7 @@ count_over_time({job="mysql"}[5m])
 count_over_time({job="mysql"}[5m])
 // Count log lines from job = mysql in the current interval
 count_over_time({job="mysql"}[$__interval])
-// Count all the log lines within the last five minutes for the MySQL job containing 
+// Count all the log lines within the last five minutes for the MySQL job
 count_over_time({job="mysql"}[5m])
 // Rate per second for the mysql job in a minute
 rate({job="mysql"}[1m])
@@ -95,6 +97,7 @@ rate({test="123"}[1m])
 sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
 // For job = mysql calculate the rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute
 sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
+// Using the examples above, help the user to write logql queries following this examples.
 
 `;
 
@@ -103,8 +106,11 @@ export async function ask(prompt: string) {
   try {
     response = await openai.createCompletion({
       model: 'text-davinci-003',
-      prompt: `${prependedText} // Write a logql query to ${prompt}`,
-      temperature: 0.2,
+      prompt: `${prependedText} Instructions:
+      """
+      ${prompt}
+      """`,
+      temperature: 0.5,
       max_tokens: 60,
     });
 
