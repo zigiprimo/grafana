@@ -2,6 +2,7 @@ import { DashboardScene } from '../dashboard/DashboardScene';
 
 import { getCanvasLayoutTest } from './canvas';
 import { getCanvasConstraintTest } from './canvasConstraints';
+import { getCanvasDemoSolar } from './canvasDemoSolar';
 import { getCanvasFull } from './canvasFull';
 import { getFlexLayoutTest, getRepeaterSceneWithFlexWrap, getScenePanelRepeaterTest } from './demo';
 import { getGridLayoutTest } from './grid';
@@ -24,6 +25,7 @@ export function getScenes(): SceneDef[] {
     { title: 'Canvas layout test', getScene: getCanvasLayoutTest },
     { title: 'Canvas constraint test', getScene: getCanvasConstraintTest },
     { title: 'Canvas full', getScene: getCanvasFull },
+    { title: 'Canvas solar', getScene: getCanvasDemoSolar },
     { title: 'Flex layout test', getScene: getFlexLayoutTest },
     { title: 'Panel repeater test', getScene: getScenePanelRepeaterTest },
     { title: 'Panel repeater test flex wrap', getScene: getRepeaterSceneWithFlexWrap },

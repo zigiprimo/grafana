@@ -30,6 +30,22 @@ export function getCanvasDemoQuery(
         ...queryRunnerOverrides,
       });
     }
+    case queries.SolarDay: {
+      return new SceneQueryRunner({
+        queries: [
+          {
+            csvContent: 'house_draw, battery_charge, solar_output\n1.1, 2.2, 3.3',
+            datasource: {
+              type: 'testdata',
+              uid: 'PD8C576611E62080A',
+            },
+            refId: 'A',
+            scenarioId: 'csv_content',
+          },
+        ],
+        ...queryRunnerOverrides,
+      });
+    }
   }
   return new SceneQueryRunner({
     queries: [
