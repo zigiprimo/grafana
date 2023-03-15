@@ -12,7 +12,7 @@ import {
   DataFrame,
   DataSourceWithLogsContextSupport,
 } from '@grafana/data';
-import { withTheme2, Themeable2 } from '@grafana/ui';
+import { withTheme2, Themeable2, WithContextMenu } from '@grafana/ui';
 
 import { sortLogRows } from '../utils';
 
@@ -48,6 +48,7 @@ export interface Props extends Themeable2 {
   onClickShowField?: (key: string) => void;
   onClickHideField?: (key: string) => void;
   onLogRowHover?: (row?: LogRowModel) => void;
+  getLogRowContextMenu?: () => React.ReactNode;
 }
 
 interface State {
@@ -131,6 +132,7 @@ class UnThemedLogRows extends PureComponent<Props, State> {
       app,
       scrollElement,
       getLogRowContextUi,
+      getLogRowContextMenu,
     } = this.props;
     const { renderAll, contextIsOpen } = this.state;
     const styles = getLogRowStyles(theme);
@@ -155,68 +157,76 @@ class UnThemedLogRows extends PureComponent<Props, State> {
         <tbody>
           {hasData &&
             firstRows.map((row, index) => (
-              <LogRow
-                key={row.uid}
-                getRows={getRows}
-                getRowContext={getRowContext}
-                getLogRowContextUi={getLogRowContextUi}
-                row={row}
-                showContextToggle={showContextToggle}
-                showRowMenu={!contextIsOpen}
-                showDuplicates={showDuplicates}
-                showLabels={showLabels}
-                showTime={showTime}
-                displayedFields={displayedFields}
-                wrapLogMessage={wrapLogMessage}
-                prettifyLogMessage={prettifyLogMessage}
-                timeZone={timeZone}
-                enableLogDetails={enableLogDetails}
-                onClickFilterLabel={onClickFilterLabel}
-                onClickFilterOutLabel={onClickFilterOutLabel}
-                onClickShowField={onClickShowField}
-                onClickHideField={onClickHideField}
-                getFieldLinks={getFieldLinks}
-                logsSortOrder={logsSortOrder}
-                forceEscape={forceEscape}
-                toggleContextIsOpen={this.toggleContextIsOpen}
-                onLogRowHover={onLogRowHover}
-                app={app}
-                scrollElement={scrollElement}
-                styles={styles}
-              />
+              <WithContextMenu key={row.uid} renderMenuItems={getLogRowContextMenu ?? (() => null)}>
+                {({ openMenu }) => (
+                  <LogRow
+                    getRows={getRows}
+                    getRowContext={getRowContext}
+                    getLogRowContextUi={getLogRowContextUi}
+                    row={row}
+                    showContextToggle={showContextToggle}
+                    showRowMenu={!contextIsOpen}
+                    showDuplicates={showDuplicates}
+                    showLabels={showLabels}
+                    showTime={showTime}
+                    displayedFields={displayedFields}
+                    wrapLogMessage={wrapLogMessage}
+                    prettifyLogMessage={prettifyLogMessage}
+                    timeZone={timeZone}
+                    enableLogDetails={enableLogDetails}
+                    onClickFilterLabel={onClickFilterLabel}
+                    onClickFilterOutLabel={onClickFilterOutLabel}
+                    onClickShowField={onClickShowField}
+                    onClickHideField={onClickHideField}
+                    getFieldLinks={getFieldLinks}
+                    logsSortOrder={logsSortOrder}
+                    forceEscape={forceEscape}
+                    toggleContextIsOpen={this.toggleContextIsOpen}
+                    onLogRowHover={onLogRowHover}
+                    onLogRowContext={getLogRowContextMenu ? openMenu : undefined}
+                    app={app}
+                    scrollElement={scrollElement}
+                    styles={styles}
+                  />
+                )}
+              </WithContextMenu>
             ))}
           {hasData &&
             renderAll &&
             lastRows.map((row, index) => (
-              <LogRow
-                key={row.uid}
-                getRows={getRows}
-                getRowContext={getRowContext}
-                getLogRowContextUi={getLogRowContextUi}
-                row={row}
-                showContextToggle={showContextToggle}
-                showRowMenu={!contextIsOpen}
-                showDuplicates={showDuplicates}
-                showLabels={showLabels}
-                showTime={showTime}
-                displayedFields={displayedFields}
-                wrapLogMessage={wrapLogMessage}
-                prettifyLogMessage={prettifyLogMessage}
-                timeZone={timeZone}
-                enableLogDetails={enableLogDetails}
-                onClickFilterLabel={onClickFilterLabel}
-                onClickFilterOutLabel={onClickFilterOutLabel}
-                onClickShowField={onClickShowField}
-                onClickHideField={onClickHideField}
-                getFieldLinks={getFieldLinks}
-                logsSortOrder={logsSortOrder}
-                forceEscape={forceEscape}
-                toggleContextIsOpen={this.toggleContextIsOpen}
-                onLogRowHover={onLogRowHover}
-                app={app}
-                scrollElement={scrollElement}
-                styles={styles}
-              />
+              <WithContextMenu key={row.uid} renderMenuItems={getLogRowContextMenu ?? (() => null)}>
+                {({ openMenu }) => (
+                  <LogRow
+                    getRows={getRows}
+                    getRowContext={getRowContext}
+                    getLogRowContextUi={getLogRowContextUi}
+                    row={row}
+                    showContextToggle={showContextToggle}
+                    showRowMenu={!contextIsOpen}
+                    showDuplicates={showDuplicates}
+                    showLabels={showLabels}
+                    showTime={showTime}
+                    displayedFields={displayedFields}
+                    wrapLogMessage={wrapLogMessage}
+                    prettifyLogMessage={prettifyLogMessage}
+                    timeZone={timeZone}
+                    enableLogDetails={enableLogDetails}
+                    onClickFilterLabel={onClickFilterLabel}
+                    onClickFilterOutLabel={onClickFilterOutLabel}
+                    onClickShowField={onClickShowField}
+                    onClickHideField={onClickHideField}
+                    getFieldLinks={getFieldLinks}
+                    logsSortOrder={logsSortOrder}
+                    forceEscape={forceEscape}
+                    toggleContextIsOpen={this.toggleContextIsOpen}
+                    onLogRowHover={onLogRowHover}
+                    onLogRowContext={getLogRowContextMenu ? openMenu : undefined}
+                    app={app}
+                    scrollElement={scrollElement}
+                    styles={styles}
+                  />
+                )}
+              </WithContextMenu>
             ))}
           {hasData && !renderAll && (
             <tr>

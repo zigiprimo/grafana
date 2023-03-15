@@ -66,6 +66,7 @@ import {
   addLineFilter,
   findLastPosition,
   getLabelFilterPositions,
+  getStreamSelectorPositions,
 } from './modifyQuery';
 import { getQueryHints } from './queryHints';
 import { runPartitionedQueries } from './querySplitting';
@@ -621,13 +622,19 @@ export class LokiDatasource
       case 'ADD_LABEL_FILTER': {
         const parserPositions = getParserPositions(query.expr);
         const labelFilterPositions = getLabelFilterPositions(query.expr);
-        const lastPosition = findLastPosition([...parserPositions, ...labelFilterPositions]);
-        const filter = toLabelFilter('', '', '=');
+        const positions =
+          parserPositions.length === 0 && labelFilterPositions.length === 0
+            ? getStreamSelectorPositions(query.expr)
+            : [...parserPositions, ...labelFilterPositions];
+        const lastPosition = findLastPosition(positions);
+        const filter = toLabelFilter(action.options?.key ?? '', action.options?.value ?? '', '=');
         expression = addFilterAsLabelFilter(expression, [lastPosition], filter);
         break;
       }
       case 'ADD_LINE_FILTER': {
-        expression = addLineFilter(expression);
+        const value = action.options?.value ? escapeLabelValueInSelector(action.options.value) : '';
+        const operator = action.options?.operator ?? '';
+        expression = addLineFilter(expression, value, operator);
         break;
       }
       default:

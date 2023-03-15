@@ -1,7 +1,7 @@
 import { css, cx } from '@emotion/css';
 import { get } from 'lodash';
 import memoizeOne from 'memoize-one';
-import React, { createRef } from 'react';
+import React, { createRef, useEffect, useState } from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Unsubscribable } from 'rxjs';
@@ -27,6 +27,8 @@ import {
   PanelContainer,
   Alert,
   AdHocFilterItem,
+  MenuItem,
+  MenuGroup,
 } from '@grafana/ui';
 import { FILTER_FOR_OPERATOR, FILTER_OUT_OPERATOR } from '@grafana/ui/src/components/Table/types';
 import appEvents from 'app/core/app_events';
@@ -38,6 +40,7 @@ import { StoreState } from 'app/types';
 import { AbsoluteTimeEvent } from 'app/types/events';
 import { ExploreId, ExploreItemState } from 'app/types/explore';
 
+import { LokiDatasource } from '../../plugins/datasource/loki/datasource';
 import { getTimeZone } from '../profile/state/selectors';
 
 import ExploreQueryInspector from './ExploreQueryInspector';
@@ -113,6 +116,65 @@ enum ExploreDrawer {
 interface ExploreState {
   openDrawer?: ExploreDrawer;
 }
+
+export interface LogsContextMenuItemsProps {
+  query: DataQuery;
+  onModifyQueries: (action: QueryFixAction) => void;
+}
+
+const LogsContextMenuItems = ({ query, onModifyQueries }: LogsContextMenuItemsProps) => {
+  const [datasource, setDatasource] = useState<LokiDatasource>();
+  const [labels, setLabels] = useState<Array<{ text: string }>>([]);
+
+  useEffect(() => {
+    const getDs = async () => {
+      if (query.datasource) {
+        setDatasource((await getDataSourceSrv().get(query.datasource)) as LokiDatasource);
+      }
+    };
+
+    getDs();
+  }, [query.datasource]);
+
+  useEffect(() => {
+    const getLabels = async () => {
+      if (datasource) {
+        setLabels(await datasource.labelNamesQuery());
+      }
+    };
+
+    getLabels();
+  }, [datasource]);
+
+  return (
+    <MenuGroup label={query.refId}>
+      <MenuItem
+        label="Add as line filter"
+        onClick={() => {
+          onModifyQueries({
+            type: 'ADD_LINE_FILTER',
+            options: { value: (document.getSelection() ?? '').toString() },
+          });
+        }}
+      />
+      <MenuItem
+        label="Add as label filter"
+        childItems={labels.map(({ text }) => (
+          <MenuItem
+            key={text}
+            label={text}
+            onClick={() => {
+              onModifyQueries({
+                type: 'ADD_LINE_FILTER',
+                options: { value: `${text}=.*${(document.getSelection() ?? '').toString()}`, operator: '~' },
+              });
+            }}
+          />
+        ))}
+      />
+    </MenuGroup>
+  );
+};
 
 export type Props = ExploreProps & ConnectedProps<typeof connector>;
 
@@ -347,7 +409,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
   }
 
   renderLogsPanel(width: number) {
-    const { exploreId, syncedTimes, theme, queryResponse } = this.props;
+    const { exploreId, syncedTimes, theme, queryResponse, queries } = this.props;
     const spacing = parseInt(theme.spacing(2).slice(0, -2), 10);
     return (
       <LogsContainer
@@ -361,6 +423,13 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
         onStopScanning={this.onStopScanning}
         scrollElement={this.scrollElement}
         eventBus={this.logsEventBus}
+        getLogRowContextMenu={() =>
+          queries
+            .filter((query) => query.datasource?.type === 'loki')
+            .map((query) => (
+              <LogsContextMenuItems key={query.refId} query={query} onModifyQueries={this.onModifyQueries} />
+            ))
+        }
         splitOpenFn={this.onSplitOpen('logs')}
       />
     );
@@ -377,6 +446,13 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
         queries={queries}
         datasourceInstance={datasourceInstance}
         splitOpen={this.onSplitOpen('logsSample')}
+        getLogRowContextMenu={() =>
+          queries
+            .filter((query) => query.datasource?.type === 'loki')
+            .map((query) => (
+              <LogsContextMenuItems key={query.refId} query={query} onModifyQueries={this.onModifyQueries} />
+            ))
+        }
         setLogsSampleEnabled={(enabled: boolean) =>
           setSupplementaryQueryEnabled(exploreId, enabled, SupplementaryQueryType.LogsSample)
         }

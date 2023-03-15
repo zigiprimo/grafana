@@ -85,6 +85,7 @@ interface Props extends Themeable2 {
   addResultsToCache: () => void;
   clearCache: () => void;
   eventBus: EventBus;
+  getLogRowContextMenu?: () => React.ReactNode;
 }
 
 interface State {
@@ -353,6 +354,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
       scrollElement,
       getRowContext,
       getLogRowContextUi,
+      getLogRowContextMenu,
     } = this.props;
 
     const {
@@ -507,6 +509,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
                 app={CoreApp.Explore}
                 scrollElement={scrollElement}
                 onLogRowHover={this.onLogRowHover}
+                getLogRowContextMenu={getLogRowContextMenu}
               />
               {!loading && !hasData && !scanning && (
                 <div className={styles.noData}>

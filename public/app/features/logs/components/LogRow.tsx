@@ -59,6 +59,7 @@ interface Props extends Themeable2 {
   onLogRowHover?: (row?: LogRowModel) => void;
   toggleContextIsOpen?: () => void;
   styles: LogRowStyles;
+  onLogRowContext?: React.MouseEventHandler<HTMLElement>;
 }
 
 interface State {
@@ -96,22 +97,24 @@ class UnThemedLogRow extends PureComponent<Props, State> {
   };
 
   toggleDetails = () => {
-    if (!this.props.enableLogDetails) {
-      return;
+    if (!!!(document.getSelection() ?? '').toString().length) {
+      if (!this.props.enableLogDetails) {
+        return;
+      }
+
+      reportInteraction('grafana_explore_logs_log_details_clicked', {
+        datasourceType: this.props.row.datasourceType,
+        type: this.state.showDetails ? 'close' : 'open',
+        logRowUid: this.props.row.uid,
+        app: this.props.app,
+      });
+
+      this.setState((state) => {
+        return {
+          showDetails: !state.showDetails,
+        };
+      });
     }
-
-    reportInteraction('grafana_explore_logs_log_details_clicked', {
-      datasourceType: this.props.row.datasourceType,
-      type: this.state.showDetails ? 'close' : 'open',
-      logRowUid: this.props.row.uid,
-      app: this.props.app,
-    });
-
-    this.setState((state) => {
-      return {
-        showDetails: !state.showDetails,
-      };
-    });
   };
 
   renderTimeStamp(epochMs: number) {
@@ -131,6 +134,12 @@ class UnThemedLogRow extends PureComponent<Props, State> {
     if (this.props.onLogRowHover) {
       this.props.onLogRowHover(undefined);
     }
+  };
+
+  onLogRowContext = (evt: React.MouseEvent<HTMLElement, MouseEvent>) => {
+    evt.preventDefault();
+
+    this.props.onLogRowContext?.(evt);
   };
 
   renderLogRow(
@@ -182,7 +191,8 @@ class UnThemedLogRow extends PureComponent<Props, State> {
       <>
         <tr
           className={logRowBackground}
-          onClick={this.toggleDetails}
+          onMouseUp={this.toggleDetails}
+          onContextMenu={this.onLogRowContext}
           onMouseEnter={this.onMouseEnter}
           onMouseLeave={this.onMouseLeave}
         >

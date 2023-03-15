@@ -30,10 +30,21 @@ type Props = {
   datasourceInstance: DataSourceApi | null | undefined;
   splitOpen: SplitOpen;
   setLogsSampleEnabled: (enabled: boolean) => void;
+
+  getLogRowContextMenu?: () => React.ReactNode;
 };
 
 export function LogsSamplePanel(props: Props) {
-  const { queryResponse, timeZone, enabled, setLogsSampleEnabled, datasourceInstance, queries, splitOpen } = props;
+  const {
+    queryResponse,
+    timeZone,
+    enabled,
+    setLogsSampleEnabled,
+    datasourceInstance,
+    queries,
+    splitOpen,
+    getLogRowContextMenu,
+  } = props;
 
   const styles = useStyles2(getStyles);
   const onToggleLogsSampleCollapse = (isOpen: boolean) => {
@@ -105,6 +116,7 @@ export function LogsSamplePanel(props: Props) {
             prettifyLogMessage={store.getBool(SETTINGS_KEYS.prettifyLogMessage, false)}
             timeZone={timeZone}
             enableLogDetails={true}
+            getLogRowContextMenu={getLogRowContextMenu}
           />
         </div>
       </>

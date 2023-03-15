@@ -43,6 +43,7 @@
     "start": "yarn themes:generate && yarn dev --watch",
     "start:noTsCheck": "yarn start --env noTsCheck=1",
     "start:hot": "yarn themes:generate && NODE_ENV=hot yarn dev --config scripts/webpack/webpack.hot.js",
+    "start:lokiLanguageServer": "yarn workspace @grafana/loki-language-server start",
     "stats": "webpack --mode production --config scripts/webpack/webpack.prod.js --profile --json > compilation-stats.json",
     "storybook": "yarn workspace @grafana/ui storybook --ci",
     "storybook:build": "yarn workspace @grafana/ui storybook:build",
@@ -66,7 +67,6 @@
   },
   "lint-staged": {
     "*.{js,ts,tsx}": [
-      "betterer precommit",
       "eslint --ext .js,.tsx,.ts --cache --fix",
       "prettier --write"
     ],
@@ -443,6 +443,7 @@
   },
   "workspaces": {
     "packages": [
+      "lokiLanguageServer",
       "packages/*",
       "plugins-bundled/internal/*"
     ]

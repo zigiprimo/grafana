@@ -41,6 +41,7 @@ interface LogsContainerProps extends PropsFromRedux {
   onStopScanning: () => void;
   eventBus: EventBus;
   splitOpenFn: SplitOpen;
+  getLogRowContextMenu?: () => React.ReactNode;
 }
 
 class LogsContainer extends PureComponent<LogsContainerProps> {
@@ -176,6 +177,7 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
             clearCache={() => clearCache(exploreId)}
             scrollElement={scrollElement}
             eventBus={this.props.eventBus}
+            getLogRowContextMenu={this.props.getLogRowContextMenu}
           />
         </LogsCrossFadeTransition>
       </>

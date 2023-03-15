@@ -25,7 +25,9 @@ export class CompletionDataProvider {
     private historyRef: HistoryRef = { current: [] },
     initialValue: string
   ) {
-    this.webSocket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://localhost:3001/sampleServer`);
+    this.webSocket = new WebSocket(
+      `${location.protocol === 'https:' ? 'wss' : 'ws'}://localhost:3001/lokiLanguageServer`
+    );
 
     this.webSocket.addEventListener('open', () => {
       this.webSocket.send(
@@ -322,32 +324,34 @@ export class CompletionDataProvider {
   }
 
   updateLs(evt: monacoTypes.editor.IModelContentChangedEvent) {
-    this.webSocket.send(
-      JSON.stringify({
-        method: 'textDocument/didChange',
-        params: {
-          textDocument: {
-            uri: 'inmemory://model.json',
-            version: evt.versionId,
-          },
-          contentChanges: evt.changes.map((change) => ({
-            text: change.text,
-            rangeLength: change.rangeLength,
-            range: {
-              start: {
-                character: change.range.startColumn - 1,
-                line: change.range.startLineNumber - 1,
-              },
-              end: {
-                character: change.range.endColumn - 1,
-                line: change.range.endLineNumber - 1,
-              },
+    if (this.webSocket?.readyState === this.webSocket?.OPEN) {
+      this.webSocket.send(
+        JSON.stringify({
+          method: 'textDocument/didChange',
+          params: {
+            textDocument: {
+              uri: 'inmemory://model.json',
+              version: evt.versionId,
             },
-          })),
-        },
-        jsonrpc: '2.0',
-      })
-    );
+            contentChanges: evt.changes.map((change) => ({
+              text: change.text,
+              rangeLength: change.rangeLength,
+              range: {
+                start: {
+                  character: change.range.startColumn - 1,
+                  line: change.range.startLineNumber - 1,
+                },
+                end: {
+                  character: change.range.endColumn - 1,
+                  line: change.range.endLineNumber - 1,
+                },
+              },
+            })),
+          },
+          jsonrpc: '2.0',
+        })
+      );
+    }
   }
 
   async getLabelNames(otherLabels: Label[] = []) {
