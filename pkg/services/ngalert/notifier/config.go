@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	alertingNotify "github.com/grafana/alerting/notify"
+	"github.com/grafana/alerting/receivers"
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	api "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
@@ -96,33 +97,9 @@ type AlertingConfiguration struct {
 
 	AlertmanagerTemplates *alertingNotify.Template
 
-	IntegrationsFunc         func(receivers []*api.PostableApiReceiver, templates *alertingNotify.Template) (map[string][]*alertingNotify.Integration, error)
-	ReceiverIntegrationsFunc func(r *api.PostableGrafanaReceiver, tmpl *alertingNotify.Template) (alertingNotify.NotificationChannel, error)
-}
+	IntegrationsFunc func(receivers []*alertingNotify.APIReceiver, templates *alertingNotify.Template) (map[string][]*alertingNotify.Integration, error)
 
-func (a AlertingConfiguration) BuildReceiverIntegrationsFunc() func(next *alertingNotify.GrafanaReceiver, tmpl *alertingNotify.Template) (alertingNotify.Notifier, error) {
-	return func(next *alertingNotify.GrafanaReceiver, tmpl *alertingNotify.Template) (alertingNotify.Notifier, error) {
-		// TODO: We shouldn't need to do all of this marshalling - there should be no difference between types.
-		var out api.RawMessage
-		settingsJSON, err := json.Marshal(next.Settings)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal settings to JSON: %v", err)
-		}
-
-		err = out.UnmarshalJSON(settingsJSON)
-		if err != nil {
-			return nil, fmt.Errorf("unable to marshal JSON to RawMessage: %v", err)
-		}
-		gr := &api.PostableGrafanaReceiver{
-			UID:                   next.UID,
-			Name:                  next.Name,
-			Type:                  next.Type,
-			DisableResolveMessage: next.DisableResolveMessage,
-			Settings:              out,
-			SecureSettings:        next.SecureSettings,
-		}
-		return a.ReceiverIntegrationsFunc(gr, tmpl)
-	}
+	Sender receivers.NotificationSender
 }
 
 func (a AlertingConfiguration) DispatcherLimits() alertingNotify.DispatcherLimits {
@@ -138,7 +115,7 @@ func (a AlertingConfiguration) MuteTimeIntervals() []alertingNotify.MuteTimeInte
 }
 
 func (a AlertingConfiguration) ReceiverIntegrations() (map[string][]*alertingNotify.Integration, error) {
-	return a.IntegrationsFunc(a.AlertmanagerConfig.Receivers, a.AlertmanagerTemplates)
+	return a.IntegrationsFunc(a.AlertmanagerConfig.ApiReceivers(), a.AlertmanagerTemplates)
 }
 
 func (a AlertingConfiguration) RoutingTree() *alertingNotify.Route {

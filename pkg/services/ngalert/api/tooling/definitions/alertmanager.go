@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/go-openapi/strfmt"
+	alertingNotify "github.com/grafana/alerting/notify"
 	amv2 "github.com/prometheus/alertmanager/api/v2/models"
 	"github.com/prometheus/alertmanager/config"
 	"github.com/prometheus/alertmanager/pkg/labels"
@@ -866,6 +867,14 @@ type PostableApiAlertingConfig struct {
 	Receivers []*PostableApiReceiver `yaml:"receivers,omitempty" json:"receivers,omitempty"`
 }
 
+func (c *PostableApiAlertingConfig) ApiReceivers() []*alertingNotify.APIReceiver {
+	apiReceivers := make([]*alertingNotify.APIReceiver, len(c.Receivers))
+	for _, receiver := range c.Receivers {
+		apiReceivers = append(apiReceivers, receiver.ToApiReceiver())
+	}
+	return apiReceivers
+}
+
 func (c *PostableApiAlertingConfig) UnmarshalJSON(b []byte) error {
 	type plain PostableApiAlertingConfig
 	if err := json.Unmarshal(b, (*plain)(c)); err != nil {
@@ -1115,6 +1124,20 @@ func (r *GettableApiReceiver) Type() ReceiverType {
 type PostableApiReceiver struct {
 	config.Receiver          `yaml:",inline"`
 	PostableGrafanaReceivers `yaml:",inline"`
+}
+
+func (r *PostableApiReceiver) ToApiReceiver() *alertingNotify.APIReceiver {
+	receivers := alertingNotify.GrafanaReceivers{
+		Receivers: make([]*alertingNotify.GrafanaReceiver, 0, len(r.GrafanaManagedReceivers)),
+	}
+	for _, receiver := range r.GrafanaManagedReceivers {
+		receivers.Receivers = append(receivers.Receivers, receiver.ToGrafanaReceiver())
+	}
+
+	return &alertingNotify.APIReceiver{
+		ConfigReceiver:   r.Receiver,
+		GrafanaReceivers: receivers,
+	}
 }
 
 func (r *PostableApiReceiver) UnmarshalYAML(unmarshal func(interface{}) error) error {

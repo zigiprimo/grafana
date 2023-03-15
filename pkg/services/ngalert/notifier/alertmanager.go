@@ -52,7 +52,7 @@ type Alertmanager struct {
 	Settings            *setting.Cfg
 	Store               AlertingStore
 	fileStore           *FileStore
-	NotificationService notifications.Service
+	NotificationService receivers.NotificationSender
 
 	decryptFn receivers.GetDecryptedValueFn
 	orgID     int64
@@ -136,7 +136,7 @@ func newAlertmanager(ctx context.Context, orgID int64, cfg *setting.Cfg, store A
 		Base:                gam,
 		Settings:            cfg,
 		Store:               store,
-		NotificationService: ns,
+		NotificationService: NewNotificationSender(ns),
 		orgID:               orgID,
 		decryptFn:           decryptFn,
 		fileStore:           fileStore,
@@ -280,12 +280,15 @@ func (am *Alertmanager) applyConfig(cfg *apimodels.PostableUserConfig, rawConfig
 		return false, err
 	}
 
+	receivers.NewFactoryConfig(cfg, NewNotificationSender(am.NotificationService), am.decryptFn, tmpl, newImageStore(am.Store), LoggerFactory, setting.BuildVersion)
+
 	err = am.Base.ApplyConfig(AlertingConfiguration{
-		RawAlertmanagerConfig:    rawConfig,
-		AlertmanagerConfig:       cfg.AlertmanagerConfig,
-		AlertmanagerTemplates:    tmpl,
-		IntegrationsFunc:         am.buildIntegrationsMap,
-		ReceiverIntegrationsFunc: am.buildReceiverIntegration,
+
+		Sender:                am.NotificationService,
+		RawAlertmanagerConfig: rawConfig,
+		AlertmanagerConfig:    cfg.AlertmanagerConfig,
+		AlertmanagerTemplates: tmpl,
+		IntegrationsFunc:      am.buildIntegrationsMap,
 	})
 	if err != nil {
 		return false, err
@@ -317,7 +320,7 @@ func (am *Alertmanager) WorkingDirPath() string {
 }
 
 // buildIntegrationsMap builds a map of name to the list of Grafana integration notifiers off of a list of receiver config.
-func (am *Alertmanager) buildIntegrationsMap(receivers []*apimodels.PostableApiReceiver, templates *alertingNotify.Template) (map[string][]*alertingNotify.Integration, error) {
+func (am *Alertmanager) buildIntegrationsMap(receivers []*alertingNotify.APIReceiver, templates *alertingNotify.Template) (map[string][]*alertingNotify.Integration, error) {
 	integrationsMap := make(map[string][]*alertingNotify.Integration, len(receivers))
 	for _, receiver := range receivers {
 		integrations, err := am.buildReceiverIntegrations(receiver, templates)
@@ -331,9 +334,9 @@ func (am *Alertmanager) buildIntegrationsMap(receivers []*apimodels.PostableApiR
 }
 
 // buildReceiverIntegrations builds a list of integration notifiers off of a receiver config.
-func (am *Alertmanager) buildReceiverIntegrations(receiver *apimodels.PostableApiReceiver, tmpl *alertingNotify.Template) ([]*alertingNotify.Integration, error) {
-	integrations := make([]*alertingNotify.Integration, 0, len(receiver.GrafanaManagedReceivers))
-	for i, r := range receiver.GrafanaManagedReceivers {
+func (am *Alertmanager) buildReceiverIntegrations(receiver *alertingNotify.APIReceiver, tmpl *alertingNotify.Template) ([]*alertingNotify.Integration, error) {
+	integrations := make([]*alertingNotify.Integration, 0, len(receiver.GrafanaReceivers.Receivers))
+	for i, r := range receiver.GrafanaReceivers.Receivers {
 		n, err := am.buildReceiverIntegration(r, tmpl)
 		if err != nil {
 			return nil, err
@@ -343,7 +346,7 @@ func (am *Alertmanager) buildReceiverIntegrations(receiver *apimodels.PostableAp
 	return integrations, nil
 }
 
-func (am *Alertmanager) buildReceiverIntegration(r *apimodels.PostableGrafanaReceiver, tmpl *alertingNotify.Template) (alertingNotify.NotificationChannel, error) {
+func (am *Alertmanager) buildReceiverIntegration(r *alertingNotify.GrafanaReceiver, tmpl *alertingNotify.Template) (alertingNotify.NotificationChannel, error) {
 	// secure settings are already encrypted at this point
 	secureSettings := make(map[string][]byte, len(r.SecureSettings))
 
@@ -365,7 +368,7 @@ func (am *Alertmanager) buildReceiverIntegration(r *apimodels.PostableGrafanaRec
 			Name:                  r.Name,
 			Type:                  r.Type,
 			DisableResolveMessage: r.DisableResolveMessage,
-			Settings:              json.RawMessage(r.Settings),
+			Settings:              r.Settings,
 			SecureSettings:        secureSettings,
 		}
 	)
