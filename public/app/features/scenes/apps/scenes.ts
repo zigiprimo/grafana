@@ -283,8 +283,9 @@ function getTimeSeriesQuery(query: Partial<PromQuery>): SceneQueryRunner {
 export function getOverviewScene(): EmbeddedScene {
   const scene = new EmbeddedScene({
     $variables: getVariablesDefinitions(),
-    $timeRange: new SceneTimeRange({ from: 'now-1h', to: 'now' }),
-    controls: [new VariableValueSelectors({}), new SceneControlsSpacer(), new SceneTimePicker({ isOnCanvas: true })],
+    // $timeRange: new SceneTimeRange({ from: 'now-1h', to: 'now' }),
+    // controls: [new VariableValueSelectors({}), new SceneControlsSpacer(), new SceneTimePicker({ isOnCanvas: true })],
+    controls: [new VariableValueSelectors({}), new SceneControlsSpacer()],
     body: new SceneFlexLayout({
       direction: 'column',
       children: [
