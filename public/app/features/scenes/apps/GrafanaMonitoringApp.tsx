@@ -54,19 +54,7 @@ export function getMainPageScene() {
         url: '/scenes/grafana-monitoring',
         getScene: getOverviewScene,
         preserveUrlKeys: ['from', 'to', 'var-instance'],
-      }),
-      // new SceneAppPage({
-      //   title: 'HTTP handlers',
-      //   url: '/scenes/grafana-monitoring/handlers',
-      //   getScene: getHttpHandlerListScene,
-      //   preserveUrlKeys: ['from', 'to', 'var-instance'],
-      //   drilldowns: [
-      //     {
-      //       routePath: '/scenes/grafana-monitoring/handlers/:handler',
-      //       getPage: getHandlerDrilldownPage,
-      //     },
-      //   ],
-      // }),
+      }),      
       // new SceneAppPage({
       //   title: 'Logs',
       //   url: '/scenes/grafana-monitoring/logs',
