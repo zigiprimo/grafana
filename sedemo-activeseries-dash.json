@@ -1,0 +1,1856 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": 2,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 7,
+      "panels": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 9
+          },
+          "id": 1,
+          "interval": "1h",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+              },
+              "editorMode": "code",
+              "expr": "grafanacloud_instance_active_series{id=\"8954\"}",
+              "instant": false,
+              "key": "Q-a580fe6f-e435-4e82-ae2d-04463e9d2304-0",
+              "legendFormat": "sedemo-prom",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Active Series",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "description": "$maxrownum",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 9
+          },
+          "id": 3,
+          "interval": "1h",
+          "options": {
+            "cellHeight": "md",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": ["max"],
+              "show": true
+            },
+            "showHeader": true,
+            "showRowNums": false
+          },
+          "pluginVersion": "9.5.0-pre",
+          "targets": [
+            {
+              "datasource": {
+                "type": "datasource",
+                "uid": "-- Dashboard --"
+              },
+              "panelId": 1,
+              "refId": "A"
+            }
+          ],
+          "title": "ActiveSeries, sorted, with 95pc-over-time",
+          "transformations": [
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "sedemo-prom"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "rowNumberToField",
+              "options": {}
+            },
+            {
+              "disabled": true,
+              "id": "calculateField",
+              "options": {
+                "alias": "row num frac",
+                "binary": {
+                  "left": "Row Num",
+                  "operator": "/",
+                  "reducer": "sum",
+                  "right": "$maxrownum"
+                },
+                "mode": "binary",
+                "reduce": {
+                  "reducer": "sum"
+                }
+              }
+            },
+            {
+              "disabled": true,
+              "id": "calculateField",
+              "options": {
+                "alias": "Row num (%)",
+                "binary": {
+                  "left": "row num frac",
+                  "operator": "*",
+                  "reducer": "sum",
+                  "right": "100"
+                },
+                "mode": "binary",
+                "reduce": {
+                  "reducer": "sum"
+                }
+              }
+            },
+            {
+              "disabled": true,
+              "id": "calculateField",
+              "options": {
+                "alias": "95pc row frac",
+                "binary": {
+                  "left": "95pc row",
+                  "operator": "/",
+                  "reducer": "sum",
+                  "right": "$maxrownum"
+                },
+                "mode": "binary",
+                "reduce": {
+                  "reducer": "sum"
+                }
+              }
+            },
+            {
+              "disabled": true,
+              "id": "calculateField",
+              "options": {
+                "alias": "95pc row (%)",
+                "binary": {
+                  "left": "95pc row frac",
+                  "operator": "*",
+                  "reducer": "sum",
+                  "right": "100"
+                },
+                "mode": "binary",
+                "reduce": {
+                  "reducer": "sum"
+                }
+              }
+            },
+            {
+              "disabled": true,
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "95pc row": false,
+                  "95pc row (%)": false,
+                  "95pc row / 672": true,
+                  "95pc val": false,
+                  "Row Num": true,
+                  "Row Num / 672": true
+                },
+                "indexByName": {},
+                "renameByName": {}
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 18
+          },
+          "id": 5,
+          "interval": "1h",
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": ["lastNotNull"],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.5.0-pre",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "count_over_time(grafanacloud_instance_active_series{id=\"8954\"}[$__range:$__interval])",
+              "instant": true,
+              "legendFormat": "__auto",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "count_over_time(grafanacloud_instance_active_series{id=\"8954\"}[$__range:$__interval])",
+          "type": "stat"
+        }
+      ],
+      "title": "WIP / Debugging",
+      "type": "row"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 1
+      },
+      "id": 9,
+      "panels": [],
+      "title": "PoC",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 0,
+        "y": 2
+      },
+      "id": 13,
+      "interval": "1h",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "grafanacloud_instance_active_series{id=\"8954\"}",
+          "instant": false,
+          "key": "Q-a580fe6f-e435-4e82-ae2d-04463e9d2304-0",
+          "legendFormat": "sedemo-prom",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "$95pc_over_time_AS",
+          "hide": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Active Series (original)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "datasource",
+        "uid": "-- Dashboard --"
+      },
+      "description": "$maxrownum",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 12,
+        "x": 12,
+        "y": 2
+      },
+      "id": 11,
+      "interval": "1h",
+      "options": {
+        "cellHeight": "md",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["max"],
+          "show": true
+        },
+        "showHeader": true,
+        "showRowNums": false
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "datasource",
+            "uid": "-- Dashboard --"
+          },
+          "panelId": 13,
+          "refId": "A"
+        }
+      ],
+      "title": "ActiveSeries, sorted, with 95pc-over-time",
+      "transformations": [
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "field": "sedemo-prom"
+              }
+            ]
+          }
+        },
+        {
+          "id": "rowNumberToField",
+          "options": {}
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "row num frac",
+            "binary": {
+              "left": "row number",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "$row_count"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Row num (%)",
+            "binary": {
+              "left": "row num frac",
+              "operator": "*",
+              "reducer": "sum",
+              "right": "100"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "95pc row frac",
+            "binary": {
+              "left": "95pc row",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "$maxrownum"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "disabled": true,
+          "id": "calculateField",
+          "options": {
+            "alias": "95pc row (%)",
+            "binary": {
+              "left": "95pc row frac",
+              "operator": "*",
+              "reducer": "sum",
+              "right": "100"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {},
+            "renameByName": {}
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "datasource": {
+        "type": "testdata",
+        "uid": "ffbb4bdc-94f1-49c5-90de-69c8165bfe7b"
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 10,
+        "x": 1,
+        "y": 11
+      },
+      "id": 24,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<h2 style=\"text-align: center\">Active Series</h2>\n<!-- \n\n<div style=\"vertical-align: top; border: 0px;\"\">\n    <p style=\"text-align: center; font-size: 150%; padding: 0px; margin: 0px;\">\n        <b>Self-Serve Funnel</b>\n    </p>\n    <p style=\"text-align: center; font-size: 95%; padding: 0px; margin: 0px\">\n        <em>(updates hourly)</em>\n    </p> \n</div> -->\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "testdata",
+        "uid": "ffbb4bdc-94f1-49c5-90de-69c8165bfe7b"
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 10,
+        "x": 13,
+        "y": 11
+      },
+      "id": 25,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<h2 style=\"text-align: center\">Total DPM (datapoints per min)</h2>\n<!-- \n\n<div style=\"vertical-align: top; border: 0px;\"\">\n    <p style=\"text-align: center; font-size: 150%; padding: 0px; margin: 0px;\">\n        <b>Self-Serve Funnel</b>\n    </p>\n    <p style=\"text-align: center; font-size: 95%; padding: 0px; margin: 0px\">\n        <em>(updates hourly)</em>\n    </p> \n</div> -->\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 5,
+        "x": 1,
+        "y": 13
+      },
+      "id": 15,
+      "interval": "2h",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "grafanacloud_instance_active_series{id=\"8954\"}",
+          "instant": false,
+          "key": "Q-a580fe6f-e435-4e82-ae2d-04463e9d2304-0",
+          "legendFormat": "sedemo-prom",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "$95pc_over_time_AS",
+          "hide": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "show": "lines"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "95th percentile(ActiveSeries)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 5,
+        "x": 6,
+        "y": 13
+      },
+      "id": 14,
+      "interval": "2h",
+      "options": {
+        "dims": {
+          "exclude": ["row number"],
+          "x": "Percentile"
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "series": [],
+        "seriesMapping": "auto",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "grafanacloud_instance_active_series{id=\"8954\"}",
+          "format": "table",
+          "instant": false,
+          "key": "Q-a580fe6f-e435-4e82-ae2d-04463e9d2304-0",
+          "legendFormat": "sedemo-prom",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "$95pc_over_time_AS",
+          "format": "table",
+          "hide": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Sorted (percentiles)",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "field": "Value #A"
+              }
+            ]
+          }
+        },
+        {
+          "id": "rowNumberToField",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "id": true,
+              "org_id": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "Value #A": "ActiveSeries",
+              "Value #B": "95th percentile(ActiveSeries)"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Percentile",
+            "binary": {
+              "left": "row number",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "$row_count_div_100"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        }
+      ],
+      "type": "xychart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 5,
+        "x": 13,
+        "y": 13
+      },
+      "id": 17,
+      "interval": "2h",
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "grafanacloud_instance_samples_per_second{id=\"8954\"} * 60",
+          "instant": false,
+          "key": "Q-a580fe6f-e435-4e82-ae2d-04463e9d2304-0",
+          "legendFormat": "sedemo-prom",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "$95pc_over_time_DPM",
+          "hide": true,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Over time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "pointSize": {
+              "fixed": 4
+            },
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "show": "lines"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "95th percentile(DPM)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 5,
+        "x": 18,
+        "y": 13
+      },
+      "id": 18,
+      "interval": "2h",
+      "options": {
+        "dims": {
+          "exclude": ["row number"],
+          "x": "Percentile"
+        },
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "series": [],
+        "seriesMapping": "auto",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "grafanacloud_instance_samples_per_second{id=\"8954\"} * 60",
+          "format": "table",
+          "instant": false,
+          "key": "Q-a580fe6f-e435-4e82-ae2d-04463e9d2304-0",
+          "legendFormat": "sedemo-prom",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "expr": "$95pc_over_time_DPM",
+          "format": "table",
+          "hide": false,
+          "legendFormat": "__auto",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Sorted (percentiles)",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "fields": {},
+            "sort": [
+              {
+                "field": "Value #A"
+              }
+            ]
+          }
+        },
+        {
+          "id": "rowNumberToField",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "cluster": true,
+              "id": true,
+              "org_id": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "Value #A": "DPM (Total)",
+              "Value #B": "95th percentile(DPM)"
+            }
+          }
+        },
+        {
+          "id": "calculateField",
+          "options": {
+            "alias": "Percentile",
+            "binary": {
+              "left": "row number",
+              "operator": "/",
+              "reducer": "sum",
+              "right": "$row_count_div_100"
+            },
+            "mode": "binary",
+            "reduce": {
+              "reducer": "sum"
+            }
+          }
+        }
+      ],
+      "type": "xychart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "95pcOverTime(ActiveSeries)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 10,
+        "x": 1,
+        "y": 22
+      },
+      "id": 16,
+      "interval": "1h",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "$95pc_over_time_AS",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "B"
+        }
+      ],
+      "title": "95th percentile",
+      "transformations": [],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "95pcOverTime(ActiveSeries)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 10,
+        "x": 13,
+        "y": 22
+      },
+      "id": 19,
+      "interval": "1h",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "$95pc_over_time_DPM",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "B"
+        }
+      ],
+      "title": "95th percentile",
+      "transformations": [],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "testdata",
+        "uid": "ffbb4bdc-94f1-49c5-90de-69c8165bfe7b"
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 10,
+        "x": 13,
+        "y": 25
+      },
+      "id": 27,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<h2 style=\"text-align: center\">Normalized DPM</h2>\n<!-- \n\n<div style=\"vertical-align: top; border: 0px;\"\">\n    <p style=\"text-align: center; font-size: 150%; padding: 0px; margin: 0px;\">\n        <b>Self-Serve Funnel</b>\n    </p>\n    <p style=\"text-align: center; font-size: 95%; padding: 0px; margin: 0px\">\n        <em>(updates hourly)</em>\n    </p> \n</div> -->\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "description": "average per series",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "text",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "95pcOverTime(ActiveSeries)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 3,
+        "x": 13,
+        "y": 27
+      },
+      "id": 20,
+      "interval": "1h",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "4",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "B"
+        }
+      ],
+      "title": "Included DPM",
+      "transformations": [],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "95pcOverTime(ActiveSeries)"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 7,
+        "x": 16,
+        "y": 27
+      },
+      "id": 21,
+      "interval": "1h",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "$95pc_over_time_DPM / 4",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "B"
+        }
+      ],
+      "title": "95th percentile / included DPM",
+      "transformations": [],
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "testdata",
+        "uid": "ffbb4bdc-94f1-49c5-90de-69c8165bfe7b"
+      },
+      "gridPos": {
+        "h": 2,
+        "w": 10,
+        "x": 7,
+        "y": 30
+      },
+      "id": 26,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "<h2 style=\"text-align: center\">Billable Series</h2>\n<!-- \n\n<div style=\"vertical-align: top; border: 0px;\"\">\n    <p style=\"text-align: center; font-size: 150%; padding: 0px; margin: 0px;\">\n        <b>Self-Serve Funnel</b>\n    </p>\n    <p style=\"text-align: center; font-size: 95%; padding: 0px; margin: 0px\">\n        <em>(updates hourly)</em>\n    </p> \n</div> -->\n",
+        "mode": "markdown"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "type": "text"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+      },
+      "description": "Billable series before pro-rating.\nThis is `max` of ",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 10,
+        "x": 7,
+        "y": 32
+      },
+      "id": 22,
+      "interval": "1h",
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.0-pre",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+          },
+          "editorMode": "code",
+          "exemplar": false,
+          "expr": "quantile_over_time(\n    0.95, \n    max by(id) (\n        (grafanacloud_instance_samples_per_second{id=\"8954\"} < Inf)\n        or absent(grafanacloud_instance_samples_per_second{id=\"8954\"})*0\n    )[$__range:]\n) * 60 / 4\n\n>\n\nquantile_over_time(\n    0.95, \n    max by(id) (\n        (grafanacloud_instance_active_series{id=\"8954\"} < Inf)\n        or absent(grafanacloud_instance_active_series{id=\"8954\"})*0\n    )[$__range:]\n)\n\nor\n\nquantile_over_time(\n    0.95, \n    max by(id) (\n        (grafanacloud_instance_active_series{id=\"8954\"} < Inf)\n        or absent(grafanacloud_instance_active_series{id=\"8954\"})*0\n    )[$__range:]\n)\n",
+          "format": "table",
+          "hide": false,
+          "instant": true,
+          "legendFormat": "__auto",
+          "range": false,
+          "refId": "BillableSeries"
+        }
+      ],
+      "title": "max(ActiveSeries, Normalised DPM)",
+      "transformations": [],
+      "type": "stat"
+    }
+  ],
+  "refresh": "",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "337",
+          "value": "337"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+        },
+        "definition": "query_result(scalar(count_over_time(grafanacloud_instance_active_series{id=\"8954\"}[$__range:2h])))",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Row Count",
+        "multi": false,
+        "name": "row_count",
+        "options": [],
+        "query": {
+          "query": "query_result(scalar(count_over_time(grafanacloud_instance_active_series{id=\"8954\"}[$__range:2h])))",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "511747.15",
+          "value": "511747.15"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+        },
+        "definition": "query_result(scalar(quantile_over_time(0.95, grafanacloud_instance_active_series{id=\"8954\"}[$__range])))",
+        "hide": 0,
+        "includeAll": false,
+        "label": "95th Percentile over selected time range: ActiveSeries",
+        "multi": false,
+        "name": "95pc_over_time_AS",
+        "options": [],
+        "query": {
+          "query": "query_result(scalar(quantile_over_time(0.95, grafanacloud_instance_active_series{id=\"8954\"}[$__range])))",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "3.37",
+          "value": "3.37"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+        },
+        "definition": "query_result($row_count/100)",
+        "description": "Used to convert from rows to percentages",
+        "hide": 0,
+        "includeAll": false,
+        "label": "RowCount/100",
+        "multi": false,
+        "name": "row_count_div_100",
+        "options": [],
+        "query": {
+          "query": "query_result($row_count/100)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "1980600",
+          "value": "1980600"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+        },
+        "definition": "query_result(scalar(round(quantile_over_time(0.95, grafanacloud_instance_samples_per_second{id=\"8954\"}[$__range]))) * 60)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "95th Percentile over selected time range: DPM",
+        "multi": false,
+        "name": "95pc_over_time_DPM",
+        "options": [],
+        "query": {
+          "query": "query_result(scalar(round(quantile_over_time(0.95, grafanacloud_instance_samples_per_second{id=\"8954\"}[$__range]))) * 60)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "3.37",
+          "value": "3.37"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cfc7a863-f024-496f-94b2-a4496fcb6190"
+        },
+        "definition": "query_result($row_count/100)",
+        "description": "Used to convert from rows to percentages",
+        "hide": 0,
+        "includeAll": false,
+        "label": "RowCount*95/100",
+        "multi": false,
+        "name": "95pc_of_row_count",
+        "options": [],
+        "query": {
+          "query": "query_result($row_count/100)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1M/M",
+    "to": "now-1M/M"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "SEDemo ActiveSeries",
+  "uid": "f37aa1e6-91e8-4f4d-8b7f-b4793a06b47d",
+  "version": 28,
+  "weekStart": ""
+}
