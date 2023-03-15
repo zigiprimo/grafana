@@ -322,8 +322,6 @@ export class CompletionDataProvider {
           if (response.id && response.id === id) {
             success(response.result?.items ?? []);
           }
-
-          webSocket.removeEventListener('message', listener);
         } catch (err) {}
       });
 

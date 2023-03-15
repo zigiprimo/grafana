@@ -1,6 +1,7 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionItem, CompletionList, Diagnostic, Position } from 'vscode-languageserver-types';
 
+import { createCompletionItems } from './completion/completions.js';
 import { validateQuery } from './validation.js';
 
 export interface LanguageService {
@@ -14,24 +15,20 @@ export function getLanguageService(): LanguageService {
     doValidation(document: TextDocument): Thenable<Diagnostic[]> {
       return Promise.resolve(validateQuery(document.getText()));
     },
-    doResolve: (_item): Thenable<CompletionItem> => {
+    doResolve: (item): Thenable<CompletionItem> => {
       return Promise.resolve({
         label: 'aaa',
         detail: 'detail of aaa',
       });
     },
-    doComplete: (_document, _position): Thenable<CompletionList> => {
-      return Promise.resolve({
-        label: 'completions',
-        isIncomplete: false,
-        items: [
-          {
-            label: 'ccc',
-          },
-          {
-            label: 'ddd',
-          },
-        ],
+    doComplete: (document, position): Thenable<CompletionList> => {
+      return new Promise((resolve) => {
+        createCompletionItems(document, position).then((items: CompletionItem[]) => {
+          resolve({
+            isIncomplete: false,
+            items,
+          });
+        });
       });
     },
   };
