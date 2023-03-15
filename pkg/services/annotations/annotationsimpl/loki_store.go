@@ -173,6 +173,7 @@ func (r *lokiRepositoryImpl) filterByAccessControl(ctx context.Context, selector
 	// some permissions before ever querying loki (for example user having permissions for the org)
 	// and we don't have to do permission checks in two places.
 	// However I imagine the list of IDs we include in the regex could get quite long. That's a potential issue.
+	// #TODO: does it work/make sense to have two selectors for dashboard_id? one with eq operator and the other with eqRegEx?
 	if len(dashboardIDs) > 0 {
 		selectors = append(selectors, selector{
 			label: "dashboard_id",

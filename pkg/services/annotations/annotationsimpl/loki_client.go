@@ -207,8 +207,13 @@ func (c *httpLokiClient) rangeQuery(ctx context.Context, selectors []selector, s
 
 	values := url.Values{}
 	values.Set("query", selectorString(selectors))
-	values.Set("start", fmt.Sprintf("%d", start))
-	values.Set("end", fmt.Sprintf("%d", end))
+	// #TODO: for some reason I'm not getting results that are supposed to be there when we set the start and end.
+	// I suggest disabling this for now. It might also be worth considering what to do if they aren't set.
+	// Seems we account for this case in the other store:
+	// https://github.com/grafana/grafana/blob/main/pkg/services/annotations/annotationsimpl/xorm_store.go#L259
+	// Would it be worth considering the entire retention period if they are unset?
+	// values.Set("start", fmt.Sprintf("%d", start))
+	// values.Set("end", fmt.Sprintf("%d", end))
 
 	queryURL.RawQuery = values.Encode()
 
@@ -323,15 +328,6 @@ func buildSelectors(query *annotations.ItemQuery) ([]selector, error) {
 
 	if query.UserID != 0 {
 		m["user_id"] = fmt.Sprintf("%d", query.UserID)
-	}
-
-	// #TODO: figure out what we want in this case. Loki defaults to the past hour otherwise
-	// https://grafana.com/docs/loki/latest/api/#query-loki-over-a-range-of-time
-	// Could make the period from now all the way back to beginning of retention period perhaps.
-	if query.From > 0 && query.To > 0 {
-		// #TODO: label naming here
-		m["from"] = fmt.Sprintf("%d", query.From)
-		m["to"] = fmt.Sprintf("%d", query.To)
 	}
 
 	// #TODO: handle the check for query.Type. Is it worth doing the check ahead of time though?
