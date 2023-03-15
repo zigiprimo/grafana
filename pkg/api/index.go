@@ -90,6 +90,13 @@ func (hs *HTTPServer) setIndexViewData(c *contextmodel.ReqContext) (*dtos.IndexV
 		weekStart = *prefs.WeekStart
 	}
 
+	// If OpenTelemetry is in use, we can inject 'traceparent' into the HTML.
+	traceparent, tracingHeaders := "", http.Header{}
+	hs.tracer.Inject(c.Req.Context(), tracingHeaders, nil)
+	if tp, found := tracingHeaders["Traceparent"]; found && len(tp) > 0 {
+		traceparent = tp[0]
+	}
+
 	data := dtos.IndexViewData{
 		User: &dtos.CurrentUser{
 			Id:                         c.UserID,
@@ -139,6 +146,7 @@ func (hs *HTTPServer) setIndexViewData(c *contextmodel.ReqContext) (*dtos.IndexV
 		Nonce:                               c.RequestNonce,
 		ContentDeliveryURL:                  hs.Cfg.GetContentDeliveryURL(hs.License.ContentDeliveryPrefix()),
 		LoadingLogo:                         "public/img/grafana_icon.svg",
+		TraceParent:                         traceparent,
 	}
 
 	if !hs.AccessControl.IsDisabled() {

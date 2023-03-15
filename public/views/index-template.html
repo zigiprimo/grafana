@@ -29,6 +29,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
     <meta name="msapplication-TileColor" content="#2b5797" />
     <meta name="msapplication-config" content="public/img/browserconfig.xml" />
+
+    [[ if ne .TraceParent "" ]]
+    <meta name="traceparent" content="[[.TraceParent]]" />
+    [[ end ]]
   </head>
 
   <body class="theme-[[ .Theme ]] [[.AppNameBodyClass]]">
