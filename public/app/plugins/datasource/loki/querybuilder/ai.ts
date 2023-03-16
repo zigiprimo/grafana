@@ -1,4 +1,7 @@
+import { trim } from 'lodash';
 import { Configuration, OpenAIApi } from 'openai';
+
+import { validateQuery } from '../components/monaco-query-field/monaco-completion-provider/validation';
 
 import { explainOperator, getOperationDefinitions } from './operations';
 
@@ -106,15 +109,16 @@ export async function ask(prompt: string) {
   try {
     response = await openai.createCompletion({
       model: 'text-davinci-003',
-      prompt: `${prependedText} Instructions:
+      prompt: `${prependedText}
       """
       ${prompt}
       """`,
       temperature: 0.5,
       max_tokens: 60,
+      user: `${Math.ceil(Math.random() * 100000)}`,
     });
 
-    return response.data?.choices[0]?.text || '';
+    return trim(response.data?.choices[0]?.text || '', '\n\t ');
   } catch (e) {
     return 'We could not process your request.';
   }
@@ -144,4 +148,18 @@ export function getTrainingData() {
   }));
 
   return [...operationTraining, ...renderTraining];
+}
+
+/*
+ * Given a GPT response, identify a query within it.
+ */
+export function identifyQuery(response: string, interpolatedResponse: string) {
+  let errors;
+  let queryExpr = response;
+  while ((errors = validateQuery(queryExpr, interpolatedResponse, [response])) !== false && errors[0]) {
+    const error = errors[0];
+    queryExpr = `${queryExpr.substring(0, error.startColumn - 1)}${queryExpr.substring(error.endColumn - 1)}`;
+  }
+
+  return trim(queryExpr);
 }
