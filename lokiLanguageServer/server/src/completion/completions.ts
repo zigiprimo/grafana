@@ -1,7 +1,7 @@
 // eslint-disable-next-line lodash/import-scope
 import _ from 'lodash';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-import { CompletionItem, Position } from 'vscode-languageserver-types';
+import { CompletionItem, CompletionItemKind, Position } from 'vscode-languageserver-types';
 
 import { Identifier, LabelFilter, Matcher, parser } from '@grafana/lezer-logql';
 
@@ -61,6 +61,7 @@ async function getLabelNamesCompletions(otherLabels: Label[]) {
   const names = await getLabelNames();
   if (!otherLabels.length) {
     return names.map((name) => ({
+      kind: CompletionItemKind.Value,
       label: name,
       insertText: `${name}=`,
       documentation: undefined,
@@ -77,6 +78,7 @@ async function getLabelNamesCompletions(otherLabels: Label[]) {
 
   const completionItems = Object.keys(bytesPerLabelName).map((name) => {
     const completionItem: CompletionItem = {
+      kind: CompletionItemKind.Value,
       label: name,
       insertText: `${name}=`,
     };
@@ -134,6 +136,7 @@ async function getLabelValuesCompletions(
   const values = await getLabelValues(labelName);
   if (!otherLabels.length) {
     return values.map((value) => ({
+      kind: CompletionItemKind.Value,
       label: value,
       insertText: betweenQuotes ? value : `"${value}"`,
       documentation: undefined,
@@ -151,6 +154,7 @@ async function getLabelValuesCompletions(
 
   const completionItems = Object.keys(bytesPerLabel).map((name) => {
     const completionItem: CompletionItem = {
+      kind: CompletionItemKind.Value,
       label: name,
       insertText: betweenQuotes ? name : `"${name}"`,
     };
@@ -177,6 +181,26 @@ async function getAfterSelectorCompletions(
   const prefix = `${hasSpace ? '' : ' '}${afterPipe ? '' : '| '}`;
   const completions: CompletionItem[] = await getParserCompletions(prefix);
 
+  completions.push({
+    label: 'line_format',
+    kind: CompletionItemKind.Method,
+    insertText: `${prefix}line_format "{{.}}"`,
+    documentation: 'Format a log line',
+  });
+
+  completions.push({
+    label: 'label_format',
+    kind: CompletionItemKind.Method,
+    insertText: `${prefix}label_format`,
+    documentation: "Format a log line's labels",
+  });
+  completions.push({
+    label: 'unwrap',
+    kind: CompletionItemKind.Method,
+    insertText: `${prefix}unwrap`,
+    documentation: "Unwrap a log line's JSON object into a set of labels",
+  });
+
   if (queryWithParser) {
     extractedLabelKeys.forEach((key) => {
       completions.push({
@@ -186,24 +210,6 @@ async function getAfterSelectorCompletions(
       });
     });
   }
-
-  completions.push({
-    label: 'unwrap',
-    insertText: `${prefix}unwrap`,
-    documentation: "Unwrap a log line's JSON object into a set of labels",
-  });
-
-  completions.push({
-    label: 'line_format',
-    insertText: `${prefix}line_format "{{.}}"`,
-    documentation: 'Format a log line',
-  });
-
-  completions.push({
-    label: 'label_format',
-    insertText: `${prefix}label_format`,
-    documentation: "Format a log line's labels",
-  });
 
   if (queryWithParser) {
     return [...completions];
@@ -223,6 +229,7 @@ async function getParserCompletions(prefix: string) {
   const remainingParsers = Array.from(PARSERS).sort();
   remainingParsers.forEach((parser) => {
     completions.push({
+      kind: CompletionItemKind.Method,
       label: parser,
       insertText: `${prefix}${parser}`,
       documentation: 'Parse content using the Loki parser',

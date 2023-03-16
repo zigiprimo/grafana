@@ -1,4 +1,4 @@
-import { CompletionItem } from 'vscode-languageserver-types';
+import { CompletionItem, CompletionItemKind } from 'vscode-languageserver-types';
 
 export const AGGREGATION_OPERATORS: CompletionItem[] = [
   {
@@ -194,11 +194,12 @@ export const LOG_COMPLETIONS: CompletionItem[] = [
   {
     label: '{}',
     insertText: '{}',
+    kind: CompletionItemKind.Snippet,
   },
 ];
 
 export const AGGREGATION_COMPLETIONS: CompletionItem[] = AGGREGATION_OPERATORS.map((f) => ({
-  type: 'FUNCTION',
+  kind: CompletionItemKind.Function,
   label: f.label,
   insertText: `${f.insertText ?? ''}()`, // i don't know what to do when this is nullish. it should not be.
   isSnippet: true,
@@ -208,7 +209,7 @@ export const AGGREGATION_COMPLETIONS: CompletionItem[] = AGGREGATION_OPERATORS.m
 }));
 
 export const FUNCTION_COMPLETIONS: CompletionItem[] = RANGE_VEC_FUNCTIONS.map((f) => ({
-  type: 'FUNCTION',
+  kind: CompletionItemKind.Function,
   label: f.label,
   insertText: `${f.insertText ?? ''}({}[\$__interval])`, // i don't know what to do when this is nullish. it should not be.
   isSnippet: true,
@@ -218,7 +219,7 @@ export const FUNCTION_COMPLETIONS: CompletionItem[] = RANGE_VEC_FUNCTIONS.map((f
 }));
 
 export const BUILT_IN_FUNCTIONS_COMPLETIONS: CompletionItem[] = BUILT_IN_FUNCTIONS.map((f) => ({
-  type: 'FUNCTION',
+  kind: CompletionItemKind.Function,
   label: f.label,
   insertText: `${f.insertText ?? ''}()`,
   isSnippet: true,
@@ -237,7 +238,7 @@ export const DURATION_COMPLETIONS: CompletionItem[] = [
   '1h',
   '1d',
 ].map((text) => ({
-  type: 'DURATION',
+  kind: CompletionItemKind.Variable,
   label: text,
   insertText: text,
 }));
@@ -263,21 +264,21 @@ export const UNWRAP_FUNCTION_COMPLETIONS: CompletionItem[] = [
 export const LINE_FILTER_COMPLETIONS = [
   {
     operator: '|=',
-    documentation: '',
+    documentation: 'Line contains the exact string.',
     afterPipe: true,
   },
   {
     operator: '!=',
-    documentation: '',
+    documentation: 'Line does not contain the exact string.',
   },
   {
     operator: '|~',
-    documentation: '',
     afterPipe: true,
+    documentation: 'Line contain regex match.',
   },
   {
     operator: '!~',
-    documentation: '',
+    documentation: 'Line does not contain regex match.',
   },
 ];
 
@@ -287,6 +288,7 @@ export function getLineFilterCompletions(afterPipe: boolean): CompletionItem[] {
       label: `${operator} ""`,
       insertText: `${afterPipe ? operator.replace('|', '') : operator} ""`,
       documentation,
+      kind: CompletionItemKind.Color,
     })
   );
 }
