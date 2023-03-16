@@ -4918,7 +4918,6 @@ __metadata:
     "@braintree/sanitize-url": 6.0.2
     "@grafana/schema": 9.5.0-pre
     "@grafana/tsconfig": ^1.2.0-rc1
-    "@opentelemetry/api": ^1.4.1
     "@rollup/plugin-commonjs": 23.0.2
     "@rollup/plugin-json": 5.0.1
     "@rollup/plugin-node-resolve": 15.0.1
@@ -5195,7 +5194,6 @@ __metadata:
     "@grafana/faro-web-sdk": 1.0.2
     "@grafana/tsconfig": ^1.2.0-rc1
     "@grafana/ui": 9.5.0-pre
-    "@opentelemetry/api": ^1.4.1
     "@rollup/plugin-commonjs": 23.0.2
     "@rollup/plugin-node-resolve": 15.0.1
     "@sentry/browser": 6.19.7
