@@ -42,13 +42,13 @@ describe('GrafanaJavascriptAgentEchoBackend', () => {
     errorInstrumentalizationEnabled: true,
     consoleInstrumentalizationEnabled: true,
     webVitalsInstrumentalizationEnabled: true,
+    tracingInstrumentationEnabled: true,
     customEndpoint: '/log-grafana-javascript-agent',
     user: {
       email: 'darth.vader@sith.glx',
       id: '504',
       orgId: 1,
     },
-    tracingEnabled: false,
   };
 
   it('will set up FetchTransport if customEndpoint is provided', async () => {

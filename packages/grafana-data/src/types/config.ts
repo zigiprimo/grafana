@@ -70,7 +70,7 @@ export interface GrafanaJavascriptAgentConfig {
   consoleInstrumentalizationEnabled: boolean;
   webVitalsInstrumentalizationEnabled: boolean;
   apiKey: string;
-  tracingEnabled: boolean;
+  tracingInstrumentationEnabled: boolean;
   otlpTracesEndpoint?: string;
 }
 

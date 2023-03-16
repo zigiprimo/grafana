@@ -24,7 +24,6 @@ import {
   toDataFrameDTO,
   toUtc,
 } from '@grafana/data';
-import { selectors } from '@grafana/e2e-selectors';
 import { getTemplateSrv, config, locationService, RefreshEvent } from '@grafana/runtime';
 import { VizLegendOptions } from '@grafana/schema';
 import {

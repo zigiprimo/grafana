@@ -75,14 +75,9 @@ export class GrafanaJavascriptAgentBackend
     };
     this.faroInstance = initializeFaro(grafanaJavaScriptAgentOptions);
 
-    const otlpEndpoint = options.otlpTracesEndpoint;
-    if (options.tracingInstrumentationEnabled && otlpEndpoint) {
+    if (options.tracingInstrumentationEnabled) {
       import('./tracing').then((tracing) => {
-        this.faroInstance.instrumentations.add(
-          tracing.initTracingInstrumentation({
-            otlpEndpoint,
-          })
-        );
+        this.faroInstance.instrumentations.add(tracing.initTracingInstrumentation());
       });
     }
 
