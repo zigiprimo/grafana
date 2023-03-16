@@ -38,10 +38,18 @@ export function LokiQueryAIEditor({
   return (
     <div className={styles.wrapper}>
       <LokiQueryAIField onChange={handleChange} />
-      Response:
-      <QueryPreview query={response} />
-      Identified query:
-      <QueryPreview query={query.expr} />
+      {response && (
+        <>
+          AI Response:
+          <QueryPreview query={response} />
+        </>
+      )}
+      {response !== query.expr && (
+        <>
+          Identified query:
+          <QueryPreview query={query.expr} />
+        </>
+      )}
     </div>
   );
 }
