@@ -1,4 +1,4 @@
-import { createConnection } from 'vscode-languageserver/lib/node/main.js';
+import { createConnection } from 'vscode-languageserver/lib/node/main';
 import { IWebSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc';
 
 import { LogQLServer } from './logQLServer.js';

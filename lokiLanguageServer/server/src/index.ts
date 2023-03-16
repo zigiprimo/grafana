@@ -17,7 +17,9 @@ process.on('uncaughtException', (err) => {
 
 const app = express();
 
-const server = app.listen(3001);
+const server = app.listen(3001, () => {
+  console.log('server started');
+});
 
 const wss = new WebSocketServer({
   noServer: true,
@@ -29,6 +31,8 @@ server.on('upgrade', (request: IncomingMessage, socket: Socket, head: Buffer) =>
   const pathname = request.url ? new URL(request.url, baseURL).pathname : undefined;
 
   if (pathname === '/lokiLanguageServer') {
+    console.log('new connection');
+
     wss.handleUpgrade(request, socket, head, (webSocket) => {
       const socket: IWebSocket = {
         send: (content) =>
