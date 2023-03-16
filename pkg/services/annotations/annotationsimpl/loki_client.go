@@ -207,10 +207,6 @@ func (c *httpLokiClient) rangeQuery(ctx context.Context, selectors []selector, s
 
 	values := url.Values{}
 	values.Set("query", selectorString(selectors))
-	// #TODO: It might be worth considering what to do if "start" and "end" aren't set.
-	// Seems we account for this case in the other store:
-	// https://github.com/grafana/grafana/blob/main/pkg/services/annotations/annotationsimpl/xorm_store.go#L259
-	// Would it be worth considering the entire retention period if they are unset?
 	values.Set("start", fmt.Sprintf("%d", start))
 	values.Set("end", fmt.Sprintf("%d", end))
 
@@ -295,19 +291,10 @@ type queryData struct {
 	Result []stream `json:"result"`
 }
 
-// #TODO: figure out where to put these new bits. historian uses "orgID" format btw.
-// #TODO: could use the constants in the Add() method too
-// #TODO: add remaining labels
-const (
-	orgIDLabel       = "org_id"
-	dashboardIDLabel = "dashboard_id"
-	panelIDLabel     = "panel_id"
-)
-
 func buildSelectors(query *annotations.ItemQuery) ([]selector, error) {
 	m := make(map[string]string)
 
-	m[orgIDLabel] = fmt.Sprintf("%d", query.OrgID)
+	m["org_id"] = fmt.Sprintf("%d", query.OrgID)
 
 	if query.AnnotationID != 0 {
 		m["annotation_id"] = fmt.Sprintf("%d", query.AnnotationID)
@@ -329,9 +316,6 @@ func buildSelectors(query *annotations.ItemQuery) ([]selector, error) {
 		m["user_id"] = fmt.Sprintf("%d", query.UserID)
 	}
 
-	// #TODO: handle the check for query.Type. Is it worth doing the check ahead of time though?
-	// an option would be to do some filtering on the returned results instead.
-
 	selectors := make([]selector, len(m))
 
 	var i int
@@ -343,6 +327,19 @@ func buildSelectors(query *annotations.ItemQuery) ([]selector, error) {
 		selectors[i] = selector
 		i++
 	}
+
+	var op Operator
+	if query.Type == "alert" {
+		op = neq // alert_id > 0
+	} else if query.Type == "annotation" {
+		op = eq
+	}
+
+	selector, err := newSelector("alert_id", fmt.Sprintf("%s", op), "0")
+	if err != nil {
+		return nil, err
+	}
+	selectors = append(selectors, selector)
 
 	return selectors, nil
 }

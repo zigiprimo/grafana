@@ -144,7 +144,7 @@ func (r *lokiRepositoryImpl) Get(ctx context.Context, query *annotations.ItemQue
 }
 
 func (r *lokiRepositoryImpl) filterByAccessControl(ctx context.Context, selectors []selector, query *annotations.ItemQuery) ([]selector, error) {
-	acFilter, acArgs, err := getAccessControlFilterAlternate(query.SignedInUser)
+	acFilter, acArgs, err := getACFilter(query.SignedInUser)
 	if err != nil {
 		return nil, err
 	}
@@ -152,30 +152,17 @@ func (r *lokiRepositoryImpl) filterByAccessControl(ctx context.Context, selector
 	dashboardIDs := make([]string, 0)
 	err = r.db.WithDbSession(ctx, func(sess *db.Session) error {
 		var sql bytes.Buffer
-		// #TODO any checks to do for OrgID before?
 		sql.WriteString(fmt.Sprintf("SELECT id FROM dashboard WHERE org_id = %d AND (%s)", query.OrgID, acFilter))
 		if err := sess.SQL(sql.String(), acArgs...).Find(&dashboardIDs); err != nil {
 			dashboardIDs = nil
 			return err
 		}
-		// #TODO: as a first step make a database call to find all dashboards for which the user has permissions
-		// use this to add the appropriate selectors
-		// next step would be to pass dashboard_uid as a label in the call to Add() and then use that when filtering
-		// EDIT about passing dashboard_uid: considering user.Permissions aren't to be relied on, we still need to
-		// query the permissions table either way so we might as well continuing querying the dashboards table. Passing the
-		// dashboard_uid label is no longer required for filtering purposes.
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	// #TODO: if we want to skip the use of regex here, we could filter loki results instead of
-	// the selectors we send to loki. The advantage of filtering selectors is that we can check
-	// some permissions before ever querying loki (for example user having permissions for the org)
-	// and we don't have to do permission checks in two places.
-	// However I imagine the list of IDs we include in the regex could get quite long. That's a potential issue.
-	// #TODO: does it work/make sense to have two selectors for dashboard_id? one with eq operator and the other with eqRegEx?
 	if len(dashboardIDs) > 0 {
 		selectors = append(selectors, selector{
 			label: "dashboard_id",
@@ -186,9 +173,8 @@ func (r *lokiRepositoryImpl) filterByAccessControl(ctx context.Context, selector
 	return selectors, err
 }
 
-// #TODO: fix naming. This is an almost exact copy of the one in xorm_store.go but some parts of the query string have
-// been modified to remove references to the larger query string we aren't using.
-func getAccessControlFilterAlternate(user *user.SignedInUser) (string, []interface{}, error) {
+// Almost exact copy of getAccessControlFilter except it replaces `a.dashboard_id` with `id`.
+func getACFilter(user *user.SignedInUser) (string, []interface{}, error) {
 	if user == nil || user.Permissions[user.OrgID] == nil {
 		return "", nil, errors.New("missing permissions")
 	}
