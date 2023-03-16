@@ -41,6 +41,9 @@ func AddDefaultResponseHeaders(cfg *setting.Cfg) web.Handler {
 				!strings.HasPrefix(c.Req.URL.Path, "/api/datasources/proxy/") && !resourceCachable {
 				addNoCacheHeaders(c.Resp)
 			}
+			if strings.HasPrefix(c.Req.URL.Path, "/public/") {
+				addCSPSandboxHeader(c.Resp)
+			}
 
 			if !cfg.AllowEmbedding {
 				addXFrameOptionsDenyHeader(w)
@@ -80,6 +83,10 @@ func addNoCacheHeaders(w web.ResponseWriter) {
 
 func addXFrameOptionsDenyHeader(w web.ResponseWriter) {
 	w.Header().Set("X-Frame-Options", "deny")
+}
+
+func addCSPSandboxHeader(w web.ResponseWriter) {
+	w.Header().Set("Content-Security-Policy", "sandbox")
 }
 
 func AddCustomResponseHeaders(cfg *setting.Cfg) web.Handler {
