@@ -1,7 +1,9 @@
+import { Identifier, LabelFilter, Matcher, parser } from '@grafana/lezer-logql';
+import _ from 'lodash';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionItem, Position } from 'vscode-languageserver-types';
 
-import { getLabelNames, getLabelNamesIfOtherLabels, getLabelValues, getStats } from './fetch.js';
+import { getLabelNames, getLabelNamesIfOtherLabels, getLabelValues, getSamples, getStats } from './fetch.js';
 import {
   AGGREGATION_COMPLETIONS,
   BUILT_IN_FUNCTIONS_COMPLETIONS,
@@ -38,8 +40,8 @@ async function getCompletions(situation: Situation): Promise<CompletionItem[]> {
       return getAfterSelectorCompletions(situation.logQuery, situation.afterPipe, situation.hasSpace);
     case 'IN_AGGREGATION':
       return [...FUNCTION_COMPLETIONS, ...AGGREGATION_COMPLETIONS];
-    // case 'IN_LABEL_FILTER_MATCHER':
-    //   return getLabelFilterMatcherCompletions(situation.logQuery, dataProvider);
+    case 'IN_LABEL_FILTER_MATCHER':
+      return getLabelFilterMatcherCompletions(situation.logQuery);
     default:
       return [];
   }
@@ -167,11 +169,21 @@ async function getAfterSelectorCompletions(
   afterPipe: boolean,
   hasSpace: boolean
 ): Promise<CompletionItem[]> {
-  // const { extractedLabelKeys, hasJSON, hasLogfmt } = await dataProvider.getParserAndLabelKeys(logQuery);
+  const { extractedLabelKeys } = await getLabelKeys(logQuery);
   const queryWithParser = isQueryWithParser(logQuery).queryWithParser;
 
   const prefix = `${hasSpace ? '' : ' '}${afterPipe ? '' : '| '}`;
   const completions: CompletionItem[] = await getParserCompletions(prefix);
+
+  if (queryWithParser) {
+    extractedLabelKeys.forEach((key) => {
+      completions.push({
+        label: `${key} (detected)`,
+        insertText: `${prefix} ${key}`,
+        documentation: `${key} label was detected from sampled log lines.`,
+      });
+    });
+  }
 
   completions.push({
     label: 'unwrap',
@@ -237,4 +249,84 @@ export function humanFileSize(bytes: number, si = false, dp = 1) {
   } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
 
   return bytes.toFixed(dp) + ' ' + units[u];
+}
+
+async function getLabelKeys(logQuery: string): Promise<{ extractedLabelKeys: string[] }> {
+  const series = await getSamples(_.trimEnd(logQuery, '| '));
+  if (!series.length) {
+    return { extractedLabelKeys: [] };
+  }
+
+  return {
+    extractedLabelKeys: extractLabelKeysFromDataFrame(series[0]),
+  };
+}
+
+export function extractLabelKeysFromDataFrame(frame: any): string[] {
+  const labelsArray = frame?.data.values[0];
+
+  if (!labelsArray?.length) {
+    return [];
+  }
+
+  return Object.keys(labelsArray[0]);
+}
+
+export function extractLabelValuesFromDataFrame(frame: any, label: string): string[] {
+  const logLabelsArray = frame?.data.values[0];
+  const values = new Set<string>();
+
+  for (const logLabels of logLabelsArray) {
+    if (logLabels[label]) {
+      values.add(logLabels[label]);
+    }
+  }
+
+  return [...values];
+}
+
+async function getParsedLabelValues(query: string, label: string): Promise<string[]> {
+  const series = await getSamples(query);
+
+  if (!series.length) {
+    return [];
+  }
+
+  return extractLabelValuesFromDataFrame(series[0], label);
+}
+
+async function getLabelFilterMatcherCompletions(logsQuery: string): Promise<CompletionItem[]> {
+  const { query, label } = getQueryWithoutTrailingLabelFilter(logsQuery);
+  const result = await getParsedLabelValues(_.trimEnd(query, '| '), label);
+  return result.map((text) => ({
+    label: `${text} (detected)`,
+    insertText: `\`${text}\``,
+    documentation: `${text} value was detected from sampled log lines.`,
+  }));
+}
+
+export function getQueryWithoutTrailingLabelFilter(query: string): { query: string; label: string } {
+  let finalQuery = query;
+  let finalLabel = '';
+  // TODO: This is quite hacky, it can be done easier probably
+  const tree = parser.parse(query);
+  tree.iterate({
+    enter: ({ node, type, from, to }): false | void => {
+      if (type.id === LabelFilter) {
+        const hasError = node.getChild(Matcher)?.getChild(0);
+        if (hasError) {
+          const labelFilterEndsWithEquals = query.substring(from, to).trim();
+          if (labelFilterEndsWithEquals[labelFilterEndsWithEquals.length - 1] === '=') {
+            const labelNameNode = node.getChild(Matcher)?.getChild(Identifier);
+            if (labelNameNode) {
+              // We set these only if we know that last character is "=" and we have a label name
+              finalQuery = query.substring(0, from) + query.substring(to, query.length);
+              finalLabel = query.substring(labelNameNode.from, labelNameNode.to);
+            }
+          }
+        }
+      }
+    },
+  });
+  return { query: finalQuery, label: finalLabel };
 }

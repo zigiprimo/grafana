@@ -130,3 +130,41 @@ export function processLabels(labels: Array<{ [key: string]: string }>, withName
 export function limitSuggestions(items: string[]) {
   return items.slice(0, 100);
 }
+
+export const getSamples = async (query: string) => {
+  let start: number | Date = new Date();
+  start = start.setHours(start.getHours() - 1).valueOf();
+  const end = Date.now();
+  const response = await axios.post(
+    'http://localhost:3000/api/ds/query',
+    {
+      queries: [
+        {
+          refId: 'samples',
+          datasource: {
+            type: 'loki',
+            uid: DS_UID,
+          },
+          expr: query,
+          queryType: 'range',
+          maxLines: 10,
+          legendFormat: '',
+        },
+      ],
+      from: start.toString(),
+      to: end.toString(),
+    },
+    {
+      headers: {
+        accept: 'application/json, text/plain, */*',
+        'content-type': 'application/json',
+        'x-datasource-uid': DS_UID,
+        'x-grafana-org-id': '1',
+        'x-panel-id': 'Q-0e01a969-342b-4714-8617-b078bbb58b42-0',
+        'x-plugin-id': 'loki',
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+    }
+  );
+  return response.data.results.samples.frames;
+};
