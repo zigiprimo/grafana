@@ -1,1 +1,4 @@
 dist/
+extension/
+*.vsix
+!grafana-loki-language-server.vsix

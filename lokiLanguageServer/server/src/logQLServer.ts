@@ -1,15 +1,17 @@
 import { readFile } from 'fs';
+import fetch from 'node-fetch';
 import requestLight from 'request-light';
 import { TextDocumentPositionParams } from 'vscode-languageserver-protocol';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionList, CompletionItem } from 'vscode-languageserver-types';
-import { _Connection, Diagnostic, TextDocuments } from 'vscode-languageserver/lib/node/main.js';
-import URI from 'vscode-uri';
+import { _Connection, Diagnostic, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver/lib/node/main';
+import { URI } from 'vscode-uri';
 
-import { getLanguageService, LanguageService } from './languageService.js';
+import { getLogsForFileAndLine } from './completion/fetch';
+import { getLanguageService, LanguageService } from './languageService';
 
 export class LogQLServer {
-  protected workspaceRoot: URI.URI | undefined;
+  protected workspaceRoot: URI | undefined;
 
   protected readonly documents = new TextDocuments(TextDocument);
 
@@ -19,6 +21,30 @@ export class LogQLServer {
 
   constructor(protected readonly connection: _Connection) {
     this.documents.listen(this.connection);
+
+    this.connection.onInitialize((params) => {
+      if (params.rootPath) {
+        this.workspaceRoot = URI.file(params.rootPath);
+      } else if (params.rootUri) {
+        this.workspaceRoot = URI.parse(params.rootUri);
+      }
+
+      return {
+        capabilities: {
+          textDocumentSync: TextDocumentSyncKind.Incremental,
+          completionProvider: {
+            resolveProvider: true,
+            triggerCharacters: ['"', ':'],
+          },
+        },
+      };
+    });
+
+    this.connection.onRequest((method, params, token) => {
+      if (method === 'get-new-logs') {
+        this.getNewLogs((params ?? null) as { fileName: string; line: number; column: number });
+      }
+    });
 
     this.documents.onDidChangeContent((change) => this.validate(change.document));
 
@@ -30,28 +56,18 @@ export class LogQLServer {
     this.connection.listen();
   }
 
-  protected async resolveSchema(url: string): Promise<string> {
-    const uri = URI.URI.parse(url);
+  protected async getNewLogs(params: { fileName: string; line: number; column: number } | null) {
+    let entries: string[] | null = null;
 
-    if (uri.scheme === 'file') {
-      return new Promise<string>((resolve, reject) => {
-        readFile(uri.fsPath, { encoding: 'utf8' }, (err, result) => {
-          err ? reject(err) : resolve(result.toString());
-        });
-      });
+    if (params) {
+      try {
+        entries = (await getLogsForFileAndLine(params.fileName, params.line)) ?? null;
+      } catch (err) {
+        console.error(err);
+      }
     }
 
-    try {
-      const response = await requestLight.xhr({ url, followRedirects: 5 });
-
-      return response.responseText;
-    } catch (error: unknown) {
-      const err = error as Record<string, unknown>;
-
-      return Promise.reject(
-        err.responseText || requestLight.getErrorStatusDescription(err.status as number) || err.toString()
-      );
-    }
+    this.connection.sendRequest('receive-new-logs', entries);
   }
 
   protected resolveCompletion(item: CompletionItem): Thenable<CompletionItem> {

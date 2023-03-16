@@ -1,8 +1,8 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionItem, CompletionList, Diagnostic, Position } from 'vscode-languageserver-types';
 
-import { createCompletionItems } from './completion/completions.js';
-import { validateQuery } from './validation.js';
+import { createCompletionItems } from './completion/completions';
+import { validateQuery } from './validation';
 
 export interface LanguageService {
   doResolve(item: CompletionItem): Thenable<CompletionItem>;

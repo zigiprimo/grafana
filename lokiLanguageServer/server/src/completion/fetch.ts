@@ -1,9 +1,10 @@
 import axios from 'axios';
 
 import { Label } from './situation';
+
 // These need to be set up
-const DS_UID = 'cd82b426-8a65-4e2d-aec8-ef37f5e4f568';
-const API_TOKEN = 'abc123';
+const DS_UID = 'Loki';
+const API_TOKEN = 'glsa_1aK4zprZY3fA6vvwdmwD7B1HrrNAHG7U_b68141a5';
 const URL = `http://localhost:3000/api/datasources/uid/${DS_UID}/resources`;
 
 export async function getLabelNames(): Promise<string[]> {
@@ -13,7 +14,7 @@ export async function getLabelNames(): Promise<string[]> {
   const response = await axios(url, {
     headers: {
       accept: 'application/json, text/plain, */*',
-      'x-datasource-uid': 'cd82b426-8a65-4e2d-aec8-ef37f5e4f568',
+      'x-datasource-uid': DS_UID,
       'x-grafana-org-id': '1',
       'x-plugin-id': 'loki',
       Authorization: `Bearer ${API_TOKEN}`,
@@ -33,7 +34,7 @@ export async function getLabelNamesIfOtherLabels(labels: Label[]): Promise<strin
   const response = await axios(url, {
     headers: {
       accept: 'application/json, text/plain, */*',
-      'x-datasource-uid': 'cd82b426-8a65-4e2d-aec8-ef37f5e4f568',
+      'x-datasource-uid': DS_UID,
       'x-grafana-org-id': '1',
       'x-plugin-id': 'loki',
       Authorization: `Bearer ${API_TOKEN}`,
@@ -57,7 +58,7 @@ export async function getLabelValues(labelName: string): Promise<string[]> {
   const response = await axios(url, {
     headers: {
       accept: 'application/json, text/plain, */*',
-      'x-datasource-uid': 'cd82b426-8a65-4e2d-aec8-ef37f5e4f568',
+      'x-datasource-uid': DS_UID,
       'x-grafana-org-id': '1',
       'x-plugin-id': 'loki',
       Authorization: `Bearer ${API_TOKEN}`,
@@ -75,7 +76,7 @@ export async function getStats(query: string): Promise<number> {
   const response = await axios(url, {
     headers: {
       accept: 'application/json, text/plain, */*',
-      'x-datasource-uid': 'cd82b426-8a65-4e2d-aec8-ef37f5e4f568',
+      'x-datasource-uid': DS_UID,
       'x-grafana-org-id': '1',
       'x-plugin-id': 'loki',
       Authorization: `Bearer ${API_TOKEN}`,
@@ -167,4 +168,42 @@ export const getSamples = async (query: string) => {
     }
   );
   return response.data.results.samples.frames;
+};
+
+export const getLogsForFileAndLine = async (fileName: string, line: number) => {
+  let start: number | Date = new Date();
+  start = start.setHours(start.getHours() - 1).valueOf();
+  const end = Date.now();
+  const response = await axios.post(
+    'http://localhost:3000/api/ds/query',
+    {
+      queries: [
+        {
+          refId: 'A',
+          datasource: {
+            type: 'loki',
+            uid: DS_UID,
+          },
+          expr: `{app="auth-app-production", kind="exception"} |= \`${fileName}:${line}\``,
+          queryType: 'range',
+          maxLines: 10,
+          legendFormat: '',
+        },
+      ],
+      from: start.toString(),
+      to: end.toString(),
+    },
+    {
+      headers: {
+        accept: 'application/json, text/plain, */*',
+        'content-type': 'application/json',
+        'x-datasource-uid': DS_UID,
+        'x-grafana-org-id': '1',
+        'x-panel-id': 'Q-0e01a969-342b-4714-8617-b078bbb58b42-0',
+        'x-plugin-id': 'loki',
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+    }
+  );
+  return response.data.results.A.frames[0].data.values[2] ?? null;
 };

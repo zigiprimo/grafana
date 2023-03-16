@@ -46,6 +46,7 @@ export function validateQuery(query: string): Diagnostic[] {
 function parseQuery(query: string) {
   const parseErrors: ParseError[] = [];
   const tree = parser.parse(query);
+
   tree.iterate({
     enter: (nodeRef): false | void => {
       if (nodeRef.type.id === 0) {

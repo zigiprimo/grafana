@@ -23,7 +23,7 @@ import {
   LabelFilter,
 } from '@grafana/lezer-logql';
 
-import { getLogQueryFromMetricsQuery } from './queryUtils.js';
+import { getLogQueryFromMetricsQuery } from './queryUtils';
 
 type Direction = 'parent' | 'firstChild' | 'lastChild' | 'nextSibling';
 type NodeType = number;

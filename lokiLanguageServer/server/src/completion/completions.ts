@@ -1,9 +1,11 @@
-import { Identifier, LabelFilter, Matcher, parser } from '@grafana/lezer-logql';
+// eslint-disable-next-line lodash/import-scope
 import _ from 'lodash';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionItem, Position } from 'vscode-languageserver-types';
 
-import { getLabelNames, getLabelNamesIfOtherLabels, getLabelValues, getSamples, getStats } from './fetch.js';
+import { Identifier, LabelFilter, Matcher, parser } from '@grafana/lezer-logql';
+
+import { getLabelNames, getLabelNamesIfOtherLabels, getLabelValues, getSamples, getStats } from './fetch';
 import {
   AGGREGATION_COMPLETIONS,
   BUILT_IN_FUNCTIONS_COMPLETIONS,
@@ -11,9 +13,9 @@ import {
   FUNCTION_COMPLETIONS,
   getLineFilterCompletions,
   LOG_COMPLETIONS,
-} from './operations.js';
-import { isQueryWithParser } from './queryUtils.js';
-import { getSituation, Situation } from './situation.js';
+} from './operations';
+import { isQueryWithParser } from './queryUtils';
+import { getSituation, Situation } from './situation';
 
 export async function createCompletionItems(document: TextDocument, position: Position): Promise<CompletionItem[]> {
   const situation = getSituation(document.getText(), position.character);
