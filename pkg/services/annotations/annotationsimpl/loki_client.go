@@ -335,11 +335,13 @@ func buildSelectors(query *annotations.ItemQuery) ([]selector, error) {
 		op = eq
 	}
 
-	selector, err := newSelector("alert_id", fmt.Sprintf("%s", op), "0")
-	if err != nil {
-		return nil, err
+	if (query.Type == "alert") || (query.Type == "annotation") {
+		selector, err := newSelector("alert_id", fmt.Sprintf("%v", op), "0")
+		if err != nil {
+			return nil, err
+		}
+		selectors = append(selectors, selector)
 	}
-	selectors = append(selectors, selector)
 
 	return selectors, nil
 }
