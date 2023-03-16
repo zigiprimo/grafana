@@ -7,7 +7,7 @@ import { CompletionList, CompletionItem } from 'vscode-languageserver-types';
 import { _Connection, Diagnostic, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver/lib/node/main';
 import { URI } from 'vscode-uri';
 
-import { getLogsForFileAndLine } from './completion/fetch';
+import { getLogs, getEvents, getExceptionsForFile } from './completion/fetch';
 import { getLanguageService, LanguageService } from './languageService';
 
 export class LogQLServer {
@@ -41,13 +41,22 @@ export class LogQLServer {
     });
 
     this.connection.onRequest((method, params, token) => {
-      if (method === 'get-new-logs') {
-        this.getNewLogs((params ?? null) as { fileName: string; line: number; column: number });
+      if ((params as Record<string, any>)?.mode) {
+        switch (method) {
+          case 'get-new-logs':
+            this.getNewLogs({
+              filePath: (params as Record<string, any>).filePath ?? null,
+              mode: (params as Record<string, any>).mode,
+            } as {
+              filePath: string;
+              mode: 'exceptions' | 'events' | 'logs';
+            });
+            break;
+        }
       }
     });
 
     this.documents.onDidChangeContent((change) => this.validate(change.document));
-
     this.connection.onCompletion((params) => this.completion(params));
     this.connection.onCompletionResolve((item) => this.resolveCompletion(item));
   }
@@ -56,18 +65,30 @@ export class LogQLServer {
     this.connection.listen();
   }
 
-  protected async getNewLogs(params: { fileName: string; line: number; column: number } | null) {
+  protected async getNewLogs(params: { filePath: string | null; mode: 'exceptions' | 'events' | 'logs' }) {
     let entries: string[] | null = null;
 
-    if (params) {
-      try {
-        entries = (await getLogsForFileAndLine(params.fileName, params.line)) ?? null;
-      } catch (err) {
-        console.error(err);
-      }
-    }
+    try {
+      switch (params.mode) {
+        case 'exceptions':
+          if (params.filePath !== null) {
+            entries = (await getExceptionsForFile(params.filePath)) ?? null;
+          }
+          break;
 
-    this.connection.sendRequest('receive-new-logs', entries);
+        case 'events':
+          entries = (await getEvents()) ?? null;
+          break;
+
+        case 'logs':
+          entries = (await getLogs()) ?? null;
+          break;
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      this.connection.sendRequest('receive-new-logs', entries);
+    }
   }
 
   protected resolveCompletion(item: CompletionItem): Thenable<CompletionItem> {

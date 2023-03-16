@@ -1,12 +1,6 @@
 import type { Monaco, monacoTypes } from '@grafana/ui';
 
 import { CompletionDataProvider } from './CompletionDataProvider';
-import { NeverCaseError } from './NeverCaseError';
-import { getCompletions, CompletionType } from './completions';
-import { getSituation } from './situation';
-
-// from: monacoTypes.languages.CompletionItemInsertTextRule.InsertAsSnippet
-const INSERT_AS_SNIPPET_ENUM_VALUE = 4;
 
 export function getSuggestOptions(): monacoTypes.editor.ISuggestOptions {
   return {
@@ -29,30 +23,6 @@ export function getSuggestOptions(): monacoTypes.editor.ISuggestOptions {
   };
 }
 
-function getMonacoCompletionItemKind(type: CompletionType, monaco: Monaco): monacoTypes.languages.CompletionItemKind {
-  switch (type) {
-    case 'DURATION':
-      return monaco.languages.CompletionItemKind.Unit;
-    case 'FUNCTION':
-      return monaco.languages.CompletionItemKind.Variable;
-    case 'HISTORY':
-      return monaco.languages.CompletionItemKind.Snippet;
-    case 'LABEL_NAME':
-      return monaco.languages.CompletionItemKind.Enum;
-    case 'LABEL_VALUE':
-      return monaco.languages.CompletionItemKind.EnumMember;
-    case 'PATTERN':
-      return monaco.languages.CompletionItemKind.Constructor;
-    case 'PARSER':
-      return monaco.languages.CompletionItemKind.Class;
-    case 'LINE_FILTER':
-      return monaco.languages.CompletionItemKind.TypeParameter;
-    case 'PIPE_OPERATION':
-      return monaco.languages.CompletionItemKind.Interface;
-    default:
-      throw new NeverCaseError(type);
-  }
-}
 export function getCompletionProvider(
   monaco: Monaco,
   dataProvider: CompletionDataProvider

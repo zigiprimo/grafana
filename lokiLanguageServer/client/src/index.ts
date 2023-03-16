@@ -6,6 +6,7 @@ import {
   LanguageClientOptions,
   ServerOptions,
 } from 'vscode-languageclient/lib/node/main';
+import { URI } from 'vscode-uri';
 import { toSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc';
 import WebSocket from 'ws';
 
@@ -13,63 +14,84 @@ import { FaroProvider } from './provider';
 
 let client: LanguageClient;
 
+function createLanguageClient(webSocket: WebSocket) {
+  const socket = toSocket(webSocket);
+  const reader = new WebSocketMessageReader(socket);
+  const writer = new WebSocketMessageWriter(socket);
+
+  client = new LanguageClient(
+    'logqlLanguageServer',
+    'LogQL',
+    () =>
+      Promise.resolve({
+        reader,
+        writer,
+      }),
+    {
+      documentSelector: [{ language: '*' }],
+      errorHandler: {
+        error: () => ({ action: ErrorAction.Continue }),
+        closed: () => ({ action: CloseAction.DoNotRestart }),
+      },
+      synchronize: {
+        fileEvents: workspace.createFileSystemWatcher('**/.clientrc'),
+      },
+    },
+    true
+  );
+
+  reader.onClose(() => client?.stop());
+}
+
 export function activate(context: ExtensionContext) {
   const provider = new FaroProvider(context.extensionUri);
 
-  window.onDidChangeTextEditorSelection((evt) => {
-    let fileName: string | null = null;
-    let line: number | null = null;
-    let column: number | null = null;
+  const setNewFilePath = (filePath: string | null) => {
+    provider.filePath = filePath;
 
-    if (evt.selections.length === 1) {
-      const selection = evt.selections[0];
-      fileName = evt.textEditor.document.fileName.split('/').pop() ?? null;
-      line = selection.active.line + 1;
-      column = selection.active.character + 1;
-    }
+    const workspaceFolder = workspace.getWorkspaceFolder(URI.file(filePath ?? ''));
 
-    client.sendRequest('get-new-logs', {
-      fileName,
-      line,
-      column,
-    });
-  });
+    provider.filePath = !workspaceFolder
+      ? null
+      : filePath === null
+      ? null
+      : filePath.replace(workspaceFolder?.uri.fsPath, '').replace('/src', '');
+  };
+
+  const setNewLine = (line: number | null) => {
+    provider.lineNumber = typeof line === 'number' ? line + 1 : null;
+  };
+
+  setNewLine(window.activeTextEditor?.selection.active.line ?? null);
+  setNewFilePath(window.activeTextEditor?.document.fileName ?? null);
+  provider.reload();
 
   const webSocket = new WebSocket('ws://localhost:3001/lokiLanguageServer');
 
   webSocket.onopen = () => {
-    const socket = toSocket(webSocket);
-    const reader = new WebSocketMessageReader(socket);
-    const writer = new WebSocketMessageWriter(socket);
+    createLanguageClient(webSocket);
 
-    client = new LanguageClient(
-      'logqlLanguageServer',
-      'LogQL',
-      () =>
-        Promise.resolve({
-          reader,
-          writer,
-        }),
-      {
-        documentSelector: [{ language: '*' }],
-        errorHandler: {
-          error: () => ({ action: ErrorAction.Continue }),
-          closed: () => ({ action: CloseAction.DoNotRestart }),
-        },
-        synchronize: {
-          fileEvents: workspace.createFileSystemWatcher('**/.clientrc'),
-        },
-      },
-      true
-    );
+    setNewLine(window.activeTextEditor?.selection.active.line ?? null);
+
+    provider.client = client;
 
     client.start();
 
-    client.onRequest('receive-new-logs', (data) => {
-      provider.reload(data);
+    window.onDidChangeTextEditorSelection((evt) => {
+      setNewFilePath(evt.textEditor.document.fileName);
+      setNewLine(evt.textEditor.selection.active.line);
+
+      client.sendRequest('get-new-logs', {
+        filePath: provider.filePath,
+        mode: provider.mode,
+      });
     });
 
-    reader.onClose(() => client?.stop());
+    client.onRequest('receive-new-logs', (data) => {
+      provider.logs = data;
+
+      provider.reload();
+    });
   };
 
   context.subscriptions.push(window.registerWebviewViewProvider(FaroProvider.viewType, provider));

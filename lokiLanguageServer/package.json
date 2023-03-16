@@ -9,7 +9,7 @@
   ],
   "activationEvents": [
     "onLanguage:*",
-    "onView:faro-exceptions"
+    "onView:faro-data"
   ],
   "main": "./grafana-loki-language-server-client.js",
   "contributes": {
@@ -25,8 +25,8 @@
     "views": {
       "faro": [
         {
-          "id": "faro-exceptions",
-          "name": "Exceptions",
+          "id": "faro-data",
+          "name": "Logs",
           "type": "webview"
         }
       ]

@@ -170,7 +170,7 @@ export const getSamples = async (query: string) => {
   return response.data.results.samples.frames;
 };
 
-export const getLogsForFileAndLine = async (fileName: string, line: number) => {
+export const getExceptionsForFile = async (filePath: string) => {
   let start: number | Date = new Date();
   start = start.setHours(start.getHours() - 1).valueOf();
   const end = Date.now();
@@ -184,7 +184,83 @@ export const getLogsForFileAndLine = async (fileName: string, line: number) => {
             type: 'loki',
             uid: DS_UID,
           },
-          expr: `{app="auth-app-production", kind="exception"} |= \`${fileName}:${line}\``,
+          expr: `{app="auth-app-production", kind="exception"} |= \`${filePath}\``,
+          queryType: 'range',
+          maxLines: 10,
+          legendFormat: '',
+        },
+      ],
+      from: start.toString(),
+      to: end.toString(),
+    },
+    {
+      headers: {
+        accept: 'application/json, text/plain, */*',
+        'content-type': 'application/json',
+        'x-datasource-uid': DS_UID,
+        'x-grafana-org-id': '1',
+        'x-panel-id': 'Q-0e01a969-342b-4714-8617-b078bbb58b42-0',
+        'x-plugin-id': 'loki',
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+    }
+  );
+  return response.data.results.A.frames[0].data.values[2] ?? null;
+};
+
+export const getLogs = async () => {
+  let start: number | Date = new Date();
+  start = start.setHours(start.getHours() - 1).valueOf();
+  const end = Date.now();
+  const response = await axios.post(
+    'http://localhost:3000/api/ds/query',
+    {
+      queries: [
+        {
+          refId: 'A',
+          datasource: {
+            type: 'loki',
+            uid: DS_UID,
+          },
+          expr: '{app="auth-app-production", kind="log"}',
+          queryType: 'range',
+          maxLines: 10,
+          legendFormat: '',
+        },
+      ],
+      from: start.toString(),
+      to: end.toString(),
+    },
+    {
+      headers: {
+        accept: 'application/json, text/plain, */*',
+        'content-type': 'application/json',
+        'x-datasource-uid': DS_UID,
+        'x-grafana-org-id': '1',
+        'x-panel-id': 'Q-0e01a969-342b-4714-8617-b078bbb58b42-0',
+        'x-plugin-id': 'loki',
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+    }
+  );
+  return response.data.results.A.frames[0].data.values[2] ?? null;
+};
+
+export const getEvents = async () => {
+  let start: number | Date = new Date();
+  start = start.setHours(start.getHours() - 1).valueOf();
+  const end = Date.now();
+  const response = await axios.post(
+    'http://localhost:3000/api/ds/query',
+    {
+      queries: [
+        {
+          refId: 'A',
+          datasource: {
+            type: 'loki',
+            uid: DS_UID,
+          },
+          expr: '{app="auth-app-production", kind="event"}',
           queryType: 'range',
           maxLines: 10,
           legendFormat: '',

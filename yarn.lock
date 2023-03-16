@@ -22348,6 +22348,7 @@ __metadata:
     tslib: ^2.5.0
     utf-8-validate: ^6.0.3
     vscode-languageclient: ~8.0.2
+    vscode-uri: ^3.0.7
     vscode-ws-jsonrpc: ^3.0.0-next.1
     webpack: ^5.76.2
     webpack-cli: ^5.0.1
