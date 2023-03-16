@@ -1,5 +1,6 @@
+import { trace, context } from '@opentelemetry/api';
 import { from, Observable } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, tap } from 'rxjs/operators';
 
 import { AlertState, AlertStateInfo } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
@@ -48,61 +49,65 @@ export class UnifiedAlertStatesWorker implements DashboardQueryRunnerWorker {
   }
 
   work(options: DashboardQueryRunnerOptions): Observable<DashboardQueryRunnerWorkerResult> {
-    if (!this.canWork(options)) {
-      return emptyResult();
-    }
+    return trace.getTracer('grafana').startActiveSpan('UnifiedAlertStateWorker.work', (span) => {
+      if (!this.canWork(options)) {
+        span.end();
+        return emptyResult();
+      }
 
-    const { dashboard } = options;
-    return from(
-      getBackendSrv().get(
-        '/api/prometheus/grafana/api/v1/rules',
-        {
-          dashboard_uid: dashboard.uid,
-        },
-        `dashboard-query-runner-unified-alert-states-${dashboard.id}`
-      )
-    ).pipe(
-      map((result: PromRulesResponse) => {
-        if (result.status === 'success') {
-          this.hasAlertRules[dashboard.uid] = false;
-          const panelIdToAlertState: Record<number, AlertStateInfo> = {};
-          result.data.groups.forEach((group) =>
-            group.rules.forEach((rule) => {
-              if (isAlertingRule(rule) && rule.annotations && rule.annotations[Annotation.panelID]) {
-                this.hasAlertRules[dashboard.uid] = true;
-                const panelId = Number(rule.annotations[Annotation.panelID]);
-                const state = promAlertStateToAlertState(rule.state);
+      const { dashboard } = options;
+      return from(
+        getBackendSrv().get(
+          '/api/prometheus/grafana/api/v1/rules',
+          {
+            dashboard_uid: dashboard.uid,
+          },
+          `dashboard-query-runner-unified-alert-states-${dashboard.id}`
+        )
+      ).pipe(
+        map((result: PromRulesResponse) => {
+          if (result.status === 'success') {
+            this.hasAlertRules[dashboard.uid] = false;
+            const panelIdToAlertState: Record<number, AlertStateInfo> = {};
+            result.data.groups.forEach((group) =>
+              group.rules.forEach((rule) => {
+                if (isAlertingRule(rule) && rule.annotations && rule.annotations[Annotation.panelID]) {
+                  this.hasAlertRules[dashboard.uid] = true;
+                  const panelId = Number(rule.annotations[Annotation.panelID]);
+                  const state = promAlertStateToAlertState(rule.state);
 
-                // there can be multiple alerts per panel, so we make sure we get the most severe state:
-                // alerting > pending > ok
-                if (!panelIdToAlertState[panelId]) {
-                  panelIdToAlertState[panelId] = {
-                    state,
-                    id: Object.keys(panelIdToAlertState).length,
-                    panelId,
-                    dashboardId: dashboard.id,
-                  };
-                } else if (
-                  state === AlertState.Alerting &&
-                  panelIdToAlertState[panelId].state !== AlertState.Alerting
-                ) {
-                  panelIdToAlertState[panelId].state = AlertState.Alerting;
-                } else if (
-                  state === AlertState.Pending &&
-                  panelIdToAlertState[panelId].state !== AlertState.Alerting &&
-                  panelIdToAlertState[panelId].state !== AlertState.Pending
-                ) {
-                  panelIdToAlertState[panelId].state = AlertState.Pending;
+                  // there can be multiple alerts per panel, so we make sure we get the most severe state:
+                  // alerting > pending > ok
+                  if (!panelIdToAlertState[panelId]) {
+                    panelIdToAlertState[panelId] = {
+                      state,
+                      id: Object.keys(panelIdToAlertState).length,
+                      panelId,
+                      dashboardId: dashboard.id,
+                    };
+                  } else if (
+                    state === AlertState.Alerting &&
+                    panelIdToAlertState[panelId].state !== AlertState.Alerting
+                  ) {
+                    panelIdToAlertState[panelId].state = AlertState.Alerting;
+                  } else if (
+                    state === AlertState.Pending &&
+                    panelIdToAlertState[panelId].state !== AlertState.Alerting &&
+                    panelIdToAlertState[panelId].state !== AlertState.Pending
+                  ) {
+                    panelIdToAlertState[panelId].state = AlertState.Pending;
+                  }
                 }
-              }
-            })
-          );
-          return { alertStates: Object.values(panelIdToAlertState), annotations: [] };
-        }
-        throw new Error(`Unexpected alert rules response.`);
-      }),
-      catchError(handleDashboardQueryRunnerWorkerError)
-    );
+              })
+            );
+            return { alertStates: Object.values(panelIdToAlertState), annotations: [] };
+          }
+          throw new Error(`Unexpected alert rules response.`);
+        }),
+        catchError(handleDashboardQueryRunnerWorkerError),
+        tap(() => span.end())
+      );
+    });
   }
 }
 

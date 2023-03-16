@@ -1,5 +1,6 @@
+import { trace } from '@opentelemetry/api';
 import { cloneDeep } from 'lodash';
-import { MonoTypeOperatorFunction, Observable, of, ReplaySubject, Unsubscribable } from 'rxjs';
+import { MonoTypeOperatorFunction, Observable, of, ReplaySubject, Unsubscribable, tap } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
 
 import {
@@ -200,92 +201,109 @@ export class PanelQueryRunner {
   };
 
   async run(options: QueryRunnerOptions) {
-    const {
-      queries,
-      timezone,
-      datasource,
-      panelId,
-      dashboardId,
-      dashboardUID,
-      publicDashboardAccessToken,
-      timeRange,
-      timeInfo,
-      cacheTimeout,
-      queryCachingTTL,
-      maxDataPoints,
-      scopedVars,
-      minInterval,
-      app,
-    } = options;
+    const tracer = trace.getTracer('grafana');
+    console.log('panelQueryRunner.run');
+    tracer.startActiveSpan(
+      'PanelQueryRunner.run',
+      {
+        attributes: {
+          'panel.id': options.panelId,
+          range: rangeUtil.describeTimeRange(options.timeRange.raw),
+          datasource: options.datasource?.uid ?? '',
+          datasourceType: options.datasource?.type ?? '',
+        },
+      },
+      async (span) => {
+        const {
+          queries,
+          timezone,
+          datasource,
+          panelId,
+          dashboardId,
+          dashboardUID,
+          publicDashboardAccessToken,
+          timeRange,
+          timeInfo,
+          cacheTimeout,
+          queryCachingTTL,
+          maxDataPoints,
+          scopedVars,
+          minInterval,
+          app,
+        } = options;
 
-    if (isSharedDashboardQuery(datasource)) {
-      this.pipeToSubject(runSharedRequest(options, queries[0]), panelId);
-      return;
-    }
-
-    const request: DataQueryRequest = {
-      app: app ?? CoreApp.Dashboard,
-      requestId: getNextRequestId(),
-      timezone,
-      panelId,
-      dashboardId,
-      dashboardUID,
-      publicDashboardAccessToken,
-      range: timeRange,
-      timeInfo,
-      interval: '',
-      intervalMs: 0,
-      targets: cloneDeep(queries),
-      maxDataPoints: maxDataPoints,
-      scopedVars: scopedVars || {},
-      cacheTimeout,
-      queryCachingTTL,
-      startTime: Date.now(),
-      rangeRaw: timeRange.raw,
-    };
-
-    try {
-      const ds = await getDataSource(datasource, request.scopedVars, publicDashboardAccessToken);
-      const isMixedDS = ds.meta?.mixed;
-
-      // Attach the data source to each query
-      request.targets = request.targets.map((query) => {
-        const isExpressionQuery = query.datasource?.type === ExpressionDatasourceRef.type;
-        // When using a data source variable, the panel might have the incorrect datasource
-        // stored, so when running the query make sure it is done with the correct one
-        if (!query.datasource || (query.datasource.uid !== ds.uid && !isMixedDS && !isExpressionQuery)) {
-          query.datasource = ds.getRef();
+        if (isSharedDashboardQuery(datasource)) {
+          this.pipeToSubject(runSharedRequest(options, queries[0]), panelId);
+          return;
         }
-        return query;
-      });
 
-      const lowerIntervalLimit = minInterval ? getTemplateSrv().replace(minInterval, request.scopedVars) : ds.interval;
-      const norm = rangeUtil.calculateInterval(timeRange, maxDataPoints, lowerIntervalLimit);
+        const request: DataQueryRequest = {
+          app: app ?? CoreApp.Dashboard,
+          requestId: getNextRequestId(),
+          timezone,
+          panelId,
+          dashboardId,
+          dashboardUID,
+          publicDashboardAccessToken,
+          range: timeRange,
+          timeInfo,
+          interval: '',
+          intervalMs: 0,
+          targets: cloneDeep(queries),
+          maxDataPoints: maxDataPoints,
+          scopedVars: scopedVars || {},
+          cacheTimeout,
+          queryCachingTTL,
+          startTime: Date.now(),
+          rangeRaw: timeRange.raw,
+          // traceContext,
+        };
+        try {
+          const ds = await getDataSource(datasource, request.scopedVars, publicDashboardAccessToken);
+          const isMixedDS = ds.meta?.mixed;
 
-      // make shallow copy of scoped vars,
-      // and add built in variables interval and interval_ms
-      request.scopedVars = Object.assign({}, request.scopedVars, {
-        __interval: { text: norm.interval, value: norm.interval },
-        __interval_ms: { text: norm.intervalMs.toString(), value: norm.intervalMs },
-      });
+          // Attach the data source to each query
+          request.targets = request.targets.map((query) => {
+            const isExpressionQuery = query.datasource?.type === ExpressionDatasourceRef.type;
+            // When using a data source variable, the panel might have the incorrect datasource
+            // stored, so when running the query make sure it is done with the correct one
+            if (!query.datasource || (query.datasource.uid !== ds.uid && !isMixedDS && !isExpressionQuery)) {
+              query.datasource = ds.getRef();
+            }
+            return query;
+          });
 
-      request.interval = norm.interval;
-      request.intervalMs = norm.intervalMs;
+          const lowerIntervalLimit = minInterval
+            ? getTemplateSrv().replace(minInterval, request.scopedVars)
+            : ds.interval;
+          const norm = rangeUtil.calculateInterval(timeRange, maxDataPoints, lowerIntervalLimit);
 
-      this.lastRequest = request;
+          // make shallow copy of scoped vars,
+          // and add built in variables interval and interval_ms
+          request.scopedVars = Object.assign({}, request.scopedVars, {
+            __interval: { text: norm.interval, value: norm.interval },
+            __interval_ms: { text: norm.intervalMs.toString(), value: norm.intervalMs },
+          });
 
-      this.pipeToSubject(runRequest(ds, request), panelId);
-    } catch (err) {
-      this.pipeToSubject(
-        of({
-          state: LoadingState.Error,
-          error: toDataQueryError(err),
-          series: [],
-          timeRange: request.range,
-        }),
-        panelId
-      );
-    }
+          request.interval = norm.interval;
+          request.intervalMs = norm.intervalMs;
+
+          this.lastRequest = request;
+          this.pipeToSubject(runRequest(ds, request).pipe(tap(() => span.end())), panelId);
+        } catch (err) {
+          span.end();
+          this.pipeToSubject(
+            of({
+              state: LoadingState.Error,
+              error: toDataQueryError(err),
+              series: [],
+              timeRange: request.range,
+            }),
+            panelId
+          );
+        }
+      }
+    );
   }
 
   private pipeToSubject(observable: Observable<PanelData>, panelId?: number) {

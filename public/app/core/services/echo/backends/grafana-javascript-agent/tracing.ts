@@ -15,7 +15,6 @@ FetchInstrumentation.prototype.enable = function () {
   superEnable.call(this);
   if (!wrapped) {
     const superFetch = window.fetch;
-    console.log('wrappin');
     window.fetch = function (...args: Parameters<typeof fetch>) {
       const url = new URL(args[0] instanceof Request ? args[0].url : String(args[0]), document.baseURI).href;
       const options = args[0] instanceof Request ? args[0] : args[1] || {};

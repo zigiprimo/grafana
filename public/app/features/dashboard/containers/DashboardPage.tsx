@@ -1,4 +1,5 @@
 import { css, cx } from '@emotion/css';
+import { context, trace } from '@opentelemetry/api';
 import React, { PureComponent } from 'react';
 import DropZone, { FileRejection, DropEvent, ErrorCode } from 'react-dropzone';
 import { connect, ConnectedProps } from 'react-redux';
@@ -35,6 +36,7 @@ import { PanelEditEnteredEvent, PanelEditExitedEvent } from 'app/types/events';
 
 import { cancelVariables, templateVarsChangedInUrl } from '../../variables/state/actions';
 import { findTemplateVarChanges } from '../../variables/utils';
+import { DashboardTracer, DashboardTracerImpl } from '../DashboardTraceContext';
 import { DashNav } from '../components/DashNav';
 import { DashboardFailed } from '../components/DashboardLoading/DashboardFailed';
 import { DashboardLoading } from '../components/DashboardLoading/DashboardLoading';
@@ -100,6 +102,7 @@ export interface State {
   showLoadingState: boolean;
   panelNotFound: boolean;
   editPanelAccessDenied: boolean;
+  tracer: DashboardTracerImpl;
   scrollElement?: HTMLDivElement;
   pageNav?: NavModelItem;
   sectionNav?: NavModel;
@@ -111,6 +114,11 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
 
   private forceRouteReloadCounter = 0;
   state: State = this.getCleanState();
+
+  constructor(props: Props) {
+    console.log('dashboard page constructor');
+    super(props);
+  }
 
   onFileDrop = (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
     const grafanaDS = {
@@ -173,10 +181,12 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
       showLoadingState: false,
       panelNotFound: false,
       editPanelAccessDenied: false,
+      tracer: new DashboardTracerImpl(),
     };
   }
 
   componentDidMount() {
+    console.log('dashboard mount');
     this.initDashboard();
     this.forceRouteReloadCounter = (this.props.history.location.state as any)?.routeReloadCounter || 0;
   }
@@ -191,29 +201,45 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
   }
 
   initDashboard() {
+    console.log('initDashboard');
     const { dashboard, match, queryParams } = this.props;
 
-    if (dashboard) {
-      this.closeDashboard();
-    }
+    this.state.tracer.start();
+    trace.getTracer('grafana').startActiveSpan(
+      'DashboardPage.initDashboard',
+      {
+        attributes: {
+          'dashboard.id': dashboard?.id,
+          'dashboard.title': dashboard?.title,
+        },
+      },
+      this.state.tracer.getCurrentContext() || context.active(),
+      (span) => {
+        if (dashboard) {
+          this.closeDashboard();
+        }
 
-    this.props.initDashboard({
-      urlSlug: match.params.slug,
-      urlUid: match.params.uid,
-      urlType: match.params.type,
-      urlFolderUid: queryParams.folderUid,
-      panelType: queryParams.panelType,
-      routeName: this.props.route.routeName,
-      fixUrl: true,
-      accessToken: match.params.accessToken,
-      keybindingSrv: this.context.keybindings,
-    });
+        this.props.initDashboard({
+          urlSlug: match.params.slug,
+          urlUid: match.params.uid,
+          urlType: match.params.type,
+          urlFolderUid: queryParams.folderUid,
+          panelType: queryParams.panelType,
+          routeName: this.props.route.routeName,
+          fixUrl: true,
+          accessToken: match.params.accessToken,
+          keybindingSrv: this.context.keybindings,
+        });
 
-    // small delay to start live updates
-    setTimeout(this.updateLiveTimer, 250);
+        // small delay to start live updates
+        setTimeout(this.updateLiveTimer, 250);
+        span.end();
+      }
+    );
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
+    console.log('component did update');
     const { dashboard, match, templateVarsChangedInUrl } = this.props;
     const routeReloadCounter = (this.props.history.location.state as any)?.routeReloadCounter;
 
@@ -435,7 +461,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
     });
 
     return (
-      <>
+      <DashboardTracer dashboardTracer={this.state.tracer}>
         <Page
           navModel={sectionNav}
           pageNav={pageNav}
@@ -506,7 +532,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
             sectionNav={sectionNav}
           />
         )}
-      </>
+      </DashboardTracer>
     );
   }
 }

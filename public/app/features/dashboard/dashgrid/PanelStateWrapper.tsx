@@ -1,3 +1,4 @@
+import { context } from '@opentelemetry/api';
 import classNames from 'classnames';
 import React, { PureComponent } from 'react';
 import { Subscription } from 'rxjs';
@@ -49,6 +50,7 @@ import { RenderEvent } from 'app/types/events';
 import { isSoloRoute } from '../../../routes/utils';
 import { deleteAnnotation, saveAnnotation, updateAnnotation } from '../../annotations/api';
 import { getDashboardQueryRunner } from '../../query/state/DashboardQueryRunner/DashboardQueryRunner';
+import { DashboardTraceContext, DashboardTracerImpl } from '../DashboardTraceContext';
 import { getTimeSrv, TimeSrv } from '../services/TimeSrv';
 import { DashboardModel, PanelModel } from '../state';
 import { loadSnapshotData } from '../utils/loadSnapshotData';
@@ -89,6 +91,8 @@ export class PanelStateWrapper extends PureComponent<Props, State> {
   private readonly timeSrv: TimeSrv = getTimeSrv();
   private subs = new Subscription();
   private eventFilter: EventFilterOptions = { onlyLocal: true };
+
+  static contextType = DashboardTraceContext;
 
   constructor(props: Props) {
     super(props);
@@ -193,38 +197,45 @@ export class PanelStateWrapper extends PureComponent<Props, State> {
   }
 
   componentDidMount() {
-    const { panel, dashboard } = this.props;
+    const ctx = (this.context as DashboardTracerImpl).getCurrentContext();
+    context.with(ctx || context.active(), () => {
+      console.log('panel mount', ctx);
 
-    // Subscribe to panel events
-    this.subs.add(panel.events.subscribe(RefreshEvent, this.onRefresh));
-    this.subs.add(panel.events.subscribe(RenderEvent, this.onRender));
+      const { panel, dashboard } = this.props;
 
-    dashboard.panelInitialized(this.props.panel);
+      // Subscribe to panel events
+      this.subs.add(panel.events.subscribe(RefreshEvent, this.onRefresh));
+      this.subs.add(panel.events.subscribe(RenderEvent, this.onRender));
 
-    // Move snapshot data into the query response
-    if (this.hasPanelSnapshot) {
-      this.setState({
-        data: loadSnapshotData(panel, dashboard),
-        isFirstLoad: false,
-      });
-      return;
-    }
+      dashboard.panelInitialized(this.props.panel);
 
-    if (!this.wantsQueryExecution) {
-      this.setState({ isFirstLoad: false });
-    }
+      // Move snapshot data into the query response
+      if (this.hasPanelSnapshot) {
+        this.setState({
+          data: loadSnapshotData(panel, dashboard),
+          isFirstLoad: false,
+        });
+        return;
+      }
 
-    this.subs.add(
-      panel
-        .getQueryRunner()
-        .getData({ withTransforms: true, withFieldConfig: true })
-        .subscribe({
-          next: (data) => this.onDataUpdate(data),
-        })
-    );
+      if (!this.wantsQueryExecution) {
+        this.setState({ isFirstLoad: false });
+      }
 
-    // Listen for live timer events
-    liveTimer.listen(this);
+      this.subs.add(
+        panel
+          .getQueryRunner()
+          .getData({ withTransforms: true, withFieldConfig: true })
+          .subscribe({
+            next: (data) => this.onDataUpdate(data),
+          })
+      );
+
+      console.log('panel did mount');
+
+      // Listen for live timer events
+      liveTimer.listen(this);
+    });
   }
 
   componentWillUnmount() {
@@ -710,10 +721,7 @@ export class PanelStateWrapper extends PureComponent<Props, State> {
       );
     } else {
       return (
-        <section
-          className={containerClassNames}
-          aria-label={selectors.components.Panels.Panel.containerByTitle(panel.title)}
-        >
+        <section className={containerClassNames}>
           <PanelHeader
             panel={panel}
             dashboard={dashboard}

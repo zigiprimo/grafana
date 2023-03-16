@@ -1,3 +1,4 @@
+import { trace } from '@opentelemetry/api';
 import { merge, Observable, ReplaySubject, Subject, Subscription, timer, Unsubscribable } from 'rxjs';
 import { finalize, map, mapTo, mergeAll, reduce, share, takeUntil } from 'rxjs/operators';
 
@@ -67,50 +68,54 @@ class DashboardQueryRunnerImpl implements DashboardQueryRunner {
   }
 
   private executeRun(options: DashboardQueryRunnerOptions) {
-    const workers = this.workers.filter((w) => w.canWork(options));
-    const workerObservables = workers.map((w) => w.work(options));
+    const tracer = trace.getTracer('grafana');
+    tracer.startActiveSpan('DashboardQueryRunnerImpl.executeRun', (span) => {
+      const workers = this.workers.filter((w) => w.canWork(options));
+      const workerObservables = workers.map((w) => w.work(options));
+      console.log('workers', workers);
+      const resultSubscription = new Subscription();
+      const resultObservable = merge(workerObservables).pipe(
+        takeUntil(this.runs.asObservable()),
+        mergeAll(),
+        reduce((acc: DashboardQueryRunnerWorkerResult, value: DashboardQueryRunnerWorkerResult) => {
+          // console.log({ acc: acc.annotations.length, value: value.annotations.length });
+          // should we use scan or reduce here
+          // reduce will only emit when all observables are completed
+          // scan will emit when any observable is completed
+          // choosing reduce to minimize re-renders
+          acc.annotations = acc.annotations.concat(value.annotations);
+          acc.alertStates = acc.alertStates.concat(value.alertStates);
+          return acc;
+        }),
+        finalize(() => {
+          resultSubscription.unsubscribe(); // important to avoid memory leaks
+          span.end();
+        }),
+        share() // shared because we're using it in takeUntil below
+      );
 
-    const resultSubscription = new Subscription();
-    const resultObservable = merge(workerObservables).pipe(
-      takeUntil(this.runs.asObservable()),
-      mergeAll(),
-      reduce((acc: DashboardQueryRunnerWorkerResult, value: DashboardQueryRunnerWorkerResult) => {
-        // console.log({ acc: acc.annotations.length, value: value.annotations.length });
-        // should we use scan or reduce here
-        // reduce will only emit when all observables are completed
-        // scan will emit when any observable is completed
-        // choosing reduce to minimize re-renders
-        acc.annotations = acc.annotations.concat(value.annotations);
-        acc.alertStates = acc.alertStates.concat(value.alertStates);
-        return acc;
-      }),
-      finalize(() => {
-        resultSubscription.unsubscribe(); // important to avoid memory leaks
-      }),
-      share() // shared because we're using it in takeUntil below
-    );
+      const timerSubscription = new Subscription();
+      const timerObservable = timer(200).pipe(
+        mapTo({ annotations: [], alertStates: [] }),
+        takeUntil(resultObservable),
+        finalize(() => {
+          timerSubscription.unsubscribe(); // important to avoid memory leaks
+        })
+      );
 
-    const timerSubscription = new Subscription();
-    const timerObservable = timer(200).pipe(
-      mapTo({ annotations: [], alertStates: [] }),
-      takeUntil(resultObservable),
-      finalize(() => {
-        timerSubscription.unsubscribe(); // important to avoid memory leaks
-      })
-    );
+      // if the result takes longer than 200ms we just publish an empty result
+      timerSubscription.add(
+        timerObservable.subscribe((result) => {
+          this.results.next(result);
+        })
+      );
 
-    // if the result takes longer than 200ms we just publish an empty result
-    timerSubscription.add(
-      timerObservable.subscribe((result) => {
-        this.results.next(result);
-      })
-    );
-
-    resultSubscription.add(
-      resultObservable.subscribe((result: DashboardQueryRunnerWorkerResult) => {
-        this.results.next(result);
-      })
-    );
+      resultSubscription.add(
+        resultObservable.subscribe((result: DashboardQueryRunnerWorkerResult) => {
+          this.results.next(result);
+        })
+      );
+    });
   }
 
   cancel(annotation: AnnotationQuery): void {
