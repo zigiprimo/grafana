@@ -100,7 +100,7 @@ rate({test="123"}[1m])
 sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
 // For job = mysql calculate the rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute
 sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
-// Using the examples above, help the user to write logql queries following this examples.
+// Using the examples above, help the user to write a LogQL query by following the instructions below.
 
 `;
 
@@ -110,7 +110,7 @@ export async function ask(prompt: string) {
     response = await openai.createCompletion({
       model: 'text-davinci-003',
       prompt: `${prependedText}
-      """
+      Instructions: """
       ${prompt}
       """`,
       temperature: 0.5,
