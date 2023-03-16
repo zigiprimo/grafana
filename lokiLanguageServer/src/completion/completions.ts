@@ -82,7 +82,7 @@ async function getLabelNamesCompletions(otherLabels: Label[]) {
     if (currentBytes !== undefined && bytesPerLabelName[name] !== undefined) {
       const text = humanFileSize(bytesPerLabelName[name]);
       const currText = humanFileSize(currentBytes);
-      completionItem.detail = `"${name}" label is present in ${text}/${currText} logs.`;
+      completionItem.detail = `"${name}" label is present in ~${text}/${currText} logs.`;
     }
 
     return completionItem;
@@ -116,7 +116,7 @@ const getStatsForLabelNames = async (selectedLabels: Label[] = []): Promise<{ [k
   for (const labelName of labelNames) {
     // This should be ~".+" but it does not work so we are hacking it with ~".*" for now.
     const newQuery = `{${expr},${labelName}=~".*"}`;
-    const bytes = (await getStats(newQuery)) - 1000;
+    const bytes = await getStats(newQuery);
     if (bytes !== undefined) {
       bytesForLabel[labelName] = bytes;
     }
@@ -156,7 +156,7 @@ async function getLabelValuesCompletions(
     if (currentBytes !== undefined && bytesPerLabel[name] !== undefined) {
       const text = humanFileSize(bytesPerLabel[name]);
       const currText = humanFileSize(currentBytes);
-      completionItem.detail = `"${name}" label is present in ${text}/${currText} logs.`;
+      completionItem.detail = `"${name}" label is present in ~${text}/${currText} logs.`;
     }
 
     return completionItem;
