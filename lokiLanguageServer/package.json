@@ -36,7 +36,7 @@
     "vscode": "^1.74.0"
   },
   "scripts": {
-    "start": "yarn build:server && yarn node ./extension/grafana-loki-language-server-server.js",
+    "start": "yarn node ./extension/grafana-loki-language-server-server.js",
     "build": "yarn build:client && yarn build:server && yarn assets",
     "build:client": "cd client && yarn webpack --mode production",
     "build:server": "cd server && yarn webpack --mode production",

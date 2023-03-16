@@ -1,5 +1,6 @@
-import { Uri, WebviewView, WebviewViewResolveContext, CancellationToken, WebviewViewProvider } from 'vscode';
+import { Uri, WebviewView, WebviewViewResolveContext, CancellationToken, WebviewViewProvider, workspace } from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/lib/node/main';
+import { URI } from 'vscode-uri';
 
 import { getNonce } from './getNonce';
 import { logfmt } from './logfmt';
@@ -7,19 +8,15 @@ import { logfmt } from './logfmt';
 export class FaroProvider implements WebviewViewProvider {
   static readonly viewType = 'faro-data';
 
-  filePath: string | null = null;
-
-  lineNumber: number | null = null;
-
-  logs: string[] | null = [];
-
-  mode: 'exceptions' | 'events' | 'logs' = 'logs';
-
   client: LanguageClient | undefined;
+
+  private mode: 'exceptions' | 'events' | 'logs' = 'logs';
+
+  private logs: string[] | null = [];
 
   private webviewView: WebviewView | null = null;
 
-  constructor(private extensionUri: Uri) {}
+  constructor(private extensionUri: Uri, private filePath: string | null, private lineNumber: number | null) {}
 
   async resolveWebviewView(webviewView: WebviewView, context: WebviewViewResolveContext, _token: CancellationToken) {
     this.webviewView = webviewView;
@@ -29,19 +26,76 @@ export class FaroProvider implements WebviewViewProvider {
       localResourceRoots: [this.extensionUri],
     };
 
-    webviewView.webview.onDidReceiveMessage(({ type, value }) => {
-      switch (type) {
-        case 'changeMode': {
-          this.changeMode(value);
-          break;
-        }
-      }
-    });
+    webviewView.webview.onDidReceiveMessage(this.handleMessage.bind(this));
 
-    await this.reload();
+    await this.paint();
   }
 
-  async reload() {
+  setClient(value: LanguageClient | undefined) {
+    this.client = value;
+
+    this.client?.onRequest('receive-new-logs', this.setLogs.bind(this));
+
+    this.getNewLogs();
+  }
+
+  setFilePathAndLine(filePath: string | null, lineNumber: number | null) {
+    const workspaceFolder = workspace.getWorkspaceFolder(URI.file(filePath ?? ''));
+
+    const oldFilePath = this.filePath;
+    const oldLineNumber = this.lineNumber;
+
+    this.filePath = !workspaceFolder
+      ? null
+      : filePath === null
+      ? null
+      : filePath.replace(workspaceFolder?.uri.fsPath, '').replace('/src', '');
+
+    this.lineNumber = typeof lineNumber === 'number' ? lineNumber + 1 : null;
+
+    if (this.filePath !== oldFilePath) {
+      this.getNewLogs();
+    } else if (this.lineNumber !== oldLineNumber) {
+      this.paint();
+    }
+  }
+
+  private handleMessage({ type, value }: { type: string; value: any }) {
+    switch (type) {
+      case 'changeMode': {
+        this.setMode(value);
+        break;
+      }
+    }
+  }
+
+  private setMode(value: 'exceptions' | 'events' | 'logs') {
+    this.mode = value;
+
+    this.getNewLogs();
+  }
+
+  private setLogs(value: string[] | null = null) {
+    this.logs = value;
+
+    this.paint();
+  }
+
+  private getNewLogs() {
+    this.setLogs([]);
+
+    this.client?.sendRequest('get-new-logs', {
+      filePath: this.filePath,
+      mode: this.mode,
+    });
+  }
+
+  private paint() {
+    this.setTitle();
+    this.setContent();
+  }
+
+  private setTitle() {
     if (this.webviewView) {
       const explodedTitle = this.mode.split('');
 
@@ -50,56 +104,11 @@ export class FaroProvider implements WebviewViewProvider {
       }
 
       this.webviewView.title = explodedTitle.join('');
-      this.webviewView.webview.html = await this.getHtmlForWebview();
     }
   }
 
-  private changeMode(mode: 'exceptions' | 'events' | 'logs') {
-    this.mode = mode;
-
-    this.logs = [];
-
-    this.reload();
-
-    this.client?.sendRequest('get-new-logs', {
-      filePath: this.filePath,
-      mode,
-    });
-  }
-
-  private getUriToMedia(fileName: string) {
-    return this.webviewView!.webview.asWebviewUri(Uri.joinPath(this.extensionUri, 'media', fileName));
-  }
-
-  private wrapInHtml(html: string) {
-    const cspSource = this.webviewView!.webview.cspSource;
-
-    const nonce = getNonce();
-
-    return `<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource}; img-src ${cspSource} https:; script-src 'nonce-${nonce}';">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<link href="${this.getUriToMedia('reset.css')}" rel="stylesheet">
-		<link href="${this.getUriToMedia('vscode.css')}" rel="stylesheet">
-		<title>Faro ${this.webviewView?.title ?? ''}</title>
-	</head>
-	<body>
-		<div>
-			<button id="logs" class="${this.mode === 'logs' ? 'active' : ''}">Logs</button>
-			<button id="exceptions" class="${this.mode === 'exceptions' ? 'active' : ''}">Exceptions</button>
-			<button id="events" class="${this.mode === 'events' ? 'active' : ''}">Events</button>
-		</div>
-${html}
-	<script nonce="${nonce}" src="${this.getUriToMedia('main.js')}"></script>
-	</body>
-</html>`;
-  }
-
-  private renderExceptions() {
-    return this.wrapInHtml(`		<table>
+  private getExceptionsContent() {
+    return `		<table>
 			<thead>
 				<tr>
 					<th>Timestamp</th>
@@ -136,11 +145,11 @@ ${(parsed.stacktrace ?? '')
   })
   .join('')}
 			</tbody>
-		</table>`);
+		</table>`;
   }
 
-  private renderData() {
-    return this.wrapInHtml(`		<table>
+  private getLogsContent() {
+    return `		<table>
 			<tbody>
 ${this.logs!.map(
   (line) => `				<tr>
@@ -148,28 +157,61 @@ ${this.logs!.map(
 				</tr>`
 ).join('')}
 			</tbody>
-		</table>`);
+		</table>`;
   }
 
-  private async getHtmlForWebview() {
-    if (this.logs === null) {
-      return this.wrapInHtml(`		<p>There was an error fetching the data.</p>`);
-    }
+  private getUriToMedia(fileName: string) {
+    return this.webviewView!.webview.asWebviewUri(Uri.joinPath(this.extensionUri, 'media', fileName));
+  }
 
-    if (this.logs.length === 0) {
-      return this.wrapInHtml(`		<p>No logs found.</p>`);
-    }
+  private setContent() {
+    if (this.webviewView) {
+      let content: string;
 
-    switch (this.mode) {
-      case 'exceptions':
-        return this.renderExceptions();
+      if (this.logs === null) {
+        content = `		<p>There was an error fetching the data.</p>`;
+      } else if (this.logs?.length === 0) {
+        content = `		<p>No logs found.</p>`;
+      } else {
+        switch (this.mode) {
+          case 'exceptions':
+            content = this.getExceptionsContent();
+            break;
 
-      case 'events':
-      case 'logs':
-        return this.renderData();
+          case 'events':
+          case 'logs':
+            content = this.getLogsContent();
+            break;
 
-      default:
-        return this.wrapInHtml(`		<p>Unknown error</p>`);
+          default:
+            content = `		<p>Unknown error.</p>`;
+        }
+      }
+
+      const cspSource = this.webviewView!.webview.cspSource;
+
+      const nonce = getNonce();
+
+      this.webviewView.webview.html = `<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src ${cspSource}; img-src ${cspSource} https:; script-src 'nonce-${nonce}';">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<link href="${this.getUriToMedia('reset.css')}" rel="stylesheet">
+		<link href="${this.getUriToMedia('vscode.css')}" rel="stylesheet">
+		<title>Faro ${this.webviewView?.title ?? ''}</title>
+	</head>
+	<body>
+		<div>
+			<button id="logs" class="${this.mode === 'logs' ? 'active' : ''}">Logs</button>
+			<button id="exceptions" class="${this.mode === 'exceptions' ? 'active' : ''}">Exceptions</button>
+			<button id="events" class="${this.mode === 'events' ? 'active' : ''}">Events</button>
+		</div>
+${content}
+	<script nonce="${nonce}" src="${this.getUriToMedia('main.js')}"></script>
+	</body>
+</html>`;
     }
   }
 }
