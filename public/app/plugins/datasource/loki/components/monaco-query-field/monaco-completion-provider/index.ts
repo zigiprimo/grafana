@@ -92,8 +92,7 @@ export function getCompletionProvider(
     // monaco by default alphabetically orders the items.
     // to stop it, we use a number-as-string sortkey,
     // so that monaco keeps the order we use
-    // const maxIndexDigits = items.length.toString().length;
-    console.log('lsCompletions', lsCompletions);
+    const maxIndexDigits = lsCompletions.length.toString().length;
     const suggestions: monacoTypes.languages.CompletionItem[] = [
       ...lsCompletions,
       // ...items.map((item) => ({
@@ -111,11 +110,10 @@ export function getCompletionProvider(
       //       }
       //     : undefined,
       // })),
-    ];
-    // ].map((item, index) => ({
-    //   ...item,
-    //   sortText: index.toString().padStart(maxIndexDigits, '0'), // to force the order we have
-    // }));
+    ].map((item, index) => ({
+      ...item,
+      sortText: index.toString().padStart(maxIndexDigits, '0'), // to force the order we have
+    }));
     return { suggestions };
   };
 

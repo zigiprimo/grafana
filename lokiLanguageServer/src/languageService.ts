@@ -16,10 +16,7 @@ export function getLanguageService(): LanguageService {
       return Promise.resolve(validateQuery(document.getText()));
     },
     doResolve: (item): Thenable<CompletionItem> => {
-      return Promise.resolve({
-        label: 'aaa',
-        detail: 'detail of aaa',
-      });
+      return Promise.resolve(item);
     },
     doComplete: (document, position): Thenable<CompletionList> => {
       return new Promise((resolve) => {

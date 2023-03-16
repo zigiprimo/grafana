@@ -1,7 +1,7 @@
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CompletionItem, Position } from 'vscode-languageserver-types';
 
-import { getLabelNames, getLabelValues } from './fetch.js';
+import { getLabelNames, getLabelNamesIfOtherLabels, getLabelValues, getStats } from './fetch.js';
 import {
   AGGREGATION_COMPLETIONS,
   BUILT_IN_FUNCTIONS_COMPLETIONS,
@@ -31,14 +31,9 @@ async function getCompletions(situation: Situation): Promise<CompletionItem[]> {
     case 'IN_RANGE':
       return DURATION_COMPLETIONS;
     case 'IN_LABEL_SELECTOR_NO_LABEL_NAME':
-      const options = await getLabelNames();
-      return options.map((name) => ({
-        label: name,
-        insertText: `${name}=`,
-        documentation: 'from LSP',
-      }));
+      return getLabelNamesCompletions(situation.otherLabels);
     case 'IN_LABEL_SELECTOR_WITH_LABEL_NAME':
-      return getLabelValuesForMetricCompletions(situation.labelName, situation.betweenQuotes, situation.otherLabels);
+      return getLabelValuesCompletions(situation.labelName, situation.betweenQuotes, situation.otherLabels);
     case 'AFTER_SELECTOR':
       return getAfterSelectorCompletions(situation.logQuery, situation.afterPipe, situation.hasSpace);
     case 'IN_AGGREGATION':
@@ -58,22 +53,112 @@ export type Label = {
   op: LabelOperator;
 };
 
-async function getLabelValuesForMetricCompletions(
+async function getLabelNamesCompletions(otherLabels: Label[]) {
+  const names = await getLabelNames();
+  if (!otherLabels.length) {
+    return names.map((name) => ({
+      label: name,
+      insertText: `${name}=`,
+      documentation: undefined,
+    }));
+  }
+  const expr = `{${otherLabels.map((label) => `${label.name}${label.op}"${label.value}"`).join(',')}}`;
+  const currentBytes = await getStats(expr);
+
+  let bytesPerLabelName: { [key: string]: number } = {};
+
+  if (currentBytes) {
+    bytesPerLabelName = await getStatsForLabelNames(otherLabels);
+  }
+
+  const completionItems = Object.keys(bytesPerLabelName).map((name) => {
+    const completionItem: CompletionItem = {
+      label: name,
+      insertText: `${name}=`,
+    };
+
+    if (currentBytes !== undefined && bytesPerLabelName[name] !== undefined) {
+      const text = humanFileSize(bytesPerLabelName[name]);
+      const currText = humanFileSize(currentBytes);
+      completionItem.detail = `"${name}" label is present in ${text}/${currText} logs.`;
+    }
+
+    return completionItem;
+  });
+  return completionItems;
+}
+
+const getStatsForLabelValues = async (
+  otherLabels: Label[],
+  labelName: string,
+  labelValues: string[]
+): Promise<{ [key: string]: number }> => {
+  const bytesForLabel: { [key: string]: number } = {};
+  const expr = `${otherLabels.map((label) => `${label.name}${label.op}"${label.value}"`).join(',')}`;
+
+  for (const value of labelValues) {
+    const newQuery = `{${expr},${labelName}="${value}"}`;
+    const bytes = await getStats(newQuery);
+    if (bytes !== undefined) {
+      bytesForLabel[value] = bytes;
+    }
+  }
+  return bytesForLabel;
+};
+
+const getStatsForLabelNames = async (selectedLabels: Label[] = []): Promise<{ [key: string]: number }> => {
+  const bytesForLabel: { [key: string]: number } = {};
+  const expr = selectedLabels.map((label) => `${label.name}${label.op}"${label.value}"`).join(',');
+  const labelNames = await getLabelNamesIfOtherLabels(selectedLabels);
+
+  for (const labelName of labelNames) {
+    // This should be ~".+" but it does not work so we are hacking it with ~".*" for now.
+    const newQuery = `{${expr},${labelName}=~".*"}`;
+    const bytes = (await getStats(newQuery)) - 1000;
+    if (bytes !== undefined) {
+      bytesForLabel[labelName] = bytes;
+    }
+  }
+  return bytesForLabel;
+};
+
+async function getLabelValuesCompletions(
   labelName: string,
   betweenQuotes: boolean,
   otherLabels: Label[]
 ): Promise<CompletionItem[]> {
   const values = await getLabelValues(labelName);
-
-  const completionItems = values.map((value) => {
-    const completionItem: CompletionItem = {
+  if (!otherLabels.length) {
+    return values.map((value) => ({
       label: value,
       insertText: betweenQuotes ? value : `"${value}"`,
       documentation: undefined,
+    }));
+  }
+
+  const expr = `{${otherLabels.map((label) => `${label.name}${label.op}"${label.value}"`).join(',')}}`;
+  const currentBytes = await getStats(expr);
+
+  let bytesPerLabel: { [key: string]: number } = {};
+
+  if (currentBytes) {
+    bytesPerLabel = await getStatsForLabelValues(otherLabels, labelName, values);
+  }
+
+  const completionItems = Object.keys(bytesPerLabel).map((name) => {
+    const completionItem: CompletionItem = {
+      label: name,
+      insertText: betweenQuotes ? name : `"${name}"`,
     };
+
+    if (currentBytes !== undefined && bytesPerLabel[name] !== undefined) {
+      const text = humanFileSize(bytesPerLabel[name]);
+      const currText = humanFileSize(currentBytes);
+      completionItem.detail = `"${name}" label is present in ${text}/${currText} logs.`;
+    }
+
     return completionItem;
   });
-
   return completionItems;
 }
 
@@ -82,29 +167,11 @@ async function getAfterSelectorCompletions(
   afterPipe: boolean,
   hasSpace: boolean
 ): Promise<CompletionItem[]> {
-  const completions: CompletionItem[] = [];
   // const { extractedLabelKeys, hasJSON, hasLogfmt } = await dataProvider.getParserAndLabelKeys(logQuery);
   const queryWithParser = isQueryWithParser(logQuery).queryWithParser;
 
   const prefix = `${hasSpace ? '' : ' '}${afterPipe ? '' : '| '}`;
-  // const completions: Completion[] = await getParserCompletions(
-  //   prefix,
-  //   hasJSON,
-  //   hasLogfmt,
-  //   extractedLabelKeys,
-  //   queryWithParser
-  // );
-
-  // if (queryWithParser) {
-  //   extractedLabelKeys.forEach((key) => {
-  //     completions.push({
-  //       type: 'LABEL_NAME',
-  //       label: `${key} (detected)`,
-  //       insertText: `${prefix} ${key}`,
-  //       documentation: `${key} label was detected from sampled log lines.`,
-  //     });
-  //   });
-  // }
+  const completions: CompletionItem[] = await getParserCompletions(prefix);
 
   completions.push({
     label: 'unwrap',
@@ -133,4 +200,41 @@ async function getAfterSelectorCompletions(
   const lineFilters = afterPipe && hasSpace ? [] : getLineFilterCompletions(afterPipe);
 
   return [...lineFilters, ...completions];
+}
+
+async function getParserCompletions(prefix: string) {
+  const PARSERS = ['json', 'logfmt', 'pattern', 'regexp', 'unpack'];
+  const completions: CompletionItem[] = [];
+
+  const remainingParsers = Array.from(PARSERS).sort();
+  remainingParsers.forEach((parser) => {
+    completions.push({
+      label: parser,
+      insertText: `${prefix}${parser}`,
+      documentation: 'Parse content using the Loki parser',
+    });
+  });
+
+  return completions;
+}
+
+export function humanFileSize(bytes: number, si = false, dp = 1) {
+  const thresh = si ? 1000 : 1024;
+
+  if (Math.abs(bytes) < thresh) {
+    return bytes + ' B';
+  }
+
+  const units = si
+    ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+    : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+  let u = -1;
+  const r = 10 ** dp;
+
+  do {
+    bytes /= thresh;
+    ++u;
+  } while (Math.round(Math.abs(bytes) * r) / r >= thresh && u < units.length - 1);
+
+  return bytes.toFixed(dp) + ' ' + units[u];
 }

@@ -1,14 +1,5 @@
 import { CompletionItem } from 'vscode-languageserver-types';
 
-export type Completion = {
-  label: string;
-  insertText: string;
-  detail?: string;
-  documentation?: string | any;
-  triggerOnInsert?: boolean;
-  isSnippet?: boolean;
-};
-
 export const AGGREGATION_OPERATORS: CompletionItem[] = [
   {
     label: 'avg',
@@ -199,16 +190,14 @@ export const BUILT_IN_FUNCTIONS = [
 export const FUNCTIONS = [...AGGREGATION_OPERATORS, ...RANGE_VEC_FUNCTIONS, ...BUILT_IN_FUNCTIONS];
 export const LOKI_KEYWORDS = [...FUNCTIONS, ...PIPE_OPERATORS, ...PIPE_PARSERS].map((keyword) => keyword.label);
 
-export const LOG_COMPLETIONS: Completion[] = [
+export const LOG_COMPLETIONS: CompletionItem[] = [
   {
     label: '{}',
     insertText: '{}',
-    isSnippet: true,
-    triggerOnInsert: true,
   },
 ];
 
-export const AGGREGATION_COMPLETIONS: Completion[] = AGGREGATION_OPERATORS.map((f) => ({
+export const AGGREGATION_COMPLETIONS: CompletionItem[] = AGGREGATION_OPERATORS.map((f) => ({
   type: 'FUNCTION',
   label: f.label,
   insertText: `${f.insertText ?? ''}()`, // i don't know what to do when this is nullish. it should not be.
@@ -218,7 +207,7 @@ export const AGGREGATION_COMPLETIONS: Completion[] = AGGREGATION_OPERATORS.map((
   documentation: f.documentation,
 }));
 
-export const FUNCTION_COMPLETIONS: Completion[] = RANGE_VEC_FUNCTIONS.map((f) => ({
+export const FUNCTION_COMPLETIONS: CompletionItem[] = RANGE_VEC_FUNCTIONS.map((f) => ({
   type: 'FUNCTION',
   label: f.label,
   insertText: `${f.insertText ?? ''}({}[\$__interval])`, // i don't know what to do when this is nullish. it should not be.
@@ -228,7 +217,7 @@ export const FUNCTION_COMPLETIONS: Completion[] = RANGE_VEC_FUNCTIONS.map((f) =>
   documentation: f.documentation,
 }));
 
-export const BUILT_IN_FUNCTIONS_COMPLETIONS: Completion[] = BUILT_IN_FUNCTIONS.map((f) => ({
+export const BUILT_IN_FUNCTIONS_COMPLETIONS: CompletionItem[] = BUILT_IN_FUNCTIONS.map((f) => ({
   type: 'FUNCTION',
   label: f.label,
   insertText: `${f.insertText ?? ''}()`,
@@ -238,15 +227,22 @@ export const BUILT_IN_FUNCTIONS_COMPLETIONS: Completion[] = BUILT_IN_FUNCTIONS.m
   documentation: f.documentation,
 }));
 
-export const DURATION_COMPLETIONS: Completion[] = ['$__interval', '$__range', '1m', '5m', '10m', '30m', '1h', '1d'].map(
-  (text) => ({
-    type: 'DURATION',
-    label: text,
-    insertText: text,
-  })
-);
+export const DURATION_COMPLETIONS: CompletionItem[] = [
+  '$__interval',
+  '$__range',
+  '1m',
+  '5m',
+  '10m',
+  '30m',
+  '1h',
+  '1d',
+].map((text) => ({
+  type: 'DURATION',
+  label: text,
+  insertText: text,
+}));
 
-export const UNWRAP_FUNCTION_COMPLETIONS: Completion[] = [
+export const UNWRAP_FUNCTION_COMPLETIONS: CompletionItem[] = [
   {
     label: 'duration_seconds',
     documentation: 'Will convert the label value in seconds from the go duration format (e.g 5m, 24s30ms).',
