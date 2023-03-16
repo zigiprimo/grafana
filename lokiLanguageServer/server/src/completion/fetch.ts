@@ -170,7 +170,12 @@ export const getSamples = async (query: string) => {
   return response.data.results.samples.frames;
 };
 
-export const getExceptionsForFile = async (filePath: string) => {
+export const getExceptionsForFile = async (
+  filePath: string,
+  lokiDatasourceId: string,
+  grafanaApiKey: string,
+  appName: string
+) => {
   let start: number | Date = new Date();
   start = start.setHours(start.getHours() - 1).valueOf();
   const end = Date.now();
@@ -182,9 +187,9 @@ export const getExceptionsForFile = async (filePath: string) => {
           refId: 'A',
           datasource: {
             type: 'loki',
-            uid: DS_UID,
+            uid: lokiDatasourceId,
           },
-          expr: `{app="auth-app-production", kind="exception"} |= \`${filePath}\``,
+          expr: `{app="${appName}", kind="exception"} |= \`${filePath}\``,
           queryType: 'range',
           maxLines: 10,
           legendFormat: '',
@@ -197,18 +202,18 @@ export const getExceptionsForFile = async (filePath: string) => {
       headers: {
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
-        'x-datasource-uid': DS_UID,
+        'x-datasource-uid': lokiDatasourceId,
         'x-grafana-org-id': '1',
         'x-panel-id': 'Q-0e01a969-342b-4714-8617-b078bbb58b42-0',
         'x-plugin-id': 'loki',
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${grafanaApiKey}`,
       },
     }
   );
   return response.data.results.A.frames[0].data.values[2] ?? null;
 };
 
-export const getLogs = async () => {
+export const getLogs = async (lokiDatasourceId: string, grafanaApiKey: string, appName: string) => {
   let start: number | Date = new Date();
   start = start.setHours(start.getHours() - 1).valueOf();
   const end = Date.now();
@@ -220,9 +225,9 @@ export const getLogs = async () => {
           refId: 'A',
           datasource: {
             type: 'loki',
-            uid: DS_UID,
+            uid: lokiDatasourceId,
           },
-          expr: '{app="auth-app-production", kind="log"}',
+          expr: `{app="${appName}", kind="log"}`,
           queryType: 'range',
           maxLines: 10,
           legendFormat: '',
@@ -235,18 +240,18 @@ export const getLogs = async () => {
       headers: {
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
-        'x-datasource-uid': DS_UID,
+        'x-datasource-uid': lokiDatasourceId,
         'x-grafana-org-id': '1',
         'x-panel-id': 'Q-0e01a969-342b-4714-8617-b078bbb58b42-0',
         'x-plugin-id': 'loki',
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${grafanaApiKey}`,
       },
     }
   );
   return response.data.results.A.frames[0].data.values[2] ?? null;
 };
 
-export const getEvents = async () => {
+export const getEvents = async (lokiDatasourceId: string, grafanaApiKey: string, appName: string) => {
   let start: number | Date = new Date();
   start = start.setHours(start.getHours() - 1).valueOf();
   const end = Date.now();
@@ -258,9 +263,9 @@ export const getEvents = async () => {
           refId: 'A',
           datasource: {
             type: 'loki',
-            uid: DS_UID,
+            uid: lokiDatasourceId,
           },
-          expr: '{app="auth-app-production", kind="event"}',
+          expr: `{app="${appName}", kind="event"}`,
           queryType: 'range',
           maxLines: 10,
           legendFormat: '',
@@ -273,11 +278,11 @@ export const getEvents = async () => {
       headers: {
         accept: 'application/json, text/plain, */*',
         'content-type': 'application/json',
-        'x-datasource-uid': DS_UID,
+        'x-datasource-uid': lokiDatasourceId,
         'x-grafana-org-id': '1',
         'x-panel-id': 'Q-0e01a969-342b-4714-8617-b078bbb58b42-0',
         'x-plugin-id': 'loki',
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${grafanaApiKey}`,
       },
     }
   );

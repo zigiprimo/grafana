@@ -9,23 +9,37 @@ import { FaroProvider } from './provider';
 let client: LanguageClient;
 
 export function activate(context: ExtensionContext) {
+  const configuration = workspace.getConfiguration('grafana');
+  const websocketUrl = configuration.get<string>('faro.websocketUrl') ?? '';
+  const lokiDatasourceId = configuration.get<string>('faro.lokiDatasourceId') ?? '';
+  const grafanaApiKey = configuration.get<string>('faro.grafanaApiKey') ?? '';
+  const appName = configuration.get<string>('faro.appName') ?? '';
+  const projectRoot = configuration.get<string>('faro.projectRoot') ?? '';
+
   const provider = new FaroProvider(
     context.extensionUri,
     window.activeTextEditor?.document.fileName ?? null,
-    window.activeTextEditor?.selection.active.line ?? null
+    window.activeTextEditor?.selection.active.line ?? null,
+    websocketUrl,
+    lokiDatasourceId,
+    grafanaApiKey,
+    appName,
+    projectRoot
   );
 
-  window.onDidChangeTextEditorSelection((evt) => {
-    provider.setFilePathAndLine(evt.textEditor.document.fileName, evt.textEditor.selection.active.line);
-  });
+  if (websocketUrl && lokiDatasourceId && grafanaApiKey && appName) {
+    window.onDidChangeTextEditorSelection((evt) => {
+      provider.setFilePathAndLine(evt.textEditor.document.fileName, evt.textEditor.selection.active.line);
+    });
 
-  const webSocket = new WebSocket('ws://localhost:3001/lokiLanguageServer');
+    const webSocket = new WebSocket(websocketUrl);
 
-  webSocket.onopen = () => {
-    client = createLanguageClient(webSocket);
+    webSocket.onopen = () => {
+      client = createLanguageClient(webSocket);
 
-    provider.setClient(client);
-  };
+      provider.setClient(client);
+    };
+  }
 
   context.subscriptions.push(window.registerWebviewViewProvider(FaroProvider.viewType, provider));
 }

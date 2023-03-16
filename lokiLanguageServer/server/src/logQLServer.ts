@@ -47,9 +47,15 @@ export class LogQLServer {
             this.getNewLogs({
               filePath: (params as Record<string, any>).filePath ?? null,
               mode: (params as Record<string, any>).mode,
+              lokiDatasourceId: (params as Record<string, any>).lokiDatasourceId ?? null,
+              grafanaApiKey: (params as Record<string, any>).grafanaApiKey ?? null,
+              appName: (params as Record<string, any>).appName ?? null,
             } as {
               filePath: string;
               mode: 'exceptions' | 'events' | 'logs';
+              lokiDatasourceId: string;
+              grafanaApiKey: string;
+              appName: string;
             });
             break;
         }
@@ -65,23 +71,35 @@ export class LogQLServer {
     this.connection.listen();
   }
 
-  protected async getNewLogs(params: { filePath: string | null; mode: 'exceptions' | 'events' | 'logs' }) {
+  protected async getNewLogs(params: {
+    filePath: string | null;
+    mode: 'exceptions' | 'events' | 'logs';
+    lokiDatasourceId: string;
+    grafanaApiKey: string;
+    appName: string;
+  }) {
     let entries: string[] | null = null;
 
     try {
       switch (params.mode) {
         case 'exceptions':
           if (params.filePath !== null) {
-            entries = (await getExceptionsForFile(params.filePath)) ?? null;
+            entries =
+              (await getExceptionsForFile(
+                params.filePath,
+                params.lokiDatasourceId,
+                params.grafanaApiKey,
+                params.appName
+              )) ?? null;
           }
           break;
 
         case 'events':
-          entries = (await getEvents()) ?? null;
+          entries = (await getEvents(params.lokiDatasourceId, params.grafanaApiKey, params.appName)) ?? null;
           break;
 
         case 'logs':
-          entries = (await getLogs()) ?? null;
+          entries = (await getLogs(params.lokiDatasourceId, params.grafanaApiKey, params.appName)) ?? null;
           break;
       }
     } catch (err) {

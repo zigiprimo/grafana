@@ -1,4 +1,4 @@
-import { Uri, WebviewView, WebviewViewResolveContext, CancellationToken, WebviewViewProvider, workspace } from 'vscode';
+import { Uri, WebviewView, WebviewViewResolveContext, WebviewViewProvider, workspace } from 'vscode';
 import { LanguageClient } from 'vscode-languageclient/lib/node/main';
 import { URI } from 'vscode-uri';
 
@@ -16,9 +16,18 @@ export class FaroProvider implements WebviewViewProvider {
 
   private webviewView: WebviewView | null = null;
 
-  constructor(private extensionUri: Uri, private filePath: string | null, private lineNumber: number | null) {}
+  constructor(
+    private extensionUri: Uri,
+    private filePath: string | null,
+    private lineNumber: number | null,
+    private websocketUrl: string,
+    private lokiDatasourceId: string,
+    private grafanaApiKey: string,
+    private appName: string,
+    private projectRoot: string
+  ) {}
 
-  async resolveWebviewView(webviewView: WebviewView, context: WebviewViewResolveContext, _token: CancellationToken) {
+  async resolveWebviewView(webviewView: WebviewView, context: WebviewViewResolveContext) {
     this.webviewView = webviewView;
 
     this.webviewView.webview.options = {
@@ -49,7 +58,7 @@ export class FaroProvider implements WebviewViewProvider {
       ? null
       : filePath === null
       ? null
-      : filePath.replace(workspaceFolder?.uri.fsPath, '').replace('/src', '');
+      : filePath.replace(workspaceFolder?.uri.fsPath, '').replace(this.projectRoot, '');
 
     this.lineNumber = typeof lineNumber === 'number' ? lineNumber + 1 : null;
 
@@ -85,6 +94,9 @@ export class FaroProvider implements WebviewViewProvider {
     this.setLogs([]);
 
     this.client?.sendRequest('get-new-logs', {
+      lokiDatasourceId: this.lokiDatasourceId,
+      grafanaApiKey: this.grafanaApiKey,
+      appName: this.appName,
       filePath: this.filePath,
       mode: this.mode,
     });
@@ -168,7 +180,9 @@ ${this.logs!.map(
     if (this.webviewView) {
       let content: string;
 
-      if (this.logs === null) {
+      if (!(this.websocketUrl && this.lokiDatasourceId && this.grafanaApiKey && this.appName)) {
+        content = `		<p>Enter the necessary settings.</p>`;
+      } else if (this.logs === null) {
         content = `		<p>There was an error fetching the data.</p>`;
       } else if (this.logs?.length === 0) {
         content = `		<p>No logs found.</p>`;

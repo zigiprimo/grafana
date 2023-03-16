@@ -13,6 +13,36 @@
   ],
   "main": "./grafana-loki-language-server-client.js",
   "contributes": {
+    "configuration": {
+      "title": "Faro",
+      "properties": {
+        "grafana.faro.websocketUrl": {
+          "type": "string",
+          "default": "ws://localhost:3001/lokiLanguageServer",
+          "description": "The websocket endpoint to the language server"
+        },
+        "grafana.faro.lokiDatasourceId": {
+          "type": "string",
+          "default": "Loki",
+          "description": "The ID of the Loki datasource to be used"
+        },
+        "grafana.faro.grafanaApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "The API key to be used for Grafana authentication"
+        },
+        "grafana.faro.appName": {
+          "type": "string",
+          "default": "",
+          "description": "The app name associated with the logs"
+        },
+        "grafana.faro.projectRoot": {
+          "type": "string",
+          "default": "/src",
+          "description": "The root path to your project"
+        }
+      }
+    },
     "viewsContainers": {
       "panel": [
         {
