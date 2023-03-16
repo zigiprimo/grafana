@@ -6,6 +6,7 @@ import {
   HorizontalConstraint,
   VerticalConstraint,
   BackgroundImageSize,
+  VizPanel,
 } from '@grafana/scenes';
 import { ResourceDimensionMode } from 'app/features/dimensions';
 
@@ -13,6 +14,7 @@ import { panelBuilders } from '../builders/panelBuilders';
 import { DashboardScene } from '../dashboard/DashboardScene';
 import { SceneEditManager } from '../editor/SceneEditManager';
 
+import { getCanvasDemoGeoQuery } from './canvasDemoMapQuery';
 import { getCanvasDemoQuery, queries } from './canvasDemoQueries';
 import { getQueryRunnerWithRandomWalkQuery } from './queries';
 
@@ -258,22 +260,138 @@ export function getCanvasDemoSolar(): DashboardScene {
           title: 'Energy Produced',
           background: { color: 'rgba(200,0,0,0.5)' },
           placement: { left: 20, top: 50, width: 200, height: 200 },
-          border: { color: 'green', width: 2 },
+          border: { color: 'blue', width: 4 },
           constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
         }),
         panelBuilders.newGraph({
           title: 'Energy Consumed',
           background: { color: 'rgba(200,0,0,0.5)' },
           placement: { left: 20, top: 350, width: 200, height: 200 },
-          border: { color: 'green', width: 2 },
+          border: { color: 'red', width: 4 },
           constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
         }),
         panelBuilders.newGraph({
           title: 'Energy Stored',
           background: { color: 'rgba(200,0,0,0.5)' },
           placement: { left: 900, top: 350, width: 200, height: 200 },
-          border: { color: 'green', width: 2 },
+          border: { color: 'green', width: 4 },
           constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+        }),
+        new VizPanel({
+          constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+          placement: { minWidth: '1150px', height: 300, top: 580 },
+          border: { color: 'rgb(200,200,200)', width: 4 },
+          pluginId: 'geomap',
+          title: 'Solar Map',
+          fieldConfig: {
+            defaults: {
+              color: {
+                mode: 'thresholds',
+              },
+              custom: {
+                hideFrom: {
+                  legend: false,
+                  tooltip: false,
+                  viz: false,
+                },
+              },
+              mappings: [],
+              thresholds: {
+                mode: ThresholdsMode.Absolute,
+                steps: [
+                  {
+                    color: 'green',
+                    value: 0,
+                  },
+                  {
+                    color: 'red',
+                    value: 80,
+                  },
+                ],
+              },
+            },
+            overrides: [],
+          },
+          $data: getCanvasDemoGeoQuery(),
+          options: {
+            basemap: {
+              config: {
+                server: 'world-imagery',
+              },
+              name: 'Layer 0',
+              type: 'esri-xyz',
+            },
+            controls: {
+              mouseWheelZoom: true,
+              showAttribution: true,
+              showDebug: false,
+              showMeasure: false,
+              showScale: false,
+              showZoom: true,
+            },
+            layers: [
+              {
+                config: {
+                  showLegend: false,
+                  style: {
+                    color: {
+                      fixed: 'black',
+                    },
+                    opacity: 1,
+                    rotation: {
+                      fixed: 0,
+                      max: 360,
+                      min: -360,
+                      mode: 'mod',
+                    },
+                    size: {
+                      fixed: 30,
+                      max: 15,
+                      min: 2,
+                    },
+                    symbol: {
+                      fixed: 'img/icons/unicons/home.svg',
+                      mode: 'fixed',
+                    },
+                    textConfig: {
+                      fontSize: 12,
+                      offsetX: 0,
+                      offsetY: 0,
+                      textAlign: 'center',
+                      textBaseline: 'middle',
+                    },
+                  },
+                },
+                location: {
+                  mode: 'auto',
+                },
+                name: 'Layer 1',
+                tooltip: true,
+                type: 'markers',
+              },
+              {
+                config: {
+                  nightColor: '#00000080',
+                  show: 'from',
+                  sun: true,
+                },
+                name: 'Layer 2',
+                opacity: 1,
+                tooltip: true,
+                type: 'dayNight',
+              },
+            ],
+            tooltip: {
+              mode: 'details',
+            },
+            view: {
+              allLayers: true,
+              id: 'coords',
+              lat: 25.612301,
+              lon: -87.492149,
+              zoom: 2.04,
+            },
+          },
         }),
       ],
     }),
