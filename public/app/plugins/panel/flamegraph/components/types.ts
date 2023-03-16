@@ -43,10 +43,12 @@ export enum SelectedView {
 export interface TableData {
   self: number;
   total: number;
+  func?: string;
 }
 
 export interface TopTableData {
   symbol: string;
+  func?: string;
   self: TopTableValue;
   total: TopTableValue;
 }

@@ -117,6 +117,7 @@ const FlameGraphTopTable = ({
       prepareRow(row);
 
       const symbol = row.values[ColumnTypes.Symbol.toLowerCase()];
+      const func = data[row.index].func;
       const classNames = cx(symbol === search && styles.matchedRow, styles.row);
 
       return (
@@ -124,7 +125,7 @@ const FlameGraphTopTable = ({
           {...row.getRowProps({ style })}
           className={classNames}
           onClick={() => {
-            rowClicked(symbol);
+            rowClicked(symbol + '|' + func);
           }}
         >
           {row.cells.map((cell) => {
@@ -141,7 +142,7 @@ const FlameGraphTopTable = ({
         </div>
       );
     },
-    [rows, prepareRow, search, styles.matchedRow, styles.row, styles.cell, rowClicked]
+    [rows, prepareRow, search, styles.matchedRow, styles.row, styles.cell, rowClicked, data]
   );
 
   return (

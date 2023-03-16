@@ -65,6 +65,7 @@ const FlameGraphTopTableContainer = ({
         group = (grouping === 'label' ? getLabelValue : getFileNameValue)(groupValues.get(i));
         if (group) {
           table[group] = table[group] || {};
+          table[group].func = table[group].func || getLabelValue(labelsField.values.get(i));
           table[group].self = table[group].self ? table[group].self + self : self;
           table[group].total = table[group].total ? table[group].total + value : value;
         }
@@ -109,6 +110,7 @@ const FlameGraphTopTableContainer = ({
       topTable.push({
         symbol: key,
         self: { value: table[key].self, unitValue: selfUnit },
+        func: table[key].func,
         total: { value: table[key].total, unitValue: valueUnit },
       });
     }

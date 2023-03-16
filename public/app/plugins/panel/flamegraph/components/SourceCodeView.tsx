@@ -196,7 +196,10 @@ export function SourceCodeView(props: Props) {
   const dataIdxs = useMemo(() => {
     let idxs = [];
 
-    let fileIdx = locationIdx ? fileNameData[locationIdx] : fileNameEnum.findIndex((val) => val === props.fileName!);
+    let fileIdx = locationIdx
+      ? fileNameData[locationIdx]
+      : // We have both filename and func name in the fileName prop
+        fileNameEnum.findIndex((val) => val === props.fileName!.split('|')[0]);
 
     for (let i = 0; i < fileNameData.length; i++) {
       if (fileNameData[i] === fileIdx) {
@@ -273,7 +276,7 @@ export function SourceCodeView(props: Props) {
               let heatFactor = (rawValue - minRawVal) / (maxRawVal - minRawVal);
               const heatColorIdx = Math.floor(heatFactor * (heatColors.length - 1));
 
-              line.style.background = heatColors[heatColorIdx];;
+              line.style.background = heatColors[heatColorIdx];
 
               this.dom.appendChild(line);
             }
@@ -370,25 +373,15 @@ export function SourceCodeView(props: Props) {
     (async () => {
       try {
         const sourceCode = await datasource.getSource(
-          locationIdx ? fileNameEnum[fileNameData[locationIdx]] : props.fileName!,
-          locationIdx ? getLabelValue(labelData[locationIdx]) : undefined
+          locationIdx ? fileNameEnum[fileNameData[locationIdx]] : props.fileName!.split('|')[0],
+          locationIdx ? getLabelValue(labelData[locationIdx]) : props.fileName!.split('|')[1]
         );
         setSource(sourceCode);
       } catch (e: any) {
         notifyApp.error('Error getting source file', e.message || e.data?.error);
       }
     })();
-  }, [
-    editorRef,
-    datasource,
-    locationIdx,
-    fileNameEnum,
-    labelData,
-    fileNameData,
-    getLabelValue,
-    notifyApp,
-    props.fileName,
-  ]);
+  }, [datasource, locationIdx, fileNameEnum, labelData, fileNameData, getLabelValue, notifyApp, props.fileName]);
 
   const getUnitValue = (field: Field, value: number) => {
     const processor = getDisplayProcessor({ field, theme });
