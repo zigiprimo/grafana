@@ -7,7 +7,8 @@ import { CompletionList, CompletionItem } from 'vscode-languageserver-types';
 import { _Connection, Diagnostic, TextDocuments, TextDocumentSyncKind } from 'vscode-languageserver/lib/node/main';
 import { URI } from 'vscode-uri';
 
-import { getLanguageService, LanguageService } from './languageService.js';
+import { getLogsForFileAndLine } from './completion/fetch';
+import { getLanguageService, LanguageService } from './languageService';
 
 export class LogQLServer {
   protected workspaceRoot: URI | undefined;
@@ -60,61 +61,7 @@ export class LogQLServer {
 
     if (params) {
       try {
-        const to = new Date();
-        const toString = to.toISOString();
-        const toTs = to.getTime();
-        const from = new Date(toTs - 1000 * 60 * 60 * 6);
-        const fromString = from.toISOString();
-        const fromTs = from.getTime();
-
-        const res = await fetch('http://localhost:3000/api/ds/query', {
-          headers: {
-            accept: 'application/json, text/plain, */*',
-            cookie: 'grafana_session=9d4bd493ac96997f121fbedf10ae677a',
-            'content-type': 'application/json',
-            'x-datasource-uid': 'Loki',
-            'x-grafana-org-id': '1',
-            'x-panel-id': 'Q-ae013846-f4f0-4218-aeec-7abacc329e9d-0',
-            'x-plugin-id': 'loki',
-          },
-          referrer: 'http://localhost:3000/',
-          referrerPolicy: 'strict-origin-when-cross-origin',
-          body: JSON.stringify({
-            queries: [
-              {
-                refId: 'A',
-                datasource: {
-                  type: 'loki',
-                  uid: 'Loki',
-                },
-                editorMode: 'code',
-                expr: `{app="auth-app-production", kind="exception"} |= \`${params.fileName}:${params.line}\``,
-                queryType: 'range',
-                key: 'Q-ae013846-f4f0-4218-aeec-7abacc329e9d-0',
-                maxLines: 1000,
-                legendFormat: '',
-                datasourceId: 1,
-                intervalMs: 10000,
-                maxDataPoints: 1991,
-              },
-            ],
-            range: {
-              from: fromString,
-              to: toString,
-              raw: {
-                from: 'now-1h',
-                to: 'now',
-              },
-            },
-            from: fromTs.toString(),
-            to: toTs.toString(),
-          }),
-          method: 'POST',
-        });
-
-        const body = (await res.json()) as any;
-
-        entries = body?.results?.A?.frames?.[0]?.data?.values?.[2] ?? null;
+        entries = (await getLogsForFileAndLine(params.fileName, params.line)) ?? null;
       } catch (err) {
         console.error(err);
       }

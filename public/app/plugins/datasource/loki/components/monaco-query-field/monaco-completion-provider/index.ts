@@ -69,53 +69,52 @@ export function getCompletionProvider(
       lsCompletions = [];
     }
 
-    const word = model.getWordAtPosition(position);
-    const range =
-      word != null
-        ? monaco.Range.lift({
-            startLineNumber: position.lineNumber,
-            endLineNumber: position.lineNumber,
-            startColumn: word.startColumn,
-            endColumn: word.endColumn,
-          })
-        : monaco.Range.fromPositions(position);
+    // const word = model.getWordAtPosition(position);
+    // const range =
+    //   word != null
+    //     ? monaco.Range.lift({
+    //         startLineNumber: position.lineNumber,
+    //         endLineNumber: position.lineNumber,
+    //         startColumn: word.startColumn,
+    //         endColumn: word.endColumn,
+    //       })
+    //     : monaco.Range.fromPositions(position);
     // documentation says `position` will be "adjusted" in `getOffsetAt`
     // i don't know what that means, to be sure i clone it
-    const positionClone = {
-      column: position.column,
-      lineNumber: position.lineNumber,
-    };
-    const offset = model.getOffsetAt(positionClone);
-    const situation = getSituation(model.getValue(), offset);
-    const completionsPromise = situation != null ? getCompletions(situation, dataProvider) : Promise.resolve([]);
-    return completionsPromise.then((items) => {
-      // monaco by default alphabetically orders the items.
-      // to stop it, we use a number-as-string sortkey,
-      // so that monaco keeps the order we use
-      const maxIndexDigits = items.length.toString().length;
-      const suggestions: monacoTypes.languages.CompletionItem[] = [
-        ...lsCompletions,
-        ...items.map((item) => ({
-          kind: getMonacoCompletionItemKind(item.type, monaco),
-          label: item.label,
-          insertText: item.insertText,
-          insertTextRules: item.isSnippet ? INSERT_AS_SNIPPET_ENUM_VALUE : undefined,
-          detail: item.detail,
-          documentation: item.documentation,
-          range,
-          command: item.triggerOnInsert
-            ? {
-                id: 'editor.action.triggerSuggest',
-                title: '',
-              }
-            : undefined,
-        })),
-      ].map((item, index) => ({
-        ...item,
-        sortText: index.toString().padStart(maxIndexDigits, '0'), // to force the order we have
-      }));
-      return { suggestions };
-    });
+    // const positionClone = {
+    //   column: position.column,
+    //   lineNumber: position.lineNumber,
+    // };
+    // const offset = model.getOffsetAt(positionClone);
+    // const situation = getSituation(model.getValue(), offset);
+    // const completionsPromise = situation != null ? getCompletions(situation, dataProvider) : Promise.resolve([]);
+    // return completionsPromise.then((items) => {
+    // monaco by default alphabetically orders the items.
+    // to stop it, we use a number-as-string sortkey,
+    // so that monaco keeps the order we use
+    const maxIndexDigits = lsCompletions.length.toString().length;
+    const suggestions: monacoTypes.languages.CompletionItem[] = [
+      ...lsCompletions,
+      // ...items.map((item) => ({
+      //   kind: getMonacoCompletionItemKind(item.type, monaco),
+      //   label: item.label,
+      //   insertText: item.insertText,
+      //   insertTextRules: item.isSnippet ? INSERT_AS_SNIPPET_ENUM_VALUE : undefined,
+      //   detail: item.detail,
+      //   documentation: item.documentation,
+      //   range,
+      //   command: item.triggerOnInsert
+      //     ? {
+      //         id: 'editor.action.triggerSuggest',
+      //         title: '',
+      //       }
+      //     : undefined,
+      // })),
+    ].map((item, index) => ({
+      ...item,
+      sortText: index.toString().padStart(maxIndexDigits, '0'), // to force the order we have
+    }));
+    return { suggestions };
   };
 
   return {

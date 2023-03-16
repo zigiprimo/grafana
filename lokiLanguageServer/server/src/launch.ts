@@ -1,7 +1,7 @@
 import { createConnection } from 'vscode-languageserver/lib/node/main';
 import { IWebSocket, WebSocketMessageReader, WebSocketMessageWriter } from 'vscode-ws-jsonrpc';
 
-import { LogQLServer } from './logQLServer.js';
+import { LogQLServer } from './logQLServer';
 
 export function launch(socket: IWebSocket) {
   const reader = new WebSocketMessageReader(socket);

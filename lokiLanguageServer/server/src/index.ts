@@ -5,7 +5,7 @@ import { URL } from 'url';
 import { IWebSocket } from 'vscode-ws-jsonrpc';
 import { WebSocketServer } from 'ws';
 
-import { launch } from './launch.js';
+import { launch } from './launch';
 
 process.on('uncaughtException', (err) => {
   console.error('Uncaught Exception: ', err.toString());
