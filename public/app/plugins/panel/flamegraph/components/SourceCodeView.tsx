@@ -3,11 +3,12 @@ import { go } from '@codemirror/legacy-modes/mode/go';
 import { EditorView, gutter, GutterMarker, lineNumbers, ViewPlugin, ViewUpdate } from '@codemirror/view';
 import { css, cx } from '@emotion/css';
 import CodeMirror, { minimalSetup, ReactCodeMirrorRef } from '@uiw/react-codemirror';
+import { uniq } from 'lodash';
 import React, { createRef, useEffect, useMemo, useState } from 'react';
 
 import { createTheme, DataFrame, Field, getDisplayProcessor } from '@grafana/data';
 // import { getContrastRatio } from '@grafana/data/src/themes/colorManipulator';
-import { useTheme2 } from '@grafana/ui';
+import { useStyles2, useTheme2 } from '@grafana/ui';
 import { useAppNotification } from 'app/core/copy/appNotification';
 
 import { PhlareDataSource } from '../../../datasource/phlare/datasource';
@@ -168,8 +169,10 @@ interface Props {
 export function SourceCodeView(props: Props) {
   const { datasource, locationIdx, data, globalDataRanges, getLabelValue } = props;
   const [source, setSource] = useState<string>('');
+  const [sourceTotalLines, setSourceTotalLines] = useState<number>(0);
   const editorRef = createRef<ReactCodeMirrorRef>();
   const theme = useTheme2();
+  const styles = useStyles2(getStyles);
 
   const { lineData, valueData, selfData, fileNameData, fileNameEnum, labelData, valueField, selfField } =
     useMemo(() => {
@@ -223,8 +226,6 @@ export function SourceCodeView(props: Props) {
       byLineData.self.set(line, selfData[idx]);
     }
 
-    // console.log(byLineData);
-
     return byLineData;
   }, [dataIdxs, lineData, valueData, selfData]);
 
@@ -252,67 +253,31 @@ export function SourceCodeView(props: Props) {
       }
 
       update(update: ViewUpdate) {
-        if (update.docChanged) {
-          let editorHeight = update.view.dom.getBoundingClientRect().height;
+        let editorHeight = update.view.dom.getBoundingClientRect().height;
 
-          let totalLines = update.state.doc.lines;
-          // let lineHeightPct = 100 * (1 / totalLines);
+        let totalLines = update.state.doc.lines;
 
-          let sortedLineNums = [...byLineData.value.keys()].sort((a, b) => a - b);
+        let sortedLineNums = [...byLineData.value.keys()].sort((a, b) => a - b);
 
-          // console.log(sortedLineNums);
+        // not good: creates dom element for every marked line, should use bg gradient with hard stops (see below)
+        sortedLineNums.forEach((lineNum) => {
+          let rawValue = byLineData.value.get(lineNum) ?? 0;
 
-          // not good: creates dom element for every marked line, should use bg gradient with hard stops (see below)
-          sortedLineNums.forEach((lineNum) => {
-            let rawValue = byLineData.value.get(lineNum) ?? 0;
+          if (rawValue > 0) {
+            let line = document.createElement('div');
+            line.style.position = 'absolute';
+            line.style.top = (lineNum / totalLines) * editorHeight + 'px';
+            line.style.height = '1px';
+            line.style.width = '20px';
 
-            if (rawValue > 0) {
-              let line = document.createElement('div');
-              line.style.position = 'absolute';
-              line.style.top = (lineNum / totalLines) * editorHeight + 'px';
-              line.style.height = '1px';
-              line.style.width = '20px';
+            let heatFactor = (rawValue - minRawVal) / (maxRawVal - minRawVal);
+            const heatColorIdx = Math.floor(heatFactor * (heatColors.length - 1));
 
-              let heatFactor = (rawValue - minRawVal) / (maxRawVal - minRawVal);
-              const heatColorIdx = Math.floor(heatFactor * (heatColors.length - 1));
+            line.style.background = heatColors[heatColorIdx];
 
-              line.style.background = heatColors[heatColorIdx];
-
-              this.dom.appendChild(line);
-            }
-
-            // console.log(
-            //   lineNum,
-            //   byLineData.label.get(lineNum),
-            //   byLineData.self.get(lineNum),
-            //   byLineData.value.get(lineNum)
-            // );
-          });
-
-          /*
-
-          // gradient-based attempt...has logic bug, need to fix
-
-          let prevEnd = 0;
-
-          let gradStops = sortedLineNums.map((lineNum, i) => {
-            let curStart = 100 * lineNum / totalLines;
-            let stops = `#0000 ${prevEnd}%, #0000 ${curStart}%, #fff ${curStart}%, #fff ${curStart + lineHeightPct}%`;
-            prevEnd = curStart + lineHeightPct;
-            return stops;
-          });
-
-          gradStops.push(`#0000 ${prevEnd}%, #0000 100%`);
-
-          let heatGrad = `linear-gradient(to bottom, ${gradStops.join()})`;
-
-          console.log(heatGrad);
-
-          Object.assign(this.dom.style, {
-            background: heatGrad
-          });
-          */
-        }
+            this.dom.appendChild(line);
+          }
+        });
       }
 
       destroy() {
@@ -411,6 +376,7 @@ export function SourceCodeView(props: Props) {
 
     try {
       const line = editorRef.current?.view?.state.doc.line(lineData[locationIdx]);
+      setSourceTotalLines(editorRef.current?.view?.state.doc.lines || 0);
       editorRef.current?.view?.dispatch({
         selection: { anchor: line?.from || 0 },
         scrollIntoView: true,
@@ -421,23 +387,64 @@ export function SourceCodeView(props: Props) {
     }
   }, [source, lineData, editorRef, locationIdx]);
 
+  let titleName = locationIdx ? fileNameEnum[fileNameData[locationIdx]] : props.fileName!.split('|')[0];
+  if (titleName.indexOf('github.com') !== -1) {
+    titleName = 'github.com' + titleName.split('github.com')[1];
+  } else if (titleName.indexOf('/go/') !== -1) {
+    titleName = '/go/' + titleName.split('/go/')[1];
+  }
+
+  const linesWithValues: number[] = [];
+  byLineData.self.forEach((val, key) => {
+    if (val > 0) {
+      linesWithValues.push(key);
+    }
+  });
+  byLineData.value.forEach((val, key) => {
+    if (val > 0) {
+      linesWithValues.push(key);
+    }
+  });
+  const uniqueLinesWithValues = uniq(linesWithValues);
+
   return (
-    <CodeMirror
-      value={source}
-      height={'800px'}
-      extensions={[
-        StreamLanguage.define(go),
-        minimalSetup(),
-        lineNumbers(),
-        selfGutter,
-        valueGutter,
-        gutterHeadersPlugin,
-        miniMapPlugin,
-      ]}
-      readOnly={true}
-      editable={false}
-      theme={theme.name === 'Dark' ? oneDarkGrafana : 'light'}
-      ref={editorRef}
-    />
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div>{`${titleName} | ${uniqueLinesWithValues.length}/${sourceTotalLines} profiled lines (${(
+          (uniqueLinesWithValues.length * 100) /
+          (sourceTotalLines || 1)
+        ).toPrecision(2)}%)`}</div>
+      </div>
+      <CodeMirror
+        value={source}
+        height={'800px'}
+        extensions={[
+          StreamLanguage.define(go),
+          minimalSetup(),
+          lineNumbers(),
+          selfGutter,
+          valueGutter,
+          gutterHeadersPlugin,
+          miniMapPlugin,
+        ]}
+        readOnly={true}
+        editable={false}
+        theme={theme.name === 'Dark' ? oneDarkGrafana : 'light'}
+        ref={editorRef}
+      />
+    </div>
   );
 }
+
+const getStyles = () => ({
+  header: css`
+    margin-top: 8px;
+    margin-bottom: 30px;
+    text-align: center;
+  `,
+  container: css`
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  `,
+});
