@@ -118,6 +118,23 @@ avg(rate(({job="nginx"} |= "GET")[10s])) by (region)
 {job="container-name"} |~ "(?i)(deserialize|unmarshal|bad request|missing required|invalid value)"
 // Find job = container-name server errors 
 {job="container-name"} |~ "(?i)(internal server error)"
+// Return all log lines for the job varlog
+{job="varlogs"}
+// Return all log lines for the filename /var/log/syslog
+{filename="/var/log/syslog"}
+// Return all log lines for the job varlogs and the filename /var/log/auth.log
+{filename="/var/log/auth.log",job="varlogs"}
+// Show all log lines for filenames /var/log/auth.log or /var/log/syslog
+{filename=~"/var/log/auth.log|/var/log/syslog"}
+// Show everything of the label filename
+{filename=~".+"}
+// Show all the logs of filename except /var/log/syslog
+{filename=~".+",filename!="/var/log/syslog"}
+// Count of job = varlog at 1 minutes time intervals
+count_over_time({job="varlogs"}[1m])
+// Rate of job = varlogs per minute
+rate({job="varlogs"}[1m])
+
 // Using the examples above, help the user to write a LogQL query by following the instructions below.
 
 `;
