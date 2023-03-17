@@ -5,6 +5,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/grafana/grafana/pkg/components/simplejson"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -192,6 +194,7 @@ func (h *ContextHandler) Middleware(next http.Handler) http.Handler {
 			case h.initContextWithRenderAuth(reqContext):
 			case h.initContextWithJWT(reqContext, orgID):
 			case h.initContextWithAPIKey(reqContext):
+			case h.initContextWithK8sTokenReviewInput(reqContext):
 			case h.initContextWithBasicAuth(reqContext, orgID):
 			case h.initContextWithAuthProxy(reqContext, orgID):
 			case h.initContextWithToken(reqContext, orgID):
@@ -296,6 +299,26 @@ func (h *ContextHandler) getAPIKey(ctx context.Context, keyString string) (*apik
 	}
 
 	return keyQuery.Result, nil
+}
+
+func (h *ContextHandler) initContextWithK8sTokenReviewInput(reqContext *contextmodel.ReqContext) bool {
+	req, err := io.ReadAll(reqContext.Req.Body)
+	if err != nil {
+		return false
+	}
+
+	reqJSON, err := simplejson.NewJson(req)
+	if err != nil {
+		return false
+	}
+
+	token := reqJSON.Get("spec").Get("token").MustString()
+
+	// K8s authn operates with a TokenReview construct. We use a slight hack below to set the Authorization header
+	// to be able to use existing APIKey logic in its corresponding initContext helpers
+	reqContext.Req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	return h.initContextWithAPIKey(reqContext)
 }
 
 func (h *ContextHandler) initContextWithAPIKey(reqContext *contextmodel.ReqContext) bool {
