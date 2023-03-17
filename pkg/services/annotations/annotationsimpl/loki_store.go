@@ -70,7 +70,8 @@ func (r *lokiRepositoryImpl) Add(ctx context.Context, item *annotations.Item) er
 			Stream: labels,
 			Values: []sample{
 				{
-					T: time.Unix(0, item.Epoch*int64(time.Millisecond)),
+					T: time.Now(),
+					// T: time.Unix(time.Now().Unix(), item.Epoch*int64(time.Millisecond)),
 					V: string(blob),
 				},
 			},
