@@ -96,10 +96,28 @@ rate({job="mysql"}[1m])
 rate({job="mysql"}[1m])
 // Rate per second of test = 123 in 1 minute
 rate({test="123"}[1m])
-// Rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute for the mysql job
+// Rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute for the mysql job, aggregate using sum by host
 sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
-// For job = mysql calculate the rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute
+// For job = mysql calculate the rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute, aggregate using sum by host
 sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
+// Get the top 10 results by name with the highest log throughput in region us-east1
+topk(10,sum(rate({region="us-east1"}[5m])) by (name))
+// For region = "us-east1" get the top 10 by name with the highest log rate
+topk(10,sum(rate({region="us-east1"}[5m])) by (name))
+// Get the count of job = mysql during the last five minutes grouping by level:
+sum(count_over_time({job="mysql"}[5m])) by (level)
+// Get the rate of HTTP GET requests from NGINX logs over 10 seconds
+avg(rate(({job="nginx"} |= "GET")[10s])) by (region)
+// Error logs in job = container-name" and label not value
+{job="container-name", label!="value"} |~ "(?i)(error|fail|lost|closed|panic|fatal|crash|password|authentication|denied)"
+// Find rate limiting issues in job="container-name"
+{job="container-name"} |~ "(too many requests|rate.limit)"
+// List authentication errors, label test, value container:
+{test="container"} |~ "(unauthenticated|access.denied)"
+// Check job = container-name for parse errors
+{job="container-name"} |~ "(?i)(deserialize|unmarshal|bad request|missing required|invalid value)"
+// Find job = container-name server errors 
+{job="container-name"} |~ "(?i)(internal server error)"
 // Using the examples above, help the user to write a LogQL query by following the instructions below.
 
 `;
