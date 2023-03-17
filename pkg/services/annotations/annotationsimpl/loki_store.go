@@ -212,8 +212,57 @@ func (r *lokiRepositoryImpl) Delete(ctx context.Context, params *annotations.Del
 }
 
 func (r *lokiRepositoryImpl) GetTags(ctx context.Context, query *annotations.TagsQuery) (annotations.FindTagsResult, error) {
+	// var items []*annotations.Tag
+	// if query.Limit == 0 {
+	// 	query.Limit = 100
+	// }
+
+	// var sql bytes.Buffer
+	// params := make([]interface{}, 0)
+	// tagKey := `tag.` + r.db.GetDialect().Quote("key")
+	// tagValue := `tag.` + r.db.GetDialect().Quote("value")
+
+	// we need to get unique of the annotation of org_id, and make sure that annotation_tag.annotation_id is in the result, otherwise discard it.
+	// 1. get all annotation id with org_id filter
+
+	// sql.WriteString(`
+	// SELECT
+	// 	` + tagKey + `,
+	// 	` + tagValue + `,
+	// 	count(*) as count
+	// FROM tag
+	// INNER JOIN annotation_tag ON tag.id = annotation_tag.tag_id`)
+
+	// sql.WriteString(`WHERE EXISTS(SELECT 1 FROM annotation WHERE annotation.id = annotation_tag.annotation_id AND annotation.org_id = ?)`)
+	// params = append(params, query.OrgID)
+
+	// sql.WriteString(` AND (` + tagKey + ` ` + r.db.GetDialect().LikeStr() + ` ? OR ` + tagValue + ` ` + r.db.GetDialect().LikeStr() + ` ?)`)
+	// params = append(params, `%`+query.Tag+`%`, `%`+query.Tag+`%`)
+
+	// sql.WriteString(` GROUP BY ` + tagKey + `,` + tagValue)
+	// sql.WriteString(` ORDER BY ` + tagKey + `,` + tagValue)
+	// sql.WriteString(` ` + r.db.GetDialect().Limit(query.Limit))
+
+	// err := dbSession.SQL(sql.String(), params...).Find(&items)
+	// return err
+
+	// if err != nil {
+	// 	return annotations.FindTagsResult{Tags: []*annotations.TagsDTO{}}, err
+	// }
+	// tags := make([]*annotations.TagsDTO, 0)
+	// for _, item := range items {
+	// 	tag := item.Key
+	// 	if len(item.Value) > 0 {
+	// 		tag = item.Key + ":" + item.Value
+	// 	}
+	// 	tags = append(tags, &annotations.TagsDTO{
+	// 		Tag:   tag,
+	// 		Count: item.Count,
+	// 	})
+	// }
 
 	return annotations.FindTagsResult{}, nil
+
 }
 
 func (r *lokiRepositoryImpl) CleanAnnotations(ctx context.Context, cfg setting.AnnotationCleanupSettings, annotationType string) (int64, error) {
