@@ -1,9 +1,9 @@
 import { DashboardScene } from '../dashboard/DashboardScene';
 
-import { getCanvasLayoutTest } from './canvas';
 import { getCanvasConstraintTest } from './canvasConstraints';
 import { getCanvasDemoSolar } from './canvasDemoSolar';
 import { getCanvasFull } from './canvasFull';
+import { getCanvasMultiLayoutTest } from './canvasMulti';
 import { getFlexLayoutTest, getRepeaterSceneWithFlexWrap, getScenePanelRepeaterTest } from './demo';
 import { getGridLayoutTest } from './grid';
 import { getGridWithMultipleTimeRanges } from './gridMultiTimeRange';
@@ -22,7 +22,7 @@ interface SceneDef {
 }
 export function getScenes(): SceneDef[] {
   return [
-    { title: 'Canvas layout test', getScene: getCanvasLayoutTest },
+    { title: 'Canvas multiple layout test', getScene: getCanvasMultiLayoutTest },
     { title: 'Canvas constraint test', getScene: getCanvasConstraintTest },
     { title: 'Canvas full', getScene: getCanvasFull },
     { title: 'Canvas solar', getScene: getCanvasDemoSolar },
