@@ -347,7 +347,7 @@ export function getCanvasDemoSolar(): DashboardScene {
             }),
             new VizPanel({
               constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
-              placement: { minWidth: '1150px', height: 360, top: 540 },
+              placement: { minWidth: '1150px', height: 300, top: 560 },
               displayMode: 'transparent',
               // border: { color: 'rgb(200,200,200)', width: 4 },
               pluginId: 'geomap',
