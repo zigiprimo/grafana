@@ -19,8 +19,13 @@ import { getCanvasDemoQuery, queries } from './canvasDemoQueries';
 import { getQueryRunnerWithRandomWalkQuery } from './queries';
 
 export function getCanvasDemoSolar(): DashboardScene {
+  console.log('yo');
   return new DashboardScene({
     title: 'Canvas Solar Demo',
+    $timeRange: new SceneTimeRange({
+      from: '2023-03-16T07:00:00.000Z',
+      to: '2023-03-17T07:00:00.000Z',
+    }),
     body: new SceneCanvasLayout({
       children: [
         panelBuilders.newCanvas({
@@ -237,8 +242,8 @@ export function getCanvasDemoSolar(): DashboardScene {
                   name: 'House draw',
                   placement: {
                     height: 30,
-                    left: 747,
-                    top: 352,
+                    left: 540,
+                    top: 300,
                     width: 75,
                   },
                   type: 'metric-value',
@@ -257,30 +262,91 @@ export function getCanvasDemoSolar(): DashboardScene {
           },
         }),
         panelBuilders.newGraph({
-          title: 'Energy Produced',
-          background: { color: 'rgba(200,0,0,0.5)' },
-          placement: { left: 20, top: 50, width: 200, height: 200 },
+          title: 'Production [kW]',
+          fieldConfig: {
+            defaults: {
+              color: {
+                fixedColor: 'blue',
+                mode: 'fixed',
+              },
+              custom: {
+                fillOpacity: 100,
+              },
+            },
+            overrides: [],
+          },
+          placement: { left: 20, top: 100, width: 200, height: 200 },
           border: { color: 'blue', width: 4 },
           constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+          displayMode: 'transparent',
+          options: {
+            legend: {
+              showLegend: false,
+            },
+          },
         }),
         panelBuilders.newGraph({
-          title: 'Energy Consumed',
-          background: { color: 'rgba(200,0,0,0.5)' },
-          placement: { left: 20, top: 350, width: 200, height: 200 },
+          title: 'Consumption [kW]',
+          fieldConfig: {
+            defaults: {
+              color: {
+                fixedColor: 'red',
+                mode: 'fixed',
+              },
+              custom: {
+                fillOpacity: 100,
+              },
+            },
+            overrides: [],
+          },
+          placement: { left: 50, top: 350, width: 200, height: 200 },
           border: { color: 'red', width: 4 },
           constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+          displayMode: 'transparent',
+          options: {
+            legend: {
+              showLegend: false,
+            },
+          },
         }),
         panelBuilders.newGraph({
-          title: 'Energy Stored',
-          background: { color: 'rgba(200,0,0,0.5)' },
-          placement: { left: 900, top: 350, width: 200, height: 200 },
+          title: 'Charge Power [kW]',
+          fieldConfig: {
+            defaults: {
+              color: {
+                fixedColor: 'green',
+                mode: 'fixed',
+              },
+              custom: {
+                fillOpacity: 100,
+              },
+            },
+            overrides: [],
+          },
+          placement: { left: 930, top: 100, width: 200, height: 200 },
           border: { color: 'green', width: 4 },
           constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+          displayMode: 'transparent',
+          options: {
+            legend: {
+              showLegend: false,
+            },
+          },
         }),
         new VizPanel({
           constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
-          placement: { minWidth: '1150px', height: 300, top: 580 },
-          border: { color: 'rgb(200,200,200)', width: 4 },
+          placement: { width: 200, height: 200, top: 350, left: 900 },
+          border: { color: 'green', width: 4 },
+          pluginId: 'bargauge',
+          displayMode: 'default',
+          title: 'Energy Stored [kW-h]',
+          options: { displayMode: 'lcd', orientation: 'vertical', transparent: true },
+        }),
+        new VizPanel({
+          constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+          placement: { minWidth: '1150px', height: 360, top: 540 },
+          displayMode: 'transparent',
+          // border: { color: 'rgb(200,200,200)', width: 4 },
           pluginId: 'geomap',
           title: 'Solar Map',
           fieldConfig: {
@@ -396,7 +462,6 @@ export function getCanvasDemoSolar(): DashboardScene {
       ],
     }),
     $editor: new SceneEditManager({}),
-    $timeRange: new SceneTimeRange(),
     $data: getQueryRunnerWithRandomWalkQuery(),
     actions: [new SceneTimePicker({})],
   });
