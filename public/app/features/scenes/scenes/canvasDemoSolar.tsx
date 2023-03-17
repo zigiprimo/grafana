@@ -25,7 +25,7 @@ export function getCanvasDemoSolar(): DashboardScene {
     title: 'Canvas Solar Demo',
     $timeRange: new SceneTimeRange({
       from: '2023-03-29T07:00:00.000Z',
-      to: '2023-03-30T03:00:00.000Z',
+      to: '2023-03-30T07:00:00.000Z',
     }),
     body: new SceneCanvasRootLayout({
       children: [
