@@ -17,6 +17,7 @@ import { SceneEditManager } from '../editor/SceneEditManager';
 
 import { getCanvasDemoGeoQuery } from './canvasDemoMapQuery';
 import { getCanvasDemoQuery, queries } from './canvasDemoQueries';
+import { getCanvasDemoSolarQuery, queriesSolar } from './canvasDemoSolarQueries';
 import { getQueryRunnerWithRandomWalkQuery } from './queries';
 
 export function getCanvasDemoSolar(): DashboardScene {
@@ -24,8 +25,8 @@ export function getCanvasDemoSolar(): DashboardScene {
   return new DashboardScene({
     title: 'Canvas Solar Demo',
     $timeRange: new SceneTimeRange({
-      from: '2023-03-16T07:00:00.000Z',
-      to: '2023-03-17T07:00:00.000Z',
+      from: '2023-03-29T07:00:00.000Z',
+      to: '2023-03-30T03:00:00.000Z',
     }),
     body: new SceneCanvasRootLayout({
       children: [
@@ -287,6 +288,7 @@ export function getCanvasDemoSolar(): DashboardScene {
                   showLegend: false,
                 },
               },
+              $data: getCanvasDemoSolarQuery(queriesSolar.Production),
             }),
             panelBuilders.newGraph({
               title: 'Consumption [kW]',
@@ -311,6 +313,7 @@ export function getCanvasDemoSolar(): DashboardScene {
                   showLegend: false,
                 },
               },
+              $data: getCanvasDemoSolarQuery(queriesSolar.Consumption),
             }),
             panelBuilders.newGraph({
               title: 'Charge Power [kW]',
@@ -335,6 +338,7 @@ export function getCanvasDemoSolar(): DashboardScene {
                   showLegend: false,
                 },
               },
+              $data: getCanvasDemoSolarQuery(queriesSolar.Charge),
             }),
             new VizPanel({
               constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
@@ -344,6 +348,7 @@ export function getCanvasDemoSolar(): DashboardScene {
               displayMode: 'default',
               title: 'Energy Stored [kW-h]',
               options: { displayMode: 'lcd', orientation: 'vertical', transparent: true },
+              $data: getCanvasDemoSolarQuery(queriesSolar.Battery),
             }),
             new VizPanel({
               constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
