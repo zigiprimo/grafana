@@ -16,7 +16,6 @@ import { DashboardScene } from '../dashboard/DashboardScene';
 import { SceneEditManager } from '../editor/SceneEditManager';
 
 import { getCanvasDemoGeoQuery } from './canvasDemoMapQuery';
-import { getCanvasDemoQuery, queries } from './canvasDemoQueries';
 import { getCanvasDemoSolarQuery, queriesSolar } from './canvasDemoSolarQueries';
 import { getQueryRunnerWithRandomWalkQuery } from './queries';
 
@@ -44,7 +43,7 @@ export function getCanvasDemoSolar(): DashboardScene {
               },
               border: { width: 0 },
               constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
-              $data: getCanvasDemoQuery(queries.SolarDay),
+              $data: getCanvasDemoSolarQuery(queriesSolar.All),
               fieldConfig: {
                 defaults: {
                   color: {
@@ -116,7 +115,7 @@ export function getCanvasDemoSolar(): DashboardScene {
                         },
                         size: 16,
                         text: {
-                          field: 'solar_output',
+                          field: 'production',
                           fixed: '',
                           mode: 'field',
                         },
@@ -192,7 +191,7 @@ export function getCanvasDemoSolar(): DashboardScene {
                         },
                         size: 16,
                         text: {
-                          field: 'battery_charge',
+                          field: 'charge',
                           fixed: '',
                           mode: 'field',
                         },
@@ -233,7 +232,7 @@ export function getCanvasDemoSolar(): DashboardScene {
                         },
                         size: 16,
                         text: {
-                          field: 'house_draw',
+                          field: 'consumption',
                           fixed: '',
                           mode: 'field',
                         },
