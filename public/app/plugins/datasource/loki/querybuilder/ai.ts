@@ -68,6 +68,8 @@ const prependedText = `// Example LogQL queries:
 {job="mysql"} | logfmt
 // Logs of test 123 parse logfmt
 {job="mysql"} | logfmt
+// Logs compose_service = app parse as logfmt
+{job="mysql"} | logfmt
 // Logs of test 123 logfmt parser
 {job="mysql"} | logfmt
 // Logs of test 123 log format parser
@@ -96,9 +98,9 @@ rate({job="mysql"}[1m])
 rate({job="mysql"}[1m])
 // Rate per second of test = 123 in 1 minute
 rate({test="123"}[1m])
-// Rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute for the mysql job, aggregate using sum by host
+// Rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute for the mysql job, aggregate using sum by host, json parser
 sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
-// For job = mysql calculate the rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute, aggregate using sum by host
+// For job = mysql calculate the rate per second by host of errors that are not timeout with duration above 10 seconds in the last minute, aggregate using sum by host, use json parser
 sum by (host) (rate({job="mysql"} |= "error" != "timeout" | json | duration > 10s [1m]))
 // Get the top 10 results by name with the highest log throughput in region us-east1
 topk(10,sum(rate({region="us-east1"}[5m])) by (name))
@@ -126,7 +128,7 @@ avg(rate(({job="nginx"} |= "GET")[10s])) by (region)
 {filename="/var/log/auth.log",job="varlogs"}
 // Show all log lines for filenames /var/log/auth.log or /var/log/syslog
 {filename=~"/var/log/auth.log|/var/log/syslog"}
-// Show everything of the label filename
+// Show everything of filename
 {filename=~".+"}
 // Show all the logs of filename except /var/log/syslog
 {filename=~".+",filename!="/var/log/syslog"}
