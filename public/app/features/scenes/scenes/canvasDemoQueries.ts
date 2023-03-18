@@ -18,7 +18,7 @@ export function getCanvasDemoQuery(
         queries: [
           {
             csvContent:
-              'w1_rpm, w1_energy_output, w1_status, w2_rpm, w2_energy_output, w2_status, w3_rpm, w3_energy_output, w3_status, w4_rpm, w4_energy_output, w4_status, bg_url\n12, 1.2, operational, 22, 1.8, operational, 8, 0.6, operational, 0, 0, needs maintenance, "https://www.sunnova.com/-/media/Marketing-Components/Infographic/Solar-Storage-For-Non-Export-Markets/Solar-Storage-Export-Outage-Day.ashx"',
+              'w1_rpm, w1_energy_output, w1_status, w2_rpm, w2_energy_output, w2_status, w3_rpm, w3_energy_output, w3_status, w4_rpm, w4_energy_output, w4_status\n12, 1.2, operational, 22, 1.8, operational, 8, 0.6, operational, 0, 0, needs maintenance',
             datasource: {
               type: 'testdata',
               uid: 'PD8C576611E62080A',
