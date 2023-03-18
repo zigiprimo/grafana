@@ -5,6 +5,8 @@ export enum queries {
   Wind,
   SolarDay,
   SolarNight,
+  Random,
+  None,
 }
 
 export function getCanvasDemoQuery(
@@ -35,6 +37,59 @@ export function getCanvasDemoQuery(
         queries: [
           {
             csvContent: 'house_draw, battery_charge, solar_output\n1.1, 2.2, 3.3',
+            datasource: {
+              type: 'testdata',
+              uid: 'PD8C576611E62080A',
+            },
+            refId: 'A',
+            scenarioId: 'csv_content',
+          },
+        ],
+        ...queryRunnerOverrides,
+      });
+    }
+    case queries.Random: {
+      return new SceneQueryRunner({
+        queries: [
+          {
+            datasource: {
+              type: 'testdata',
+              uid: 'PD8C576611E62080A',
+            },
+            refId: 'A',
+            scenarioId: 'streaming_client',
+            stream: {
+              bands: 1,
+              noise: 22,
+              speed: 250,
+              spread: 8,
+              type: 'signal',
+            },
+          },
+          {
+            datasource: {
+              type: 'testdata',
+              uid: 'PD8C576611E62080A',
+            },
+            refId: 'B',
+            scenarioId: 'streaming_client',
+            stream: {
+              bands: 1,
+              noise: 1,
+              speed: 250,
+              spread: 2,
+              type: 'signal',
+            },
+          },
+        ],
+        ...queryRunnerOverrides,
+      });
+    }
+    case queries.None: {
+      return new SceneQueryRunner({
+        queries: [
+          {
+            csvContent: '',
             datasource: {
               type: 'testdata',
               uid: 'PD8C576611E62080A',

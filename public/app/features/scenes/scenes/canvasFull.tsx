@@ -2,7 +2,6 @@ import { MappingType, ThresholdsMode } from '@grafana/data';
 import {
   SceneTimeRange,
   SceneTimePicker,
-  SceneCanvasText,
   SceneCanvasLayout,
   HorizontalConstraint,
   VerticalConstraint,
@@ -20,17 +19,17 @@ import { getQueryRunnerWithRandomWalkQuery } from './queries';
 
 export function getCanvasFull(): DashboardScene {
   return new DashboardScene({
-    title: 'Canvas full',
+    title: 'Wind Farm Overview',
     body: new SceneCanvasRootLayout({
       children: [
         new SceneCanvasLayout({
           children: [
             panelBuilders.newCanvas({
-              title: 'Canvas background',
+              title: 'Region 5',
               background: { color: 'rgba(200,0,0,0.5)' },
               placement: {
                 left: 0,
-                top: 0,
+                top: 100,
                 minWidth: '100%',
                 minHeight: '100%',
                 isDraggable: false,
@@ -1117,30 +1116,53 @@ export function getCanvasFull(): DashboardScene {
                 showAdvancedTypes: false,
               },
             }),
-            new SceneCanvasText({
-              background: { image: 'https://i.redd.it/kg3cgpznfql01.jpg' },
-              placement: { left: 100, bottom: 100, width: 200, height: 200 },
-              border: { color: 'red', width: 2 },
-              text: 'red box',
-              fontSize: 20,
-              align: 'center',
-              constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Bottom },
-            }),
-            new SceneCanvasText({
-              background: { color: 'rgba(200,0,0,0.5)' },
-              placement: { right: 100, top: 100, width: 100, height: 100 },
-              border: { color: 'green', width: 2 },
-              text: 'green box',
-              fontSize: 10,
-              align: 'center',
-              constraint: { horizontal: HorizontalConstraint.Right, vertical: VerticalConstraint.Top },
-            }),
             panelBuilders.newGraph({
-              title: 'Fixed height',
-              background: { color: 'rgba(200,0,0,0.5)' },
-              placement: { left: 500, top: 10, width: 200, height: 200 },
+              title: 'W1',
+              placement: { left: 650, top: 50, width: 200, height: 200 },
               border: { color: 'green', width: 2 },
               constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+              options: {
+                legend: {
+                  showLegend: false,
+                },
+              },
+              $data: getCanvasDemoQuery(queries.Random),
+            }),
+            panelBuilders.newGraph({
+              title: 'W2',
+              placement: { left: 900, top: 50, width: 200, height: 200 },
+              border: { color: 'green', width: 2 },
+              constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+              options: {
+                legend: {
+                  showLegend: false,
+                },
+              },
+              $data: getCanvasDemoQuery(queries.Random),
+            }),
+            panelBuilders.newGraph({
+              title: 'W4',
+              placement: { left: 250, top: 50, width: 200, height: 200 },
+              border: { color: 'green', width: 2 },
+              constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+              options: {
+                legend: {
+                  showLegend: false,
+                },
+              },
+              $data: getCanvasDemoQuery(queries.None),
+            }),
+            panelBuilders.newGraph({
+              title: 'W3',
+              placement: { left: 10, top: 50, width: 200, height: 200 },
+              border: { color: 'green', width: 2 },
+              constraint: { horizontal: HorizontalConstraint.Left, vertical: VerticalConstraint.Top },
+              options: {
+                legend: {
+                  showLegend: false,
+                },
+              },
+              $data: getCanvasDemoQuery(queries.Random),
             }),
           ],
         }),

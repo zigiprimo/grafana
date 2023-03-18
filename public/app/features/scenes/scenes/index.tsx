@@ -24,7 +24,7 @@ export function getScenes(): SceneDef[] {
   return [
     { title: 'Canvas multiple layout test', getScene: getCanvasMultiLayoutTest },
     { title: 'Canvas constraint test', getScene: getCanvasConstraintTest },
-    { title: 'Canvas full', getScene: getCanvasFull },
+    { title: 'Canvas wind', getScene: getCanvasFull },
     { title: 'Canvas solar', getScene: getCanvasDemoSolar },
     { title: 'Flex layout test', getScene: getFlexLayoutTest },
     { title: 'Panel repeater test', getScene: getScenePanelRepeaterTest },
