@@ -58,7 +58,8 @@
     "betterer": "betterer",
     "betterer:merge": "betterer merge",
     "betterer:stats": "ts-node --transpile-only --project ./scripts/cli/tsconfig.json ./scripts/cli/reportBettererStats.ts",
-    "betterer:issues": "ts-node --transpile-only --project ./scripts/cli/tsconfig.json ./scripts/cli/generateBettererIssues.ts"
+    "betterer:issues": "ts-node --transpile-only --project ./scripts/cli/tsconfig.json ./scripts/cli/generateBettererIssues.ts",
+    "alerting-api-gen": "npx @rtk-query/codegen-openapi public/app/features/alerting/unified/api/alertinApiCodeGen/openapi-config.json"
   },
   "grafana": {
     "whatsNewUrl": "https://grafana.com/docs/grafana/next/whatsnew/whats-new-in-v9-2/",
@@ -112,6 +113,7 @@
     "@react-types/menu": "3.7.2",
     "@react-types/overlays": "3.6.4",
     "@react-types/shared": "3.16.0",
+    "@rtk-query/codegen-openapi": "^1.0.0",
     "@rtsao/plugin-proposal-class-properties": "7.0.1-patch.1",
     "@swc/core": "1.3.38",
     "@swc/helpers": "0.4.14",

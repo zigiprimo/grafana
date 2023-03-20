@@ -1,0 +1,8 @@
+{
+  "schemaFile": "../../../../../../openapi3.json",
+  "apiFile": "./alertingApi.ts",
+  "apiImport": "alertingApi",
+  "outputFile": "alertingApiGenerated.ts",
+  "hooks": true,
+  "tag": true
+}
