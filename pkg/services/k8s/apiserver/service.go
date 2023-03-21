@@ -95,7 +95,7 @@ func (s *service) enableServiceAccountsAuthn(serverRunOptions *options.ServerRun
 	tokenSigningKeyFile := "data/k8s/token-signing.apiserver.key"
 	tokenSigningCertExists, _ := certutil.CanReadCertAndKey(tokenSigningCertFile, tokenSigningKeyFile)
 	if tokenSigningCertExists == false {
-		cert, key, err := certutil.GenerateSelfSignedCertKeyWithFixtures("https://127.0.0.1:6443", []net.IP{}, []string{}, "")
+		cert, key, err := certutil.GenerateSelfSignedCertKey("https://127.0.0.1:6443", []net.IP{}, []string{})
 		if err != nil {
 			fmt.Println("Error generating token signing cert")
 			return err
