@@ -220,7 +220,7 @@ func (s *service) writeKubeConfiguration(restConfig *rest.Config) error {
 	return clientcmd.WriteToFile(clientConfig, "data/k8s/grafana.kubeconfig")
 }
 
-// Only used for initial seeding of the grafana-system KSA. Once seeded, any future use of loopback config is avoided.
+// Only used for initial seeding of the grafana-system KSA, which is a test KSA I introduced for testing multiple authn schemes all-at-once
 func (s *service) getClientset() (*kubernetes.Clientset, error) {
 	clientset, err := kubernetes.NewForConfig(s.restConfig)
 	if err != nil {
