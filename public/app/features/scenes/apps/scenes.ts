@@ -1,12 +1,9 @@
-import { FieldColorModeId, getFrameDisplayName } from '@grafana/data';
-import { locationService } from '@grafana/runtime';
+import { FieldColorModeId } from '@grafana/data';
 import {
   SceneFlexLayout,
-  SceneByFrameRepeater,
   SceneTimePicker,
   VizPanel,
   EmbeddedScene,
-  SceneDataNode,
   SceneTimeRange,
   VariableValueSelectors,
   SceneQueryRunner,
@@ -18,10 +15,9 @@ import {
 } from '@grafana/scenes';
 import { PromQuery } from 'app/plugins/datasource/prometheus/types';
 
-import { SceneRadioToggle } from './SceneRadioToggle';
 import { SceneSearchBox } from './SceneSearchBox';
+import { SplitDrilldownLayout } from './SplitDrilldownLayout';
 import { getTableFilterTransform, getTimeSeriesFilterTransform } from './transforms';
-import { getLinkUrlWithAppUrlState } from './utils';
 
 export function getHttpHandlerListScene(): EmbeddedScene {
   const searchBox = new SceneSearchBox({ value: '' });
@@ -89,13 +85,9 @@ export function getHttpHandlerListScene(): EmbeddedScene {
               value: [
                 {
                   title: 'Go to handler drilldown view',
-                  onBuildUrl: () => {
-                    const params = locationService.getSearchObject();
-                    return getLinkUrlWithAppUrlState(
-                      '/scenes/grafana-monitoring/handlers/${__value.text:percentencode}',
-                      params
-                    );
-                  },
+                  // this was actually the biggest challange, I cannot use urlUtil.renderUrl (getLinkUrlWithAppUrlState uses it) as it escapes url parameters,
+                  // making the templating system not able to interpolate the the expression
+                  url: '/scenes/grafana-monitoring/handlers?handler=${__value.text:percentencode}',
                 },
               ],
             },
@@ -135,86 +127,11 @@ export function getHttpHandlerListScene(): EmbeddedScene {
     return () => sub.unsubscribe();
   });
 
-  const graphsScene = new SceneByFrameRepeater({
-    $data: reqDurationTimeSeriesFiltered,
-    body: new SceneFlexLayout({
-      direction: 'column',
-      children: [],
-    }),
-    getLayoutChild: (data, frame, frameIndex) => {
-      return new SceneFlexLayout({
-        key: `panel-${frameIndex}`,
-        direction: 'row',
-        placement: { minHeight: 200 },
-        $data: new SceneDataNode({
-          data: {
-            ...data,
-            series: [frame],
-          },
-        }),
-        children: [
-          new VizPanel({
-            pluginId: 'timeseries',
-            // titleLink: {
-            //   path: `/scenes/grafana-monitoring/handlers/${encodeURIComponent(frame.fields[1].labels.handler)}`,
-            //   queryKeys: ['from', 'to', 'var-instance'],
-            // },
-            title: getFrameDisplayName(frame),
-            options: {
-              legend: { displayMode: 'hidden' },
-            },
-          }),
-          new VizPanel({
-            placement: { width: 200 },
-            title: 'Last',
-            pluginId: 'stat',
-            fieldConfig: {
-              defaults: {
-                displayName: 'Last',
-                links: [
-                  {
-                    title: 'Go to handler drilldown view',
-                    url: ``,
-                    onBuildUrl: () => {
-                      const params = locationService.getSearchObject();
-                      return getLinkUrlWithAppUrlState(
-                        '/scenes/grafana-monitoring/handlers/${__field.labels.handler:percentencode}',
-                        params
-                      );
-                    },
-                  },
-                ],
-              },
-              overrides: [],
-            },
-            options: {
-              graphMode: 'none',
-              textMode: 'value',
-            },
-          }),
-        ],
-      });
-    },
-  });
-
   const layout = new SceneFlexLayout({
-    children: [httpHandlersTable],
+    children: [],
   });
 
-  const sceneToggle = new SceneRadioToggle({
-    options: [
-      { value: 'table', label: 'Table' },
-      { value: 'graphs', label: 'Graphs' },
-    ],
-    value: 'table',
-    onChange: (value) => {
-      if (value === 'table') {
-        layout.setState({ children: [httpHandlersTable] });
-      } else {
-        layout.setState({ children: [graphsScene] });
-      }
-    },
-  });
+  layout.setState({ children: [httpHandlersTable] });
 
   const scene = new EmbeddedScene({
     $variables: getVariablesDefinitions(),
@@ -224,14 +141,60 @@ export function getHttpHandlerListScene(): EmbeddedScene {
       new VariableValueSelectors({}),
       searchBox,
       new SceneControlsSpacer(),
-      sceneToggle,
       new SceneTimePicker({ isOnCanvas: true }),
       new SceneRefreshPicker({ isOnCanvas: true }),
     ],
-    body: layout,
+    body: new SplitDrilldownLayout({
+      body: new SceneFlexLayout({
+        children: [httpHandlersTable],
+      }),
+      getDrillDownScene: getDrilldownView,
+    }),
   });
 
   return scene;
+}
+
+function getDrilldownView(handler: string) {
+  const reqDurationTimeSeries = new SceneQueryRunner({
+    datasource: { uid: 'gdev-prometheus' },
+    queries: [
+      {
+        refId: 'A',
+        //expr: ``,
+        expr: `avg without(job, instance) (rate(grafana_http_request_duration_seconds_sum{handler="${handler}"}[$__rate_interval]))`,
+        range: true,
+        format: 'time_series',
+        legendFormat: '{{method}} {{handler}} (status = {{status_code}})',
+        maxDataPoints: 500,
+      },
+    ],
+  });
+
+  // would be nice to be able add a close button to the panel header
+  return new VizPanel({
+    pluginId: 'timeseries',
+    $data: reqDurationTimeSeries,
+    title: handler,
+    options: {
+      legend: { displayMode: 'hidden' },
+    },
+  });
+}
+
+function getInstantQuery(query: Partial<PromQuery>): SceneQueryRunner {
+  return new SceneQueryRunner({
+    datasource: { uid: 'gdev-prometheus' },
+    queries: [
+      {
+        refId: 'A',
+        instant: true,
+        format: 'table',
+        maxDataPoints: 500,
+        ...query,
+      },
+    ],
+  });
 }
 
 export function getHandlerDetailsScene(handler: string): EmbeddedScene {
@@ -277,21 +240,6 @@ export function getHandlerDetailsScene(handler: string): EmbeddedScene {
   });
 
   return scene;
-}
-
-function getInstantQuery(query: Partial<PromQuery>): SceneQueryRunner {
-  return new SceneQueryRunner({
-    datasource: { uid: 'gdev-prometheus' },
-    queries: [
-      {
-        refId: 'A',
-        instant: true,
-        format: 'table',
-        maxDataPoints: 500,
-        ...query,
-      },
-    ],
-  });
 }
 
 function getTimeSeriesQuery(query: Partial<PromQuery>): SceneQueryRunner {
