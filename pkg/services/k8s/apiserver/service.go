@@ -87,6 +87,7 @@ func (s *service) initializeBasicRBAC() error {
 
 func (s *service) start(ctx context.Context) error {
 	serverRunOptions := options.NewServerRunOptions()
+
 	serverRunOptions.Admission.GenericAdmission.EnablePlugins = []string{
 		"MutatingAdmissionWebhook",
 		"ValidatingAdmissionWebhook",
@@ -98,7 +99,7 @@ func (s *service) start(ctx context.Context) error {
 	tokenSigningKeyFile := "data/k8s/token-signing.apiserver.key"
 	tokenSigningCertExists, _ := certutil.CanReadCertAndKey(tokenSigningCertFile, tokenSigningKeyFile)
 	if tokenSigningCertExists == false {
-		cert, key, err := certutil.GenerateSelfSignedCertKeyWithFixtures("token-signing.apiserver", []net.IP{}, []string{}, "")
+		cert, key, err := certutil.GenerateSelfSignedCertKeyWithFixtures("https://127.0.0.1:6443", []net.IP{}, []string{}, "")
 		if err != nil {
 			fmt.Println("Error generating token signing cert")
 		} else {
@@ -111,7 +112,9 @@ func (s *service) start(ctx context.Context) error {
 	// TODO: incomplete. Need to implement the authn endpoint as specified in this config
 	serverRunOptions.Authentication.WebHook.ConfigFile = "data/k8s/authn-kubeconfig"
 	serverRunOptions.ServiceAccountSigningKeyFile = tokenSigningKeyFile
-	serverRunOptions.Authentication.ServiceAccounts.Issuers = []string{"token-signing.apiserver"}
+	serverRunOptions.Authentication.ServiceAccounts.KeyFiles = []string{tokenSigningKeyFile}
+	serverRunOptions.Authentication.ServiceAccounts.Issuers = []string{"https://127.0.0.1:6443"}
+	serverRunOptions.Authentication.ServiceAccounts.JWKSURI = "https://127.0.0.1:6443/.well-known/openid-configuration"
 	// TODO: determine if including ModeRBAC is a great idea. It ends up including a lot of cluster roles
 	// that wont be of use to us. It may be a necessary evil.
 	// e.g. I needed system:service-account-issuer-discovery in order to to access the OIDC endpoint of the apiserver's issuer
@@ -123,6 +126,7 @@ func (s *service) start(ctx context.Context) error {
 	serverRunOptions.Etcd.StorageConfig.Transport.KeyFile = etcdConfig.TLSConfig.KeyFile
 	serverRunOptions.Etcd.StorageConfig.Transport.TrustedCAFile = etcdConfig.TLSConfig.CAFile
 	completedOptions, err := app.Complete(serverRunOptions)
+
 	fmt.Println("Issuer is:", serverRunOptions.ServiceAccountIssuer)
 	if err != nil {
 		return err

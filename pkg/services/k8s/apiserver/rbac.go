@@ -2,11 +2,9 @@ package apiserver
 
 import (
 	"context"
-	"fmt"
 	coreV1 "k8s.io/api/core/v1"
 	rbacV1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	rbacV1ApplyConfig "k8s.io/client-go/applyconfigurations/rbac/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -54,7 +52,7 @@ func (rbac *BasicRBAC) UpsertGrafanaSystemServiceAccount() error {
 func (rbac *BasicRBAC) UpsertGrafanaSystemClusterRoleBinding() error {
 	crb := rbac.clientset.RbacV1().ClusterRoleBindings()
 
-	existing, err := crb.Get(context.Background(), GrafanaSystemRBACResourcesName, metav1.GetOptions{})
+	_, err := crb.Get(context.Background(), GrafanaSystemRBACResourcesName, metav1.GetOptions{})
 	if err != nil {
 		newCRB := rbacV1.ClusterRoleBinding{
 			TypeMeta: metav1.TypeMeta{
@@ -67,39 +65,19 @@ func (rbac *BasicRBAC) UpsertGrafanaSystemClusterRoleBinding() error {
 				},
 			},
 			RoleRef: rbacV1.RoleRef{
-				Name: GrafanaSystemRBACResourcesName,
+				Name: "cluster-admin",
 				Kind: "ClusterRole",
 			},
 			Subjects: []rbacV1.Subject{rbacV1.Subject{
-				Name: "system:masters",
-				Kind: "Group",
+				Name:      "grafana-system",
+				Kind:      "ServiceAccount",
+				Namespace: "default",
 			}},
 		}
 
 		_, err := crb.Create(context.Background(), &newCRB, metav1.CreateOptions{
 			FieldManager: GrafanaSystemManagedByTagValue,
 		})
-		return err
-	} else if existing != nil {
-		crbApplyConfig, err := rbacV1ApplyConfig.ExtractClusterRoleBinding(existing, GrafanaSystemManagedByTagKey)
-		if err != nil {
-			return err
-		}
-
-		crbApplyConfig.WithSubjects(&rbacV1ApplyConfig.SubjectApplyConfiguration{
-			Name:      pontificate(GrafanaSystemRBACResourcesName),
-			Kind:      pontificate("ServiceAccount"),
-			Namespace: pontificate("default"),
-			APIGroup:  pontificate(""),
-		}, &rbacV1ApplyConfig.SubjectApplyConfiguration{
-			Name: pontificate("system:masters"),
-			Kind: pontificate("Group"),
-		})
-		_, err = crb.Apply(context.Background(), crbApplyConfig, metav1.ApplyOptions{
-			FieldManager: GrafanaSystemManagedByTagValue,
-			Force:        true,
-		})
-		fmt.Println("error is:", err)
 		return err
 	}
 
@@ -128,8 +106,4 @@ func (rbac *BasicRBAC) UpsertGrafanaSystemClusterRole() error {
 	}
 
 	return nil
-}
-
-func pontificate[T any](t T) *T {
-	return &t
 }
