@@ -1,4 +1,4 @@
 :443
-tls /conf/webhooks/webhooks.pem /conf/webhooks/webhooks-key.pem
+tls /conf/certs/webhooks/webhooks.pem /conf/certs/webhooks/webhooks-key.pem
 reverse_proxy host.docker.internal:3000
 log
