@@ -3,6 +3,7 @@ package apiserver
 import (
 	"context"
 	"fmt"
+
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/keyutil"
 	kubeoptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/grafana/dskit/services"
 	"github.com/grafana/grafana/pkg/services/k8s/authentication"
+	"github.com/grafana/grafana/pkg/services/k8s/authorization"
 	"github.com/grafana/grafana/pkg/services/k8s/kine"
 	k8sserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/rest"
@@ -37,17 +39,19 @@ type service struct {
 
 	etcdProvider kine.EtcdProvider
 	k8sAuthnAPI  authentication.K8sAuthnAPI
+	k8sAuthzAPI  authorization.K8sAuthzAPI
 	restConfig   *rest.Config
 
 	stopCh    chan struct{}
 	stoppedCh chan error
 }
 
-func ProvideService(etcdProvider kine.EtcdProvider, k8sAuthnAPI authentication.K8sAuthnAPI) (*service, error) {
+func ProvideService(etcdProvider kine.EtcdProvider, k8sAuthnAPI authentication.K8sAuthnAPI, k8sAuthzAPI authorization.K8sAuthzAPI) (*service, error) {
 
 	s := &service{
 		etcdProvider: etcdProvider,
 		k8sAuthnAPI:  k8sAuthnAPI,
+		k8sAuthzAPI:  k8sAuthzAPI,
 		stopCh:       make(chan struct{}),
 	}
 
@@ -85,6 +89,30 @@ func (s *service) initializeBasicRBAC() error {
 	return nil
 }
 
+// Modifies serverRunOptions in place
+func (s *service) enableServiceAccountsAuthn(serverRunOptions *options.ServerRunOptions) error {
+	tokenSigningCertFile := "data/k8s/token-signing.apiserver.crt"
+	tokenSigningKeyFile := "data/k8s/token-signing.apiserver.key"
+	tokenSigningCertExists, _ := certutil.CanReadCertAndKey(tokenSigningCertFile, tokenSigningKeyFile)
+	if tokenSigningCertExists == false {
+		cert, key, err := certutil.GenerateSelfSignedCertKeyWithFixtures("https://127.0.0.1:6443", []net.IP{}, []string{}, "")
+		if err != nil {
+			fmt.Println("Error generating token signing cert")
+			return err
+		} else {
+			certutil.WriteCert(tokenSigningCertFile, cert)
+			keyutil.WriteKey(tokenSigningKeyFile, key)
+		}
+	}
+
+	serverRunOptions.ServiceAccountSigningKeyFile = tokenSigningKeyFile
+	serverRunOptions.Authentication.ServiceAccounts.KeyFiles = []string{tokenSigningKeyFile}
+	serverRunOptions.Authentication.ServiceAccounts.Issuers = []string{"https://127.0.0.1:6443"}
+	serverRunOptions.Authentication.ServiceAccounts.JWKSURI = "https://127.0.0.1:6443/.well-known/openid-configuration"
+
+	return nil
+}
+
 func (s *service) start(ctx context.Context) error {
 	serverRunOptions := options.NewServerRunOptions()
 
@@ -95,30 +123,20 @@ func (s *service) start(ctx context.Context) error {
 	serverRunOptions.SecureServing.BindAddress = net.ParseIP("127.0.0.1")
 	serverRunOptions.SecureServing.ServerCert.CertDirectory = "data/k8s"
 
-	tokenSigningCertFile := "data/k8s/token-signing.apiserver.crt"
-	tokenSigningKeyFile := "data/k8s/token-signing.apiserver.key"
-	tokenSigningCertExists, _ := certutil.CanReadCertAndKey(tokenSigningCertFile, tokenSigningKeyFile)
-	if tokenSigningCertExists == false {
-		cert, key, err := certutil.GenerateSelfSignedCertKeyWithFixtures("https://127.0.0.1:6443", []net.IP{}, []string{}, "")
-		if err != nil {
-			fmt.Println("Error generating token signing cert")
-		} else {
-			certutil.WriteCert(tokenSigningCertFile, cert)
-			keyutil.WriteKey(tokenSigningKeyFile, key)
-		}
+	serverRunOptions.Authentication = kubeoptions.NewBuiltInAuthenticationOptions().WithAll()
+	err := s.enableServiceAccountsAuthn(serverRunOptions)
+	if err != nil {
+		fmt.Errorf("Error enabling service account auth, proceeding anyway: %s", err.Error())
 	}
 
-	serverRunOptions.Authentication = kubeoptions.NewBuiltInAuthenticationOptions().WithAll()
-	// TODO: incomplete. Need to implement the authn endpoint as specified in this config
 	serverRunOptions.Authentication.WebHook.ConfigFile = "data/k8s/authn-kubeconfig"
-	serverRunOptions.ServiceAccountSigningKeyFile = tokenSigningKeyFile
-	serverRunOptions.Authentication.ServiceAccounts.KeyFiles = []string{tokenSigningKeyFile}
-	serverRunOptions.Authentication.ServiceAccounts.Issuers = []string{"https://127.0.0.1:6443"}
-	serverRunOptions.Authentication.ServiceAccounts.JWKSURI = "https://127.0.0.1:6443/.well-known/openid-configuration"
+
 	// TODO: determine if including ModeRBAC is a great idea. It ends up including a lot of cluster roles
 	// that wont be of use to us. It may be a necessary evil.
 	// e.g. I needed system:service-account-issuer-discovery in order to to access the OIDC endpoint of the apiserver's issuer
-	serverRunOptions.Authorization.Modes = []string{authzmodes.ModeRBAC} // , authzmodes.ModeWebhook
+	serverRunOptions.Authorization.Modes = []string{authzmodes.ModeRBAC, authzmodes.ModeWebhook}
+	serverRunOptions.Authorization.WebhookConfigFile = "data/k8s/authz-kubeconfig"
+	serverRunOptions.Authorization.WebhookVersion = "v1"
 
 	etcdConfig := s.etcdProvider.GetConfig()
 	serverRunOptions.Etcd.StorageConfig.Transport.ServerList = etcdConfig.Endpoints
@@ -127,7 +145,6 @@ func (s *service) start(ctx context.Context) error {
 	serverRunOptions.Etcd.StorageConfig.Transport.TrustedCAFile = etcdConfig.TLSConfig.CAFile
 	completedOptions, err := app.Complete(serverRunOptions)
 
-	fmt.Println("Issuer is:", serverRunOptions.ServiceAccountIssuer)
 	if err != nil {
 		return err
 	}
@@ -137,6 +154,7 @@ func (s *service) start(ctx context.Context) error {
 		return err
 	}
 
+	// Only applicable for KSA authn use-case
 	server.GenericAPIServer.AddPostStartHookOrDie("basic-rbac-init", func(hookCtx k8sserver.PostStartHookContext) error {
 		s.initializeBasicRBAC()
 		<-hookCtx.StopCh
