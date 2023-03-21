@@ -14,7 +14,7 @@ export interface SplitDrilldownLayoutState extends SceneObjectStatePlain {
   handler?: string;
   body: SceneFlexLayout;
   currentSceneHandler?: string;
-  getDrillDownScene: (drilldown: string) => SceneObject;
+  getDrillDownScene: (handler: string) => SceneObject;
 }
 
 export class SplitDrilldownLayout extends SceneObjectBase<SplitDrilldownLayoutState> {
