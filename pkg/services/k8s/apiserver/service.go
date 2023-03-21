@@ -2,15 +2,20 @@ package apiserver
 
 import (
 	"context"
+	"fmt"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/keyutil"
 	kubeoptions "k8s.io/kubernetes/pkg/kubeapiserver/options"
 	"net"
 
 	"github.com/grafana/dskit/services"
 	"github.com/grafana/grafana/pkg/services/k8s/authentication"
 	"github.com/grafana/grafana/pkg/services/k8s/kine"
+	k8sserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	certutil "k8s.io/client-go/util/cert"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app"
 	"k8s.io/kubernetes/cmd/kube-apiserver/app/options"
 	authzmodes "k8s.io/kubernetes/pkg/kubeapiserver/authorizer/modes"
@@ -55,6 +60,31 @@ func (s *service) GetRestConfig() *rest.Config {
 	return s.restConfig
 }
 
+func (s *service) initializeBasicRBAC() error {
+	fmt.Println("Potato: add basic rbac")
+	clientset, err := s.getClientset()
+	if err != nil {
+		fmt.Println("Error initializing clientset", err)
+		return err
+	}
+	basicRBAC := NewBasicRBAC(clientset)
+	err = basicRBAC.UpsertGrafanaSystemServiceAccount()
+	if err != nil {
+		return err
+	}
+
+	err = basicRBAC.UpsertGrafanaSystemClusterRole()
+	if err != nil {
+		return err
+	}
+
+	err = basicRBAC.UpsertGrafanaSystemClusterRoleBinding()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *service) start(ctx context.Context) error {
 	serverRunOptions := options.NewServerRunOptions()
 	serverRunOptions.Admission.GenericAdmission.EnablePlugins = []string{
@@ -64,14 +94,28 @@ func (s *service) start(ctx context.Context) error {
 	serverRunOptions.SecureServing.BindAddress = net.ParseIP("127.0.0.1")
 	serverRunOptions.SecureServing.ServerCert.CertDirectory = "data/k8s"
 
+	tokenSigningCertFile := "data/k8s/token-signing.apiserver.crt"
+	tokenSigningKeyFile := "data/k8s/token-signing.apiserver.key"
+	tokenSigningCertExists, _ := certutil.CanReadCertAndKey(tokenSigningCertFile, tokenSigningKeyFile)
+	if tokenSigningCertExists == false {
+		cert, key, err := certutil.GenerateSelfSignedCertKeyWithFixtures("token-signing.apiserver", []net.IP{}, []string{}, "")
+		if err != nil {
+			fmt.Println("Error generating token signing cert")
+		} else {
+			certutil.WriteCert(tokenSigningCertFile, cert)
+			keyutil.WriteKey(tokenSigningKeyFile, key)
+		}
+	}
+
 	serverRunOptions.Authentication = kubeoptions.NewBuiltInAuthenticationOptions().WithAll()
 	// TODO: incomplete. Need to implement the authn endpoint as specified in this config
 	serverRunOptions.Authentication.WebHook.ConfigFile = "data/k8s/authn-kubeconfig"
-	serverRunOptions.Authentication.ServiceAccounts.Issuers = []string{"https://127.0.0.1:6443"}
+	serverRunOptions.ServiceAccountSigningKeyFile = tokenSigningKeyFile
+	serverRunOptions.Authentication.ServiceAccounts.Issuers = []string{"token-signing.apiserver"}
 	// TODO: determine if including ModeRBAC is a great idea. It ends up including a lot of cluster roles
 	// that wont be of use to us. It may be a necessary evil.
 	// e.g. I needed system:service-account-issuer-discovery in order to to access the OIDC endpoint of the apiserver's issuer
-	serverRunOptions.Authorization.Modes = []string{authzmodes.ModeRBAC, authzmodes.ModeWebhook}
+	serverRunOptions.Authorization.Modes = []string{authzmodes.ModeRBAC} // , authzmodes.ModeWebhook
 
 	etcdConfig := s.etcdProvider.GetConfig()
 	serverRunOptions.Etcd.StorageConfig.Transport.ServerList = etcdConfig.Endpoints
@@ -79,6 +123,7 @@ func (s *service) start(ctx context.Context) error {
 	serverRunOptions.Etcd.StorageConfig.Transport.KeyFile = etcdConfig.TLSConfig.KeyFile
 	serverRunOptions.Etcd.StorageConfig.Transport.TrustedCAFile = etcdConfig.TLSConfig.CAFile
 	completedOptions, err := app.Complete(serverRunOptions)
+	fmt.Println("Issuer is:", serverRunOptions.ServiceAccountIssuer)
 	if err != nil {
 		return err
 	}
@@ -87,6 +132,12 @@ func (s *service) start(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	server.GenericAPIServer.AddPostStartHookOrDie("basic-rbac-init", func(hookCtx k8sserver.PostStartHookContext) error {
+		s.initializeBasicRBAC()
+		<-hookCtx.StopCh
+		return nil
+	})
 
 	s.restConfig = server.GenericAPIServer.LoopbackClientConfig
 	s.writeKubeConfiguration(s.restConfig)
@@ -145,4 +196,14 @@ func (s *service) writeKubeConfiguration(restConfig *rest.Config) error {
 		AuthInfos:      authinfos,
 	}
 	return clientcmd.WriteToFile(clientConfig, "data/k8s/grafana.kubeconfig")
+}
+
+// Only used for initial seeding of the grafana-system KSA. Once seeded, any future use of loopback config is avoided.
+func (s *service) getClientset() (*kubernetes.Clientset, error) {
+	clientset, err := kubernetes.NewForConfig(s.restConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientset, nil
 }

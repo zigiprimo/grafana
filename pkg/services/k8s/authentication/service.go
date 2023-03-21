@@ -3,9 +3,8 @@ package authentication
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strconv"
 
-	// "github.com/grafana/dskit/services"
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/infra/log"
@@ -35,11 +34,7 @@ type UserInfo struct {
 	Status     *Status `json:"status,omitempty"`
 }
 
-// var _ Service = (*K8sAuthnAPIImpl)(nil)
-
-/* type Service interface {
-	services.Service
-} */
+const GrafanaAdminK8sUser = "gl-admin"
 
 type K8sAuthnAPI interface {
 	validate(c *contextmodel.ReqContext) response.Response
@@ -65,7 +60,6 @@ func ProvideService(
 		Log:           log.New("k8s.webhooks.authn"),
 	}
 
-	fmt.Println("Potato")
 	k8sAuthnAPI.RegisterAPIEndpoints()
 
 	return k8sAuthnAPI
@@ -84,9 +78,11 @@ func (api *K8sAuthnAPIImpl) validate(c *contextmodel.ReqContext) response.Respon
 			Status: &Status{
 				Authenticated: true,
 				User: &User{
-					Username: "admin",
+					// SignedInUser.Name could be anything, for now, we normalize it so we can pre-populate RBAC
+					// for this normalized name in apiserver
+					Username: GrafanaAdminK8sUser,
 					Groups:   []string{"server-admins"},
-					UID:      "some-uid",
+					UID:      strconv.FormatInt(c.SignedInUser.UserID, 10),
 				},
 			},
 		})

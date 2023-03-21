@@ -49,6 +49,11 @@ const (
 	InvalidAPIKey = "invalid API key"
 )
 
+const (
+	K8sWebhooksHttpsHost = "localhost:3443"
+	K8sAuthnWebhookPath  = "/k8s/authn"
+)
+
 const ServiceName = "ContextHandler"
 
 func ProvideService(cfg *setting.Cfg, tokenService auth.UserTokenService, jwtService jwt.JWTService,
@@ -193,8 +198,8 @@ func (h *ContextHandler) Middleware(next http.Handler) http.Handler {
 			switch {
 			case h.initContextWithRenderAuth(reqContext):
 			case h.initContextWithJWT(reqContext, orgID):
-			case h.initContextWithAPIKey(reqContext):
 			case h.initContextWithK8sTokenReviewInput(reqContext):
+			case h.initContextWithAPIKey(reqContext):
 			case h.initContextWithBasicAuth(reqContext, orgID):
 			case h.initContextWithAuthProxy(reqContext, orgID):
 			case h.initContextWithToken(reqContext, orgID):
@@ -302,6 +307,11 @@ func (h *ContextHandler) getAPIKey(ctx context.Context, keyString string) (*apik
 }
 
 func (h *ContextHandler) initContextWithK8sTokenReviewInput(reqContext *contextmodel.ReqContext) bool {
+	// Test whether the request is coming on the webhooks https host
+	if reqContext.Req.Header.Get("X-Forwarded-Host") != K8sWebhooksHttpsHost || reqContext.Req.URL.Path != K8sAuthnWebhookPath {
+		return false
+	}
+
 	req, err := io.ReadAll(reqContext.Req.Body)
 	if err != nil {
 		return false
@@ -318,7 +328,8 @@ func (h *ContextHandler) initContextWithK8sTokenReviewInput(reqContext *contextm
 	// to be able to use existing APIKey logic in its corresponding initContext helpers
 	reqContext.Req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	return h.initContextWithAPIKey(reqContext)
+	// Let initContextWithAPIKey(reqContext) take over in the next case statement
+	return false
 }
 
 func (h *ContextHandler) initContextWithAPIKey(reqContext *contextmodel.ReqContext) bool {
