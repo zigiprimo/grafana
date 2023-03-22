@@ -1,5 +1,6 @@
 import { SyntaxNode } from '@lezer/common';
 import { trim } from 'lodash';
+import { FuzzyFilter } from './rulesSearchParser';
 
 import { parser } from './search';
 import * as terms from './search.terms';
@@ -57,6 +58,11 @@ export function parseQueryToFilter(
       if (filterHandler) {
         filterHandler(getNodeContent(query, node));
       }
+    } else if (node.type.id === terms.FuzzyMatchExpression) {
+      const filterHandler = filterMapper[terms.FuzzyMatchExpression];
+      if (filterHandler) {
+        filterHandler(getFuzzyNodeContent(query, node));
+      }
     }
   });
 }
@@ -77,8 +83,21 @@ function getFilterFromSyntaxNode(query: string, filterExpressionNode: SyntaxNode
   return { type: filterTokenNode.type.id, value: filterValue };
 }
 
-function getNodeContent(query: string, node: SyntaxNode) {
+function getNodeContent(query: string, node: SyntaxNode): string {
   return query.slice(node.from, node.to).trim().replace(/\"/g, '');
+}
+
+const IN_KEY = "InKey"
+function getFuzzyNodeContent(query: string, node: SyntaxNode): FuzzyFilter {
+  const inKeyNode = node.getChildren(IN_KEY)[0]; // FuzzyMatchExpression should have exactly one "InKey" token
+  if (!inKeyNode) {
+    throw new Error('could not find InKey in FuzzyMatchExpression');
+  }
+
+  const value = query.slice(node.from, inKeyNode.from).trim().replace(/\"/g, '');
+  const label = query.slice(inKeyNode.from, inKeyNode.to).replace(/^in\:/, '');
+
+  return { label, value }
 }
 
 export function applyFiltersToQuery(

@@ -10,8 +10,14 @@ import {
   QueryFilterMapper,
 } from './searchParser';
 
+export interface FuzzyFilter {
+  value: string;
+  label: string; // TODO maybe type to "namespace | group | rule"?
+};
+
 export interface RulesFilter {
   freeFormWords: string[];
+  fuzzyFilters: FuzzyFilter[];
   namespace?: string;
   groupName?: string;
   ruleName?: string;
@@ -42,7 +48,7 @@ export enum RuleHealth {
 
 // Define how to map parsed tokens into the filter object
 export function getSearchFilterFromQuery(query: string): RulesFilter {
-  const filter: RulesFilter = { labels: [], freeFormWords: [] };
+  const filter: RulesFilter = { labels: [], freeFormWords: [], fuzzyFilters: [] };
 
   const tokenToFilterMap: QueryFilterMapper = {
     [terms.DataSourceToken]: (value) => (filter.dataSourceName = value),
@@ -54,6 +60,7 @@ export function getSearchFilterFromQuery(query: string): RulesFilter {
     [terms.TypeToken]: (value) => (isPromRuleType(value) ? (filter.ruleType = value) : undefined),
     [terms.HealthToken]: (value) => (filter.ruleHealth = getRuleHealth(value)),
     [terms.FreeFormExpression]: (value) => filter.freeFormWords.push(value),
+    [terms.FuzzyMatchExpression]: (value) => filter.fuzzyFilters.push(value),
   };
 
   parseQueryToFilter(query, filterSupportedTerms, tokenToFilterMap);

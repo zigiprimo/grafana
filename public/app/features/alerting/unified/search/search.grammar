@@ -39,7 +39,6 @@ filter<token> { token FilterValue }
 
   FilterValue { allowedInputCharOrColon+ | stringWithQuotes }
   InKey<key> { "in" colon key }
-
   filterToken<type> { type colon }
 
   DataSourceToken[@dialect=dataSourceFilter] { filterToken<"datasource"> }

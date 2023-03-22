@@ -3,7 +3,7 @@ import {LRParser} from "@lezer/lr"
 export const parser = LRParser.deserialize({
   version: 14,
   states: "#`OQOPOOO!mOPO'#ClOrOPO'#ClOOOO'#C^'#C^OQOPO'#CpOOOO'#Cm'#CmQQOPOOO!tOQO'#CbOOOO,59],59]OOOO,59`,59`OOOO,59a,59aO!yOPO'#CnO#OOPO,59WOOOO,59[,59[OOOO-E6k-E6kOOOO,58|,58|OOOO,59Y,59YOOOO-E6l-E6l",
-  stateData: "$`~OVVOXVOYVOZVO[VO]VO^VO_VOfPOgQO~ORWOSXOTYOV`XX`XY`XZ`X[`X]`X^`X_`Xf`Xg`X~OjZO~PrOW_O~Of`O~OjZOV`aX`aY`aZ`a[`a]`a^`a_`af`ag`a~OV~Y~Z~[~]~^~_~VSTR_^][ZYXf~",
+  stateData: "$`~OVVOXVOYVOZVO[VO]VO^VO_VOfPOgQO~ORWOSXOTYOV`XX`XY`XZ`X[`X]`X^`X_`Xf`Xg`X~OjZO~PrOW_O~Of`O~OjZOV`aX`aY`aZ`a[`a]`a^`a_`af`ag`a~OV~Y~Z~[~]~^~_~VTSR_^][ZYXf~",
   goto: "!YjPPkPPPkPPPPPPPPPkpvP|!TPP!T!TVSOSUQUOR^UQ[PRa[STOUR]SVROSU",
   nodeNames: "⚠ AlertRuleSearch FuzzyMatchExpression InKey InKey InKey FilterExpression DataSourceToken FilterValue NameSpaceToken LabelToken GroupToken RuleToken StateToken TypeToken HealthToken FreeFormExpression",
   maxTerm: 26,
