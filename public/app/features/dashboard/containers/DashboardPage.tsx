@@ -17,7 +17,7 @@ import {
 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { config, locationService } from '@grafana/runtime';
-import { Icon, Themeable2, withTheme2 } from '@grafana/ui';
+import { Icon, Themeable2, withTheme2, HorizontalGroup } from '@grafana/ui';
 import { notifyApp } from 'app/core/actions';
 import { Page } from 'app/core/components/Page/Page';
 import { GrafanaContext, GrafanaContextType } from 'app/core/context/GrafanaContext';
@@ -40,6 +40,7 @@ import { DashboardFailed } from '../components/DashboardLoading/DashboardFailed'
 import { DashboardLoading } from '../components/DashboardLoading/DashboardLoading';
 import { DashboardPrompt } from '../components/DashboardPrompt/DashboardPrompt';
 import { DashboardSettings } from '../components/DashboardSettings';
+import { DashboardTOC } from '../components/DashboardTOC/DashboardTOC';
 import { PanelInspector } from '../components/Inspector/PanelInspector';
 import { PanelEditor } from '../components/PanelEditor/PanelEditor';
 import { SubMenu } from '../components/SubMenu/SubMenu';
@@ -480,12 +481,15 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
               }}
             </DropZone>
           ) : (
-            <DashboardGrid
-              dashboard={dashboard}
-              isEditable={!!dashboard.meta.canEdit}
-              viewPanel={viewPanel}
-              editPanel={editPanel}
-            />
+            <div style={{ display: 'flex', flexDirection: 'row' }}>
+              <DashboardGrid
+                dashboard={dashboard}
+                isEditable={!!dashboard.meta.canEdit}
+                viewPanel={viewPanel}
+                editPanel={editPanel}
+              />
+              <DashboardTOC dashboard={dashboard} />
+            </div>
           )}
           {inspectPanel && <PanelInspector dashboard={dashboard} panel={inspectPanel} />}
         </Page>

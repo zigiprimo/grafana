@@ -62,7 +62,9 @@ export class DashboardPanelUnconnected extends PureComponent<Props> {
   };
 
   onVisibilityChange = (v: boolean) => {
-    this.props.panel.isInView = v;
+    const { panel, dashboard } = this.props;
+    panel.isInView = v;
+    dashboard.visibilityChanged.next(Date.now());
   };
 
   onPanelLoad = () => {

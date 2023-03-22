@@ -1,5 +1,5 @@
 import { cloneDeep, defaults as _defaults, filter, indexOf, isEqual, map, maxBy, pull } from 'lodash';
-import { Subscription } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 
 import {
   AnnotationQuery,
@@ -100,6 +100,7 @@ export class DashboardModel implements TimeModel {
   private panelsAffectedByVariableChange: number[] | null;
   private appEventsSubscription: Subscription;
   private lastRefresh: number;
+  readonly visibilityChanged = new Subject<number>();
 
   // ------------------
   // not persisted
@@ -124,6 +125,7 @@ export class DashboardModel implements TimeModel {
     appEventsSubscription: true,
     panelsAffectedByVariableChange: true,
     lastRefresh: true,
+    visible: true,
   };
 
   constructor(data: Dashboard, meta?: DashboardMeta, private getVariablesFromState: GetVariables = getVariablesByKey) {
@@ -425,9 +427,13 @@ export class DashboardModel implements TimeModel {
   }
 
   private ensurePanelsHaveIds() {
+    const ids = new Set<number>();
     let nextPanelId = this.getNextPanelId();
     for (const panel of this.panelIterator()) {
-      panel.id ??= nextPanelId++;
+      if (!panel.id || ids.has(panel.id)) {
+        panel.id = nextPanelId++;
+      }
+      ids.add(panel.id);
     }
   }
 
