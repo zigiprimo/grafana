@@ -52,13 +52,13 @@ export function getMainPageScene() {
         title: 'Overview',
         url: '/scenes/grafana-monitoring',
         getScene: getOverviewScene,
-        preserveUrlKeys: ['from', 'to', 'var-instance'],
+        preserveUrlKeys: ['from', 'to', 'var-instance', 'var-ds'],
       }),
       new SceneAppPage({
         title: 'HTTP handlers',
         url: '/scenes/grafana-monitoring/handlers',
         getScene: getHttpHandlerListScene,
-        preserveUrlKeys: ['from', 'to', 'var-instance'],
+        preserveUrlKeys: ['from', 'to', 'var-instance', 'var-ds'],
         drilldowns: [
           {
             routePath: '/scenes/grafana-monitoring/handlers/:handler',
@@ -70,7 +70,7 @@ export function getMainPageScene() {
         title: 'Logs',
         url: '/scenes/grafana-monitoring/logs',
         getScene: getOverviewLogsScene,
-        preserveUrlKeys: ['from', 'to', 'var-instance'],
+        preserveUrlKeys: ['from', 'to', 'var-instance', 'var-ds'],
       }),
     ],
   });

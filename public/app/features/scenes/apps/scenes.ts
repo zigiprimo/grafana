@@ -12,6 +12,7 @@ import {
   SceneControlsSpacer,
   SceneDataTransformer,
   SceneRefreshPicker,
+  DataSourceVariable,
 } from '@grafana/scenes';
 import { PromQuery } from 'app/plugins/datasource/prometheus/types';
 
@@ -184,7 +185,7 @@ function getDrilldownView(handler: string) {
 
 function getInstantQuery(query: Partial<PromQuery>): SceneQueryRunner {
   return new SceneQueryRunner({
-    datasource: { uid: 'gdev-prometheus' },
+    datasource: { uid: '$ds' },
     queries: [
       {
         refId: 'A',
@@ -354,9 +355,13 @@ export function getOverviewScene(): EmbeddedScene {
 function getVariablesDefinitions() {
   return new SceneVariableSet({
     variables: [
+      new DataSourceVariable({
+        name: 'ds',
+        pluginId: 'prometheus',
+      }),
       new QueryVariable({
         name: 'instance',
-        datasource: { uid: 'gdev-prometheus' },
+        datasource: { uid: '$ds' },
         query: { query: 'label_values(grafana_http_request_duration_seconds_sum, instance)' },
       }),
     ],
