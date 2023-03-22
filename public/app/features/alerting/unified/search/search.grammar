@@ -2,7 +2,7 @@
 
 @dialects { dataSourceFilter, nameSpaceFilter, labelFilter, groupFilter, ruleFilter, stateFilter, typeFilter, healthFilter }
 
-expression { (FilterExpression | FreeFormExpression) expression }
+expression { (FuzzyMatchExpression | FilterExpression | FreeFormExpression) expression }
 
 FreeFormExpression { word (colon word)* | stringWithQuotes }
 
@@ -17,6 +17,13 @@ FilterExpression {
  filter<HealthToken>
 }
 
+FuzzyMatchExpression {
+  fuzzyFilter<"rule"> |
+  fuzzyFilter<"group"> |
+  fuzzyFilter<"namespace">
+}
+
+fuzzyFilter<key> { (word | stringWithQuotes) InKey<key> }
 filter<token> { token FilterValue }
 
 @tokens {
@@ -31,6 +38,8 @@ filter<token> { token FilterValue }
   stringWithQuotes { ("\"" allowedInputCharOrColonOrWhitespace+ "\"") }
 
   FilterValue { allowedInputCharOrColon+ | stringWithQuotes }
+  InKey<key> { "in" colon key }
+
   filterToken<type> { type colon }
 
   DataSourceToken[@dialect=dataSourceFilter] { filterToken<"datasource"> }
@@ -50,5 +59,5 @@ filter<token> { token FilterValue }
   @precedence { StateToken, word }
   @precedence { TypeToken, word }
   @precedence { HealthToken, word }
+  @precedence { InKey, word }
 }
-

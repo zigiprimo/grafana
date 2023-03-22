@@ -42,6 +42,7 @@ export function parseQueryToFilter(
   filterMapper: QueryFilterMapper
 ) {
   traverseNodeTree(query, supportedTerms, (node) => {
+    console.log(node.type.id)
     if (node.type.id === terms.FilterExpression) {
       const filter = getFilterFromSyntaxNode(query, node);
 
