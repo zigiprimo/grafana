@@ -262,4 +262,8 @@ const (
 	// FlagInfluxdbBackendMigration
 	// Query InfluxDB InfluxQL without the proxy
 	FlagInfluxdbBackendMigration = "influxdbBackendMigration"
+
+	// FlagNewPanelCreationExperience
+	// New flow for creating a panel where the user is guided through the process of selecting a data source first
+	FlagNewPanelCreationExperience = "newPanelCreationExperience"
 )

@@ -428,5 +428,12 @@ var (
 			FrontendOnly: true,
 			Owner:        grafanaObservabilityMetricsSquad,
 		},
+		{
+			Name:         "newPanelCreationExperience",
+			Description:  "New flow for creating a panel where the user is guided through the process of selecting a data source first",
+			State:        FeatureStateAlpha,
+			FrontendOnly: true,
+			Owner:        grafanaDashboardsSquad,
+		},
 	}
 )
