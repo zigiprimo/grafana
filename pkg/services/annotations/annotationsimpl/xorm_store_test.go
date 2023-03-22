@@ -687,3 +687,58 @@ func setupRBACPermission(t *testing.T, repo xormRepositoryImpl, role *accesscont
 
 	require.NoError(t, err)
 }
+
+func BenchmarkFindTags_100(b *testing.B) {
+	benchmarkFindTags(b, 100)
+}
+
+func BenchmarkFindTags_1000(b *testing.B) {
+	benchmarkFindTags(b, 1000)
+}
+
+func BenchmarkFindTags_10000(b *testing.B) {
+	benchmarkFindTags(b, 10000)
+}
+
+func BenchmarkFindTags_100000(b *testing.B) {
+	benchmarkFindTags(b, 100000)
+}
+
+func benchmarkFindTags(b *testing.B, numAnnotations int) {
+	sql := db.InitTestDB(b)
+	var maximumTagsLength int64 = 60
+	repo := xormRepositoryImpl{db: sql, cfg: setting.NewCfg(), log: log.New("annotation.test"), tagService: tagimpl.ProvideService(sql, sql.Cfg), maximumTagsLength: maximumTagsLength}
+
+	tags := make([]string, 0, 2)
+	for i := 0; i < numAnnotations; i++ {
+		tags = tags[:0]
+		tags = append(tags, fmt.Sprintf("tag-%d", i))
+		if i == 0 {
+			tags = append(tags, "server:server-1")
+		}
+		annotation := &annotations.Item{
+			OrgID:       1,
+			UserID:      1,
+			DashboardID: int64(i),
+			Text:        "hello",
+			Type:        "alert",
+			Epoch:       10,
+			Tags:        tags,
+			Data:        simplejson.NewFromAny(map[string]interface{}{"data1": "I am a cool data", "data2": "I am another cool data"}),
+		}
+		err := repo.Add(context.Background(), annotation)
+		require.NoError(b, err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		result, err := repo.GetTags(context.Background(), &annotations.TagsQuery{
+			OrgID: 1,
+			Tag:   "server",
+		})
+		require.NoError(b, err)
+		require.Len(b, result.Tags, 1)
+		require.Equal(b, "server:server-1", result.Tags[0].Tag)
+		require.Equal(b, int64(1), result.Tags[0].Count)
+	}
+}
