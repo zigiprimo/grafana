@@ -22,14 +22,9 @@ func ProvideManager(processManager process.Service) *Manager {
 		processManager: processManager,
 		log:            log.New("plugin.manager"),
 	}
-	m.BasicService = services.NewBasicService(nil, m.run, m.stop).WithName(modules.Plugins)
+	m.BasicService = services.NewIdleService(nil, m.stop).WithName(modules.Plugins)
 
 	return m
-}
-
-func (m *Manager) run(ctx context.Context) error {
-	<-ctx.Done()
-	return ctx.Err()
 }
 
 func (m *Manager) stop(failure error) error {
