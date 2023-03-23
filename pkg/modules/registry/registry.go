@@ -6,6 +6,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/modules"
+	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginmanager"
 )
 
 type Registry interface{}
@@ -18,15 +19,18 @@ type registry struct {
 func ProvideRegistry(
 	moduleManager modules.Manager,
 	backgroundServiceRunner *backgroundsvcs.BackgroundServiceRunner,
+	plugins *pluginmanager.Manager,
 ) *registry {
 	return newRegistry(
 		log.New("modules.registry"),
 		moduleManager,
+		plugins,
 		backgroundServiceRunner,
 	)
 }
 
-func newRegistry(logger log.Logger, moduleManager modules.Manager, svcs ...services.NamedService) *registry {
+func newRegistry(logger log.Logger, moduleManager modules.Manager,
+	svcs ...services.NamedService) *registry {
 	r := &registry{
 		log:           logger,
 		moduleManager: moduleManager,

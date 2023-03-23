@@ -298,6 +298,10 @@ func (m *FakeProcessManager) Stop(ctx context.Context, pluginID string) error {
 	return nil
 }
 
+func (m *FakeProcessManager) Shutdown(_ context.Context) error {
+	return nil
+}
+
 type FakeBackendProcessProvider struct {
 	Requested map[string]int
 	Invoked   map[string]int

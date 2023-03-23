@@ -22,20 +22,10 @@ type Manager struct {
 }
 
 func ProvideService(pluginRegistry registry.Service) *Manager {
-	return NewManager(pluginRegistry)
-}
-
-func NewManager(pluginRegistry registry.Service) *Manager {
 	return &Manager{
 		pluginRegistry: pluginRegistry,
 		log:            log.New("plugin.process.manager"),
 	}
-}
-
-func (m *Manager) Run(ctx context.Context) error {
-	<-ctx.Done()
-	m.shutdown(ctx)
-	return ctx.Err()
 }
 
 func (m *Manager) Start(ctx context.Context, pluginID string) error {
@@ -79,8 +69,8 @@ func (m *Manager) Stop(ctx context.Context, pluginID string) error {
 	return nil
 }
 
-// shutdown stops all backend plugin processes
-func (m *Manager) shutdown(ctx context.Context) {
+// Shutdown stops all backend plugin processes
+func (m *Manager) Shutdown(ctx context.Context) error {
 	var wg sync.WaitGroup
 	for _, p := range m.pluginRegistry.Plugins(ctx) {
 		wg.Add(1)
@@ -94,6 +84,7 @@ func (m *Manager) shutdown(ctx context.Context) {
 		}(p, ctx)
 	}
 	wg.Wait()
+	return nil
 }
 
 func startPluginAndRestartKilledProcesses(ctx context.Context, p *plugins.Plugin) error {
