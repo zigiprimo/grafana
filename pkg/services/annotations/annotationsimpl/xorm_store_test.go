@@ -44,18 +44,6 @@ func TestIntegrationAnnotations(t *testing.T) {
 	}
 
 	t.Run("Testing annotation create, read, update and delete", func(t *testing.T) {
-		t.Cleanup(func() {
-			err := sql.WithDbSession(context.Background(), func(dbSession *db.Session) error {
-				_, err := dbSession.Exec("DELETE FROM annotation WHERE 1=1")
-				if err != nil {
-					return err
-				}
-				_, err = dbSession.Exec("DELETE FROM annotation_tag WHERE 1=1")
-				return err
-			})
-			assert.NoError(t, err)
-		})
-
 		quotaService := quotatest.New(false, nil)
 		dashboardStore, err := dashboardstore.ProvideDashboardStore(sql, sql.Cfg, featuremgmt.WithFeatures(), tagimpl.ProvideService(sql, sql.Cfg), quotaService)
 		require.NoError(t, err)
@@ -688,20 +676,20 @@ func setupRBACPermission(t *testing.T, repo xormRepositoryImpl, role *accesscont
 	require.NoError(t, err)
 }
 
-func BenchmarkFindTags_100(b *testing.B) {
-	benchmarkFindTags(b, 100)
-}
-
-func BenchmarkFindTags_1000(b *testing.B) {
+func BenchmarkFindTags_1k(b *testing.B) {
 	benchmarkFindTags(b, 1000)
 }
 
-func BenchmarkFindTags_10000(b *testing.B) {
+func BenchmarkFindTags_10k(b *testing.B) {
 	benchmarkFindTags(b, 10000)
 }
 
-func BenchmarkFindTags_100000(b *testing.B) {
+func BenchmarkFindTags_100k(b *testing.B) {
 	benchmarkFindTags(b, 100000)
+}
+
+func BenchmarkFindTags_1m(b *testing.B) {
+	benchmarkFindTags(b, 1000000)
 }
 
 func benchmarkFindTags(b *testing.B, numAnnotations int) {
@@ -709,36 +697,45 @@ func benchmarkFindTags(b *testing.B, numAnnotations int) {
 	var maximumTagsLength int64 = 60
 	repo := xormRepositoryImpl{db: sql, cfg: setting.NewCfg(), log: log.New("annotation.test"), tagService: tagimpl.ProvideService(sql, sql.Cfg), maximumTagsLength: maximumTagsLength}
 
-	tags := make([]string, 0, 2)
+	annotationWithTag := annotations.Item{
+		OrgID:       1,
+		UserID:      1,
+		DashboardID: int64(1),
+		Text:        "hello",
+		Type:        "alert",
+		Epoch:       10,
+		Tags:        []string{"outage", "error", "type:outage", "server:server-1"},
+		Data:        simplejson.NewFromAny(map[string]interface{}{"data1": "I am a cool data", "data2": "I am another cool data"}),
+	}
+	err := repo.Add(context.Background(), &annotationWithTag)
+	require.NoError(b, err)
+
+	newAnnotations := make([]annotations.Item, 0, numAnnotations)
 	for i := 0; i < numAnnotations; i++ {
-		tags = tags[:0]
-		tags = append(tags, fmt.Sprintf("tag-%d", i))
-		if i == 0 {
-			tags = append(tags, "server:server-1")
-		}
-		annotation := &annotations.Item{
+		newAnnotations = append(newAnnotations, annotations.Item{
 			OrgID:       1,
 			UserID:      1,
 			DashboardID: int64(i),
 			Text:        "hello",
 			Type:        "alert",
 			Epoch:       10,
-			Tags:        tags,
 			Data:        simplejson.NewFromAny(map[string]interface{}{"data1": "I am a cool data", "data2": "I am another cool data"}),
-		}
-		err := repo.Add(context.Background(), annotation)
-		require.NoError(b, err)
+		})
 	}
+	err = repo.AddMany(context.Background(), newAnnotations)
+	require.NoError(b, err)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		result, err := repo.GetTags(context.Background(), &annotations.TagsQuery{
 			OrgID: 1,
-			Tag:   "server",
+			Tag:   "outage",
 		})
 		require.NoError(b, err)
-		require.Len(b, result.Tags, 1)
-		require.Equal(b, "server:server-1", result.Tags[0].Tag)
+		require.Len(b, result.Tags, 2)
+		require.Equal(b, "outage", result.Tags[0].Tag)
+		require.Equal(b, "type:outage", result.Tags[1].Tag)
 		require.Equal(b, int64(1), result.Tags[0].Count)
+		require.Equal(b, int64(1), result.Tags[1].Count)
 	}
 }
