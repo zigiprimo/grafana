@@ -35,9 +35,10 @@ import * as DFImport from 'app/features/dataframe-import';
 import { SearchQuery } from 'app/features/search/service';
 
 import { GrafanaDatasource } from '../datasource';
-import { defaultQuery, GrafanaQuery, GrafanaQueryType } from '../types';
+import { defaultQuery, GrafanaQuery, GrafanaQueryType, TimeRegionConfig } from '../types';
 
 import SearchEditor from './SearchEditor';
+import { TimeRegionsEditor } from './TimeRegionsEditor';
 
 interface Props extends QueryEditorProps<GrafanaDatasource, GrafanaQuery>, Themeable2 {}
 
@@ -78,6 +79,13 @@ export class UnthemedQueryEditor extends PureComponent<Props, State> {
         label: 'Search',
         value: GrafanaQueryType.Search,
         description: 'Search for grafana resources',
+      });
+    }
+    if (hasAlphaPanels) {
+      this.queryTypes.push({
+        label: 'Time regions',
+        value: GrafanaQueryType.TimeRegions,
+        description: 'Configure a repeating time region',
       });
     }
     if (config.featureToggles.editPanelCSVDragAndDrop) {
@@ -445,6 +453,16 @@ export class UnthemedQueryEditor extends PureComponent<Props, State> {
     onRunQuery();
   };
 
+  onTimeRegionsChanged = (timeRegions?: TimeRegionConfig[]) => {
+    const { query, onChange, onRunQuery } = this.props;
+
+    onChange({
+      ...query,
+      timeRegions,
+    });
+    onRunQuery();
+  };
+
   render() {
     const query = {
       ...defaultQuery,
@@ -485,6 +503,9 @@ export class UnthemedQueryEditor extends PureComponent<Props, State> {
         {queryType === GrafanaQueryType.LiveMeasurements && this.renderMeasurementsQuery()}
         {queryType === GrafanaQueryType.List && this.renderListPublicFiles()}
         {queryType === GrafanaQueryType.Snapshot && this.renderSnapshotQuery()}
+        {queryType === GrafanaQueryType.TimeRegions && (
+          <TimeRegionsEditor value={query.timeRegions} onChange={this.onTimeRegionsChanged} />
+        )}
         {queryType === GrafanaQueryType.Search && (
           <SearchEditor value={query.search ?? {}} onChange={this.onSearchChange} />
         )}
