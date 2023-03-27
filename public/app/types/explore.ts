@@ -20,10 +20,7 @@ import { RichHistorySearchFilters, RichHistorySettings } from 'app/core/utils/ri
 
 import { CorrelationData } from '../features/correlations/useCorrelations';
 
-export enum ExploreId {
-  left = 'left',
-  right = 'right',
-}
+export type ExploreId = string;
 
 export type ExploreQueryParams = {
   left: string;
@@ -38,14 +35,10 @@ export interface ExploreState {
    * True if time interval for panels are synced. Only possible with split mode.
    */
   syncedTimes: boolean;
-  /**
-   * Explore state of the left split (left is default in non-split view).
-   */
-  left: ExploreItemState;
-  /**
-   * Explore state of the right area in split view.
-   */
-  right?: ExploreItemState;
+
+  panes: {
+    [paneId: ExploreId]: ExploreItemState;
+  };
 
   correlations?: CorrelationData[];
 

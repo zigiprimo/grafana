@@ -74,7 +74,7 @@ export const splitCloseAction = createAction<SplitCloseActionPayload>('explore/s
  */
 export const stateSave = (options?: { replace?: boolean }): ThunkResult<void> => {
   return (dispatch, getState) => {
-    const { left, right } = getState().explore;
+    const { left, right } = getState().explore.panes;
     const orgId = getState().user.orgId.toString();
     const urlStates: { [index: string]: string | null } = { orgId };
 
@@ -103,7 +103,7 @@ export const lastSavedUrl: UrlQueryMap = {};
  */
 export const splitOpen = <T extends DataQuery = DataQuery>(options?: SplitOpenOptions<T>): ThunkResult<void> => {
   return async (dispatch, getState) => {
-    const leftState: ExploreItemState = getState().explore[ExploreId.left];
+    const leftState: ExploreItemState = getState().explore.panes['left'];
     const leftUrlState = getUrlStateFromPaneState(leftState);
     let rightUrlState: ExploreUrlState = leftUrlState;
 
@@ -170,8 +170,9 @@ export const navigateToExplore = (
 const initialExploreItemState = makeExplorePaneState();
 export const initialExploreState: ExploreState = {
   syncedTimes: false,
-  left: initialExploreItemState,
-  right: undefined,
+  panes: {
+    left: initialExploreItemState,
+  },
   correlations: undefined,
   richHistoryStorageFull: false,
   richHistoryLimitExceededWarningShown: false,
@@ -189,12 +190,14 @@ export const exploreReducer = (state = initialExploreState, action: AnyAction): 
   if (splitCloseAction.match(action)) {
     const { itemId } = action.payload;
     const targetSplit = {
-      left: itemId === ExploreId.left ? state.right! : state.left,
-      right: undefined,
+      left: itemId === 'left' ? state.panes.left : state.panes.right,
+      // right: undefined,
     };
     return {
       ...state,
-      ...targetSplit,
+      panes: {
+        ...targetSplit,
+      },
       largerExploreId: undefined,
       maxedExploreId: undefined,
       evenSplitPanes: true,
@@ -264,18 +267,22 @@ export const exploreReducer = (state = initialExploreState, action: AnyAction): 
   }
 
   if (resetExploreAction.match(action)) {
-    const leftState = state[ExploreId.left];
-    const rightState = state[ExploreId.right];
+    // TODO: Get the item that is positioned on the left
+    const leftState = state.panes['left'];
+
+    // FIXME: reducers should REALLY not have side effects.
     stopQueryState(leftState.querySubscription);
-    if (rightState) {
-      stopQueryState(rightState.querySubscription);
+    for (const [, pane] of Object.entries(state.panes).filter(([exploreId]) => exploreId !== 'left')) {
+      stopQueryState(pane.querySubscription);
     }
 
     return {
       ...initialExploreState,
-      left: {
-        ...initialExploreItemState,
-        queries: state.left.queries,
+      panes: {
+        left: {
+          ...initialExploreItemState,
+          queries: state.panes.left.queries,
+        },
       },
     };
   }
@@ -291,9 +298,14 @@ export const exploreReducer = (state = initialExploreState, action: AnyAction): 
   if (action.payload) {
     const { exploreId } = action.payload;
     if (exploreId !== undefined) {
-      // @ts-ignore
-      const explorePaneState = state[exploreId];
-      return { ...state, [exploreId]: paneReducer(explorePaneState, action) };
+      const explorePaneState = state.panes[exploreId];
+      return {
+        ...state,
+        panes: {
+          ...state.panes,
+          [exploreId]: paneReducer(explorePaneState, action),
+        },
+      };
     }
   }
 
