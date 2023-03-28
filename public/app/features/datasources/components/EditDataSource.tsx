@@ -106,7 +106,6 @@ export function EditDataSourceView({
   onOptionsChange,
   onTest,
   onUpdate,
-  dashboardUrl,
 }: ViewProps) {
   const { plugin, loadError, testingStatus, loading } = dataSourceSettings;
   const { readOnly, hasWriteRights, hasDeleteRights } = dataSourceRights;

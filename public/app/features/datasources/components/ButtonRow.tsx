@@ -7,6 +7,7 @@ import { AccessControlAction } from 'app/types';
 
 export interface Props {
   exploreUrl: string;
+  dashboardUrl: string;
   canSave: boolean;
   canDelete: boolean;
   onDelete: () => void;

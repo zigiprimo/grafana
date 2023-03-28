@@ -13,6 +13,7 @@ const setup = (propOverrides?: object) => {
     onDelete: jest.fn(),
     onTest: jest.fn(),
     exploreUrl: '/explore',
+    dashboardUrl: '/dashboards/new',
   };
 
   Object.assign(props, propOverrides);
