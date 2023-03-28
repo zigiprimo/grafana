@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/stretchr/testify/require"
-	ptr "github.com/xorcare/pointer"
 
 	"github.com/grafana/grafana/pkg/expr"
 	"github.com/grafana/grafana/pkg/plugins"
@@ -32,7 +32,7 @@ func TestEvaluateExecutionResult(t *testing.T) {
 			desc: "zero valued single instance is single Normal state result",
 			execResults: ExecutionResults{
 				Condition: []*data.Frame{
-					data.NewFrame("", data.NewField("", nil, []*float64{ptr.Float64(0)})),
+					data.NewFrame("", data.NewField("", nil, []*float64{util.Pointer(0.0)})),
 				},
 			},
 			expectResultLength: 1,
@@ -46,7 +46,7 @@ func TestEvaluateExecutionResult(t *testing.T) {
 			desc: "non-zero valued single instance is single Alerting state result",
 			execResults: ExecutionResults{
 				Condition: []*data.Frame{
-					data.NewFrame("", data.NewField("", nil, []*float64{ptr.Float64(1)})),
+					data.NewFrame("", data.NewField("", nil, []*float64{util.Pointer(1.0)})),
 				},
 			},
 			expectResultLength: 1,
@@ -141,7 +141,7 @@ func TestEvaluateExecutionResult(t *testing.T) {
 			execResults: ExecutionResults{
 				Condition: []*data.Frame{
 					data.NewFrame("",
-						data.NewField("", nil, []*float64{ptr.Float64(23)}),
+						data.NewField("", nil, []*float64{util.Pointer(23.0)}),
 						data.NewField("", nil, []*float64{}),
 					),
 				},
@@ -177,7 +177,7 @@ func TestEvaluateExecutionResult(t *testing.T) {
 			execResults: ExecutionResults{
 				Condition: []*data.Frame{
 					data.NewFrame("",
-						data.NewField("", nil, []*float64{ptr.Float64(2), ptr.Float64(3)}),
+						data.NewField("", nil, []*float64{util.Pointer(2.0), util.Pointer(3.0)}),
 					),
 				},
 			},
@@ -228,10 +228,10 @@ func TestEvaluateExecutionResult(t *testing.T) {
 			execResults: ExecutionResults{
 				Condition: []*data.Frame{
 					data.NewFrame("",
-						data.NewField("", nil, []*float64{ptr.Float64(1)}),
+						data.NewField("", nil, []*float64{util.Pointer(1.0)}),
 					),
 					data.NewFrame("",
-						data.NewField("", nil, []*float64{ptr.Float64(2)}),
+						data.NewField("", nil, []*float64{util.Pointer(2.0)}),
 					),
 				},
 			},
@@ -271,7 +271,7 @@ func TestEvaluateExecutionResult(t *testing.T) {
 						data.NewField("", nil, []float64{3}),
 					),
 					data.NewFrame("",
-						data.NewField("", data.Labels{"a": "b"}, []*float64{ptr.Float64(2)}),
+						data.NewField("", data.Labels{"a": "b"}, []*float64{util.Pointer(2.0)}),
 					),
 				},
 			},
@@ -379,7 +379,7 @@ func TestValidate(t *testing.T) {
 			condition: func(services services) models.Condition {
 				dsQuery := models.GenerateAlertQuery()
 				ds := &datasources.DataSource{
-					Uid:  dsQuery.DatasourceUID,
+					UID:  dsQuery.DatasourceUID,
 					Type: util.GenerateShortUID(),
 				}
 				services.cache.DataSources = append(services.cache.DataSources, ds)
@@ -405,7 +405,7 @@ func TestValidate(t *testing.T) {
 			condition: func(services services) models.Condition {
 				dsQuery := models.GenerateAlertQuery()
 				ds := &datasources.DataSource{
-					Uid:  dsQuery.DatasourceUID,
+					UID:  dsQuery.DatasourceUID,
 					Type: util.GenerateShortUID(),
 				}
 				services.cache.DataSources = append(services.cache.DataSources, ds)
@@ -444,7 +444,7 @@ func TestValidate(t *testing.T) {
 			condition: func(services services) models.Condition {
 				dsQuery := models.GenerateAlertQuery()
 				ds := &datasources.DataSource{
-					Uid:  dsQuery.DatasourceUID,
+					UID:  dsQuery.DatasourceUID,
 					Type: util.GenerateShortUID(),
 				}
 				services.cache.DataSources = append(services.cache.DataSources, ds)
@@ -464,11 +464,11 @@ func TestValidate(t *testing.T) {
 				dsQuery1 := models.GenerateAlertQuery()
 				dsQuery2 := models.GenerateAlertQuery()
 				ds1 := &datasources.DataSource{
-					Uid:  dsQuery1.DatasourceUID,
+					UID:  dsQuery1.DatasourceUID,
 					Type: util.GenerateShortUID(),
 				}
 				ds2 := &datasources.DataSource{
-					Uid:  dsQuery2.DatasourceUID,
+					UID:  dsQuery2.DatasourceUID,
 					Type: util.GenerateShortUID(),
 				}
 				services.cache.DataSources = append(services.cache.DataSources, ds1, ds2)
@@ -499,7 +499,7 @@ func TestValidate(t *testing.T) {
 			condition: func(services services) models.Condition {
 				dsQuery := models.GenerateAlertQuery()
 				ds := &datasources.DataSource{
-					Uid:  dsQuery.DatasourceUID,
+					UID:  dsQuery.DatasourceUID,
 					Type: util.GenerateShortUID(),
 				}
 				services.cache.DataSources = append(services.cache.DataSources, ds)
@@ -543,4 +543,39 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestEvaluateRaw(t *testing.T) {
+	t.Run("should timeout if request takes too long", func(t *testing.T) {
+		unexpectedResponse := &backend.QueryDataResponse{}
+
+		e := conditionEvaluator{
+			pipeline: nil,
+			expressionService: &fakeExpressionService{
+				hook: func(ctx context.Context, now time.Time, pipeline expr.DataPipeline) (*backend.QueryDataResponse, error) {
+					ts := time.Now()
+					for time.Since(ts) <= 10*time.Second {
+						if ctx.Err() != nil {
+							return nil, ctx.Err()
+						}
+						time.Sleep(10 * time.Millisecond)
+					}
+					return unexpectedResponse, nil
+				},
+			},
+			condition:   models.Condition{},
+			evalTimeout: 10 * time.Millisecond,
+		}
+
+		_, err := e.EvaluateRaw(context.Background(), time.Now())
+		require.ErrorIs(t, err, context.DeadlineExceeded)
+	})
+}
+
+type fakeExpressionService struct {
+	hook func(ctx context.Context, now time.Time, pipeline expr.DataPipeline) (*backend.QueryDataResponse, error)
+}
+
+func (f fakeExpressionService) ExecutePipeline(ctx context.Context, now time.Time, pipeline expr.DataPipeline) (*backend.QueryDataResponse, error) {
+	return f.hook(ctx, now, pipeline)
 }

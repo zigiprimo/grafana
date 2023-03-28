@@ -25,6 +25,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/org/orgimpl"
 	"github.com/grafana/grafana/pkg/services/quota/quotaimpl"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
+	"github.com/grafana/grafana/pkg/services/supportbundles/supportbundlestest"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/services/user/userimpl"
 	"github.com/grafana/grafana/pkg/setting"
@@ -51,6 +52,11 @@ func StartGrafanaEnv(t *testing.T, grafDir, cfgPath string) (string, *server.Tes
 	env, err := server.InitializeForTest(cmdLineArgs, serverOpts, apiServerOpts)
 	require.NoError(t, err)
 	require.NoError(t, env.SQLStore.Sync())
+
+	require.NotNil(t, env.SQLStore.Cfg)
+	dbSec, err := env.SQLStore.Cfg.Raw.GetSection("database")
+	require.NoError(t, err)
+	assert.Greater(t, dbSec.Key("query_retries").MustInt(), 0)
 
 	go func() {
 		// When the server runs, it will also build and initialize the service graph
@@ -345,6 +351,14 @@ func CreateGrafDir(t *testing.T, opts ...GrafanaOpts) (string, string) {
 	return tmpDir, cfgPath
 }
 
+func SQLiteIntegrationTest(t *testing.T) {
+	t.Helper()
+
+	if testing.Short() || !db.IsTestDbSQLite() {
+		t.Skip("skipping integration test")
+	}
+}
+
 type GrafanaOpts struct {
 	EnableCSP                             bool
 	EnableFeatureToggles                  []string
@@ -367,19 +381,25 @@ type GrafanaOpts struct {
 	QueryRetries                          int64
 }
 
-func CreateUser(t *testing.T, store *sqlstore.SQLStore, cmd user.CreateUserCommand) int64 {
+func CreateUser(t *testing.T, store *sqlstore.SQLStore, cmd user.CreateUserCommand) *user.User {
 	t.Helper()
 
 	store.Cfg.AutoAssignOrg = true
 	store.Cfg.AutoAssignOrgId = 1
+	cmd.OrgID = 1
 
 	quotaService := quotaimpl.ProvideService(store, store.Cfg)
 	orgService, err := orgimpl.ProvideService(store, store.Cfg, quotaService)
 	require.NoError(t, err)
-	usrSvc, err := userimpl.ProvideService(store, orgService, store.Cfg, nil, nil, quotaService)
+	usrSvc, err := userimpl.ProvideService(store, orgService, store.Cfg, nil, nil, quotaService, supportbundlestest.NewFakeBundleService())
 	require.NoError(t, err)
 
-	u, err := usrSvc.CreateUserForTests(context.Background(), &cmd)
+	o, err := orgService.CreateWithMember(context.Background(), &org.CreateOrgCommand{Name: fmt.Sprintf("test org %d", time.Now().UnixNano())})
 	require.NoError(t, err)
-	return u.ID
+
+	cmd.OrgID = o.ID
+
+	u, err := usrSvc.Create(context.Background(), &cmd)
+	require.NoError(t, err)
+	return u
 }

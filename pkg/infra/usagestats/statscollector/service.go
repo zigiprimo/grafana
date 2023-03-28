@@ -8,27 +8,27 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/httpclient"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/metrics"
 	"github.com/grafana/grafana/pkg/infra/usagestats"
+	"github.com/grafana/grafana/pkg/infra/usagestats/validator"
 	"github.com/grafana/grafana/pkg/login/social"
-	"github.com/grafana/grafana/pkg/models"
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/registry"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
-	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/services/stats"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
 type Service struct {
 	cfg                *setting.Cfg
-	sqlstore           sqlstore.Store
+	sqlstore           db.DB
 	plugins            plugins.Store
-	social             social.Service
 	usageStats         usagestats.Service
+	validator          validator.Service
 	statsService       stats.Service
 	features           *featuremgmt.FeatureManager
 	datasources        datasources.DataSourceService
@@ -44,9 +44,10 @@ type Service struct {
 
 func ProvideService(
 	us usagestats.Service,
+	validator validator.Service,
 	statsService stats.Service,
 	cfg *setting.Cfg,
-	store sqlstore.Store,
+	store db.DB,
 	social social.Service,
 	plugins plugins.Store,
 	features *featuremgmt.FeatureManager,
@@ -57,8 +58,8 @@ func ProvideService(
 		cfg:                cfg,
 		sqlstore:           store,
 		plugins:            plugins,
-		social:             social,
 		usageStats:         us,
+		validator:          validator,
 		statsService:       statsService,
 		features:           features,
 		datasources:        datasourceService,
@@ -109,7 +110,7 @@ func (s *Service) Run(ctx context.Context) error {
 func (s *Service) collectSystemStats(ctx context.Context) (map[string]interface{}, error) {
 	m := map[string]interface{}{}
 
-	statsQuery := models.GetSystemStatsQuery{}
+	statsQuery := stats.GetSystemStatsQuery{}
 	if err := s.statsService.GetSystemStats(ctx, &statsQuery); err != nil {
 		s.log.Error("Failed to get system stats", "error", err)
 		return nil, err
@@ -179,25 +180,6 @@ func (s *Service) collectSystemStats(ctx context.Context) (map[string]interface{
 	m["stats.packaging."+s.cfg.Packaging+".count"] = 1
 	m["stats.distributor."+s.cfg.ReportingDistributor+".count"] = 1
 
-	// Add stats about auth configuration
-	authTypes := map[string]bool{}
-	authTypes["anonymous"] = s.cfg.AnonymousEnabled
-	authTypes["basic_auth"] = s.cfg.BasicAuthEnabled
-	authTypes["ldap"] = s.cfg.LDAPEnabled
-	authTypes["auth_proxy"] = s.cfg.AuthProxyEnabled
-
-	for provider, enabled := range s.social.GetOAuthProviders() {
-		authTypes["oauth_"+provider] = enabled
-	}
-
-	for authType, enabled := range authTypes {
-		enabledValue := 0
-		if enabled {
-			enabledValue = 1
-		}
-		m["stats.auth_enabled."+authType+".count"] = enabledValue
-	}
-
 	m["stats.uptime"] = int64(time.Since(s.startTime).Seconds())
 
 	featureUsageStats := s.features.GetUsageStats(ctx)
@@ -222,7 +204,7 @@ func (s *Service) collectAdditionalMetrics(ctx context.Context) (map[string]inte
 func (s *Service) collectAlertNotifierStats(ctx context.Context) (map[string]interface{}, error) {
 	m := map[string]interface{}{}
 	// get stats about alert notifier usage
-	anStats := models.GetAlertNotifierUsageStatsQuery{}
+	anStats := stats.GetAlertNotifierUsageStatsQuery{}
 	if err := s.statsService.GetAlertNotifiersUsageStats(ctx, &anStats); err != nil {
 		s.log.Error("Failed to get alert notification stats", "error", err)
 		return nil, err
@@ -236,7 +218,7 @@ func (s *Service) collectAlertNotifierStats(ctx context.Context) (map[string]int
 
 func (s *Service) collectDatasourceStats(ctx context.Context) (map[string]interface{}, error) {
 	m := map[string]interface{}{}
-	dsStats := models.GetDataSourceStatsQuery{}
+	dsStats := stats.GetDataSourceStatsQuery{}
 	if err := s.statsService.GetDataSourceStats(ctx, &dsStats); err != nil {
 		s.log.Error("Failed to get datasource stats", "error", err)
 		return nil, err
@@ -247,7 +229,7 @@ func (s *Service) collectDatasourceStats(ctx context.Context) (map[string]interf
 	// as sending that name could be sensitive information
 	dsOtherCount := 0
 	for _, dsStat := range dsStats.Result {
-		if s.usageStats.ShouldBeReported(ctx, dsStat.Type) {
+		if s.validator.ShouldBeReported(ctx, dsStat.Type) {
 			m["stats.ds."+dsStat.Type+".count"] = dsStat.Count
 		} else {
 			dsOtherCount += dsStat.Count
@@ -261,11 +243,12 @@ func (s *Service) collectDatasourceStats(ctx context.Context) (map[string]interf
 func (s *Service) collectElasticStats(ctx context.Context) (map[string]interface{}, error) {
 	m := map[string]interface{}{}
 	esDataSourcesQuery := datasources.GetDataSourcesByTypeQuery{Type: datasources.DS_ES}
-	if err := s.datasources.GetDataSourcesByType(ctx, &esDataSourcesQuery); err != nil {
+	dataSources, err := s.datasources.GetDataSourcesByType(ctx, &esDataSourcesQuery)
+	if err != nil {
 		s.log.Error("Failed to get elasticsearch json data", "error", err)
 		return nil, err
 	}
-	for _, data := range esDataSourcesQuery.Result {
+	for _, data := range dataSources {
 		esVersion, err := data.JsonData.Get("esVersion").String()
 		if err != nil {
 			continue
@@ -283,7 +266,7 @@ func (s *Service) collectDatasourceAccess(ctx context.Context) (map[string]inter
 	m := map[string]interface{}{}
 
 	// fetch datasource access stats
-	dsAccessStats := models.GetDataSourceAccessStatsQuery{}
+	dsAccessStats := stats.GetDataSourceAccessStatsQuery{}
 	if err := s.statsService.GetDataSourceAccessStats(ctx, &dsAccessStats); err != nil {
 		s.log.Error("Failed to get datasource access stats", "error", err)
 		return nil, err
@@ -300,7 +283,7 @@ func (s *Service) collectDatasourceAccess(ctx context.Context) (map[string]inter
 
 		access := strings.ToLower(dsAccessStat.Access)
 
-		if s.usageStats.ShouldBeReported(ctx, dsAccessStat.Type) {
+		if s.validator.ShouldBeReported(ctx, dsAccessStat.Type) {
 			m["stats.ds_access."+dsAccessStat.Type+"."+access+".count"] = dsAccessStat.Count
 		} else {
 			old := dsAccessOtherCount[access]
@@ -319,7 +302,7 @@ func (s *Service) updateTotalStats(ctx context.Context) bool {
 		return false
 	}
 
-	statsQuery := models.GetSystemStatsQuery{}
+	statsQuery := stats.GetSystemStatsQuery{}
 	if err := s.statsService.GetSystemStats(ctx, &statsQuery); err != nil {
 		s.log.Error("Failed to get system stats", "error", err)
 		return false
@@ -333,6 +316,7 @@ func (s *Service) updateTotalStats(ctx context.Context) bool {
 	metrics.MStatTotalDashboards.Set(float64(statsQuery.Result.Dashboards))
 	metrics.MStatTotalFolders.Set(float64(statsQuery.Result.Folders))
 	metrics.MStatTotalUsers.Set(float64(statsQuery.Result.Users))
+	metrics.MStatTotalTeams.Set(float64(statsQuery.Result.Teams))
 	metrics.MStatActiveUsers.Set(float64(statsQuery.Result.ActiveUsers))
 	metrics.MStatTotalPlaylists.Set(float64(statsQuery.Result.Playlists))
 	metrics.MStatTotalOrgs.Set(float64(statsQuery.Result.Orgs))
@@ -354,7 +338,7 @@ func (s *Service) updateTotalStats(ctx context.Context) bool {
 
 	metrics.MStatTotalPublicDashboards.Set(float64(statsQuery.Result.PublicDashboards))
 
-	dsStats := models.GetDataSourceStatsQuery{}
+	dsStats := stats.GetDataSourceStatsQuery{}
 	if err := s.statsService.GetDataSourceStats(ctx, &dsStats); err != nil {
 		s.log.Error("Failed to get datasource stats", "error", err)
 		return true

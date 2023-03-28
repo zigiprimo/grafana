@@ -1,12 +1,16 @@
 ---
 aliases:
-  - /docs/grafana/latest/enterprise/usage-insights/export-logs/
+  - ../../enterprise/usage-insights/export-logs/
 description: Export logs of usage insights
 keywords:
   - grafana
   - export
   - usage-insights
   - enterprise
+labels:
+  products:
+    - cloud
+    - oss
 title: Export logs of usage insights
 weight: 900
 ---

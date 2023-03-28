@@ -2,6 +2,7 @@ import DataEditor, { GridCell, Item, GridColumn, GridCellKind, EditableGridCell 
 import React, { useEffect, useRef, useState } from 'react';
 
 import { ArrayVector, DataFrame, DataFrameJSON, dataFrameToJSON, Field, FieldType, MutableDataFrame, PanelProps } from '@grafana/data';
+import { PanelDataErrorView } from '@grafana/runtime';
 // eslint-disable-next-line import/order
 import { useTheme2 } from '@grafana/ui';
 
@@ -12,12 +13,12 @@ import { GrafanaQuery, GrafanaQueryType } from 'app/plugins/datasource/grafana/t
 
 import { PanelOptions } from './models.gen';
 
-
 interface Props extends PanelProps<PanelOptions> {}
 
-export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, height }) => {
+export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, height, fieldConfig }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [gridData, setGridData] = useState<DataFrame | null>(data.series[0]);
+  const [isSnapshotted, setIsSnapshotted] = useState<boolean>(false);
 
   const theme = useTheme2();
   const gridTheme = {
@@ -34,9 +35,22 @@ export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, heigh
     bgHeaderHasFocus: theme.colors.background.secondary,
     bgHeaderHovered: theme.colors.background.secondary,
   };
+  const grafanaDS = {
+    type: 'grafana',
+    uid: 'grafana',
+  }
 
   useEffect(() => {
-    if (!gridData) {
+    const panelModel = getDashboardSrv().getCurrent()?.getPanelById(id);
+
+    if (panelModel?.datasource !== grafanaDS) {
+      setIsSnapshotted(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data])
+
+  useEffect(() => {
+    if (!isSnapshotted) {
       return;
     }
 
@@ -45,19 +59,14 @@ export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, heigh
     if (panelModel) {
       console.log('Updating panel model', gridData);
 
-      const grafanaDS = {
-        type: 'grafana',
-        uid: 'grafana',
-      };
+      const snapshot: DataFrameJSON[] = [dataFrameToJSON(gridData!)];
 
-      const snapshot: DataFrameJSON[] = [dataFrameToJSON(gridData)];
-
-      const query = {
+      const query: GrafanaQuery = {
         refId: 'A',
         queryType: GrafanaQueryType.Snapshot,
         snapshot,
         datasource: grafanaDS,
-      } as GrafanaQuery;
+      };
 
       panelModel.updateQueries({
         dataSource: grafanaDS,
@@ -65,37 +74,13 @@ export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, heigh
       })
 
       panelModel.refresh();
+      panelModel.render();
     }
-  }, [gridData, id]);
-
-  // useEffect(() => {
-  //   if (!options.usePanelData) {
-  //     setGridData(null);
-  //     return;
-  //   } else {
-  //     if (gridData && gridData.length) {
-  //       return;
-  //     }
-  //   }
-
-  //   const datagridDF: DataFrame[] = [];
-
-  //   if (!data.series[0]) {
-  //     throw new Error('OH NO 3');
-  //   }
-
-  //   data.series[0].fields.forEach((field) => {
-  //     datagridData.push({
-  //       name: field.name,
-  //       values: field.values.toArray(),
-  //     });
-  //   });
-
-  //   setGridData(datagridData);
-  // }, [data.series, gridData.length, id, options.usePanelData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gridData]);
 
   const getCorrectData = (): DataFrame => {
-    if (gridData) {
+    if (gridData && isSnapshotted) {
       return gridData;
     }
 
@@ -122,6 +107,17 @@ export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, heigh
     if (value === undefined || value === null) {
       throw new Error('OH NO 2');
     }
+
+    // If in panel edit, do not allow editing.
+    // if (getDashboardSrv().getCurrent()?.getPanelById(id)?.isEditing) {
+    //   return {
+    //     kind: GridCellKind.Text,
+    //     data: value,
+    //     allowOverlay: false,
+    //     readonly: true,
+    //     displayData: value.toString(),
+    //   };
+    // }
 
     //TODO there is an error with number gridcells when opening the overlay and editing. so I ignored and made everything text for now
 
@@ -171,6 +167,10 @@ export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, heigh
   };
 
   const onCellEdited = (cell: Item, newValue: EditableGridCell) => {
+    if (getDashboardSrv().getCurrent()?.getPanelById(id)?.isEditing) {
+      return;
+    }
+
     const frame = getCorrectData();
 
     const [col, row] = cell;
@@ -190,6 +190,7 @@ export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, heigh
       values[row] = String(newValue.data) ?? '';
       newFrame.fields[col].values = new ArrayVector(values);
 
+      setIsSnapshotted(true);
       setGridData(newFrame);
     }
   };
@@ -237,10 +238,15 @@ export const DataGridPanel: React.FC<Props> = ({ options, data, id, width, heigh
     document.body.appendChild(portal);
   }
 
-  //TODO multiple series support
-  const numRows = getCorrectData().length;
+  const usedData = getCorrectData();
 
-  console.log('rerender');
+  if (!usedData) {
+    return <PanelDataErrorView panelId={id} fieldConfig={fieldConfig} data={data} />;
+  }
+
+  //TODO multiple series support
+  const numRows = usedData.length;
+
   return (
     <>
       <DataEditor

@@ -1,8 +1,7 @@
 ---
 aliases:
-  - /docs/grafana/latest/basics/exemplars/
-  - /docs/grafana/latest/basics/exemplars/view-exemplars/
-  - /docs/grafana/latest/fundamentals/exemplars/
+  - ../basics/exemplars/
+  - ../basics/exemplars/view-exemplars/
 description: Exemplars
 keywords:
   - grafana
@@ -10,7 +9,7 @@ keywords:
   - exemplars
   - prometheus
 title: Exemplars
-weight: 400
+weight: 750
 ---
 
 # Introduction to exemplars

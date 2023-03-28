@@ -1,6 +1,7 @@
 package oauthtoken
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"net/http"
@@ -8,29 +9,29 @@ import (
 	"testing"
 	"time"
 
-	"github.com/grafana/grafana/pkg/infra/usagestats"
-	"github.com/grafana/grafana/pkg/login/social"
-	"github.com/grafana/grafana/pkg/models"
-	"github.com/grafana/grafana/pkg/services/login"
-	"github.com/grafana/grafana/pkg/services/login/authinfoservice"
-	"github.com/grafana/grafana/pkg/services/user"
-	"github.com/grafana/grafana/pkg/setting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/grafana/grafana/pkg/infra/usagestats"
+	"github.com/grafana/grafana/pkg/login/social"
+	"github.com/grafana/grafana/pkg/services/login"
+	"github.com/grafana/grafana/pkg/services/login/authinfoservice"
+	"github.com/grafana/grafana/pkg/services/user"
+	"github.com/grafana/grafana/pkg/setting"
 )
 
 func TestService_HasOAuthEntry(t *testing.T) {
 	testCases := []struct {
 		name            string
 		user            *user.SignedInUser
-		want            *models.UserAuth
+		want            *login.UserAuth
 		wantExist       bool
 		wantErr         bool
 		err             error
 		getAuthInfoErr  error
-		getAuthInfoUser models.UserAuth
+		getAuthInfoUser login.UserAuth
 	}{
 		{
 			name:      "returns false without an error in case user is nil",
@@ -61,15 +62,15 @@ func TestService_HasOAuthEntry(t *testing.T) {
 			want:            nil,
 			wantExist:       false,
 			wantErr:         false,
-			getAuthInfoUser: models.UserAuth{AuthModule: "auth_saml"},
+			getAuthInfoUser: login.UserAuth{AuthModule: "auth_saml"},
 		},
 		{
 			name:            "returns true when the auth entry is found",
 			user:            &user.SignedInUser{},
-			want:            &models.UserAuth{AuthModule: "oauth_generic_oauth"},
+			want:            &login.UserAuth{AuthModule: "oauth_generic_oauth"},
 			wantExist:       true,
 			wantErr:         false,
-			getAuthInfoUser: models.UserAuth{AuthModule: "oauth_generic_oauth"},
+			getAuthInfoUser: login.UserAuth{AuthModule: "oauth_generic_oauth"},
 		},
 	}
 	for _, tc := range testCases {
@@ -101,7 +102,7 @@ func TestService_TryTokenRefresh_ValidToken(t *testing.T) {
 		Expiry:       time.Now(),
 		TokenType:    "Bearer",
 	}
-	usr := &models.UserAuth{
+	usr := &login.UserAuth{
 		AuthModule:        "oauth_generic_oauth",
 		OAuthAccessToken:  token.AccessToken,
 		OAuthRefreshToken: token.RefreshToken,
@@ -117,7 +118,7 @@ func TestService_TryTokenRefresh_ValidToken(t *testing.T) {
 	assert.Nil(t, err)
 	socialConnector.AssertNumberOfCalls(t, "TokenSource", 1)
 
-	authInfoQuery := &models.GetAuthInfoQuery{}
+	authInfoQuery := &login.GetAuthInfoQuery{}
 	err = srv.AuthInfoService.GetAuthInfo(ctx, authInfoQuery)
 
 	assert.Nil(t, err)
@@ -139,7 +140,7 @@ func TestService_TryTokenRefresh_NoRefreshToken(t *testing.T) {
 		Expiry:       time.Now().Add(-time.Hour),
 		TokenType:    "Bearer",
 	}
-	usr := &models.UserAuth{
+	usr := &login.UserAuth{
 		AuthModule:        "oauth_generic_oauth",
 		OAuthAccessToken:  token.AccessToken,
 		OAuthRefreshToken: token.RefreshToken,
@@ -174,7 +175,7 @@ func TestService_TryTokenRefresh_ExpiredToken(t *testing.T) {
 		TokenType:    "Bearer",
 	}
 
-	usr := &models.UserAuth{
+	usr := &login.UserAuth{
 		AuthModule:        "oauth_generic_oauth",
 		OAuthAccessToken:  token.AccessToken,
 		OAuthRefreshToken: token.RefreshToken,
@@ -191,7 +192,7 @@ func TestService_TryTokenRefresh_ExpiredToken(t *testing.T) {
 	assert.Nil(t, err)
 	socialConnector.AssertNumberOfCalls(t, "TokenSource", 1)
 
-	authInfoQuery := &models.GetAuthInfoQuery{}
+	authInfoQuery := &login.GetAuthInfoQuery{}
 	err = srv.AuthInfoService.GetAuthInfo(ctx, authInfoQuery)
 
 	assert.Nil(t, err)
@@ -207,7 +208,7 @@ func TestService_TryTokenRefresh_DifferentAuthModuleForUser(t *testing.T) {
 	srv, _, socialConnector := setupOAuthTokenService(t)
 	ctx := context.Background()
 	token := &oauth2.Token{}
-	usr := &models.UserAuth{
+	usr := &login.UserAuth{
 		AuthModule: "auth.saml",
 	}
 
@@ -303,34 +304,38 @@ func (m *MockSocialConnector) TokenSource(ctx context.Context, t *oauth2.Token) 
 	return args.Get(0).(oauth2.TokenSource)
 }
 
+func (m *MockSocialConnector) SupportBundleContent(bf *bytes.Buffer) error {
+	return nil
+}
+
 type FakeAuthInfoStore struct {
 	login.Store
 	ExpectedError                   error
 	ExpectedUser                    *user.User
-	ExpectedOAuth                   *models.UserAuth
+	ExpectedOAuth                   *login.UserAuth
 	ExpectedDuplicateUserEntries    int
 	ExpectedHasDuplicateUserEntries int
 	ExpectedLoginStats              login.LoginStats
 }
 
-func (f *FakeAuthInfoStore) GetExternalUserInfoByLogin(ctx context.Context, query *models.GetExternalUserInfoByLoginQuery) error {
+func (f *FakeAuthInfoStore) GetExternalUserInfoByLogin(ctx context.Context, query *login.GetExternalUserInfoByLoginQuery) error {
 	return f.ExpectedError
 }
 
-func (f *FakeAuthInfoStore) GetAuthInfo(ctx context.Context, query *models.GetAuthInfoQuery) error {
+func (f *FakeAuthInfoStore) GetAuthInfo(ctx context.Context, query *login.GetAuthInfoQuery) error {
 	query.Result = f.ExpectedOAuth
 	return f.ExpectedError
 }
 
-func (f *FakeAuthInfoStore) SetAuthInfo(ctx context.Context, cmd *models.SetAuthInfoCommand) error {
+func (f *FakeAuthInfoStore) SetAuthInfo(ctx context.Context, cmd *login.SetAuthInfoCommand) error {
 	return f.ExpectedError
 }
 
-func (f *FakeAuthInfoStore) UpdateAuthInfoDate(ctx context.Context, authInfo *models.UserAuth) error {
+func (f *FakeAuthInfoStore) UpdateAuthInfoDate(ctx context.Context, authInfo *login.UserAuth) error {
 	return f.ExpectedError
 }
 
-func (f *FakeAuthInfoStore) UpdateAuthInfo(ctx context.Context, cmd *models.UpdateAuthInfoCommand) error {
+func (f *FakeAuthInfoStore) UpdateAuthInfo(ctx context.Context, cmd *login.UpdateAuthInfoCommand) error {
 	f.ExpectedOAuth.OAuthAccessToken = cmd.OAuthToken.AccessToken
 	f.ExpectedOAuth.OAuthExpiry = cmd.OAuthToken.Expiry
 	f.ExpectedOAuth.OAuthTokenType = cmd.OAuthToken.TokenType
@@ -338,7 +343,7 @@ func (f *FakeAuthInfoStore) UpdateAuthInfo(ctx context.Context, cmd *models.Upda
 	return f.ExpectedError
 }
 
-func (f *FakeAuthInfoStore) DeleteAuthInfo(ctx context.Context, cmd *models.DeleteAuthInfoCommand) error {
+func (f *FakeAuthInfoStore) DeleteAuthInfo(ctx context.Context, cmd *login.DeleteAuthInfoCommand) error {
 	return f.ExpectedError
 }
 

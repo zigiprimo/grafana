@@ -217,7 +217,11 @@ func (ss *sqlStore) GetByLogin(ctx context.Context, query *user.GetUserByLoginQu
 		return nil
 	})
 
-	return usr, err
+	if err != nil {
+		return nil, err
+	}
+
+	return usr, nil
 }
 
 func (ss *sqlStore) GetByEmail(ctx context.Context, query *user.GetUserByEmailQuery) (*user.User, error) {
@@ -428,6 +432,8 @@ func (ss *sqlStore) GetSignedInUser(ctx context.Context, query *user.GetSignedIn
 		if signedInUser.ExternalAuthModule != "oauth_grafana_com" {
 			signedInUser.ExternalAuthID = ""
 		}
+
+		signedInUser.Analytics = buildUserAnalyticsSettings(signedInUser, ss.cfg.IntercomSecret)
 		return nil
 	})
 	return &signedInUser, err

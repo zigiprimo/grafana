@@ -16,6 +16,7 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net"
 	"net/http"
@@ -62,12 +63,16 @@ func (ctx *Context) run() {
 
 // RemoteAddr returns more real IP address.
 func (ctx *Context) RemoteAddr() string {
-	addr := ctx.Req.Header.Get("X-Real-IP")
+	return RemoteAddr(ctx.Req)
+}
+
+func RemoteAddr(req *http.Request) string {
+	addr := req.Header.Get("X-Real-IP")
 
 	if len(addr) == 0 {
 		// X-Forwarded-For may contain multiple IP addresses, separated by
 		// commas.
-		addr = strings.TrimSpace(strings.Split(ctx.Req.Header.Get("X-Forwarded-For"), ",")[0])
+		addr = strings.TrimSpace(strings.Split(req.Header.Get("X-Forwarded-For"), ",")[0])
 	}
 
 	// parse user inputs from headers to prevent log forgery
@@ -79,7 +84,7 @@ func (ctx *Context) RemoteAddr() string {
 	}
 
 	if len(addr) == 0 {
-		addr = ctx.Req.RemoteAddr
+		addr = req.RemoteAddr
 		if i := strings.LastIndex(addr, ":"); i > -1 {
 			addr = addr[:i]
 		}
@@ -99,7 +104,7 @@ func (ctx *Context) HTML(status int, name string, data interface{}) {
 	ctx.Resp.Header().Set(headerContentType, contentTypeHTML)
 	ctx.Resp.WriteHeader(status)
 	if err := ctx.template.ExecuteTemplate(ctx.Resp, name, data); err != nil {
-		panic("Context.HTML:" + err.Error())
+		panic(fmt.Sprintf("Context.HTML - Error rendering template: %s. You may need to build frontend assets \n %s", name, err.Error()))
 	}
 }
 

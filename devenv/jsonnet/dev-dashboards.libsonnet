@@ -177,6 +177,20 @@ local dashboard = grafana.dashboard;
         id: 0,
       }
     },
+    dashboard.new('extract-json-paths', import '../dev-dashboards/transforms/extract-json-paths.json') +
+    resource.addMetadata('folder', 'dev-dashboards') +
+    {
+      spec+: {
+        id: 0,
+      }
+    },
+    dashboard.new('filter', import '../dev-dashboards/transforms/filter.json') +
+    resource.addMetadata('folder', 'dev-dashboards') +
+    {
+      spec+: {
+        id: 0,
+      }
+    },
     dashboard.new('gauge-multi-series', import '../dev-dashboards/panel-gauge/gauge-multi-series.json') +
     resource.addMetadata('folder', 'dev-dashboards') +
     {
@@ -199,6 +213,13 @@ local dashboard = grafana.dashboard;
       }
     },
     dashboard.new('geomap-photo-layer', import '../dev-dashboards/panel-geomap/geomap-photo-layer.json') +
+    resource.addMetadata('folder', 'dev-dashboards') +
+    {
+      spec+: {
+        id: 0,
+      }
+    },
+    dashboard.new('geomap-route-layer', import '../dev-dashboards/panel-geomap/geomap-route-layer.json') +
     resource.addMetadata('folder', 'dev-dashboards') +
     {
       spec+: {
@@ -282,6 +303,13 @@ local dashboard = grafana.dashboard;
         id: 0,
       }
     },
+    dashboard.new('heatmap-x', import '../dev-dashboards/panel-heatmap/heatmap-x.json') +
+    resource.addMetadata('folder', 'dev-dashboards') +
+    {
+      spec+: {
+        id: 0,
+      }
+    },
     dashboard.new('histogram_tests', import '../dev-dashboards/panel-histogram/histogram_tests.json') +
     resource.addMetadata('folder', 'dev-dashboards') +
     {
@@ -339,6 +367,13 @@ local dashboard = grafana.dashboard;
       }
     },
     dashboard.new('loki_fakedata', import '../dev-dashboards/datasource-loki/loki_fakedata.json') +
+    resource.addMetadata('folder', 'dev-dashboards') +
+    {
+      spec+: {
+        id: 0,
+      }
+    },
+    dashboard.new('migrations', import '../dev-dashboards/migrations/migrations.json') +
     resource.addMetadata('folder', 'dev-dashboards') +
     {
       spec+: {
@@ -612,6 +647,13 @@ local dashboard = grafana.dashboard;
       }
     },
     dashboard.new('timeline-modes', import '../dev-dashboards/panel-timeline/timeline-modes.json') +
+    resource.addMetadata('folder', 'dev-dashboards') +
+    {
+      spec+: {
+        id: 0,
+      }
+    },
+    dashboard.new('timeline-thresholds-mappings', import '../dev-dashboards/panel-timeline/timeline-thresholds-mappings.json') +
     resource.addMetadata('folder', 'dev-dashboards') +
     {
       spec+: {

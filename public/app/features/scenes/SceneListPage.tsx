@@ -1,5 +1,5 @@
 // Libraries
-import React, { FC } from 'react';
+import React from 'react';
 import { useAsync } from 'react-use';
 
 import { Stack } from '@grafana/experimental';
@@ -13,7 +13,7 @@ import { getScenes } from './scenes';
 
 export interface Props {}
 
-export const SceneListPage: FC<Props> = ({}) => {
+export const SceneListPage = ({}: Props) => {
   const scenes = getScenes();
   const results = useAsync(() => {
     return getGrafanaSearcher().starred({ starred: true });
@@ -23,11 +23,17 @@ export const SceneListPage: FC<Props> = ({}) => {
     <Page navId="scenes" subTitle="Experimental new runtime and state model for dashboards">
       <Page.Contents>
         <Stack direction="column" gap={1}>
+          <h5>Apps</h5>
+          <Stack direction="column" gap={0}>
+            <Card href={`/scenes/grafana-monitoring`}>
+              <Card.Heading>Grafana monitoring</Card.Heading>
+            </Card>
+          </Stack>
           <h5>Test scenes</h5>
           <Stack direction="column" gap={0}>
             {scenes.map((scene) => (
-              <Card href={`/scenes/${scene.state.title}`} key={scene.state.title}>
-                <Card.Heading>{scene.state.title}</Card.Heading>
+              <Card key={scene.title} href={`/scenes/${scene.title}`}>
+                <Card.Heading>{scene.title}</Card.Heading>
               </Card>
             ))}
           </Stack>

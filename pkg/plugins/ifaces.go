@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"context"
+	"io/fs"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 
@@ -23,9 +24,10 @@ type Installer interface {
 	Remove(ctx context.Context, pluginID string) error
 }
 
-type PluginSource struct {
-	Class Class
-	Paths []string
+type PluginSource interface {
+	PluginClass(ctx context.Context) Class
+	PluginURIs(ctx context.Context) []string
+	DefaultSignature(ctx context.Context) (Signature, bool)
 }
 
 type CompatOpts struct {
@@ -36,6 +38,23 @@ type CompatOpts struct {
 
 type UpdateInfo struct {
 	PluginZipURL string
+}
+
+type FS interface {
+	fs.FS
+
+	Base() string
+	Files() []string
+}
+
+type FoundBundle struct {
+	Primary  FoundPlugin
+	Children []*FoundPlugin
+}
+
+type FoundPlugin struct {
+	JSONData JSONData
+	FS       FS
 }
 
 // Client is used to communicate with backend plugin implementations.
@@ -73,6 +92,16 @@ type ErrorResolver interface {
 type PluginLoaderAuthorizer interface {
 	// CanLoadPlugin confirms if a plugin is authorized to load
 	CanLoadPlugin(plugin *Plugin) bool
+}
+
+type Licensing interface {
+	Environment() []string
+
+	Edition() string
+
+	Path() string
+
+	AppURL() string
 }
 
 // RoleRegistry handles the plugin RBAC roles and their assignments
