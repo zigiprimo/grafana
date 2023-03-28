@@ -14,8 +14,9 @@ export interface Props {
   onTest: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
 }
 
-export function ButtonRow({ canSave, canDelete, onDelete, onSubmit, onTest, exploreUrl }: Props) {
+export function ButtonRow({ canSave, canDelete, onDelete, onSubmit, onTest, exploreUrl, dashboardUrl }: Props) {
   const canExploreDataSources = contextSrv.hasPermission(AccessControlAction.DataSourcesExplore);
+  const canCreateDashboards = contextSrv.hasPermission(AccessControlAction.DashboardsCreate);
 
   return (
     <div className="gf-form-button-row">
@@ -24,6 +25,9 @@ export function ButtonRow({ canSave, canDelete, onDelete, onSubmit, onTest, expl
       </Button>
       <LinkButton variant="secondary" fill="solid" href={exploreUrl} disabled={!canExploreDataSources}>
         Explore
+      </LinkButton>
+      <LinkButton variant="secondary" fill="solid" href={dashboardUrl} disabled={!canCreateDashboards}>
+        Continue creating the dashboard
       </LinkButton>
       <Button
         type="button"

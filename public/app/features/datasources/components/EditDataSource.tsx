@@ -106,6 +106,7 @@ export function EditDataSourceView({
   onOptionsChange,
   onTest,
   onUpdate,
+  dashboardUrl,
 }: ViewProps) {
   const { plugin, loadError, testingStatus, loading } = dataSourceSettings;
   const { readOnly, hasWriteRights, hasDeleteRights } = dataSourceRights;
@@ -180,6 +181,7 @@ export function EditDataSourceView({
         onDelete={onDelete}
         onTest={onTest}
         exploreUrl={exploreUrl}
+        dashboardUrl={`dashboard/new-with-ds/${dataSource.uid}`}
         canSave={!readOnly && hasWriteRights}
         canDelete={!readOnly && hasDeleteRights}
       />
