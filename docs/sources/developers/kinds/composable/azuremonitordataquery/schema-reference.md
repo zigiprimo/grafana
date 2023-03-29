@@ -8,12 +8,12 @@ title: AzureMonitorDataQuery kind
 
 ## AzureMonitorDataQuery
 
-#### Maturity: merged
+#### Maturity: [merged](../../../maturity/#merged)
 #### Version: 0.0
 
 
 
-| Property | Type | Required | Description |
-|----------|------|----------|-------------|
+| Property | Type | Required | Default | Description |
+|----------|------|----------|---------|-------------|
 
 
