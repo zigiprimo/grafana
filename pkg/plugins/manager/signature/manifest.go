@@ -14,6 +14,8 @@ import (
 	"path"
 	"runtime"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/gobwas/glob"
 
@@ -100,6 +102,8 @@ func ReadPluginManifest(body []byte) (*PluginManifest, error) {
 }
 
 func Calculate(ctx context.Context, mlog log.Logger, src plugins.PluginSource, plugin plugins.FoundPlugin) (plugins.Signature, error) {
+	st := time.Now()
+
 	if defaultSignature, exists := src.DefaultSignature(ctx); exists {
 		return defaultSignature, nil
 	}
@@ -179,16 +183,81 @@ func Calculate(ctx context.Context, mlog log.Logger, src plugins.PluginSource, p
 
 	manifestFiles := make(map[string]struct{}, len(manifest.Files))
 
+	workerCtx, workerCanc := context.WithCancel(ctx)
+	defer workerCanc()
+
+	type hashVerification struct {
+		plugin   *plugins.FoundPlugin
+		filePath string
+		hash     string
+	}
+
+	const workers = 24
+	var wg sync.WaitGroup
+
+	hashVerifications := make(chan hashVerification, workers)
+	verifiedFiles := make(chan string, workers)
+	errChan := make(chan error)
+	finalErr := make(chan error, 1)
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			for {
+				select {
+				case <-workerCtx.Done():
+					return
+				case r, ok := <-hashVerifications:
+					if !ok {
+						return
+					}
+					st := time.Now()
+					if err = verifyHash(mlog, plugin, r.filePath, r.hash); err != nil {
+						errChan <- err
+					} else {
+						verifiedFiles <- r.filePath
+					}
+					mlog.Debug("calculated signature", "plugin", r.plugin.JSONData.ID, "file", r.filePath, "took", time.Since(st))
+				}
+			}
+		}()
+	}
+
+	go func() {
+		wg.Wait()
+		close(verifiedFiles)
+		close(errChan)
+	}()
+
+	go func() {
+		for p := range verifiedFiles {
+			manifestFiles[p] = struct{}{}
+		}
+		finalErr <- nil
+	}()
+
+	go func() {
+		for err := range errChan {
+			if err != nil {
+				workerCanc()
+				finalErr <- err
+			}
+		}
+	}()
+
 	// Verify the manifest contents
 	for p, hash := range manifest.Files {
-		err = verifyHash(mlog, plugin, p, hash)
-		if err != nil {
-			return plugins.Signature{
-				Status: plugins.SignatureModified,
-			}, nil
+		hashVerifications <- hashVerification{
+			plugin:   &plugin,
+			filePath: p,
+			hash:     hash,
 		}
-
-		manifestFiles[p] = struct{}{}
+	}
+	close(hashVerifications)
+	if err := <-finalErr; err != nil {
+		return plugins.Signature{
+			Status: plugins.SignatureModified,
+		}, nil
 	}
 
 	// Track files missing from the manifest
@@ -214,7 +283,7 @@ func Calculate(ctx context.Context, mlog log.Logger, src plugins.PluginSource, p
 		}, nil
 	}
 
-	mlog.Debug("Plugin signature valid", "id", plugin.JSONData.ID)
+	mlog.Info("Plugin signature valid", "id", plugin.JSONData.ID, "took", time.Since(st))
 	return plugins.Signature{
 		Status:     plugins.SignatureValid,
 		Type:       manifest.SignatureType,
