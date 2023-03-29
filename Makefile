@@ -58,8 +58,8 @@ swagger-oss-gen: $(SWAGGER) ## Generate API Swagger specification
 	-x "github.com/prometheus/alertmanager" \
 	-i pkg/api/swagger_tags.json \
 	--exclude-tag=alpha \
-	--exclude-tag=enterprise \
-	go run pkg/services/ngalert/api/tooling/cmd/clean-swagger/main.go -if $@ -of $@
+	--exclude-tag=enterprise
+	go run pkg/services/ngalert/api/tooling/cmd/clean-swagger/main.go -if $(SPEC_TARGET) -of $(SPEC_TARGET)
 else
 swagger-oss-gen: $(SWAGGER) ## Generate API Swagger specification
 	@echo "skipping re-generating swagger for OSS"
