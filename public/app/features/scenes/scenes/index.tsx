@@ -7,6 +7,7 @@ import { getMultipleGridLayoutTest } from './gridMultiple';
 import { getGridWithMultipleData } from './gridWithMultipleData';
 import { getGridWithRowLayoutTest } from './gridWithRow';
 import { getNestedScene } from './nested';
+import { getPanelContextDemoScene } from './panelContext';
 import { getQueryVariableDemo } from './queryVariableDemo';
 import { getSceneWithRows } from './sceneWithRows';
 import { getTransformationsDemo } from './transformations';
@@ -19,6 +20,7 @@ interface SceneDef {
 export function getScenes(): SceneDef[] {
   return [
     { title: 'Flex layout test', getScene: getFlexLayoutTest },
+    { title: 'Panel context test', getScene: getPanelContextDemoScene },
     { title: 'Panel repeater test', getScene: getScenePanelRepeaterTest },
     { title: 'Panel repeater test flex wrap', getScene: getRepeaterSceneWithFlexWrap },
     { title: 'Nested Scene demo', getScene: getNestedScene },
