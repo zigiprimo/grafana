@@ -511,10 +511,11 @@ export const mockCombinedRule = (partial?: Partial<CombinedRule>): CombinedRule 
   group: {
     name: 'mockCombinedRuleGroup',
     rules: [],
+    totals: {},
   },
   namespace: {
     name: 'mockCombinedNamespace',
-    groups: [{ name: 'mockCombinedRuleGroup', rules: [] }],
+    groups: [{ name: 'mockCombinedRuleGroup', rules: [], totals: {} }],
     rulesSource: 'grafana',
   },
   labels: {},
@@ -596,7 +597,7 @@ export function mockAlertQuery(query: Partial<AlertQuery>): AlertQuery {
 }
 
 export function mockCombinedRuleGroup(name: string, rules: CombinedRule[]): CombinedRuleGroup {
-  return { name, rules };
+  return { name, rules, totals: {} };
 }
 
 export function mockCombinedRuleNamespace(namespace: Partial<CombinedRuleNamespace>): CombinedRuleNamespace {
