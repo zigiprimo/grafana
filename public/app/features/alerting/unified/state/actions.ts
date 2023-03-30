@@ -342,6 +342,7 @@ export const fetchRulesSourceBuildInfoAction = createAsyncThunk(
 );
 
 interface FetchPromRulesRulesActionProps {
+  filter?: FetchPromRulesFilter;
   limitAlerts?: number;
 }
 
