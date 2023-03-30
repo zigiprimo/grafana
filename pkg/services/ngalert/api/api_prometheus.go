@@ -16,6 +16,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
+	"github.com/grafana/grafana/pkg/services/folder"
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
 	"github.com/grafana/grafana/pkg/services/ngalert/eval"
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
@@ -123,7 +124,7 @@ func (srv PrometheusSrv) RouteGetRuleStatuses(c *contextmodel.ReqContext) respon
 			Status: "success",
 		},
 		Data: apimodels.RuleDiscovery{
-			RuleGroups: []*apimodels.RuleGroup{},
+			RuleGroups: []apimodels.RuleGroup{},
 		},
 	}
 
@@ -164,68 +165,58 @@ func (srv PrometheusSrv) RouteGetRuleStatuses(c *contextmodel.ReqContext) respon
 		return accesscontrol.HasAccess(srv.ac, c)(accesscontrol.ReqViewer, evaluator)
 	}
 
-	groupedRules := make(map[ngmodels.AlertRuleGroupKey]ngmodels.SortableAlertRules)
+	// Group rules together by Namespace and Rule Group. Rules are also grouped by Org ID,
+	// but in this API all rules belong to the same organization.
+	groupedRules := make(map[ngmodels.AlertRuleGroupKey][]*ngmodels.AlertRule)
 	for _, rule := range ruleList {
-		key := rule.GetGroupKey()
-
-		folder := namespaceMap[key.NamespaceUID]
-		if folder == nil {
-			srv.log.Warn("query returned rules that belong to folder the user does not have access to. All rules that belong to that namespace will not be added to the response", "folder_uid", key.NamespaceUID)
-			continue
-		}
-		key.Folder = folder.Title
-
-		rulesInGroup := groupedRules[key]
-		rulesInGroup = append(rulesInGroup, rule)
-		groupedRules[key] = rulesInGroup
+		groupKey := rule.GetGroupKey()
+		ruleGroup := groupedRules[groupKey]
+		ruleGroup = append(ruleGroup, rule)
+		groupedRules[groupKey] = ruleGroup
 	}
-
-	// sort the rules once at the end instead of after each append
+	// Sort the rules in each rule group by index. We do this at the end instead of
+	// after each append to avoid having to sort each group multiple times.
 	for _, groupRules := range groupedRules {
-		sort.Sort(groupRules)
+		ngmodels.AlertRulesBy(ngmodels.AlertRulesByIndex).Sort(groupRules)
 	}
-
-	sortedGroups := make(ngmodels.SortableRuleGroupKeys, 0, len(groupedRules))
-	for groupKey := range groupedRules {
-		sortedGroups = append(sortedGroups, groupKey)
-	}
-	sort.Sort(sortedGroups)
 
 	rulesTotals := make(map[string]int64, len(groupedRules))
-	for _, groupKey := range sortedGroups {
-		rules := groupedRules[groupKey]
-
+	for groupKey, rules := range groupedRules {
+		folder := namespaceMap[groupKey.NamespaceUID]
+		if folder == nil {
+			srv.log.Warn("query returned rules that belong to folder the user does not have access to. All rules that belong to that namespace will not be added to the response", "folder_uid", groupKey.NamespaceUID)
+			continue
+		}
 		if !authorizeAccessToRuleGroup(rules, hasAccess) {
 			continue
 		}
-		
-		ruleGroup, totals := srv.toRuleGroup(groupKey, rules, limitAlertsPerRule, labelOptions)
-
-		for k, v := range totals {
-			rulesTotals[k] += v
-		}
-
+		ruleGroup, totals := srv.toRuleGroup(groupKey, folder, rules, limitAlertsPerRule, labelOptions)
 		if limitRulesPerGroup > -1 && int64(len(rules)) > limitRulesPerGroup {
 			ruleGroup.Rules = ruleGroup.Rules[0:limitRulesPerGroup]
 		}
-
 		ruleGroup.Totals = totals
-		ruleResponse.Data.RuleGroups = append(ruleResponse.Data.RuleGroups, ruleGroup)
+		for k, v := range totals {
+			rulesTotals[k] += v
+		}
+		ruleResponse.Data.RuleGroups = append(ruleResponse.Data.RuleGroups, *ruleGroup)
 	}
 
 	ruleResponse.Data.Totals = rulesTotals
-	if limitGroups > -1 && int64(len(sortedGroups)) >= limitGroups {
+
+	// Sort Rule Groups before checking limits
+	apimodels.RuleGroupsBy(apimodels.RuleGroupsByFileAndName).Sort(ruleResponse.Data.RuleGroups)
+	if limitGroups > -1 && int64(len(ruleResponse.Data.RuleGroups)) >= limitGroups {
 		ruleResponse.Data.RuleGroups = ruleResponse.Data.RuleGroups[0:limitGroups]
 	}
 
 	return response.JSON(http.StatusOK, ruleResponse)
 }
 
-func (srv PrometheusSrv) toRuleGroup(groupKey ngmodels.AlertRuleGroupKey, rules []*ngmodels.AlertRule, limitAlerts int64, labelOptions []ngmodels.LabelOption) (*apimodels.RuleGroup, map[string]int64) {
+func (srv PrometheusSrv) toRuleGroup(groupKey ngmodels.AlertRuleGroupKey, folder *folder.Folder, rules []*ngmodels.AlertRule, limitAlerts int64, labelOptions []ngmodels.LabelOption) (*apimodels.RuleGroup, map[string]int64) {
 	newGroup := &apimodels.RuleGroup{
 		Name: groupKey.RuleGroup,
 		// file is what Prometheus uses for provisioning, we replace it with namespace which is the folder in Grafana.
-		File: groupKey.Folder,
+		File: folder.Title,
 	}
 
 	rulesTotals := make(map[string]int64, len(rules))
@@ -260,7 +251,7 @@ func (srv PrometheusSrv) toRuleGroup(groupKey ngmodels.AlertRuleGroupKey, rules 
 			if alertState.Error != nil {
 				totals["error"] += 1
 			}
-			alert := &apimodels.Alert{
+			alert := apimodels.Alert{
 				Labels:      alertState.GetLabels(labelOptions...),
 				Annotations: alertState.Annotations,
 
@@ -284,6 +275,9 @@ func (srv PrometheusSrv) toRuleGroup(groupKey ngmodels.AlertRuleGroupKey, rules 
 					alertingRule.State = "pending"
 				}
 			case eval.Alerting:
+				if alertingRule.ActiveAt == nil || alertingRule.ActiveAt.After(activeAt) {
+					alertingRule.ActiveAt = &activeAt
+				}
 				alertingRule.State = "firing"
 			case eval.Error:
 				newRule.Health = "error"
@@ -306,6 +300,8 @@ func (srv PrometheusSrv) toRuleGroup(groupKey ngmodels.AlertRuleGroupKey, rules 
 		if newRule.Health == "error" || newRule.Health == "nodata" {
 			rulesTotals[newRule.Health] += 1
 		}
+
+		apimodels.AlertsBy(apimodels.AlertsByImportance).Sort(alertingRule.Alerts)
 
 		if limitAlerts > -1 && int64(len(alertingRule.Alerts)) > limitAlerts {
 			alertingRule.Alerts = alertingRule.Alerts[0:limitAlerts]
