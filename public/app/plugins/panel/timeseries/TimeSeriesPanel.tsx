@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 
-import { Field, PanelProps } from '@grafana/data';
+import { DataFrameType, Field, PanelProps } from '@grafana/data';
 import { PanelDataErrorView } from '@grafana/runtime';
 import { TooltipDisplayMode } from '@grafana/schema';
 import { KeyboardPlugin, TimeSeries, TooltipPlugin, usePanelContext, ZoomPlugin } from '@grafana/ui';
@@ -13,6 +13,7 @@ import { AnnotationsPlugin } from './plugins/AnnotationsPlugin';
 import { ContextMenuPlugin } from './plugins/ContextMenuPlugin';
 import { ExemplarsPlugin, getVisibleLabels } from './plugins/ExemplarsPlugin';
 import { OutsideRangePlugin } from './plugins/OutsideRangePlugin';
+import { RegionsPlugin } from './plugins/RegionsPlugin';
 import { ThresholdControlsPlugin } from './plugins/ThresholdControlsPlugin';
 import { getTimezones, prepareGraphableFields, regenerateLinksSupplier } from './utils';
 
@@ -36,6 +37,24 @@ export const TimeSeriesPanel = ({
   const getFieldLinks = (field: Field, rowIndex: number) => {
     return getFieldLinksForExplore({ field, rowIndex, splitOpenFn: onSplitOpen, range: timeRange });
   };
+
+  const { annotations, exemplars, regions } = useMemo(() => {
+    let annotations = [];
+    let regions = [];
+    let exemplars = [];
+
+    for (let frame of data.annotations ?? []) {
+      if (frame.meta?.type === DataFrameType.TimeRanges) {
+        regions.push(frame);
+      } else if (frame.name === 'exemplar') {
+        exemplars.push(frame);
+      } else {
+        annotations.push(frame);
+      }
+    }
+
+    return { annotations, exemplars, regions };
+  }, [data.annotations]);
 
   const frames = useMemo(() => prepareGraphableFields(data.series, config.theme2, timeRange), [data, timeRange]);
   const timezones = useMemo(() => getTimezones(options.timezone, timeZone), [options.timezone, timeZone]);
@@ -87,10 +106,9 @@ export const TimeSeriesPanel = ({
                 timeZone={timeZone}
               />
             )}
+            {regions.length && <RegionsPlugin config={config} regions={regions} />}
             {/* Renders annotation markers*/}
-            {data.annotations && (
-              <AnnotationsPlugin annotations={data.annotations} config={config} timeZone={timeZone} />
-            )}
+            {annotations && <AnnotationsPlugin annotations={annotations} config={config} timeZone={timeZone} />}
             {/* Enables annotations creation*/}
             {enableAnnotationCreation ? (
               <AnnotationEditorPlugin data={alignedDataFrame} timeZone={timeZone} config={config}>
@@ -132,11 +150,11 @@ export const TimeSeriesPanel = ({
                 defaultItems={[]}
               />
             )}
-            {data.annotations && (
+            {exemplars && (
               <ExemplarsPlugin
                 visibleSeries={getVisibleLabels(config, frames)}
                 config={config}
-                exemplars={data.annotations}
+                exemplars={exemplars}
                 timeZone={timeZone}
                 getFieldLinks={getFieldLinks}
               />
