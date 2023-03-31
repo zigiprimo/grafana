@@ -150,7 +150,6 @@ func (f *filepathREST) Create(
 	createValidation rest.ValidateObjectFunc,
 	options *metav1.CreateOptions,
 ) (runtime.Object, error) {
-
 	accessor, err := meta.Accessor(obj)
 	if err != nil {
 		return nil, err

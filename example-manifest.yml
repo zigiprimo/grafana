@@ -1,6 +1,16 @@
 apiVersion: core.embedded-grafana.dev/v1alpha1
 kind: Manifest
 metadata:
-  name: second-manifest
+  name: ryan-manifest
 spec:
-  message: "hello-world2"
+  message: "hello"
+  more: "exists in go, but not open api"
+
+---
+apiVersion: core.embedded-grafana.dev/v1alpha1
+kind: Generic
+metadata:
+  name: ryan-generic
+spec:
+  message: "hello"
+  more: "exists in go, but not open api"

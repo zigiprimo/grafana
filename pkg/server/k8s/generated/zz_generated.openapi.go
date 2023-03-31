@@ -34,6 +34,12 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/grafana/grafana/pkg/server/k8s/start.ManifestList":   schema_pkg_apis_core_v1alpha1_ManifestList(ref),
 		"github.com/grafana/grafana/pkg/server/k8s/start.ManifestSpec":   schema_pkg_apis_core_v1alpha1_ManifestSpec(ref),
 		"github.com/grafana/grafana/pkg/server/k8s/start.ManifestStatus": schema_pkg_apis_core_v1alpha1_ManifestStatus(ref),
+
+		"github.com/grafana/grafana/pkg/server/k8s/start.Generic":       schema_pkg_apis_core_v1alpha1_Generic(ref),
+		"github.com/grafana/grafana/pkg/server/k8s/start.GenericList":   schema_pkg_apis_core_v1alpha1_GenericList(ref),
+		"github.com/grafana/grafana/pkg/server/k8s/start.GenericSpec":   schema_pkg_apis_core_v1alpha1_GenericSpec(ref),
+		"github.com/grafana/grafana/pkg/server/k8s/start.GenericStatus": schema_pkg_apis_core_v1alpha1_GenericStatus(ref),
+
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroup":                  schema_pkg_apis_meta_v1_APIGroup(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIGroupList":              schema_pkg_apis_meta_v1_APIGroupList(ref),
 		"k8s.io/apimachinery/pkg/apis/meta/v1.APIResource":               schema_pkg_apis_meta_v1_APIResource(ref),

@@ -28,6 +28,8 @@ func (s *Service) Run(ctx context.Context) error {
 	s.log.Info("Starting k8s apiserver", "port", port)
 	apiserverBuilder := builder.NewServerBuilder().
 		WithResourceFileStorage(&start.Manifest{}, "data/k8s/crds").
+		WithResourceFileStorage(&start.Generic{}, "data/k8s/crds").
+
 		//WithBearerToken("embedded-k8s-token").
 		WithOpenAPIDefinitions("tilt", "0.1.0", openapi.GetOpenAPIDefinitions).
 		WithBindPort(port).
