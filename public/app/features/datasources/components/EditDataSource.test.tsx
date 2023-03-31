@@ -42,6 +42,7 @@ const setup = (props?: Partial<ViewProps>) => {
         onOptionsChange={jest.fn()}
         onTest={jest.fn()}
         onUpdate={jest.fn()}
+        onBack={jest.fn()}
         {...props}
       />
     </Provider>

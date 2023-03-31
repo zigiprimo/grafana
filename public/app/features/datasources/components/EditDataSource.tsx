@@ -59,7 +59,7 @@ export function EditDataSource({ uid, pageId }: Props) {
   const onDefaultChange = (value: boolean) => dispatch(setIsDefault(value));
   const onNameChange = (name: string) => dispatch(setDataSourceName(name));
   const onOptionsChange = (ds: DataSourceSettingsType) => dispatch(dataSourceLoaded(ds));
-
+  const onBack = () => history.back();
   return (
     <EditDataSourceView
       pageId={pageId}
@@ -74,6 +74,7 @@ export function EditDataSource({ uid, pageId }: Props) {
       onOptionsChange={onOptionsChange}
       onTest={onTest}
       onUpdate={onUpdate}
+      onBack={onBack}
     />
   );
 }
@@ -84,13 +85,14 @@ export type ViewProps = {
   dataSourceMeta: DataSourcePluginMeta;
   dataSourceSettings: DataSourceSettingsState;
   dataSourceRights: DataSourceRights;
-  exploreUrl: string;
+  exploreUrl?: string;
   onDelete: () => void;
   onDefaultChange: (isDefault: boolean) => AnyAction;
   onNameChange: (name: string) => AnyAction;
   onOptionsChange: (dataSource: DataSourceSettingsType) => AnyAction;
   onTest: () => void;
   onUpdate: (dataSource: DataSourceSettingsType) => Promise<DataSourceSettingsType>;
+  onBack: () => void;
 };
 
 export function EditDataSourceView({
@@ -106,6 +108,7 @@ export function EditDataSourceView({
   onOptionsChange,
   onTest,
   onUpdate,
+  onBack,
 }: ViewProps) {
   const { plugin, loadError, testingStatus, loading } = dataSourceSettings;
   const { readOnly, hasWriteRights, hasDeleteRights } = dataSourceRights;
@@ -176,11 +179,11 @@ export function EditDataSourceView({
       <DataSourceTestingStatus testingStatus={testingStatus} />
 
       <ButtonRow
+        onBack={onBack}
         onSubmit={onSubmit}
         onDelete={onDelete}
         onTest={onTest}
         exploreUrl={exploreUrl}
-        dashboardUrl={`dashboard/new-with-ds/${dataSource.uid}`}
         canSave={!readOnly && hasWriteRights}
         canDelete={!readOnly && hasDeleteRights}
       />

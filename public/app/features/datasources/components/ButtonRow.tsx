@@ -6,30 +6,28 @@ import { contextSrv } from 'app/core/core';
 import { AccessControlAction } from 'app/types';
 
 export interface Props {
-  exploreUrl: string;
-  dashboardUrl: string;
+  exploreUrl?: string;
   canSave: boolean;
   canDelete: boolean;
   onDelete: () => void;
   onSubmit: (event: React.MouseEvent<HTMLButtonElement>) => void;
   onTest: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
+  onBack: (event: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
 }
 
-export function ButtonRow({ canSave, canDelete, onDelete, onSubmit, onTest, exploreUrl, dashboardUrl }: Props) {
+export function ButtonRow({ canSave, canDelete, onDelete, onSubmit, onTest, onBack, exploreUrl }: Props) {
   const canExploreDataSources = contextSrv.hasPermission(AccessControlAction.DataSourcesExplore);
-  const canCreateDashboards = contextSrv.hasPermission(AccessControlAction.DashboardsCreate);
 
   return (
     <div className="gf-form-button-row">
-      <Button variant="secondary" fill="solid" type="button" onClick={() => history.back()}>
+      <Button variant="secondary" fill="solid" type="button" onClick={onBack}>
         Back
       </Button>
-      <LinkButton variant="secondary" fill="solid" href={exploreUrl} disabled={!canExploreDataSources}>
-        Explore
-      </LinkButton>
-      <LinkButton variant="secondary" fill="solid" href={dashboardUrl} disabled={!canCreateDashboards}>
-        Continue creating the dashboard
-      </LinkButton>
+      {exploreUrl && (
+        <LinkButton variant="secondary" fill="solid" href={exploreUrl} disabled={!canExploreDataSources}>
+          Explore
+        </LinkButton>
+      )}
       <Button
         type="button"
         variant="destructive"

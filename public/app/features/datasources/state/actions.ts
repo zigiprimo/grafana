@@ -221,7 +221,7 @@ export function addDataSource(
     }
 
     const result = await api.createDataSource(newInstance);
-    const editLink = editRoute.replace(/:uid/gi, result.datasource.uid);
+    const editLink = editRoute !== null ? editRoute.replace(/:uid/gi, result.datasource.uid) : null;
 
     await getDatasourceSrv().reload();
     await contextSrv.fetchUserPermissions();
@@ -231,10 +231,10 @@ export function addDataSource(
       plugin_id: plugin.id,
       datasource_uid: result.datasource.uid,
       plugin_version: result.meta?.info?.version,
-      path: editLink,
+      path: editLink || locationService.getLocation().pathname,
     });
 
-    locationService.push(editLink);
+    editLink && locationService.push(editLink);
   };
 }
 
