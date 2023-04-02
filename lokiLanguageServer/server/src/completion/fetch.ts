@@ -4,7 +4,7 @@ import { Label } from './situation';
 
 // These need to be set up
 const DS_UID = 'Loki';
-const API_TOKEN = 'glsa_1aK4zprZY3fA6vvwdmwD7B1HrrNAHG7U_b68141a5';
+const API_TOKEN = '';
 const URL = `http://localhost:3000/api/datasources/uid/${DS_UID}/resources`;
 
 export async function getLabelNames(): Promise<string[]> {

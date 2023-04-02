@@ -31,4 +31,4 @@ datasources:
     editable: true
     isDefault: true
     secureJsonData:
-      basicAuthPassword: eyJrIjoiNDUwMzQ2YjUxYTllODM1ZDVmZDc3NGZlNjc1NTVhZGU4YWNkOGIxZiIsIm4iOiJib2dkYW4tbG9jYWwtbW9uYWxva2kiLCJpZCI6NTAwMH0=
+      basicAuthPassword:
