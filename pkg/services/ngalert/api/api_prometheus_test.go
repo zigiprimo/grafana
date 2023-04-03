@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -19,6 +20,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	acmock "github.com/grafana/grafana/pkg/services/accesscontrol/mock"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
+	"github.com/grafana/grafana/pkg/services/folder"
 	apimodels "github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
 	"github.com/grafana/grafana/pkg/services/ngalert/eval"
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
@@ -250,6 +252,21 @@ func withAlertingState() forEachState {
 			Values:          map[string]*float64{"B": &value},
 			Condition:       "B",
 		})
+		return s
+	}
+}
+
+func withAlertingErrorState() forEachState {
+	return func(s *state.State) *state.State {
+		s.SetAlerting("", timeNow(), timeNow().Add(5*time.Minute))
+		s.Error = errors.New("this is an error")
+		return s
+	}
+}
+
+func withErrorState() forEachState {
+	return func(s *state.State) *state.State {
+		s.SetError(errors.New("this is an error"), timeNow(), timeNow().Add(5*time.Minute))
 		return s
 	}
 }
@@ -532,8 +549,239 @@ func TestRouteGetRuleStatuses(t *testing.T) {
 		})
 	})
 
-	t.Run("test with pagination", func(t *testing.T) {
+	t.Run("test totals are expected", func(t *testing.T) {
+		fakeStore, fakeAIM, _, api := setupAPI(t)
+		// Create rules in the same Rule Group to keep assertions simple
+		rules := ngmodels.GenerateAlertRules(3, ngmodels.AlertRuleGen(withOrgID(orgID), withGroup("Rule-Group-1"), withNamespace(&folder.Folder{
+			Title: "Folder-1",
+		})))
+		// Need to sort these so we add alerts to the rules as ordered in the response
+		ngmodels.AlertRulesBy(ngmodels.AlertRulesByIndex).Sort(rules)
+		// The last two rules will have errors, however the first will be alerting
+		// while the second one will have a DatasourceError alert.
+		rules[1].ExecErrState = ngmodels.AlertingErrState
+		rules[2].ExecErrState = ngmodels.ErrorErrState
+		fakeStore.PutRule(context.Background(), rules...)
 
+		// create a normal and alerting state for the first rule
+		fakeAIM.GenerateAlertInstances(orgID, rules[0].UID, 1)
+		fakeAIM.GenerateAlertInstances(orgID, rules[0].UID, 1, withAlertingState())
+		// create an error state for the last two rules
+		fakeAIM.GenerateAlertInstances(orgID, rules[1].UID, 1, withAlertingErrorState())
+		fakeAIM.GenerateAlertInstances(orgID, rules[2].UID, 1, withErrorState())
+
+		r, err := http.NewRequest("GET", "/api/v1/rules", nil)
+		require.NoError(t, err)
+		c := &contextmodel.ReqContext{
+			Context: &web.Context{Req: r},
+			SignedInUser: &user.SignedInUser{
+				OrgID:   orgID,
+				OrgRole: org.RoleViewer,
+			},
+		}
+		resp := api.RouteGetRuleStatuses(c)
+		require.Equal(t, http.StatusOK, resp.Status())
+		var res apimodels.RuleResponse
+		require.NoError(t, json.Unmarshal(resp.Body(), &res))
+
+		// Even though there are just 3 rules, the totals should show two firing rules,
+		// one inactive rules and two errors
+		require.Equal(t, map[string]int64{"firing": 2, "inactive": 1, "error": 2}, res.Data.Totals)
+		// There should be 1 Rule Group that contains all rules
+		require.Len(t, res.Data.RuleGroups, 1)
+		rg := res.Data.RuleGroups[0]
+		require.Len(t, rg.Rules, 3)
+
+		// The first rule should have an alerting and normal alert
+		r1 := rg.Rules[0]
+		require.Equal(t, map[string]int64{"alerting": 1, "normal": 1}, r1.Totals)
+		require.Len(t, r1.Alerts, 2)
+		// The second rule should have an alerting alert
+		r2 := rg.Rules[1]
+		require.Equal(t, map[string]int64{"alerting": 1, "error": 1}, r2.Totals)
+		require.Len(t, r2.Alerts, 1)
+		// The last rule should have an error alert
+		r3 := rg.Rules[2]
+		require.Equal(t, map[string]int64{"error": 1}, r3.Totals)
+		require.Len(t, r3.Alerts, 1)
+	})
+
+	t.Run("test with limit on Rule Groups", func(t *testing.T) {
+		fakeStore, _, _, api := setupAPI(t)
+
+		rules := ngmodels.GenerateAlertRules(2, ngmodels.AlertRuleGen(withOrgID(orgID)))
+		fakeStore.PutRule(context.Background(), rules...)
+
+		t.Run("first without limit", func(t *testing.T) {
+			r, err := http.NewRequest("GET", "/api/v1/rules", nil)
+			require.NoError(t, err)
+			c := &contextmodel.ReqContext{
+				Context: &web.Context{Req: r},
+				SignedInUser: &user.SignedInUser{
+					OrgID:   orgID,
+					OrgRole: org.RoleViewer,
+				},
+			}
+			resp := api.RouteGetRuleStatuses(c)
+			require.Equal(t, http.StatusOK, resp.Status())
+			var res apimodels.RuleResponse
+			require.NoError(t, json.Unmarshal(resp.Body(), &res))
+
+			// There should be 2 inactive rules across all Rule Groups
+			require.Equal(t, map[string]int64{"inactive": 2}, res.Data.Totals)
+			require.Len(t, res.Data.RuleGroups, 2)
+			for _, rg := range res.Data.RuleGroups {
+				// Each Rule Group should have 1 inactive rule
+				require.Equal(t, map[string]int64{"inactive": 1}, rg.Totals)
+				require.Len(t, rg.Rules, 1)
+			}
+		})
+
+		t.Run("then with limit", func(t *testing.T) {
+			r, err := http.NewRequest("GET", "/api/v1/rules?limit=1", nil)
+			require.NoError(t, err)
+			c := &contextmodel.ReqContext{
+				Context: &web.Context{Req: r},
+				SignedInUser: &user.SignedInUser{
+					OrgID:   orgID,
+					OrgRole: org.RoleViewer,
+				},
+			}
+			resp := api.RouteGetRuleStatuses(c)
+			require.Equal(t, http.StatusOK, resp.Status())
+			var res apimodels.RuleResponse
+			require.NoError(t, json.Unmarshal(resp.Body(), &res))
+
+			// There should be 2 inactive rules across all Rule Groups
+			require.Equal(t, map[string]int64{"inactive": 2}, res.Data.Totals)
+			require.Len(t, res.Data.RuleGroups, 1)
+			rg := res.Data.RuleGroups[0]
+			// The Rule Group within the limit should have 1 inactive rule
+			require.Equal(t, map[string]int64{"inactive": 1}, rg.Totals)
+			require.Len(t, rg.Rules, 1)
+		})
+	})
+
+	t.Run("test with limit rules", func(t *testing.T) {
+		fakeStore, _, _, api := setupAPI(t)
+		rules := ngmodels.GenerateAlertRules(2, ngmodels.AlertRuleGen(withOrgID(orgID), withGroup("Rule-Group-1")))
+		fakeStore.PutRule(context.Background(), rules...)
+
+		t.Run("first without limit", func(t *testing.T) {
+			r, err := http.NewRequest("GET", "/api/v1/rules", nil)
+			require.NoError(t, err)
+			c := &contextmodel.ReqContext{
+				Context: &web.Context{Req: r},
+				SignedInUser: &user.SignedInUser{
+					OrgID:   orgID,
+					OrgRole: org.RoleViewer,
+				},
+			}
+			resp := api.RouteGetRuleStatuses(c)
+			require.Equal(t, http.StatusOK, resp.Status())
+			var res apimodels.RuleResponse
+			require.NoError(t, json.Unmarshal(resp.Body(), &res))
+
+			// There should be 2 inactive rules across all Rule Groups
+			require.Equal(t, map[string]int64{"inactive": 2}, res.Data.Totals)
+			require.Len(t, res.Data.RuleGroups, 2)
+			for _, rg := range res.Data.RuleGroups {
+				// Each Rule Group should have 1 inactive rule
+				require.Equal(t, map[string]int64{"inactive": 1}, rg.Totals)
+				require.Len(t, rg.Rules, 1)
+			}
+		})
+
+		t.Run("then with limit", func(t *testing.T) {
+			r, err := http.NewRequest("GET", "/api/v1/rules?limit=1&limit_rules=1", nil)
+			require.NoError(t, err)
+			c := &contextmodel.ReqContext{
+				Context: &web.Context{Req: r},
+				SignedInUser: &user.SignedInUser{
+					OrgID:   orgID,
+					OrgRole: org.RoleViewer,
+				},
+			}
+			resp := api.RouteGetRuleStatuses(c)
+			require.Equal(t, http.StatusOK, resp.Status())
+			var res apimodels.RuleResponse
+			require.NoError(t, json.Unmarshal(resp.Body(), &res))
+
+			// There should be 2 inactive rules
+			require.Equal(t, map[string]int64{"inactive": 2}, res.Data.Totals)
+			require.Len(t, res.Data.RuleGroups, 1)
+			rg := res.Data.RuleGroups[0]
+			// The Rule Group within the limit should have 1 inactive rule because of the limit
+			require.Equal(t, map[string]int64{"inactive": 1}, rg.Totals)
+			require.Len(t, rg.Rules, 1)
+		})
+	})
+
+	t.Run("test with limit alerts", func(t *testing.T) {
+		fakeStore, fakeAIM, _, api := setupAPI(t)
+		rules := ngmodels.GenerateAlertRules(2, ngmodels.AlertRuleGen(withOrgID(orgID), withGroup("Rule-Group-1")))
+		fakeStore.PutRule(context.Background(), rules...)
+		// create a normal and firing alert for each rule
+		for _, r := range rules {
+			fakeAIM.GenerateAlertInstances(orgID, r.UID, 1)
+			fakeAIM.GenerateAlertInstances(orgID, r.UID, 1, withAlertingState())
+		}
+
+		t.Run("first without limit", func(t *testing.T) {
+			r, err := http.NewRequest("GET", "/api/v1/rules", nil)
+			require.NoError(t, err)
+			c := &contextmodel.ReqContext{
+				Context: &web.Context{Req: r},
+				SignedInUser: &user.SignedInUser{
+					OrgID:   orgID,
+					OrgRole: org.RoleViewer,
+				},
+			}
+			resp := api.RouteGetRuleStatuses(c)
+			require.Equal(t, http.StatusOK, resp.Status())
+			var res apimodels.RuleResponse
+			require.NoError(t, json.Unmarshal(resp.Body(), &res))
+
+			// There should be 2 firing rules across all Rule Groups
+			require.Equal(t, map[string]int64{"firing": 2}, res.Data.Totals)
+			require.Len(t, res.Data.RuleGroups, 2)
+			for _, rg := range res.Data.RuleGroups {
+				// Each Rule Group should have 1 firing rule
+				require.Equal(t, map[string]int64{"firing": 1}, rg.Totals)
+				require.Len(t, rg.Rules, 1)
+				// Each rule should have two alerts
+				require.Equal(t, map[string]int64{"alerting": 1, "normal": 1}, rg.Rules[0].Totals)
+			}
+		})
+
+		t.Run("then with limits", func(t *testing.T) {
+			r, err := http.NewRequest("GET", "/api/v1/rules?limit=1&limit_rules=1&limit_alerts=1", nil)
+			require.NoError(t, err)
+			c := &contextmodel.ReqContext{
+				Context: &web.Context{Req: r},
+				SignedInUser: &user.SignedInUser{
+					OrgID:   orgID,
+					OrgRole: org.RoleViewer,
+				},
+			}
+			resp := api.RouteGetRuleStatuses(c)
+			require.Equal(t, http.StatusOK, resp.Status())
+			var res apimodels.RuleResponse
+			require.NoError(t, json.Unmarshal(resp.Body(), &res))
+
+			// There should be 2 firing rules across all Rule Groups
+			require.Equal(t, map[string]int64{"firing": 2}, res.Data.Totals)
+			rg := res.Data.RuleGroups[0]
+			// The Rule Group within the limit should have 1 inactive rule because of the limit
+			require.Equal(t, map[string]int64{"firing": 1}, rg.Totals)
+			require.Len(t, rg.Rules, 1)
+			rule := rg.Rules[0]
+			// The rule should have two alerts, but just one should be returned
+			require.Equal(t, map[string]int64{"alerting": 1, "normal": 1}, rule.Totals)
+			require.Len(t, rule.Alerts, 1)
+			// Firing alerts should have precedence over normal alerts
+			require.Equal(t, "Alerting", rule.Alerts[0].State)
+		})
 	})
 }
 
