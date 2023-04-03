@@ -1,4 +1,4 @@
-import { PanelMenuItem, PluginExtensionPlacements, type PluginExtensionPanelContext } from '@grafana/data';
+import { PanelMenuItem, PluginExtensionPoints, type PluginExtensionPanelContext } from '@grafana/data';
 import {
   isPluginExtensionLink,
   AngularComponent,
@@ -279,7 +279,7 @@ export function getPanelMenu(
   }
 
   const { extensions } = getPluginExtensions({
-    placement: PluginExtensionPlacements.DashboardPanelMenu,
+    extensionPointId: PluginExtensionPoints.DashboardPanelMenu,
     context: createExtensionContext(panel, dashboard),
   });
 
@@ -291,6 +291,7 @@ export function getPanelMenu(
         extensionsMenu.push({
           text: truncateTitle(extension.title, 25),
           href: extension.path,
+          onClick: extension.onClick,
         });
         continue;
       }
