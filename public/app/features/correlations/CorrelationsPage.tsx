@@ -41,6 +41,8 @@ const loaderWrapper = css`
 export default function CorrelationsPage() {
   const navModel = useNavModel('correlations');
   const [isAdding, setIsAdding] = useState(false);
+  const [addingStarted, setAddingStarted] = useState(0);
+
   const {
     remove,
     get: { execute: fetchCorrelations, ...get },
@@ -52,13 +54,22 @@ export default function CorrelationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (isAdding) {
+      setAddingStarted(Date.now());
+    }
+  }, [isAdding]);
+
   const canWriteCorrelations = contextSrv.hasPermission(AccessControlAction.DataSourcesWrite);
 
   const handleAdded = useCallback(() => {
-    reportInteraction('grafana_correlations_added');
+    const timeToCompleteSeconds = Math.round((Date.now() - addingStarted) / 1000);
+    reportInteraction('grafana_correlations_added', {
+      timeToCompleteSeconds,
+    });
     fetchCorrelations();
     setIsAdding(false);
-  }, [fetchCorrelations]);
+  }, [fetchCorrelations, addingStarted]);
 
   const handleUpdated = useCallback(() => {
     reportInteraction('grafana_correlations_edited');
