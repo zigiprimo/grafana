@@ -6,6 +6,16 @@ export interface AddCorrelationResponse {
 
 export type GetCorrelationsResponse = Correlation[];
 
+export type CreateCorrelationResponse = {
+  message: string;
+  result: Correlation;
+};
+
+export type UpdateCorrelationResponse = {
+  message: string;
+  result: Correlation;
+};
+
 type CorrelationConfigType = 'query';
 
 export interface CorrelationConfig {
@@ -27,3 +37,11 @@ export interface Correlation {
 export type RemoveCorrelationParams = Pick<Correlation, 'sourceUID' | 'uid'>;
 export type CreateCorrelationParams = Omit<Correlation, 'uid'>;
 export type UpdateCorrelationParams = Omit<Correlation, 'targetUID'>;
+
+export type TrackingAddingInfo = {
+  secondsToComplete: number;
+  source: string;
+  target: string;
+  targetVariables: number;
+  transformations: number;
+};

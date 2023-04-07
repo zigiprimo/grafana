@@ -1,3 +1,4 @@
+import { uniqBy } from 'lodash';
 import { useCallback } from 'react';
 
 import {
@@ -256,13 +257,14 @@ export function useLinks(range: TimeRange, splitOpenFn?: SplitOpen) {
  * @param query
  * @param scopedVars
  */
-export function getVariableUsageInfo<T extends DataLink>(
-  query: T,
+export function getVariableUsageInfo(
+  source: Object,
   scopedVars: ScopedVars
 ): { variables: VariableInterpolation[]; allVariablesDefined: boolean } {
-  const variables: VariableInterpolation[] = [];
+  let variables: VariableInterpolation[] = [];
   const replaceFn = getTemplateSrv().replace.bind(getTemplateSrv());
-  replaceFn(getStringsFromObject(query), scopedVars, undefined, variables);
+  replaceFn(getStringsFromObject(source), scopedVars, undefined, variables);
+  variables = uniqBy(variables, 'variableName');
   return {
     variables: variables,
     allVariablesDefined: variables.every((variable) => variable.found),

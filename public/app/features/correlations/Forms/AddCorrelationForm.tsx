@@ -1,11 +1,14 @@
 import { css } from '@emotion/css';
-import React, { useEffect } from 'react';
+import { countBy } from 'lodash';
+import React, { useEffect, useState } from 'react';
 
-import { GrafanaTheme2 } from '@grafana/data';
+import { DataQuery, GrafanaTheme2 } from '@grafana/data';
 import { PanelContainer, useStyles2 } from '@grafana/ui';
 import { CloseButton } from 'app/core/components/CloseButton/CloseButton';
 
+import { getVariableUsageInfo } from '../../explore/utils/links';
 import { Wizard } from '../components/Wizard';
+import { TrackingAddingInfo } from '../types';
 import { useCorrelations } from '../useCorrelations';
 
 import { ConfigureCorrelationBasicInfoForm } from './ConfigureCorrelationBasicInfoForm';
@@ -28,11 +31,12 @@ const getStyles = (theme: GrafanaTheme2) => ({
 
 interface Props {
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (addingInfo: TrackingAddingInfo) => void;
 }
 
 export const AddCorrelationForm = ({ onClose, onCreated }: Props) => {
   const styles = useStyles2(getStyles);
+  const [addingStarted, _] = useState(Date.now());
 
   const {
     create: { execute, loading, error, value },
@@ -40,9 +44,18 @@ export const AddCorrelationForm = ({ onClose, onCreated }: Props) => {
 
   useEffect(() => {
     if (!error && !loading && value) {
-      onCreated();
+      const secondsToComplete = Math.round((Date.now() - addingStarted) / 1000);
+      const transformations = value.config?.transformations || [];
+      const addingInfo: TrackingAddingInfo = {
+        secondsToComplete,
+        source: value.source?.type,
+        target: value.target?.type,
+        targetVariables: getVariableUsageInfo(value.config?.target, {}).variables.length,
+        transformations: transformations.length,
+      };
+      onCreated(addingInfo);
     }
-  }, [error, loading, value, onCreated]);
+  }, [error, loading, value, onCreated, addingStarted]);
 
   const defaultValues: Partial<FormDTO> = { config: { type: 'query', target: {}, field: '' } };
 
@@ -54,7 +67,9 @@ export const AddCorrelationForm = ({ onClose, onCreated }: Props) => {
           defaultValues={defaultValues}
           pages={[ConfigureCorrelationBasicInfoForm, ConfigureCorrelationTargetForm, ConfigureCorrelationSourceForm]}
           navigation={CorrelationFormNavigation}
-          onSubmit={execute}
+          onSubmit={(data) => {
+            execute(data);
+          }}
         />
       </CorrelationsFormContextProvider>
     </PanelContainer>

@@ -25,7 +25,7 @@ import { AccessControlAction } from 'app/types';
 import { AddCorrelationForm } from './Forms/AddCorrelationForm';
 import { EditCorrelationForm } from './Forms/EditCorrelationForm';
 import { EmptyCorrelationsCTA } from './components/EmptyCorrelationsCTA';
-import type { RemoveCorrelationParams } from './types';
+import type { RemoveCorrelationParams, TrackingAddingInfo } from './types';
 import { CorrelationData, useCorrelations } from './useCorrelations';
 
 const sortDatasource: SortByFn<CorrelationData> = (a, b, column) =>
@@ -41,8 +41,6 @@ const loaderWrapper = css`
 export default function CorrelationsPage() {
   const navModel = useNavModel('correlations');
   const [isAdding, setIsAdding] = useState(false);
-  const [addingStarted, setAddingStarted] = useState(0);
-
   const {
     remove,
     get: { execute: fetchCorrelations, ...get },
@@ -54,22 +52,16 @@ export default function CorrelationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  useEffect(() => {
-    if (isAdding) {
-      setAddingStarted(Date.now());
-    }
-  }, [isAdding]);
-
   const canWriteCorrelations = contextSrv.hasPermission(AccessControlAction.DataSourcesWrite);
 
-  const handleAdded = useCallback(() => {
-    const timeToCompleteSeconds = Math.round((Date.now() - addingStarted) / 1000);
-    reportInteraction('grafana_correlations_added', {
-      timeToCompleteSeconds,
-    });
-    fetchCorrelations();
-    setIsAdding(false);
-  }, [fetchCorrelations, addingStarted]);
+  const handleAdded = useCallback(
+    (addingInfo: TrackingAddingInfo) => {
+      reportInteraction('grafana_correlations_added', addingInfo);
+      fetchCorrelations();
+      setIsAdding(false);
+    },
+    [fetchCorrelations]
+  );
 
   const handleUpdated = useCallback(() => {
     reportInteraction('grafana_correlations_edited');
