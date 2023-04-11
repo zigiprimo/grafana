@@ -6,6 +6,7 @@ import { Subscription } from 'rxjs';
 import { getDefaultTimeRange, LoadingState, PanelData, PanelPlugin } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { AngularComponent, getAngularLoader, locationService } from '@grafana/runtime';
+import { PanelChrome } from '@grafana/ui';
 import config from 'app/core/config';
 import { PANEL_BORDER } from 'app/core/constants';
 import { setPanelAngularComponent } from 'app/features/panel/state/reducers';
@@ -175,7 +176,7 @@ export class PanelChromeAngularUnconnected extends PureComponent<Props, State> {
     return !panel.hasTitle();
   }
 
-  render() {
+  renderOldPanelChrome() {
     const { dashboard, panel, isViewing, isEditing, plugin } = this.props;
     const { errorMessage, data } = this.state;
     const { transparent } = panel;
@@ -214,6 +215,28 @@ export class PanelChromeAngularUnconnected extends PureComponent<Props, State> {
           <div ref={(element) => (this.element = element)} className="panel-height-helper" />
         </div>
       </div>
+    );
+  }
+
+  render() {
+    if (!config.featureToggles.newPanelChromeUI) {
+      return this.renderOldPanelChrome();
+    }
+
+    const title = panel.getDisplayTitle();
+
+    const { dashboard, panel, isViewing, isEditing, plugin, width, height } = this.props;
+    const { errorMessage, data } = this.state;
+    const { transparent } = panel;
+
+    //const alertState = data.alertState?.state;
+
+    return (
+      <PanelChrome title={title} width={width} height={height} displayMode={transparent ? 'transparent' : undefined}>
+        {(innerWidth, innerHeight) => (
+          <div ref={(element) => (this.element = element)} className="panel-height-helper" />
+        )}
+      </PanelChrome>
     );
   }
 }
