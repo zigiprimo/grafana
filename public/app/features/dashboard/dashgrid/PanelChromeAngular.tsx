@@ -223,12 +223,11 @@ export class PanelChromeAngularUnconnected extends PureComponent<Props, State> {
       return this.renderOldPanelChrome();
     }
 
-    const title = panel.getDisplayTitle();
-
     const { dashboard, panel, isViewing, isEditing, plugin, width, height } = this.props;
     const { errorMessage, data } = this.state;
     const { transparent } = panel;
 
+    const title = panel.getDisplayTitle();
     //const alertState = data.alertState?.state;
 
     return (
