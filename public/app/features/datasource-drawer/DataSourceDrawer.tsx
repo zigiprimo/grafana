@@ -2,19 +2,11 @@ import { css } from '@emotion/css';
 import React, { useCallback, useState } from 'react';
 
 import { DataSourceInstanceSettings, DataSourceJsonData, DataSourceRef, GrafanaTheme2 } from '@grafana/data';
-import {
-  Button,
-  CustomScrollbar,
-  Drawer,
-  FileDropzone,
-  FileDropzoneDefaultChildren,
-  Input,
-  ModalsController,
-  useStyles2,
-} from '@grafana/ui';
+import { Button, CustomScrollbar, Drawer, FileDropzone, Input, ModalsController, useStyles2 } from '@grafana/ui';
 
 import { DataSourceCard } from './components/DataSourceCard';
 import { DataSourceDisplay } from './components/DataSourceDisplay';
+import { DropZoneContent } from './components/DropZoneContent';
 import { PickerContentProps, DataSourceDrawerProps } from './types';
 
 export function DataSourceDrawer(props: DataSourceDrawerProps) {
@@ -112,7 +104,7 @@ function PickerContent(props: PickerContentProps) {
                 },
               }}
             >
-              <FileDropzoneDefaultChildren primaryText={'Upload file'} />
+              <DropZoneContent />
             </FileDropzone>
           </div>
         )}
