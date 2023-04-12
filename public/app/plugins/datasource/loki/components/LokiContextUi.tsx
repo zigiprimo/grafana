@@ -5,10 +5,11 @@ import { useAsync } from 'react-use';
 
 import { GrafanaTheme2, LogRowModel, SelectableValue } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime';
-import { LoadingPlaceholder, MultiSelect, Tag, Tooltip, useStyles2 } from '@grafana/ui';
+import { Label, LoadingPlaceholder, MultiSelect, Tag, Tooltip, useStyles2 } from '@grafana/ui';
 
 import LokiLanguageProvider from '../LanguageProvider';
 import { ContextFilter } from '../types';
+import { QueryPreview } from '../querybuilder/components/QueryPreview';
 
 export interface LokiContextUiProps {
   languageProvider: LokiLanguageProvider;
@@ -41,20 +42,14 @@ function getStyles(theme: GrafanaTheme2) {
       display: inline;
       margin-left: auto;
     `,
-    textWrapper: css`
-      display: flex;
-      align-items: center;
-    `,
     hidden: css`
       visibility: hidden;
     `,
   };
 }
 
-const formatOptionLabel = memoizeOne(({ label, description }: SelectableValue<string>) => (
-  <Tooltip content={`${label}="${description}"`} placement="top" interactive={true}>
-    <span>{label}</span>
-  </Tooltip>
+const formatOptionLabel = memoizeOne(({ label, value }: SelectableValue<string>) => (
+  <span>{`${label}="${value}"`}</span>
 ));
 
 export function LokiContextUi(props: LokiContextUiProps) {
@@ -116,10 +111,9 @@ export function LokiContextUi(props: LokiContextUiProps) {
     Object.entries(row.labels).forEach(([label, value]) => {
       const filter: ContextFilter = {
         label,
-        value: label, // this looks weird in the first place, but we need to set the label as value here
+        value,
         enabled: allLabels.includes(label),
         fromParser: !allLabels.includes(label),
-        description: value,
       };
       contextFilters.push(filter);
     });
@@ -150,31 +144,40 @@ export function LokiContextUi(props: LokiContextUiProps) {
 
   return (
     <div className={styles.multiSelectWrapper}>
-      <div className={styles.textWrapper}>
-        {' '}
-        <Tooltip
-          content={
-            'This feature is experimental and only works on log queries containing no more than 1 parser (logfmt, json).'
-          }
-          placement="top"
-        >
-          <Tag
-            className={css({
-              fontSize: 10,
-              padding: '1px 5px',
-              verticalAlign: 'text-bottom',
-            })}
-            name={'Experimental'}
-            colorIndex={1}
-          />
-        </Tooltip>{' '}
-        Select labels to be included in the context query:
+      <div>
+        <div style={{ marginBottom: '5px' }}>
+          {' '}
+          <Tooltip
+            content={
+              'This feature is experimental and only works on log queries containing no more than 1 parser (logfmt, json).'
+            }
+            placement="top"
+          >
+            <Tag
+              className={css({
+                fontSize: 10,
+                padding: '1px 5px',
+                verticalAlign: 'text-bottom',
+                marginLeft: '-5px',
+              })}
+              name={'Experimental feature'}
+              colorIndex={1}
+            />
+          </Tooltip>{' '}
+        </div>
         <LoadingPlaceholder text="" className={`${styles.loadingPlaceholder} ${loading ? '' : styles.hidden}`} />
+        <Label
+          className={css`
+            max-width: 100%;
+          `}
+          description="Context query is created from all labels defining the stream for the selected log line. Which labels would you like to include in the context query?"
+        >
+          1. Select labels
+        </Label>
       </div>
       <div>
         <MultiSelect
           className={styles.multiSelect}
-          prefix="Labels"
           options={realLabels}
           value={realLabelsEnabled}
           formatOptionLabel={formatOptionLabel}
@@ -209,11 +212,13 @@ export function LokiContextUi(props: LokiContextUiProps) {
           }}
         />
       </div>
+      <Label description="By using logfmt parser, you are able to filter for extracted labels. Which extracted labels would you like to include in the context query?">
+        2. Add extracted label filters
+      </Label>
       {parsedLabels.length > 0 && (
         <div>
           <MultiSelect
             className={styles.multiSelect}
-            prefix="Parsed Labels"
             options={parsedLabels}
             value={parsedLabelsEnabled}
             formatOptionLabel={formatOptionLabel}
@@ -250,6 +255,22 @@ export function LokiContextUi(props: LokiContextUiProps) {
           />
         </div>
       )}
+      <div>3. Executed context query</div>
+      <QueryPreview
+        query={`{${contextFilters
+          .filter((c) => {
+            return c.enabled && !c.fromParser;
+          })
+          .map((c) => `${c.label}="${c.value}"`)
+          .join(', ')}} ${
+          contextFilters.filter((f) => f.enabled && f.fromParser).length === 0
+            ? ''
+            : ` | logfmt | ${contextFilters
+                .filter((f) => f.enabled && f.fromParser)
+                .map((f) => `${f.label}="${f.value}"`)
+                .join(' | ')}`
+        }`}
+      />
     </div>
   );
 }

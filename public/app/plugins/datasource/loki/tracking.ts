@@ -4,12 +4,8 @@ import { variableRegex } from 'app/features/variables/utils';
 
 import { QueryEditorMode } from '../prometheus/querybuilder/shared/types';
 
-import {
-  REF_ID_STARTER_ANNOTATION,
-  REF_ID_DATA_SAMPLES,
-  REF_ID_STARTER_LOG_ROW_CONTEXT,
-  REF_ID_STARTER_LOG_VOLUME,
-} from './datasource';
+import { REF_ID_STARTER_ANNOTATION, REF_ID_DATA_SAMPLES, REF_ID_STARTER_LOG_VOLUME } from './datasource';
+import { REF_ID_STARTER_LOG_ROW_CONTEXT } from './LogContextSupport';
 import pluginJson from './plugin.json';
 import { getNormalizedLokiQuery, isLogsQuery, obfuscate, parseToNodeNamesArray } from './queryUtils';
 import { LokiQuery, LokiQueryType } from './types';
