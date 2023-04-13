@@ -19,6 +19,7 @@ export enum FieldType {
   enum = 'enum',
   other = 'other', // Object, Array, etc
   frame = 'frame', // DataFrame
+  valueAndFrame = 'valueAndFrame',
 }
 
 /**
@@ -271,4 +272,9 @@ export const TIME_SERIES_METRIC_FIELD_NAME = 'Metric';
 export interface DataFrameFieldIndex {
   frameIndex: number;
   fieldIndex: number;
+}
+
+export interface ValueAndFrame<T = any> {
+  value: T;
+  frame: DataFrame;
 }
