@@ -641,73 +641,56 @@ export interface OnTimeRangeUpdatedDependencies {
   events: typeof appEvents;
 }
 
-const dfs = (node: Node, visited: string[], variables: VariableModel[], variablesRefreshTimeRange: VariableModel[]) => {
+// dfs function for performing depth-first search on a given node and marking nodes as visited
+const dfs = (node: Node, visited: string[]) => {
   if (!visited.includes(node.name)) {
     visited.push(node.name);
-    console.log('visited node', node.name);
   }
-  console.log('outputEdges of node', node.name, node.outputEdges.length, node.outputEdges);
-  node.outputEdges.forEach((e) => {
-    const child = e.outputNode;
-    if (child && !visited.includes(child.name)) {
-      const childVariable = variables.find((v) => v.name === child.name) as QueryVariableModel;
-      // when a variable is refreshed on time range change, we need to add that variable to be refreshed and mark its children as visited
-      if (
-        childVariable &&
-        childVariable.refresh === VariableRefresh.onTimeRangeChanged &&
-        variablesRefreshTimeRange.indexOf(childVariable) === -1
-      ) {
-        variablesRefreshTimeRange.push(childVariable);
-        visited.push(child.name);
-      } else {
-        dfs(child, visited, variables, variablesRefreshTimeRange);
-      }
+
+  node.inputEdges.forEach((e) => {
+    const child = e.inputNode;
+    if (child) {
+      dfs(child, visited);
     }
   });
-
-  console.log(variablesRefreshTimeRange);
-  return variablesRefreshTimeRange;
 };
 
 const getVariablesThatNeedRefreshNew = (key: string, state: StoreState): VariableWithOptions[] => {
   const allVariables = getVariablesByKey(key, state);
 
-  //create dependency graph
+  // Create a dependency graph
   const g = createGraph(allVariables);
-  // create a list of nodes that were visited
+
+  // Create a list of nodes that were visited
   const visitedDfs: string[] = [];
   const variablesRefreshTimeRange: VariableWithOptions[] = [];
-  allVariables.forEach((v) => {
-    const node = g.getNode(v.name);
-    if (visitedDfs.includes(v.name)) {
+
+  // Iterate over all variables
+  allVariables.forEach((variable) => {
+    const node = g.getNode(variable.name);
+
+    // If visited, continue
+    if (visitedDfs.includes(variable.name)) {
       return;
+    } else {
+      visitedDfs.push(variable.name);
     }
-    if (node) {
-      const parentVariableNode = allVariables.find((v) => v.name === node.name) as QueryVariableModel;
-      const isVariableTimeRange =
-        parentVariableNode && parentVariableNode.refresh === VariableRefresh.onTimeRangeChanged;
-      //
-      if (isVariableTimeRange && node.outputEdges.length === 0) {
-        variablesRefreshTimeRange.push(parentVariableNode);
+
+    // Check if the variable has 'refresh' and 'options' properties
+    if (node && variable.hasOwnProperty('refresh') && variable.hasOwnProperty('options')) {
+      const variableWithRefresh = variable as unknown as QueryVariableModel;
+      const isVariableTimeRange = variableWithRefresh.refresh === VariableRefresh.onTimeRangeChanged;
+
+      // If the variable is time range and has no dependents (input edges), add it to the list of variables that need refresh
+      if (isVariableTimeRange && node.inputEdges.length === 0) {
+        variablesRefreshTimeRange.push(variableWithRefresh);
       }
 
-      // if variable is time range and other variables depend on it (output edges) add it to the list of variables that need refresh and dont visit its dependents
-      if (
-        isVariableTimeRange &&
-        variablesRefreshTimeRange.includes(parentVariableNode) &&
-        node.outputEdges.length > 0
-      ) {
-        variablesRefreshTimeRange.push(parentVariableNode);
-        dfs(node, visitedDfs, allVariables, variablesRefreshTimeRange);
-      }
-
-      // if variable is not time range but has dependents (output edges) visit its dependants and repeat the process
-      if (
-        parentVariableNode &&
-        parentVariableNode.refresh &&
-        parentVariableNode.refresh !== VariableRefresh.onTimeRangeChanged
-      ) {
-        dfs(node, visitedDfs, allVariables, variablesRefreshTimeRange);
+      // If the variable is time range and other variables depend on it (input edges),
+      // add it to the list of variables that need refresh and don't visit its dependents
+      if (isVariableTimeRange && node.inputEdges.length > 0) {
+        variablesRefreshTimeRange.push(variableWithRefresh);
+        dfs(node, visitedDfs);
       }
     }
   });
