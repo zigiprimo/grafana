@@ -646,8 +646,8 @@ const dfs = (node: Node, visited: string[]) => {
   if (!visited.includes(node.name)) {
     visited.push(node.name);
   }
-
-  node.inputEdges.forEach((e) => {
+  const inputEdges = node.getOptimizedInputEdges();
+  inputEdges.forEach((e) => {
     const child = e.inputNode;
     if (child) {
       dfs(child, visited);
@@ -682,13 +682,14 @@ const getVariablesThatNeedRefreshNew = (key: string, state: StoreState): Variabl
       const isVariableTimeRange = variableWithRefresh.refresh === VariableRefresh.onTimeRangeChanged;
 
       // If the variable is time range and has no dependents (input edges), add it to the list of variables that need refresh
-      if (isVariableTimeRange && node.inputEdges.length === 0) {
+      const inputEdges = node.getOptimizedInputEdges();
+      if (isVariableTimeRange && inputEdges.length === 0) {
         variablesRefreshTimeRange.push(variableWithRefresh);
       }
 
       // If the variable is time range and other variables depend on it (input edges),
       // add it to the list of variables that need refresh and don't visit its dependents
-      if (isVariableTimeRange && node.inputEdges.length > 0) {
+      if (isVariableTimeRange && inputEdges.length > 0) {
         variablesRefreshTimeRange.push(variableWithRefresh);
         dfs(node, visitedDfs);
       }
