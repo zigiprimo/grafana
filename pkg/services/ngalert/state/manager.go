@@ -348,7 +348,7 @@ func (st *Manager) saveAlertStates(ctx context.Context, logger log.Logger, state
 	logger.Debug("Saving alert states", "count", len(states))
 	for _, s := range states {
 		// Do not save normal state to database and remove transition to Normal state but keep mapped states
-		if st.doNotSaveNormalState && IsNormalStateWithNoReason(s.State) && !s.Changed() {
+		if IsNormalStateWithNoReason(s.State) && !s.Changed() {
 			continue
 		}
 
