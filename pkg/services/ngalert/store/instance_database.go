@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/grafana/grafana/pkg/infra/db"
-	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
 )
 
@@ -30,9 +29,7 @@ func (st DBstore) ListAlertInstances(ctx context.Context, cmd *models.ListAlertI
 		if cmd.RuleUID != "" {
 			addToQuery(` AND rule_uid = ?`, cmd.RuleUID)
 		}
-		if st.FeatureToggles.IsEnabled(featuremgmt.FlagAlertingNoNormalState) {
-			s.WriteString(fmt.Sprintf(" AND NOT (current_state = '%s' AND current_reason = '')", models.InstanceStateNormal))
-		}
+
 		if err := sess.SQL(s.String(), params...).Find(&alertInstances); err != nil {
 			return err
 		}

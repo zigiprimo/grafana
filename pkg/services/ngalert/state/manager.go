@@ -38,8 +38,6 @@ type Manager struct {
 	images        ImageCapturer
 	historian     Historian
 	externalURL   *url.URL
-
-	doNotSaveNormalState bool
 }
 
 type ManagerCfg struct {
@@ -49,22 +47,19 @@ type ManagerCfg struct {
 	Images        ImageCapturer
 	Clock         clock.Clock
 	Historian     Historian
-	// DoNotSaveNormalState controls whether eval.Normal state is persisted to the database and returned by get methods
-	DoNotSaveNormalState bool
 }
 
 func NewManager(cfg ManagerCfg) *Manager {
 	return &Manager{
-		cache:                newCache(),
-		ResendDelay:          ResendDelay, // TODO: make this configurable
-		log:                  log.New("ngalert.state.manager"),
-		metrics:              cfg.Metrics,
-		instanceStore:        cfg.InstanceStore,
-		images:               cfg.Images,
-		historian:            cfg.Historian,
-		clock:                cfg.Clock,
-		externalURL:          cfg.ExternalURL,
-		doNotSaveNormalState: cfg.DoNotSaveNormalState,
+		cache:         newCache(),
+		ResendDelay:   ResendDelay, // TODO: make this configurable
+		log:           log.New("ngalert.state.manager"),
+		metrics:       cfg.Metrics,
+		instanceStore: cfg.InstanceStore,
+		images:        cfg.Images,
+		historian:     cfg.Historian,
+		clock:         cfg.Clock,
+		externalURL:   cfg.ExternalURL,
 	}
 }
 
@@ -331,11 +326,11 @@ func (st *Manager) setNextState(ctx context.Context, alertRule *ngModels.AlertRu
 }
 
 func (st *Manager) GetAll(orgID int64) []*State {
-	allStates := st.cache.getAll(orgID, st.doNotSaveNormalState)
+	allStates := st.cache.getAll(orgID)
 	return allStates
 }
 func (st *Manager) GetStatesForRuleUID(orgID int64, alertRuleUID string) []*State {
-	return st.cache.getStatesForRuleUID(orgID, alertRuleUID, st.doNotSaveNormalState)
+	return st.cache.getStatesForRuleUID(orgID, alertRuleUID)
 }
 
 func (st *Manager) Put(states []*State) {
