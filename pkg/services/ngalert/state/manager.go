@@ -339,6 +339,40 @@ func (st *Manager) Put(states []*State) {
 	}
 }
 
+func (st *Manager) DumpState(ctx context.Context) error {
+	st.log.Info("Dumping all states")
+	for orgID, orgStates := range st.cache.states {
+		for ruleUID, ruleSates := range orgStates {
+			logger := st.log.New(ngModels.AlertRuleKey{OrgID: orgID, UID: ruleUID}.LogContext()...)
+			logger.Debug("Dumping states for rule", "statesCount", len(ruleSates.states))
+			for _, s := range ruleSates.states {
+				key, err := s.GetAlertInstanceKey()
+				if err != nil {
+					logger.Error("Failed to create a key for alert state to save it to database. The state will be ignored ", "cacheID", s.CacheID, "error", err, "labels", s.Labels.String())
+					continue
+				}
+				instance := ngModels.AlertInstance{
+					AlertInstanceKey:  key,
+					Labels:            ngModels.InstanceLabels(s.Labels),
+					CurrentState:      ngModels.InstanceStateType(s.State.String()),
+					CurrentReason:     s.StateReason,
+					LastEvalTime:      s.LastEvaluationTime,
+					CurrentStateSince: s.StartsAt,
+					CurrentStateEnd:   s.EndsAt,
+				}
+				err = st.instanceStore.SaveAlertInstance(ctx, instance)
+				if err != nil {
+					if ctx.Err() != nil {
+						return ctx.Err()
+					}
+					logger.Error("Failed to save alert state", "labels", s.Labels.String(), "state", s.State, "error", err)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // TODO: Is the `State` type necessary? Should it embed the instance?
 func (st *Manager) saveAlertStates(ctx context.Context, logger log.Logger, states ...StateTransition) {
 	if st.instanceStore == nil || len(states) == 0 {

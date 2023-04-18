@@ -2,6 +2,7 @@ package ngalert
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -337,7 +338,20 @@ func (ng *AlertNG) Run(ctx context.Context) error {
 			return ng.schedule.Run(subCtx)
 		})
 	}
-	return children.Wait()
+
+	err := children.Wait()
+
+	// If this the context was cancelled, i.e. Grafana servers is being stopped
+	if errors.Is(err, context.Canceled) {
+		// no real reason for 60 seconds timeout. Could be bigger
+		c, cancelFn := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancelFn()
+		err := ng.stateManager.DumpState(c)
+		if err != nil {
+			ng.Log.Error("Failed to dump states of all rules", "error", err)
+		}
+	}
+	return err
 }
 
 // IsDisabled returns true if the alerting service is disabled for this instance.
