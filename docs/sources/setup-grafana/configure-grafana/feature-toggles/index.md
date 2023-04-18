@@ -53,7 +53,6 @@ Some stable features are enabled by default. You can disable a stable feature by
 | `grpcServer`                         | Run the GRPC server                                                                                                                                                                          |
 | `accessControlOnCall`                | Access control primitives for OnCall                                                                                                                                                         |
 | `nestedFolders`                      | Enable folder nesting                                                                                                                                                                        |
-| `alertingNoNormalState`              | Stop maintaining state of alerts that are not firing                                                                                                                                         |
 | `renderAuthJWT`                      | Uses JWT-based auth for rendering instead of relying on remote cache                                                                                                                         |
 | `enableElasticsearchBackendQuerying` | Enable the processing of queries and responses in the Elasticsearch data source through backend                                                                                              |
 

@@ -50,7 +50,6 @@ authnService,alpha,@grafana/grafana-authnz-team,false,false,false,false
 disablePrometheusExemplarSampling,stable,@grafana/observability-metrics,false,false,false,false
 alertingBacktesting,alpha,@grafana/alerting-squad,false,false,false,false
 editPanelCSVDragAndDrop,alpha,@grafana/grafana-bi-squad,false,false,false,true
-alertingNoNormalState,beta,@grafana/alerting-squad,false,false,false,false
 logsSampleInExplore,stable,@grafana/observability-logs,false,false,false,true
 logsContextDatasourceUi,alpha,@grafana/observability-logs,false,false,false,true
 lokiQuerySplitting,alpha,@grafana/observability-logs,false,false,false,true

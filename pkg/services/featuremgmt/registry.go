@@ -342,13 +342,6 @@ var (
 			Owner:        grafanaBiSquad,
 		},
 		{
-			Name:            "alertingNoNormalState",
-			Description:     "Stop maintaining state of alerts that are not firing",
-			State:           FeatureStateBeta,
-			RequiresRestart: false,
-			Owner:           grafanaAlertingSquad,
-		},
-		{
 
 			Name:         "logsSampleInExplore",
 			Description:  "Enables access to the logs sample feature in Explore",

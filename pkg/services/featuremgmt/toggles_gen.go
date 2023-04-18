@@ -211,10 +211,6 @@ const (
 	// Enables drag and drop for CSV and Excel files
 	FlagEditPanelCSVDragAndDrop = "editPanelCSVDragAndDrop"
 
-	// FlagAlertingNoNormalState
-	// Stop maintaining state of alerts that are not firing
-	FlagAlertingNoNormalState = "alertingNoNormalState"
-
 	// FlagLogsSampleInExplore
 	// Enables access to the logs sample feature in Explore
 	FlagLogsSampleInExplore = "logsSampleInExplore"
