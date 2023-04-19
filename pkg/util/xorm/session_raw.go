@@ -6,7 +6,10 @@ package xorm
 
 import (
 	"database/sql"
+	"fmt"
 	"reflect"
+	"runtime"
+	"strings"
 	"time"
 
 	"xorm.io/builder"
@@ -22,10 +25,44 @@ func (session *Session) queryPreprocess(sqlStr *string, paramStr ...interface{})
 	session.lastSQLArgs = paramStr
 }
 
+func (session *Session) checkDashboards(sql string) {
+	if strings.Contains(sql, " dashboard ") {
+		pc := make([]uintptr, 20)
+		n := runtime.Callers(0, pc)
+		if n == 0 {
+			return
+		}
+		pc = pc[:n]
+		frames := runtime.CallersFrames(pc)
+		hasStack := false
+		for {
+			frame, more := frames.Next()
+			if strings.Contains(frame.File, "grafana/pkg/services/sqlstore/") {
+				break
+			}
+			if strings.Contains(frame.File, "grafana/pkg/services/dashboards/") {
+				break
+			}
+			if strings.Contains(frame.File, "grafana/pkg/") && !strings.Contains(frame.File, "pkg/util/xorm/") {
+				hasStack = true
+				fmt.Printf("- %s:%d | %v\n", frame.File, frame.Line, frame.Function)
+			}
+			if !more {
+				break
+			}
+		}
+		if hasStack {
+			fmt.Println("SQL:", sql)
+		}
+	}
+}
+
 func (session *Session) queryRows(sqlStr string, args ...interface{}) (*core.Rows, error) {
 	defer session.resetStatement()
 
 	session.queryPreprocess(&sqlStr, args...)
+
+	session.checkDashboards(sqlStr)
 
 	if session.showSQL {
 		session.lastSQL = sqlStr
@@ -149,6 +186,7 @@ func (session *Session) exec(sqlStr string, args ...interface{}) (sql.Result, er
 	defer session.resetStatement()
 
 	session.queryPreprocess(&sqlStr, args...)
+	session.checkDashboards(sqlStr)
 
 	if session.engine.showSQL {
 		if session.engine.showExecTime {
