@@ -1,0 +1,32 @@
+{
+  "short_name": "Grafana",
+  "name": "Grafana",
+  "icons": [
+    {
+      "src": "/public/img/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180"
+    }
+  ],
+  "id": "/",
+  "start_url": "/",
+  "background_color": "#3367D6",
+  "display": "standalone",
+  "scope": "/public/",
+  "theme_color": "#3367D6",
+  "description": "Grafana description!",
+  "screenshots": [
+    {
+      "src": "/public/img/g8_login_dark.svg",
+      "type": "image/svg+xml",
+      "sizes": "2261x1272",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/public/img/g8_login_light.svg",
+      "type": "image/svg+xml",
+      "sizes": "2261x1272",
+      "form_factor": "wide"
+    }
+  ]
+}
