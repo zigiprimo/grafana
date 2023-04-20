@@ -164,6 +164,11 @@ func (gr *ReduceCommand) Execute(ctx context.Context, _ time.Time, vars mathexp.
 	defer span.End()
 
 	span.SetAttributes("reducer", gr.Reducer, attribute.Key("reducer").String(gr.Reducer))
+	mode := "strict" // default when not set
+	if gr.seriesMapper != nil {
+		mode = gr.seriesMapper.Name()
+	}
+	span.SetAttributes("mode", mode, attribute.Key("mode").String(mode))
 
 	newRes := mathexp.Results{}
 	for _, val := range vars[gr.VarToReduce].Values {

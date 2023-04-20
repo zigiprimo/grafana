@@ -136,6 +136,7 @@ func (s Series) Reduce(refID, rFunc string, mapper ReduceMapper) (Number, error)
 type ReduceMapper interface {
 	MapInput(s *float64) *float64
 	MapOutput(v *float64) *float64
+	Name() string
 }
 
 // mapSeries creates a series where all points are mapped using the provided map function ReduceMapper.MapInput
@@ -156,6 +157,8 @@ func mapSeries(s Series, mapper ReduceMapper) Series {
 type DropNonNumber struct {
 }
 
+func (d DropNonNumber) Name() string { return "dropNN" }
+
 // MapInput returns nil if the input parameter is nil or point to either a NaN or a Inf
 func (d DropNonNumber) MapInput(s *float64) *float64 {
 	if s == nil || math.IsNaN(*s) || math.IsInf(*s, 0) {
@@ -175,6 +178,8 @@ func (d DropNonNumber) MapOutput(s *float64) *float64 {
 type ReplaceNonNumberWithValue struct {
 	Value float64
 }
+
+func (r ReplaceNonNumberWithValue) Name() string { return "replaceNN" }
 
 // MapInput returns a pointer to ReplaceNonNumberWithValue.Value if input parameter is nil or points to either a NaN or an Inf.
 // Otherwise, returns the input pointer as is.
