@@ -209,6 +209,12 @@ export class GrafanaApp {
         config,
       };
 
+      window.addEventListener('load', () => {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.register('./public/build/service-worker.js');
+        }
+      });
+
       const root = createRoot(document.getElementById('reactRoot')!);
       root.render(
         React.createElement(AppWrapper, {
