@@ -10,11 +10,11 @@
   ],
   "id": "/",
   "start_url": "/",
-  "background_color": "#3367D6",
+  "background_color": "#111217",
   "display": "standalone",
   "scope": "/",
   "theme_color": "#3367D6",
-  "description": "Grafana description!",
+  "description": "The open observability platform",
   "screenshots": [
     {
       "src": "/public/img/g8_login_dark.svg",
