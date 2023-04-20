@@ -5,9 +5,11 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
+	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/datasourceproxy"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
@@ -85,6 +87,22 @@ type API struct {
 	Historian            Historian
 
 	AppUrl *url.URL
+
+	// Optional hook which can be used to intercept API handlers.
+	RequestHandlerHook RequestHandlerFunc
+}
+
+type RequestHandlerFunc func(*contextmodel.ReqContext) response.Response
+
+func (api *API) hook(next RequestHandlerFunc) RequestHandlerFunc {
+	return func(req *contextmodel.ReqContext) response.Response {
+		if api.RequestHandlerHook != nil {
+			if resp := api.RequestHandlerHook(req); resp != nil {
+				return resp
+			}
+		}
+		return next(req)
+	}
 }
 
 // RegisterAPIEndpoints registers API handlers

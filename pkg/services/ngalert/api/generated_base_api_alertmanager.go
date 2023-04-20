@@ -190,7 +190,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodPost,
 				"/api/alertmanager/grafana/api/v2/silences",
-				srv.RouteCreateGrafanaSilence,
+				api.hook(srv.RouteCreateGrafanaSilence),
 				m,
 			),
 		)
@@ -200,7 +200,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodPost,
 				"/api/alertmanager/{DatasourceUID}/api/v2/silences",
-				srv.RouteCreateSilence,
+				api.hook(srv.RouteCreateSilence),
 				m,
 			),
 		)
@@ -210,7 +210,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodDelete,
 				"/api/alertmanager/{DatasourceUID}/config/api/v1/alerts",
-				srv.RouteDeleteAlertingConfig,
+				api.hook(srv.RouteDeleteAlertingConfig),
 				m,
 			),
 		)
@@ -220,7 +220,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodDelete,
 				"/api/alertmanager/grafana/config/api/v1/alerts",
-				srv.RouteDeleteGrafanaAlertingConfig,
+				api.hook(srv.RouteDeleteGrafanaAlertingConfig),
 				m,
 			),
 		)
@@ -230,7 +230,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodDelete,
 				"/api/alertmanager/grafana/api/v2/silence/{SilenceId}",
-				srv.RouteDeleteGrafanaSilence,
+				api.hook(srv.RouteDeleteGrafanaSilence),
 				m,
 			),
 		)
@@ -240,7 +240,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodDelete,
 				"/api/alertmanager/{DatasourceUID}/api/v2/silence/{SilenceId}",
-				srv.RouteDeleteSilence,
+				api.hook(srv.RouteDeleteSilence),
 				m,
 			),
 		)
@@ -250,7 +250,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/{DatasourceUID}/api/v2/alerts/groups",
-				srv.RouteGetAMAlertGroups,
+				api.hook(srv.RouteGetAMAlertGroups),
 				m,
 			),
 		)
@@ -260,7 +260,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/{DatasourceUID}/api/v2/alerts",
-				srv.RouteGetAMAlerts,
+				api.hook(srv.RouteGetAMAlerts),
 				m,
 			),
 		)
@@ -270,7 +270,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/{DatasourceUID}/api/v2/status",
-				srv.RouteGetAMStatus,
+				api.hook(srv.RouteGetAMStatus),
 				m,
 			),
 		)
@@ -280,7 +280,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/{DatasourceUID}/config/api/v1/alerts",
-				srv.RouteGetAlertingConfig,
+				api.hook(srv.RouteGetAlertingConfig),
 				m,
 			),
 		)
@@ -290,7 +290,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/grafana/api/v2/alerts/groups",
-				srv.RouteGetGrafanaAMAlertGroups,
+				api.hook(srv.RouteGetGrafanaAMAlertGroups),
 				m,
 			),
 		)
@@ -300,7 +300,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/grafana/api/v2/alerts",
-				srv.RouteGetGrafanaAMAlerts,
+				api.hook(srv.RouteGetGrafanaAMAlerts),
 				m,
 			),
 		)
@@ -310,7 +310,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/grafana/api/v2/status",
-				srv.RouteGetGrafanaAMStatus,
+				api.hook(srv.RouteGetGrafanaAMStatus),
 				m,
 			),
 		)
@@ -320,7 +320,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/grafana/config/api/v1/alerts",
-				srv.RouteGetGrafanaAlertingConfig,
+				api.hook(srv.RouteGetGrafanaAlertingConfig),
 				m,
 			),
 		)
@@ -330,7 +330,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/grafana/config/history",
-				srv.RouteGetGrafanaAlertingConfigHistory,
+				api.hook(srv.RouteGetGrafanaAlertingConfigHistory),
 				m,
 			),
 		)
@@ -340,7 +340,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/grafana/config/api/v1/receivers",
-				srv.RouteGetGrafanaReceivers,
+				api.hook(srv.RouteGetGrafanaReceivers),
 				m,
 			),
 		)
@@ -350,7 +350,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/grafana/api/v2/silence/{SilenceId}",
-				srv.RouteGetGrafanaSilence,
+				api.hook(srv.RouteGetGrafanaSilence),
 				m,
 			),
 		)
@@ -360,7 +360,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/grafana/api/v2/silences",
-				srv.RouteGetGrafanaSilences,
+				api.hook(srv.RouteGetGrafanaSilences),
 				m,
 			),
 		)
@@ -370,7 +370,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/{DatasourceUID}/api/v2/silence/{SilenceId}",
-				srv.RouteGetSilence,
+				api.hook(srv.RouteGetSilence),
 				m,
 			),
 		)
@@ -380,7 +380,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodGet,
 				"/api/alertmanager/{DatasourceUID}/api/v2/silences",
-				srv.RouteGetSilences,
+				api.hook(srv.RouteGetSilences),
 				m,
 			),
 		)
@@ -390,7 +390,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodPost,
 				"/api/alertmanager/{DatasourceUID}/api/v2/alerts",
-				srv.RoutePostAMAlerts,
+				api.hook(srv.RoutePostAMAlerts),
 				m,
 			),
 		)
@@ -400,7 +400,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodPost,
 				"/api/alertmanager/{DatasourceUID}/config/api/v1/alerts",
-				srv.RoutePostAlertingConfig,
+				api.hook(srv.RoutePostAlertingConfig),
 				m,
 			),
 		)
@@ -410,7 +410,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodPost,
 				"/api/alertmanager/grafana/config/api/v1/alerts",
-				srv.RoutePostGrafanaAlertingConfig,
+				api.hook(srv.RoutePostGrafanaAlertingConfig),
 				m,
 			),
 		)
@@ -420,7 +420,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodPost,
 				"/api/alertmanager/grafana/config/history/{id}/_activate",
-				srv.RoutePostGrafanaAlertingConfigHistoryActivate,
+				api.hook(srv.RoutePostGrafanaAlertingConfigHistoryActivate),
 				m,
 			),
 		)
@@ -430,7 +430,7 @@ func (api *API) RegisterAlertmanagerApiEndpoints(srv AlertmanagerApi, m *metrics
 			metrics.Instrument(
 				http.MethodPost,
 				"/api/alertmanager/grafana/config/api/v1/receivers/test",
-				srv.RoutePostTestGrafanaReceivers,
+				api.hook(srv.RoutePostTestGrafanaReceivers),
 				m,
 			),
 		)

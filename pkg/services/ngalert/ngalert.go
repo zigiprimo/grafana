@@ -127,6 +127,7 @@ type AlertNG struct {
 	stateManager        *state.Manager
 	folderService       folder.Service
 	dashboardService    dashboards.DashboardService
+	api                 *api.API
 
 	// Alerting notification services
 	MultiOrgAlertmanager *notifier.MultiOrgAlertmanager
@@ -246,7 +247,7 @@ func (ng *AlertNG) init() error {
 		int64(ng.Cfg.UnifiedAlerting.DefaultRuleEvaluationInterval.Seconds()),
 		int64(ng.Cfg.UnifiedAlerting.BaseInterval.Seconds()), ng.Log)
 
-	api := api.API{
+	ng.api = &api.API{
 		Cfg:                  ng.Cfg,
 		DatasourceCache:      ng.DataSourceCache,
 		DatasourceService:    ng.DataSourceService,
@@ -272,7 +273,7 @@ func (ng *AlertNG) init() error {
 		AppUrl:               appUrl,
 		Historian:            history,
 	}
-	api.RegisterAPIEndpoints(ng.Metrics.GetAPIMetrics())
+	ng.api.RegisterAPIEndpoints(ng.Metrics.GetAPIMetrics())
 
 	defaultLimits, err := readQuotaConfig(ng.Cfg)
 	if err != nil {
@@ -282,7 +283,7 @@ func (ng *AlertNG) init() error {
 	if err := ng.QuotaService.RegisterQuotaReporter(&quota.NewUsageReporter{
 		TargetSrv:     models.QuotaTargetSrv,
 		DefaultLimits: defaultLimits,
-		Reporter:      api.Usage,
+		Reporter:      ng.api.Usage,
 	}); err != nil {
 		return err
 	}
@@ -347,6 +348,13 @@ func (ng *AlertNG) IsDisabled() bool {
 		return true
 	}
 	return !ng.Cfg.UnifiedAlerting.IsEnabled()
+}
+
+// SetRequestHandlerHook allows for a function to be specified which wraps all
+// request handlers. The hook is invoked after all other middleware is invoked
+// (authentication, instrumentation).
+func (ng *AlertNG) SetAPIRequestHandlerHook(hook api.RequestHandlerFunc) {
+	ng.api.RequestHandlerHook = hook
 }
 
 func readQuotaConfig(cfg *setting.Cfg) (*quota.Map, error) {
