@@ -152,6 +152,7 @@ func (st DBstore) InsertAlertRules(ctx context.Context, rules []ngmodels.AlertRu
 				For:              r.For,
 				Annotations:      r.Annotations,
 				Labels:           r.Labels,
+				StateFingerprint: r.StateFingerprint,
 			})
 		}
 		if len(newRules) > 0 {
@@ -220,6 +221,7 @@ func (st DBstore) UpdateAlertRules(ctx context.Context, rules []ngmodels.UpdateR
 				For:              r.New.For,
 				Annotations:      r.New.Annotations,
 				Labels:           r.New.Labels,
+				StateFingerprint: r.New.StateFingerprint,
 			})
 		}
 		if len(ruleVersions) > 0 {

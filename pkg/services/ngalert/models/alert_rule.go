@@ -167,6 +167,9 @@ type AlertRule struct {
 	Annotations map[string]string
 	Labels      map[string]string
 	IsPaused    bool
+
+	// A fingerprint of the rule that includes fields used in state key calculation.
+	StateFingerprint Fingerprint `xorm:"state_fingerprint"`
 }
 
 // AlertRuleWithOptionals This is to avoid having to pass in additional arguments deep in the call stack. Alert rule
@@ -363,6 +366,8 @@ type AlertRuleVersion struct {
 	Annotations map[string]string
 	Labels      map[string]string
 	IsPaused    bool
+
+	StateFingerprint Fingerprint
 }
 
 // GetAlertRuleByUIDQuery is the query for retrieving/deleting an alert rule by UID and organisation ID.
@@ -517,3 +522,5 @@ func RuleKeyFromContext(ctx context.Context) (AlertRuleKey, bool) {
 	key, ok := ctx.Value(ruleKeyContextKey{}).(AlertRuleKey)
 	return key, ok
 }
+
+type Fingerprint string
