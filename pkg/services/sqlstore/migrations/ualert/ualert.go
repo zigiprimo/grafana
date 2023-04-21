@@ -919,3 +919,41 @@ func (s *uidSet) generateUid() (string, error) {
 
 	return "", errors.New("failed to generate UID")
 }
+
+// UpdateRuleGroupIndexMigration updates a new field state_fingerprint for alert rules
+func UpdateRulesFingerprintMigration(mg *migrator.Migrator) {
+	if !mg.Cfg.UnifiedAlerting.IsEnabled() {
+		return
+	}
+	mg.AddMigration("update alert rules fingerprints", &updateRulesFingerprint{})
+}
+
+type updateRulesFingerprint struct {
+	migrator.MigrationBase
+}
+
+func (c updateRulesFingerprint) SQL(migrator.Dialect) string {
+	return codeMigration
+}
+
+func (c updateRulesFingerprint) Exec(sess *xorm.Session, migrator *migrator.Migrator) error {
+	var rules []*ngmodels.AlertRule
+	if err := sess.Table(ngmodels.AlertRule{}).Asc("id").Find(&rules); err != nil {
+		return fmt.Errorf("failed to read the list of alert rules: %w", err)
+	}
+
+	if len(rules) == 0 {
+		migrator.Logger.Debug("No rules to migrate.")
+		return nil
+	}
+
+	for _, rule := range rules {
+		rule.StateFingerprint = ngmodels.CalculateAlertRuleFingerprint(rule)
+		_, err := sess.ID(rule.ID).Cols("state_fingerprint").Update(rule)
+		if err != nil {
+			migrator.Logger.Error("failed to update alert rule", "uid", rule.UID, "err", err)
+			return fmt.Errorf("unable to update alert rules with fingerprint: %w", err)
+		}
+	}
+	return nil
+}
