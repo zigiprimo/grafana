@@ -83,6 +83,7 @@ func AlertRuleGen(mutators ...AlertRuleMutator) func() *AlertRule {
 		for _, mutator := range mutators {
 			mutator(rule)
 		}
+		rule.StateFingerprint = CalculateAlertRuleFingerprint(rule)
 		return rule
 	}
 }
