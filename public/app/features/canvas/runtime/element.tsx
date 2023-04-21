@@ -505,6 +505,7 @@ export class ElementState implements LayerElement {
         onMouseEnter={(e: React.MouseEvent) => this.handleMouseEnter(e, isSelected)}
         onMouseLeave={!scene?.isEditingEnabled ? this.handleMouseLeave : undefined}
         onClick={!scene?.isEditingEnabled ? this.onElementClick : undefined}
+        // className={'target'}
       >
         <item.display
           key={`${this.UID}/${this.revId}`}

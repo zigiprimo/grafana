@@ -2275,6 +2275,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@daybrush/utils@npm:^1.10.3":
+  version: 1.11.0
+  resolution: "@daybrush/utils@npm:1.11.0"
+  checksum: 876c320e5315a7fd213b16f9f85f09dc8775b8ba627923cf6694f0e20369e1072417e51c23ce060a0e544910468152523d5f0ecc6e3a8b414a9c47b02e58c7bd
+  languageName: node
+  linkType: hard
+
 "@daybrush/utils@npm:^1.7.1":
   version: 1.7.1
   resolution: "@daybrush/utils@npm:1.7.1"
@@ -20342,7 +20349,7 @@ __metadata:
     monaco-promql: 1.7.4
     mousetrap: 1.6.5
     mousetrap-global-bind: 1.1.0
-    moveable: 0.43.1
+    moveable: 0.44.0
     msw: 1.1.0
     mutationobserver-shim: 0.3.7
     ngtemplate-loader: 2.1.0
@@ -20378,7 +20385,7 @@ __metadata:
     react-hook-form: 7.5.3
     react-i18next: ^12.0.0
     react-inlinesvg: 3.0.2
-    react-moveable: 0.46.1
+    react-moveable: 0.47.0
     react-popper: 2.3.0
     react-popper-tooltip: 4.4.2
     react-redux: 7.2.6
@@ -26603,15 +26610,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"moveable@npm:0.43.1":
-  version: 0.43.1
-  resolution: "moveable@npm:0.43.1"
+"moveable@npm:0.44.0":
+  version: 0.44.0
+  resolution: "moveable@npm:0.44.0"
   dependencies:
     "@scena/event-emitter": ^1.0.5
-    react-compat-moveable: ~0.31.1
-    react-moveable: ~0.46.1
+    react-compat-moveable: ~0.32.0
+    react-moveable: ~0.47.0
     react-simple-compat: ^1.2.3
-  checksum: af1ccdfade5d03fe44fad1083dc3575082172af457e7dd5f23319dccc783dce74119279c65cf7415205ee0a39a5277064d4aec1238bf697d65fddf127a5d96ae
+  checksum: 49d2e0daaf4cfce7256773b7e598125e2b9a91b71fadfb730e606ea3a36889d241d500992e684548019c4006bf456f425ccf95be4e3b3cb3f3c8a0f95d1a4e20
   languageName: node
   linkType: hard
 
@@ -30674,11 +30681,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-compat-moveable@npm:~0.31.1":
-  version: 0.31.1
-  resolution: "react-compat-moveable@npm:0.31.1"
+"react-compat-moveable@npm:~0.32.0":
+  version: 0.32.4
+  resolution: "react-compat-moveable@npm:0.32.4"
   dependencies:
-    "@daybrush/utils": ^1.10.0
+    "@daybrush/utils": ^1.10.3
     "@egjs/agent": ^2.2.1
     "@egjs/children-differ": ^1.0.1
     "@egjs/list-differ": ^1.0.0
@@ -30691,8 +30698,8 @@ __metadata:
     overlap-area: ^1.1.0
     react-compat-css-styled: ^1.0.9
     react-css-styled: ^1.0.4
-    react-moveable: ~0.46.1
-  checksum: 301cc657065f99b2ee1b316f72582b157df49a42f61172274dde389d1943923cfbe659ba4acec162ca7a4af25262d5bad753bad1857a8e283f572b8254e22cb8
+    react-moveable: ~0.47.3
+  checksum: 5ef18c2565171646ab637e83a61985f37d69800de38a1f5ada7a5987b06ec14cd622bda5b095a68d129af582bf570093633b25ee9520c6211b3d92b127ec1ab2
   languageName: node
   linkType: hard
 
@@ -31039,9 +31046,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-moveable@npm:0.46.1, react-moveable@npm:~0.46.1":
-  version: 0.46.1
-  resolution: "react-moveable@npm:0.46.1"
+"react-moveable@npm:0.47.0":
+  version: 0.47.0
+  resolution: "react-moveable@npm:0.47.0"
   dependencies:
     "@daybrush/utils": ^1.10.0
     "@egjs/agent": ^2.2.1
@@ -31055,7 +31062,27 @@ __metadata:
     gesto: ^1.15.1
     overlap-area: ^1.1.0
     react-css-styled: ^1.0.4
-  checksum: 521623cd3e91363c6a239f3a6d022039af20565472b6832902ff73e66494369808d0252d5112e034917f70146ae2954ff996c25293c6a3961c6b5c85668ebd07
+  checksum: f669cc62a9feea32cff2a8227d1137c93cb8bb5613dc748a19173ed10ce45ef8a553c1ed10f30f19c56125c31795ccede79d99dd4acfa820406455b8186a84d2
+  languageName: node
+  linkType: hard
+
+"react-moveable@npm:~0.47.0, react-moveable@npm:~0.47.3":
+  version: 0.47.3
+  resolution: "react-moveable@npm:0.47.3"
+  dependencies:
+    "@daybrush/utils": ^1.10.3
+    "@egjs/agent": ^2.2.1
+    "@egjs/children-differ": ^1.0.1
+    "@egjs/list-differ": ^1.0.0
+    "@scena/dragscroll": ^1.4.0
+    "@scena/event-emitter": ^1.0.5
+    "@scena/matrix": ^1.1.1
+    css-to-mat: ^1.0.3
+    framework-utils: ^1.1.0
+    gesto: ^1.15.1
+    overlap-area: ^1.1.0
+    react-css-styled: ^1.0.4
+  checksum: 5f505b7d998636d0b700197f1d30013834d3cc0e20b81b82e4da0d7c22cd8d9b8777f13def8779a506e883aa136ba0620d2141e1a550236481f56883dc8bfd60
   languageName: node
   linkType: hard
 

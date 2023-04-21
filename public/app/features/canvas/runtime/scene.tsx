@@ -375,6 +375,8 @@ export class Scene {
     });
 
     this.moveable = new Moveable(this.div!, {
+      // Seems like we need this for individual group to work
+      // target: '.target',
       draggable: allowChanges && !this.editModeEnabled.getValue(),
       resizable: allowChanges,
       ables: [dimensionViewable, constraintViewable(this), settingsViewable(this)],
@@ -385,6 +387,18 @@ export class Scene {
       },
       origin: false,
       className: this.styles.selected,
+      individualGroupable: true,
+      individualGroupableProps: (element) => {
+        const targetedElement = this.findElementByTarget(element!);
+
+        if (targetedElement?.item.id === 'icon') {
+          return {
+            resizable: false,
+            constraintViewable: false,
+          };
+        }
+        return;
+      },
     })
       .on('click', (event) => {
         const targetedElement = this.findElementByTarget(event.target);
