@@ -2,10 +2,8 @@ package schedule
 
 import (
 	"context"
-	"encoding/json"
 	"math"
 	"math/rand"
-	"reflect"
 	"runtime"
 	"sync"
 	"testing"
@@ -30,7 +28,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			r := newAlertRuleInfo(context.Background())
 			resultCh := make(chan bool)
 			go func() {
-				resultCh <- r.update(ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false})
+				resultCh <- r.update(ruleVersionAndPauseStatus{fingerprint(uuid.NewString()), false})
 			}()
 			select {
 			case <-r.updateCh:
@@ -41,8 +39,8 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 		})
 		t.Run("update should drop any concurrent sending to updateCh", func(t *testing.T) {
 			r := newAlertRuleInfo(context.Background())
-			version1 := ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}
-			version2 := ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}
+			version1 := ruleVersionAndPauseStatus{fingerprint(uuid.NewString()), false}
+			version2 := ruleVersionAndPauseStatus{fingerprint(uuid.NewString()), false}
 
 			wg := sync.WaitGroup{}
 			wg.Add(1)
@@ -162,7 +160,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			r := newAlertRuleInfo(context.Background())
 			r.stop(errRuleDeleted)
 			require.ErrorIs(t, r.ctx.Err(), errRuleDeleted)
-			require.False(t, r.update(ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}))
+			require.False(t, r.update(ruleVersionAndPauseStatus{fingerprint(uuid.NewString()), false}))
 		})
 		t.Run("eval should do nothing", func(t *testing.T) {
 			r := newAlertRuleInfo(context.Background())
@@ -214,7 +212,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 					}
 					switch rand.Intn(max) + 1 {
 					case 1:
-						r.update(ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false})
+						r.update(ruleVersionAndPauseStatus{fingerprint(uuid.NewString()), false})
 					case 2:
 						r.eval(&evaluation{
 							scheduledAt: time.Now(),
@@ -343,150 +341,5 @@ func TestSchedulableAlertRulesRegistry_set(t *testing.T) {
 		diff := r.set(newRules, map[string]string{})
 		require.Falsef(t, diff.IsEmpty(), "Diff is empty but should not be")
 		require.Equal(t, expectedUpdated, diff.updated)
-	})
-}
-
-func TestRuleWithFolderFingerprint(t *testing.T) {
-	rule := models.AlertRuleGen()()
-	title := uuid.NewString()
-	f := ruleWithFolder{rule: rule, folderTitle: title}.Fingerprint()
-	t.Run("should calculate a fingerprint", func(t *testing.T) {
-		require.NotEqual(t, 0, uint64(f))
-	})
-	t.Run("mirror copy should have the same fingerprint", func(t *testing.T) {
-		f2 := ruleWithFolder{rule: models.CopyRule(rule), folderTitle: title}.Fingerprint()
-		require.Equal(t, f, f2)
-	})
-	t.Run("order of queries should not affect the fingerprint", func(t *testing.T) {
-		cp := models.CopyRule(rule)
-		rand.Shuffle(len(cp.Data), func(i, j int) {
-			cp.Data[i], cp.Data[j] = cp.Data[j], cp.Data[i]
-		})
-		f2 := ruleWithFolder{rule: cp, folderTitle: title}.Fingerprint()
-		require.Equal(t, f, f2)
-	})
-	t.Run("folder name should be used in fingerprint", func(t *testing.T) {
-		f2 := ruleWithFolder{rule: rule, folderTitle: uuid.NewString()}.Fingerprint()
-		require.NotEqual(t, f, f2)
-	})
-	t.Run("Version and Updated should be excluded from fingerprint", func(t *testing.T) {
-		cp := models.CopyRule(rule)
-		cp.Version++
-		cp.Updated = cp.Updated.Add(1 * time.Second)
-
-		f2 := ruleWithFolder{rule: cp, folderTitle: title}.Fingerprint()
-		require.Equal(t, f, f2)
-	})
-
-	t.Run("all other fields should be considered", func(t *testing.T) {
-		r1 := &models.AlertRule{
-			ID:        1,
-			OrgID:     2,
-			Title:     "test",
-			Condition: "A",
-			Data: []models.AlertQuery{
-				{
-					RefID:     "1",
-					QueryType: "323",
-					RelativeTimeRange: models.RelativeTimeRange{
-						From: 1,
-						To:   2,
-					},
-					DatasourceUID: "123",
-					Model:         json.RawMessage(`{"test": "test-model"}`),
-				},
-			},
-			Updated:         time.Now(),
-			IntervalSeconds: 2,
-			Version:         1,
-			UID:             "test-uid",
-			NamespaceUID:    "test-ns",
-			DashboardUID:    func(s string) *string { return &s }("dashboard"),
-			PanelID:         func(i int64) *int64 { return &i }(123),
-			RuleGroup:       "test-group",
-			RuleGroupIndex:  1,
-			NoDataState:     "test-nodata",
-			ExecErrState:    "test-err",
-			For:             12,
-			Annotations: map[string]string{
-				"key-annotation": "value-annotation",
-			},
-			Labels: map[string]string{
-				"key-label": "value-label",
-			},
-			IsPaused: false,
-		}
-		r2 := &models.AlertRule{
-			ID:        2,
-			OrgID:     3,
-			Title:     "test-2",
-			Condition: "B",
-			Data: []models.AlertQuery{
-				{
-					RefID:     "2",
-					QueryType: "12313123",
-					RelativeTimeRange: models.RelativeTimeRange{
-						From: 2,
-						To:   3,
-					},
-					DatasourceUID: "asdasdasd21",
-					Model:         json.RawMessage(`{"test": "test-model-2"}`),
-				},
-			},
-			IntervalSeconds: 23,
-			UID:             "test-uid2",
-			NamespaceUID:    "test-ns2",
-			DashboardUID:    func(s string) *string { return &s }("dashboard-2"),
-			PanelID:         func(i int64) *int64 { return &i }(1222),
-			RuleGroup:       "test-group-2",
-			RuleGroupIndex:  22,
-			NoDataState:     "test-nodata2",
-			ExecErrState:    "test-err2",
-			For:             1141,
-			Annotations: map[string]string{
-				"key-annotation2": "value-annotation",
-			},
-			Labels: map[string]string{
-				"key-label": "value-label23",
-			},
-			IsPaused: true,
-		}
-
-		excludedFields := map[string]struct{}{
-			"Version": {},
-			"Updated": {},
-		}
-
-		tp := reflect.TypeOf(rule).Elem()
-		var nonDiffFields []string
-		// making sure that we get completely different struct
-
-		dif := r1.Diff(r2)
-		nonDiffFields = make([]string, 0)
-		for j := 0; j < tp.NumField(); j++ {
-			name := tp.Field(j).Name
-			if _, ok := excludedFields[name]; ok {
-				continue
-			}
-			if len(dif.GetDiffsForField(tp.Field(j).Name)) == 0 {
-				nonDiffFields = append(nonDiffFields, tp.Field(j).Name)
-			}
-		}
-		require.Emptyf(t, nonDiffFields, "cannot generate completely unique alert rule. Some fields are not randomized")
-
-		r2v := reflect.ValueOf(r2).Elem()
-		for i := 0; i < tp.NumField(); i++ {
-			if _, ok := excludedFields[tp.Field(i).Name]; ok {
-				continue
-			}
-			cp := models.CopyRule(r1)
-			v := reflect.ValueOf(cp).Elem()
-			vf := v.Field(i)
-			vf.Set(r2v.Field(i))
-			f2 := ruleWithFolder{rule: cp, folderTitle: title}.Fingerprint()
-			if f2 == f {
-				t.Fatalf("Field %s does not seem to be used in fingerprint. Diff: %s", tp.Field(i).Name, r1.Diff(cp))
-			}
-		}
 	})
 }

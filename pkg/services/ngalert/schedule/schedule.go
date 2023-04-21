@@ -372,7 +372,7 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 	}
 
 	evaluate := func(ctx context.Context, f fingerprint, attempt int64, e *evaluation, span tracing.Span) {
-		logger := logger.New("version", e.rule.Version, "fingerprint", f.String(), "attempt", attempt, "now", e.scheduledAt)
+		logger := logger.New("version", e.rule.Version, "fingerprint", f, "attempt", attempt, "now", e.scheduledAt)
 		start := sch.clock.Now()
 
 		evalCtx := eval.NewContext(ctx, SchedulerUserFor(e.rule.OrgID))
@@ -489,14 +489,14 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 					f := ruleWithFolder{ctx.rule, ctx.folderTitle}.Fingerprint()
 					// Do not clean up state if the eval loop has just started.
 					var needReset bool
-					if currentFingerprint != 0 && currentFingerprint != f {
+					if currentFingerprint != "" && currentFingerprint != f {
 						logger.Debug("Got a new version of alert rule. Clear up the state", "fingerprint", f)
 						needReset = true
 					}
 					// We need to reset state if the loop has started and the alert is already paused. It can happen,
 					// if we have an alert with state and we do file provision with stateful Grafana, that state
 					// lingers in DB and won't be cleaned up until next alert rule update.
-					needReset = needReset || (currentFingerprint == 0 && isPaused)
+					needReset = needReset || (currentFingerprint == "" && isPaused)
 					if needReset {
 						resetState(grafanaCtx, isPaused)
 					}
@@ -511,8 +511,7 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 					span.SetAttributes("rule_uid", ctx.rule.UID, attribute.String("rule_uid", ctx.rule.UID))
 					span.SetAttributes("org_id", ctx.rule.OrgID, attribute.Int64("org_id", ctx.rule.OrgID))
 					span.SetAttributes("rule_version", ctx.rule.Version, attribute.Int64("rule_version", ctx.rule.Version))
-					fpStr := currentFingerprint.String()
-					span.SetAttributes("rule_fingerprint", fpStr, attribute.String("rule_fingerprint", fpStr))
+					span.SetAttributes("rule_fingerprint", string(currentFingerprint), attribute.String("rule_fingerprint", string(currentFingerprint)))
 					utcTick := ctx.scheduledAt.UTC().Format(time.RFC3339Nano)
 					span.SetAttributes("tick", utcTick, attribute.String("tick", utcTick))
 
