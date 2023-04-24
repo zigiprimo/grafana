@@ -206,12 +206,12 @@ function receiversResponseContainsErrors(result: TestReceiversResult) {
   );
 }
 
-function isTestReceiversResult(data: any): data is TestReceiversResult {
-  const receivers = data?.receivers;
+function isTestReceiversResult(data: unknown): data is TestReceiversResult {
+  const receivers = (data as TestReceiversResult)?.receivers;
 
   if (Array.isArray(receivers)) {
     return receivers.every(
-      (receiver: any) => typeof receiver.name === 'string' && Array.isArray(receiver.grafana_managed_receiver_configs)
+      (receiver) => typeof receiver.name === 'string' && Array.isArray(receiver.grafana_managed_receiver_configs)
     );
   }
 

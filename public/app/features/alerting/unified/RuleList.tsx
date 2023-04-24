@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAsyncFn, useInterval } from 'react-use';
 
-import { GrafanaTheme2, urlUtil } from '@grafana/data';
+import { GrafanaTheme2, UrlQueryMap, urlUtil } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
 import { logInfo } from '@grafana/runtime';
 import { Button, LinkButton, useStyles2, withErrorBoundary } from '@grafana/ui';
@@ -29,6 +29,8 @@ import { RULE_LIST_POLL_INTERVAL_MS } from './utils/constants';
 import { getAllRulesSourceNames } from './utils/datasource';
 import { createUrl } from './utils/url';
 
+type ViewType = 'groups' | 'state';
+
 const VIEWS = {
   groups: RuleListGroupView,
   state: RuleListStateView,
@@ -49,11 +51,8 @@ const RuleList = withErrorBoundary(
 
     const { canCreateGrafanaRules, canCreateCloudRules, canReadProvisioning } = useRulesAccess();
 
-    const view = VIEWS[queryParams['view'] as keyof typeof VIEWS]
-      ? (queryParams['view'] as keyof typeof VIEWS)
-      : 'groups';
-
-    const ViewComponent = VIEWS[view];
+    const viewType = getViewType(queryParams);
+    const ViewComponent = VIEWS[viewType];
 
     const promRuleRequests = useUnifiedAlertingSelector((state) => state.promRules);
     const rulerRuleRequests = useUnifiedAlertingSelector((state) => state.rulerRules);
@@ -98,7 +97,7 @@ const RuleList = withErrorBoundary(
             <div className={styles.break} />
             <div className={styles.buttonsContainer}>
               <div className={styles.statsContainer}>
-                {view === 'groups' && hasActiveFilters && (
+                {viewType === 'groups' && hasActiveFilters && (
                   <Button
                     className={styles.expandAllButton}
                     icon={expandAll ? 'angle-double-up' : 'angle-double-down'}
@@ -144,6 +143,15 @@ const RuleList = withErrorBoundary(
   },
   { style: 'page' }
 );
+
+function getViewType(queryParams: UrlQueryMap): ViewType {
+  const viewParam = String(queryParams['view']);
+  return isViewType(viewParam) ? viewParam : 'groups';
+}
+
+const isViewType = (type: string): type is ViewType => {
+  return type in VIEWS;
+};
 
 const getStyles = (theme: GrafanaTheme2) => ({
   break: css`

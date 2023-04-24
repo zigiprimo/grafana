@@ -21,7 +21,7 @@ const ui = {
   },
 };
 
-const combinedNamespaceMock = jest.fn<CombinedRuleNamespace[], any>();
+const combinedNamespaceMock = jest.fn<CombinedRuleNamespace[], unknown[]>();
 jest.mock('./hooks/useCombinedRuleNamespaces', () => ({
   useCombinedRuleNamespaces: () => combinedNamespaceMock(),
 }));
