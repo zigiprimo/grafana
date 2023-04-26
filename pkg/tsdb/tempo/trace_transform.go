@@ -7,8 +7,7 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"go.opentelemetry.io/collector/model/pdata"
-	"go.opentelemetry.io/collector/translator/conventions"
-	tracetranslator "go.opentelemetry.io/collector/translator/trace"
+	conventions "go.opentelemetry.io/collector/semconv"
 )
 
 type KeyValue struct {
@@ -158,7 +157,7 @@ func spanToSpanRow(span pdata.Span, libraryTags pdata.InstrumentationLibrary, re
 
 func resourceToProcess(resource pdata.Resource) (string, []*KeyValue) {
 	attrs := resource.Attributes()
-	serviceName := tracetranslator.ResourceNoServiceName
+	serviceName := pdata.ResourceNoServiceName
 	if attrs.Len() == 0 {
 		return serviceName, nil
 	}
@@ -186,7 +185,7 @@ func getAttributeVal(attr pdata.AttributeValue) interface{} {
 	case pdata.AttributeValueTypeDouble:
 		return attr.DoubleVal()
 	case pdata.AttributeValueTypeMap, pdata.AttributeValueTypeArray:
-		return tracetranslator.AttributeValueToString(attr)
+		return pdata.AttributeValueToString(attr)
 	default:
 		return nil
 	}
@@ -245,28 +244,28 @@ func getTagFromSpanKind(spanKind pdata.SpanKind) *KeyValue {
 	var tagStr string
 	switch spanKind {
 	case pdata.SpanKindClient:
-		tagStr = string(tracetranslator.OpenTracingSpanKindClient)
+		tagStr = string(conventions.SpanKindClient)
 	case pdata.SpanKindServer:
-		tagStr = string(tracetranslator.OpenTracingSpanKindServer)
+		tagStr = string(conventions.SpanKindServer)
 	case pdata.SpanKindProducer:
-		tagStr = string(tracetranslator.OpenTracingSpanKindProducer)
+		tagStr = string(conventions.SpanKindProducer)
 	case pdata.SpanKindConsumer:
-		tagStr = string(tracetranslator.OpenTracingSpanKindConsumer)
+		tagStr = string(conventions.SpanKindConsumer)
 	case pdata.SpanKindInternal:
-		tagStr = string(tracetranslator.OpenTracingSpanKindInternal)
+		tagStr = string(conventions.SpanKindInternal)
 	default:
 		return nil
 	}
 
 	return &KeyValue{
-		Key:   tracetranslator.TagSpanKind,
+		Key:   conventions.TagSpanKind,
 		Value: tagStr,
 	}
 }
 
 func getTagFromStatusCode(statusCode pdata.StatusCode) *KeyValue {
 	return &KeyValue{
-		Key:   tracetranslator.TagStatusCode,
+		Key:   conventions.TagStatusCode,
 		Value: int64(statusCode),
 	}
 }
@@ -274,7 +273,7 @@ func getTagFromStatusCode(statusCode pdata.StatusCode) *KeyValue {
 func getErrorTagFromStatusCode(statusCode pdata.StatusCode) *KeyValue {
 	if statusCode == pdata.StatusCodeError {
 		return &KeyValue{
-			Key:   tracetranslator.TagError,
+			Key:   conventions.TagError,
 			Value: true,
 		}
 	}
@@ -294,7 +293,7 @@ func getTagFromStatusMsg(statusMsg string) *KeyValue {
 func getTagFromTraceState(traceState pdata.TraceState) *KeyValue {
 	if traceState != pdata.TraceStateEmpty {
 		return &KeyValue{
-			Key:   tracetranslator.TagW3CTraceState,
+			Key:   conventions.TagW3CTraceState,
 			Value: string(traceState),
 		}
 	}
@@ -312,7 +311,7 @@ func spanEventsToLogs(events pdata.SpanEventSlice) []*TraceLog {
 		fields := make([]*KeyValue, 0, event.Attributes().Len()+1)
 		if event.Name() != "" {
 			fields = append(fields, &KeyValue{
-				Key:   tracetranslator.TagMessage,
+				Key:   conventions.TagMessage,
 				Value: event.Name(),
 			})
 		}
