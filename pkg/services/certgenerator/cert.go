@@ -14,25 +14,19 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// cert util from client-go copied here without modifications. This is to remove dependencies on client-go
-// a few constants borrowed from another file in the same k8s.io/client-go/util/cert package
+// a part of cert util from https://github.com/kubernetes/client-go/tree/master/util/cert copied here
+// without modifications. This is to remove dependencies on client-go for this largely independent
+// piece around cert generation.
 
 package certgenerator
 
 import (
-	"bytes"
 	"crypto"
 	cryptorand "crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
-	"fmt"
 	"math/big"
 	"net"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -81,133 +75,4 @@ func NewSelfSignedCACert(cfg Config, key crypto.Signer) (*x509.Certificate, erro
 		return nil, err
 	}
 	return x509.ParseCertificate(certDERBytes)
-}
-
-// GenerateSelfSignedCertKey creates a self-signed certificate and key for the given host.
-// Host may be an IP or a DNS name
-// You may also specify additional subject alt names (either ip or dns names) for the certificate.
-func GenerateSelfSignedCertKey(host string, alternateIPs []net.IP, alternateDNS []string) ([]byte, []byte, error) {
-	return GenerateSelfSignedCertKeyWithFixtures(host, alternateIPs, alternateDNS, "")
-}
-
-// GenerateSelfSignedCertKeyWithFixtures creates a self-signed certificate and key for the given host.
-// Host may be an IP or a DNS name. You may also specify additional subject alt names (either ip or dns names)
-// for the certificate.
-//
-// If fixtureDirectory is non-empty, it is a directory path which can contain pre-generated certs. The format is:
-// <host>_<ip>-<ip>_<alternateDNS>-<alternateDNS>.crt
-// <host>_<ip>-<ip>_<alternateDNS>-<alternateDNS>.key
-// Certs/keys not existing in that directory are created.
-func GenerateSelfSignedCertKeyWithFixtures(host string, alternateIPs []net.IP, alternateDNS []string, fixtureDirectory string) ([]byte, []byte, error) {
-	validFrom := time.Now().Add(-time.Hour) // valid an hour earlier to avoid flakes due to clock skew
-	maxAge := time.Hour * 24 * 365          // one year self-signed certs
-
-	baseName := fmt.Sprintf("%s_%s_%s", host, strings.Join(ipsToStrings(alternateIPs), "-"), strings.Join(alternateDNS, "-"))
-	certFixturePath := filepath.Join(fixtureDirectory, baseName+".crt")
-	keyFixturePath := filepath.Join(fixtureDirectory, baseName+".key")
-	if len(fixtureDirectory) > 0 {
-		cert, err := os.ReadFile(certFixturePath)
-		if err == nil {
-			key, err := os.ReadFile(keyFixturePath)
-			if err == nil {
-				return cert, key, nil
-			}
-			return nil, nil, fmt.Errorf("cert %s can be read, but key %s cannot: %v", certFixturePath, keyFixturePath, err)
-		}
-		maxAge = 100 * time.Hour * 24 * 365 // 100 years fixtures
-	}
-
-	caKey, err := rsa.GenerateKey(cryptorand.Reader, 2048)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	caTemplate := x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			CommonName: fmt.Sprintf("%s-ca@%d", host, time.Now().Unix()),
-		},
-		NotBefore: validFrom,
-		NotAfter:  validFrom.Add(maxAge),
-
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature | x509.KeyUsageCertSign,
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-	}
-
-	caDERBytes, err := x509.CreateCertificate(cryptorand.Reader, &caTemplate, &caTemplate, &caKey.PublicKey, caKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	caCertificate, err := x509.ParseCertificate(caDERBytes)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	priv, err := rsa.GenerateKey(cryptorand.Reader, 2048)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	template := x509.Certificate{
-		SerialNumber: big.NewInt(2),
-		Subject: pkix.Name{
-			CommonName: fmt.Sprintf("%s@%d", host, time.Now().Unix()),
-		},
-		NotBefore: validFrom,
-		NotAfter:  validFrom.Add(maxAge),
-
-		KeyUsage:              x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:           []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		BasicConstraintsValid: true,
-	}
-
-	if ip := net.ParseIP(host); ip != nil {
-		template.IPAddresses = append(template.IPAddresses, ip)
-	} else {
-		template.DNSNames = append(template.DNSNames, host)
-	}
-
-	template.IPAddresses = append(template.IPAddresses, alternateIPs...)
-	template.DNSNames = append(template.DNSNames, alternateDNS...)
-
-	derBytes, err := x509.CreateCertificate(cryptorand.Reader, &template, caCertificate, &priv.PublicKey, caKey)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// Generate cert, followed by ca
-	certBuffer := bytes.Buffer{}
-	if err := pem.Encode(&certBuffer, &pem.Block{Type: CertificateBlockType, Bytes: derBytes}); err != nil {
-		return nil, nil, err
-	}
-	if err := pem.Encode(&certBuffer, &pem.Block{Type: CertificateBlockType, Bytes: caDERBytes}); err != nil {
-		return nil, nil, err
-	}
-
-	// Generate key
-	keyBuffer := bytes.Buffer{}
-	if err := pem.Encode(&keyBuffer, &pem.Block{Type: RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(priv)}); err != nil {
-		return nil, nil, err
-	}
-
-	if len(fixtureDirectory) > 0 {
-		if err := os.WriteFile(certFixturePath, certBuffer.Bytes(), 0644); err != nil {
-			return nil, nil, fmt.Errorf("failed to write cert fixture to %s: %v", certFixturePath, err)
-		}
-		if err := os.WriteFile(keyFixturePath, keyBuffer.Bytes(), 0600); err != nil {
-			return nil, nil, fmt.Errorf("failed to write key fixture to %s: %v", certFixturePath, err)
-		}
-	}
-
-	return certBuffer.Bytes(), keyBuffer.Bytes(), nil
-}
-
-func ipsToStrings(ips []net.IP) []string {
-	ss := make([]string, 0, len(ips))
-	for _, ip := range ips {
-		ss = append(ss, ip.String())
-	}
-	return ss
 }

@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+// a part of cert util from https://github.com/kubernetes/client-go/tree/master/util/cert copied here
+// without modifications. This is to remove dependencies on client-go for this largely independent
+// piece around cert generation.
+
 package certgenerator
 
 import (
