@@ -158,6 +158,8 @@ const getStyles = (theme: GrafanaTheme2) => {
       flex: 1 1 0;
     `,
     drawer: css`
+      top: 81px;
+
       .rc-drawer-content-wrapper {
         box-shadow: ${theme.shadows.z3};
 
@@ -199,7 +201,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       }
     `,
     header: css`
-      background-color: ${theme.colors.background.canvas};
+      border-bottom: 1px solid ${theme.colors.border.weak};
       flex-grow: 0;
       padding-top: ${theme.spacing(0.5)};
     `,
