@@ -14,13 +14,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
-
-	certutil "k8s.io/client-go/util/cert"
-	"k8s.io/client-go/util/keyutil"
-	"k8s.io/kubernetes/pkg/controlplane"
-	netutils "k8s.io/utils/net"
 )
 
 const (
@@ -28,6 +22,10 @@ const (
 	ApiServerCertSerial = iota + 1
 	AuthnClientCertSerial
 	AuthzClientCertSerial
+)
+
+const (
+	RSAPrivateKeyBlockType = "RSA PRIVATE KEY"
 )
 
 const (
@@ -80,50 +78,6 @@ func (cu *CertUtil) GetK8sCACert() (*x509.Certificate, error) {
 	return cu.caCert, nil
 }
 
-// Lifted from kube-apiserver package as it's a dependency of external cert generation
-// https://github.com/kubernetes/kubernetes/blob/master/cmd/kube-apiserver/app/server.go#L671
-func getServiceIPAndRanges(serviceClusterIPRanges string) (net.IP, net.IPNet, net.IPNet, error) {
-	serviceClusterIPRangeList := make([]string, 0)
-	if serviceClusterIPRanges != "" {
-		serviceClusterIPRangeList = strings.Split(serviceClusterIPRanges, ",")
-	}
-
-	var apiServerServiceIP net.IP
-	var primaryServiceIPRange net.IPNet
-	var secondaryServiceIPRange net.IPNet
-	var err error
-	// nothing provided by user, use default range (only applies to the Primary)
-	if len(serviceClusterIPRangeList) == 0 {
-		var primaryServiceClusterCIDR net.IPNet
-		primaryServiceIPRange, apiServerServiceIP, err = controlplane.ServiceIPRange(primaryServiceClusterCIDR)
-		if err != nil {
-			return net.IP{}, net.IPNet{}, net.IPNet{}, fmt.Errorf("error determining service IP ranges: %v", err)
-		}
-		return apiServerServiceIP, primaryServiceIPRange, net.IPNet{}, nil
-	}
-
-	_, primaryServiceClusterCIDR, err := netutils.ParseCIDRSloppy(serviceClusterIPRangeList[0])
-	if err != nil {
-		return net.IP{}, net.IPNet{}, net.IPNet{}, fmt.Errorf("service-cluster-ip-range[0] is not a valid cidr")
-	}
-
-	primaryServiceIPRange, apiServerServiceIP, err = controlplane.ServiceIPRange(*primaryServiceClusterCIDR)
-	if err != nil {
-		return net.IP{}, net.IPNet{}, net.IPNet{}, fmt.Errorf("error determining service IP ranges for primary service cidr: %v", err)
-	}
-
-	// user provided at least two entries
-	// note: validation asserts that the list is max of two dual stack entries
-	if len(serviceClusterIPRangeList) > 1 {
-		_, secondaryServiceClusterCIDR, err := netutils.ParseCIDRSloppy(serviceClusterIPRangeList[1])
-		if err != nil {
-			return net.IP{}, net.IPNet{}, net.IPNet{}, fmt.Errorf("service-cluster-ip-range[1] is not an ip net")
-		}
-		secondaryServiceIPRange = *secondaryServiceClusterCIDR
-	}
-	return apiServerServiceIP, primaryServiceIPRange, secondaryServiceIPRange, nil
-}
-
 func loadExistingCertPKI(certPath string, keyPath string) (*x509.Certificate, *rsa.PrivateKey, error) {
 	caCertPemBlocks, err := os.ReadFile(filepath.Clean(certPath))
 	if err != nil {
@@ -164,10 +118,10 @@ func createNewCACertPKI() (*x509.Certificate, *rsa.PrivateKey, error) {
 		return nil, nil, err
 	}
 
-	caCert, err := certutil.NewSelfSignedCACert(certutil.Config{
+	caCert, err := NewSelfSignedCACert(Config{
 		CommonName:   "embedded-apiserver-ca",
 		Organization: []string{"Grafana Labs"},
-		AltNames: certutil.AltNames{
+		AltNames: AltNames{
 			DNSNames: []string{"Grafana Embedded API Server CA"},
 		},
 	}, caKey)
@@ -183,26 +137,26 @@ func createNewCACertPKI() (*x509.Certificate, *rsa.PrivateKey, error) {
 // For client certificates, feel free to omit.
 func persistCertKeyPairToDisk(cert *x509.Certificate, certPath string, key *rsa.PrivateKey, keyPath string, caCerts ...*x509.Certificate) error {
 	keyBuffer := bytes.Buffer{}
-	if err := pem.Encode(&keyBuffer, &pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)}); err != nil {
+	if err := pem.Encode(&keyBuffer, &pem.Block{Type: RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)}); err != nil {
 		return err
 	}
 
 	// Generate cert optionally followed by a CA cert
 	certBuffer := bytes.Buffer{}
-	if err := pem.Encode(&certBuffer, &pem.Block{Type: certutil.CertificateBlockType, Bytes: cert.Raw}); err != nil {
+	if err := pem.Encode(&certBuffer, &pem.Block{Type: CertificateBlockType, Bytes: cert.Raw}); err != nil {
 		return err
 	}
 	for _, caCert := range caCerts {
-		if err := pem.Encode(&certBuffer, &pem.Block{Type: certutil.CertificateBlockType, Bytes: caCert.Raw}); err != nil {
+		if err := pem.Encode(&certBuffer, &pem.Block{Type: CertificateBlockType, Bytes: caCert.Raw}); err != nil {
 			return err
 		}
 	}
 
-	err := certutil.WriteCert(certPath, certBuffer.Bytes())
+	err := writeToFile(certPath, certBuffer.Bytes())
 	if err != nil {
 		return fmt.Errorf("error persisting CA Cert: %s", err.Error())
 	}
-	err = keyutil.WriteKey(keyPath, keyBuffer.Bytes())
+	err = writeToFile(keyPath, keyBuffer.Bytes())
 	if err != nil {
 		return fmt.Errorf("error persisting CA Key: %s", err.Error())
 	}
@@ -214,7 +168,7 @@ func (cu *CertUtil) InitializeCACertPKI() error {
 	if err := os.MkdirAll(cu.K8sDataPath, 0755); err != nil && !errors.Is(err, fs.ErrExist) {
 		return err
 	}
-	exists, err := certutil.CanReadCertAndKey(cu.CACertFile(), cu.CAKeyFile())
+	exists, err := canReadCertAndKey(cu.CACertFile(), cu.CAKeyFile())
 
 	if err != nil {
 		return fmt.Errorf("error reading existing CA PKI: %s"+
@@ -259,7 +213,7 @@ func verifyCertChain(cert *x509.Certificate, caCert *x509.Certificate, keyUsages
 }
 
 func (cu *CertUtil) EnsureApiServerPKI(advertiseAddress string, alternateIP net.IP) error {
-	exists, err := certutil.CanReadCertAndKey(cu.APIServerCertFile(), cu.APIServerCertFile())
+	exists, err := canReadCertAndKey(cu.APIServerCertFile(), cu.APIServerCertFile())
 
 	if err != nil {
 		return fmt.Errorf("error reading existing CA PKI: %s"+
@@ -298,7 +252,7 @@ func (cu *CertUtil) EnsureApiServerPKI(advertiseAddress string, alternateIP net.
 		BasicConstraintsValid: true,
 	}
 
-	if ip := netutils.ParseIPSloppy(advertiseAddress); ip != nil {
+	if ip := net.ParseIP(advertiseAddress); ip != nil {
 		template.IPAddresses = append(template.IPAddresses, ip)
 	} else {
 		template.DNSNames = append(template.DNSNames, advertiseAddress)
@@ -356,7 +310,7 @@ func makeClientCert(clientName string, serialNumber *big.Int, caCert *x509.Certi
 }
 
 func (cu *CertUtil) EnsureAuthzClientPKI() error {
-	exists, err := certutil.CanReadCertAndKey(cu.K8sAuthzClientCertFile(), cu.K8sAuthzClientKeyFile())
+	exists, err := canReadCertAndKey(cu.K8sAuthzClientCertFile(), cu.K8sAuthzClientKeyFile())
 
 	if err != nil {
 		return fmt.Errorf("error reading existing authz client PKI: %s"+
@@ -381,7 +335,7 @@ func (cu *CertUtil) EnsureAuthzClientPKI() error {
 }
 
 func (cu *CertUtil) EnsureAuthnClientPKI() error {
-	exists, err := certutil.CanReadCertAndKey(cu.K8sAuthnClientCertFile(), cu.K8sAuthnClientKeyFile())
+	exists, err := canReadCertAndKey(cu.K8sAuthnClientCertFile(), cu.K8sAuthnClientKeyFile())
 
 	if err != nil {
 		return fmt.Errorf("error reading existing authn client PKI. %s"+
