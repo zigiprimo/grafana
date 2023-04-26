@@ -2,7 +2,6 @@ package certgenerator
 
 import (
 	"context"
-	"net"
 	"path/filepath"
 
 	"github.com/grafana/dskit/services"
@@ -14,8 +13,6 @@ import (
 const (
 	DefaultAPIServerIp = "127.0.0.1"
 )
-
-var DefaultServiceIPCIDR net.IPNet = net.IPNet{IP: net.ParseIP("10.0.0.0"), Mask: net.CIDRMask(24, 32)}
 
 var (
 	_ Service = (*service)(nil)
@@ -54,13 +51,7 @@ func (s *service) up(ctx context.Context) error {
 		return err
 	}
 
-	apiServerServiceIP, err := GetIndexedIP(&DefaultServiceIPCIDR, 1)
-	if err != nil {
-		s.Log.Error("error getting service ip of apiserver for cert generation", "error", err)
-		return nil
-	}
-
-	err = s.certUtil.EnsureApiServerPKI(DefaultAPIServerIp, apiServerServiceIP)
+	err = s.certUtil.EnsureApiServerPKI(DefaultAPIServerIp)
 	if err != nil {
 		s.Log.Error("error ensuring API Server PKI", "error", err)
 		return err

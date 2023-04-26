@@ -212,7 +212,7 @@ func verifyCertChain(cert *x509.Certificate, caCert *x509.Certificate, keyUsages
 	return nil
 }
 
-func (cu *CertUtil) EnsureApiServerPKI(advertiseAddress string, alternateIP net.IP) error {
+func (cu *CertUtil) EnsureApiServerPKI(advertiseAddress string) error {
 	exists, err := canReadCertAndKey(cu.APIServerCertFile(), cu.APIServerCertFile())
 
 	if err != nil {
@@ -231,7 +231,6 @@ func (cu *CertUtil) EnsureApiServerPKI(advertiseAddress string, alternateIP net.
 
 	validFrom := time.Now().Add(-time.Hour) // valid an hour earlier to avoid flakes due to clock skew
 	maxAge := time.Hour * 24 * 365          // one year self-signed certs
-	alternateIPs := []net.IP{alternateIP}
 	alternateDNS := []string{"kubernetes.default.svc", "kubernetes.default", "kubernetes"}
 
 	priv, err := rsa.GenerateKey(cryptorand.Reader, 2048)
@@ -257,8 +256,6 @@ func (cu *CertUtil) EnsureApiServerPKI(advertiseAddress string, alternateIP net.
 	} else {
 		template.DNSNames = append(template.DNSNames, advertiseAddress)
 	}
-
-	template.IPAddresses = append(template.IPAddresses, alternateIPs...)
 	template.DNSNames = append(template.DNSNames, alternateDNS...)
 
 	certDerBytes, err := x509.CreateCertificate(cryptorand.Reader, &template, cu.caCert, &priv.PublicKey, cu.caKey)
