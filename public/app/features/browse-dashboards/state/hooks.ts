@@ -3,13 +3,20 @@ import { createSelector } from 'reselect';
 import { DashboardViewItem } from 'app/features/search/types';
 import { useSelector, StoreState } from 'app/types';
 
+import { useGetFolderChildrenQuery } from '../api/browseDashboardsAPI';
 import { DashboardsTreeItem, DashboardTreeSelection } from '../types';
 
+// const rootItems = createSelector(
+//   endpoints.getFolderChildren.select(folderUID),
+//   (rootItems) => rootItems?.data ?? []
+// );
+
 const flatTreeSelector = createSelector(
-  (wholeState: StoreState) => wholeState.browseDashboards.rootItems,
+  // (wholeState: StoreState) => wholeState.browseDashboards.rootItems,
+  (_wholeState: StoreState, rootItems: DashboardViewItem[]) => rootItems,
   (wholeState: StoreState) => wholeState.browseDashboards.childrenByParentUID,
   (wholeState: StoreState) => wholeState.browseDashboards.openFolders,
-  (wholeState: StoreState, rootFolderUID: string | undefined) => rootFolderUID,
+  (_wholeState: StoreState, _rootItems: DashboardViewItem[], rootFolderUID: string | undefined) => rootFolderUID,
   (rootItems, childrenByParentUID, openFolders, folderUID) => {
     return createFlatTree(folderUID, rootItems, childrenByParentUID, openFolders);
   }
@@ -33,7 +40,9 @@ const selectedItemsForActionsSelector = createSelector(
 );
 
 export function useFlatTreeState(folderUID: string | undefined) {
-  return useSelector((state) => flatTreeSelector(state, folderUID));
+  const { data } = useGetFolderChildrenQuery(undefined);
+  const rootItems = data ?? [];
+  return useSelector((state) => flatTreeSelector(state, rootItems, folderUID));
 }
 
 export function useHasSelection() {

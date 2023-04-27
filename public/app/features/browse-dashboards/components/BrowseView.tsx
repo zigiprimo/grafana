@@ -1,15 +1,16 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 
 import { DashboardViewItem } from 'app/features/search/types';
 import { useDispatch } from 'app/types';
 
+import { useLazyGetFolderChildrenQuery } from '../api/browseDashboardsAPI';
 import {
   useFlatTreeState,
   useCheckboxSelectionState,
-  fetchChildren,
   setFolderOpenState,
   setItemSelectionState,
   setAllSelection,
+  storeFolderChildrenInState,
 } from '../state';
 
 import { DashboardsTree } from './DashboardsTree';
@@ -24,20 +25,24 @@ export function BrowseView({ folderUID, width, height }: BrowseViewProps) {
   const dispatch = useDispatch();
   const flatTree = useFlatTreeState(folderUID);
   const selectedItems = useCheckboxSelectionState();
-
-  useEffect(() => {
-    dispatch(fetchChildren(folderUID));
-  }, [dispatch, folderUID]);
+  const [getFolderChildren] = useLazyGetFolderChildrenQuery();
 
   const handleFolderClick = useCallback(
-    (clickedFolderUID: string, isOpen: boolean) => {
+    async (clickedFolderUID: string, isOpen: boolean) => {
       dispatch(setFolderOpenState({ folderUID: clickedFolderUID, isOpen }));
 
       if (isOpen) {
-        dispatch(fetchChildren(clickedFolderUID));
+        getFolderChildren(clickedFolderUID);
+        const children = await getFolderChildren(clickedFolderUID).unwrap();
+        dispatch(
+          storeFolderChildrenInState({
+            parentUID: clickedFolderUID,
+            children,
+          })
+        );
       }
     },
-    [dispatch]
+    [dispatch, getFolderChildren]
   );
 
   const handleItemSelectionChange = useCallback(

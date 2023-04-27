@@ -4,6 +4,8 @@ import { lastValueFrom } from 'rxjs';
 import { isTruthy } from '@grafana/data';
 import { BackendSrvRequest, getBackendSrv } from '@grafana/runtime';
 import { DeleteDashboardResponse } from 'app/features/manage-dashboards/types';
+import { getFolderChildren } from 'app/features/search/service/folders';
+import { DashboardViewItem } from 'app/features/search/types';
 import { DashboardDTO, FolderDTO } from 'app/types';
 
 import { DashboardTreeSelection } from '../types';
@@ -34,15 +36,18 @@ function createBackendSrvBaseQuery({ baseURL }: { baseURL: string }): BaseQueryF
 
 export const browseDashboardsAPI = createApi({
   reducerPath: 'browseDashboardsAPI',
+  tagTypes: ['Folder'],
   baseQuery: createBackendSrvBaseQuery({ baseURL: '/api' }),
   endpoints: (builder) => ({
     deleteDashboard: builder.mutation<DeleteDashboardResponse, string>({
+      invalidatesTags: ['Folder'],
       query: (dashboardUID) => ({
         url: `/dashboards/uid/${dashboardUID}`,
         method: 'DELETE',
       }),
     }),
     deleteFolder: builder.mutation<void, string>({
+      invalidatesTags: ['Folder'],
       query: (folderUID) => ({
         url: `/folders/${folderUID}`,
         method: 'DELETE',
@@ -51,49 +56,17 @@ export const browseDashboardsAPI = createApi({
         },
       }),
     }),
-    // TODO we can define this return type properly
-    moveDashboard: builder.mutation<
-      unknown,
-      {
-        dashboardUID: string;
-        destinationUID: string;
-      }
-    >({
-      queryFn: async ({ dashboardUID, destinationUID }, _api, _extraOptions, baseQuery) => {
-        const fullDash: DashboardDTO = await getBackendSrv().get(`/api/dashboards/uid/${dashboardUID}`);
-
-        const options = {
-          dashboard: fullDash.dashboard,
-          folderUid: destinationUID,
-          overwrite: false,
-        };
-
-        return baseQuery({
-          url: '/dashboards/db',
-          method: 'POST',
-          data: {
-            message: '',
-            ...options,
-          },
-        });
-      },
-    }),
-    // TODO this doesn't return void, find where the correct type is
-    moveFolder: builder.mutation<
-      void,
-      {
-        folderUID: string;
-        destinationUID: string;
-      }
-    >({
-      query: ({ folderUID, destinationUID }) => ({
-        url: `/folders/${folderUID}/move`,
-        method: 'POST',
-        data: { parentUid: destinationUID },
-      }),
-    }),
     getFolder: builder.query<FolderDTO, string>({
       query: (folderUID) => ({ url: `/folders/${folderUID}` }),
+    }),
+    getFolderChildren: builder.query<DashboardViewItem[], string | undefined>({
+      providesTags: ['Folder'],
+      queryFn: async (folderUID) => {
+        const children = await getFolderChildren(folderUID, undefined, true);
+        return {
+          data: children,
+        };
+      },
     }),
     getAffectedItems: builder.query<
       // TODO move to folder types file once structure is finalised
@@ -147,6 +120,49 @@ export const browseDashboardsAPI = createApi({
         return { data: aggregatedResults };
       },
     }),
+    // TODO we can define this return type properly
+    moveDashboard: builder.mutation<
+      unknown,
+      {
+        dashboardUID: string;
+        destinationUID: string;
+      }
+    >({
+      invalidatesTags: ['Folder'],
+      queryFn: async ({ dashboardUID, destinationUID }, _api, _extraOptions, baseQuery) => {
+        const fullDash: DashboardDTO = await getBackendSrv().get(`/api/dashboards/uid/${dashboardUID}`);
+
+        const options = {
+          dashboard: fullDash.dashboard,
+          folderUid: destinationUID,
+          overwrite: false,
+        };
+
+        return baseQuery({
+          url: '/dashboards/db',
+          method: 'POST',
+          data: {
+            message: '',
+            ...options,
+          },
+        });
+      },
+    }),
+    // TODO this doesn't return void, find where the correct type is
+    moveFolder: builder.mutation<
+      void,
+      {
+        folderUID: string;
+        destinationUID: string;
+      }
+    >({
+      invalidatesTags: ['Folder'],
+      query: ({ folderUID, destinationUID }) => ({
+        url: `/folders/${folderUID}/move`,
+        method: 'POST',
+        data: { parentUid: destinationUID },
+      }),
+    }),
   }),
 });
 
@@ -154,9 +170,11 @@ export const {
   useDeleteDashboardMutation,
   useDeleteFolderMutation,
   useGetAffectedItemsQuery,
+  useGetFolderChildrenQuery,
   useGetFolderQuery,
-  useLazyGetFolderQuery,
+  useLazyGetFolderChildrenQuery,
   useMoveDashboardMutation,
   useMoveFolderMutation,
+  endpoints,
 } = browseDashboardsAPI;
 export { skipToken } from '@reduxjs/toolkit/query/react';
