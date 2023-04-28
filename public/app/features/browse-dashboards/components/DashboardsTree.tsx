@@ -102,12 +102,17 @@ export function DashboardsTree({
   const table = useTable({ columns: tableColumns, data: items }, useCustomFlexLayout);
   const { getTableProps, getTableBodyProps, headerGroups } = table;
 
-  const virtualData = useMemo(() => {
-    return {
-      table,
-      selectedItems,
-    };
-  }, [table, selectedItems]);
+  const virtualData = {
+    table,
+    selectedItems,
+  };
+  // TODO memoization here causes the tree not to rerender if the length of items doesn't change
+  // const virtualData = useMemo(() => {
+  //   return {
+  //     table,
+  //     selectedItems,
+  //   };
+  // }, [table, selectedItems]);
 
   return (
     <div {...getTableProps()} className={styles.tableRoot} role="table">

@@ -172,7 +172,6 @@ export const {
   useGetAffectedItemsQuery,
   useGetFolderChildrenQuery,
   useGetFolderQuery,
-  useLazyGetFolderChildrenQuery,
   useMoveDashboardMutation,
   useMoveFolderMutation,
   endpoints,
