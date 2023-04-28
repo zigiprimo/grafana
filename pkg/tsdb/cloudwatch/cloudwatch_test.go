@@ -91,17 +91,15 @@ func TestNewInstanceSettings(t *testing.T) {
 }
 
 func Test_CheckHealth(t *testing.T) {
-	origNewMetricsAPI := NewMetricsAPI
 	origNewCWLogsClient := NewCWLogsClient
 	origNewLogsAPI := NewLogsAPI
 	t.Cleanup(func() {
-		NewMetricsAPI = origNewMetricsAPI
 		NewCWLogsClient = origNewCWLogsClient
 		NewLogsAPI = origNewLogsAPI
 	})
 
 	var client fakeCheckHealthClient
-	NewMetricsAPI = func(sess *session.Session) models.CloudWatchMetricsAPIProvider {
+	mockMetricAPIFunc := func(sess *session.Session) models.CloudWatchMetricsAPIProvider {
 		return client
 	}
 	NewLogsAPI = func(sess *session.Session) models.CloudWatchLogsAPIProvider {
@@ -113,7 +111,7 @@ func Test_CheckHealth(t *testing.T) {
 		im := datasource.NewInstanceManager(func(s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 			return DataSource{Settings: models.CloudWatchSettings{}}, nil
 		})
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, featuremgmt.WithFeatures())
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, featuremgmt.WithFeatures(), mockMetricAPIFunc)
 
 		resp, err := executor.CheckHealth(context.Background(), &backend.CheckHealthRequest{
 			PluginContext: backend.PluginContext{DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{}},

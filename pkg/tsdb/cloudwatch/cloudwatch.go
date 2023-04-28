@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/cloudwatch/cloudwatchiface"
@@ -54,7 +54,7 @@ var logger = log.New("tsdb.cloudwatch")
 func ProvideService(cfg *setting.Cfg, httpClientProvider httpclient.Provider, features featuremgmt.FeatureToggles) *CloudWatchService {
 	logger.Debug("Initializing")
 
-	executor := newExecutor(datasource.NewInstanceManager(NewInstanceSettings(httpClientProvider)), cfg, awsds.NewSessionCache(), features)
+	executor := newExecutor(datasource.NewInstanceManager(NewInstanceSettings(httpClientProvider)), cfg, awsds.NewSessionCache(), features, NewMetricsAPI)
 
 	return &CloudWatchService{
 		Cfg:      cfg,
@@ -67,16 +67,22 @@ type CloudWatchService struct {
 	Executor *cloudWatchExecutor
 }
 
+type GrafanaSession struct {
+	*session.Session
+}
+
 type SessionCache interface {
 	GetSession(c awsds.SessionConfig) (*session.Session, error)
 }
 
-func newExecutor(im instancemgmt.InstanceManager, cfg *setting.Cfg, sessions SessionCache, features featuremgmt.FeatureToggles) *cloudWatchExecutor {
+func newExecutor(im instancemgmt.InstanceManager, cfg *setting.Cfg, sessions SessionCache, features featuremgmt.FeatureToggles,
+	metricsAPIFunc func(sess *session.Session) models.CloudWatchMetricsAPIProvider) *cloudWatchExecutor {
 	e := &cloudWatchExecutor{
-		im:       im,
-		cfg:      cfg,
-		sessions: sessions,
-		features: features,
+		im:             im,
+		cfg:            cfg,
+		sessions:       sessions,
+		features:       features,
+		metricsAPIFunc: metricsAPIFunc,
 	}
 
 	e.resourceHandler = httpadapter.New(e.newResourceMux())
@@ -116,6 +122,8 @@ type cloudWatchExecutor struct {
 	regionCache sync.Map
 
 	resourceHandler backend.CallResourceHandler
+
+	metricsAPIFunc func(sess *session.Session) models.CloudWatchMetricsAPIProvider
 }
 
 func (e *cloudWatchExecutor) getRequestContext(pluginCtx backend.PluginContext, region string) (models.RequestContext, error) {
@@ -134,7 +142,7 @@ func (e *cloudWatchExecutor) getRequestContext(pluginCtx backend.PluginContext, 
 	}
 	return models.RequestContext{
 		OAMAPIProvider:        NewOAMAPI(sess),
-		MetricsClientProvider: clients.NewMetricsClient(NewMetricsAPI(sess), e.cfg),
+		MetricsClientProvider: clients.NewMetricsClient(e.metricsAPIFunc(sess), e.cfg),
 		LogsAPIProvider:       NewLogsAPI(sess),
 		Settings:              instance.Settings,
 		Features:              e.features,

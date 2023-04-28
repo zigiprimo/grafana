@@ -14,10 +14,7 @@ import (
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
 )
 
-// NewMetricsAPI is a CloudWatch metrics api factory.
-//
-// Stubbable by tests.
-var NewMetricsAPI = func(sess *session.Session) models.CloudWatchMetricsAPIProvider {
+func NewMetricsAPI(sess *session.Session) models.CloudWatchMetricsAPIProvider {
 	return cloudwatch.New(sess)
 }
 
