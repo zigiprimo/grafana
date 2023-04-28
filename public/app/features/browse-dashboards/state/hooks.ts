@@ -11,18 +11,6 @@ import { DashboardsTreeItem, DashboardTreeSelection } from '../types';
 //   (rootItems) => rootItems?.data ?? []
 // )
 
-const flatTreeSelector = createSelector(
-  // (wholeState: StoreState) => wholeState.browseDashboards.rootItems,
-  (_wholeState: StoreState, rootItems: DashboardViewItem[]) => rootItems,
-  // (wholeState: StoreState) => wholeState.browseDashboards.childrenByParentUID,
-  (wholeState: StoreState) => wholeState.browseDashboardsAPI.queries,
-  (wholeState: StoreState) => wholeState.browseDashboards.openFolders,
-  (_wholeState: StoreState, _rootItems: DashboardViewItem[], rootFolderUID: string | undefined) => rootFolderUID,
-  (rootItems, rtkQueryState, openFolders, folderUID) => {
-    return createFlatTree(folderUID, rootItems, rtkQueryState, openFolders);
-  }
-);
-
 const hasSelectionSelector = createSelector(
   (wholeState: StoreState) => wholeState.browseDashboards.selectedItems,
   (selectedItems) => {
@@ -41,9 +29,11 @@ const selectedItemsForActionsSelector = createSelector(
 );
 
 export function useFlatTreeState(folderUID: string | undefined) {
-  const { data } = useGetFolderChildrenQuery(undefined);
+  const { data } = useGetFolderChildrenQuery(folderUID);
   const rootItems = data ?? [];
-  return useSelector((state) => flatTreeSelector(state, rootItems, folderUID));
+  const rtkQueryState = useSelector((wholeState: StoreState) => wholeState.browseDashboardsAPI.queries);
+  const openFolders = useSelector((wholeState: StoreState) => wholeState.browseDashboards.openFolders);
+  return createFlatTree(folderUID, rootItems, rtkQueryState, openFolders);
 }
 
 export function useHasSelection() {
@@ -71,7 +61,7 @@ function createFlatTree(
   folderUID: string | undefined,
   rootItems: DashboardViewItem[],
   // childrenByUID: Record<string, DashboardViewItem[] | undefined>,
-  rtkQueryState: StoreState["browseDashboardsAPI"]["queries"],
+  rtkQueryState: StoreState['browseDashboardsAPI']['queries'],
   openFolders: Record<string, boolean>,
   level = 0
 ): DashboardsTreeItem[] {
