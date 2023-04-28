@@ -144,11 +144,6 @@ export function trackQuery(
     return;
   }
 
-  // TODO: We need to re-think this for split queries
-  if (config.featureToggles.lokiQuerySplitting) {
-    return;
-  }
-
   let totalBytes = 0;
   for (const frame of response.data) {
     const byteKey = frame.meta?.custom?.lokiQueryStatKey;
