@@ -244,32 +244,6 @@ export const ExamplesHoverHeader = () => {
     <DashboardStoryCanvas>
       <div>
         <HorizontalGroup spacing="md" align="flex-start" wrap>
-          {renderPanel('Title items, menu, hover header', {
-            title: 'Default title',
-            description: 'This is a description',
-            menu,
-            hoverHeader: true,
-            dragClass: 'draggable',
-            titleItems: (
-              <PanelChrome.TitleItem title="Online">
-                <Icon name="heart" />
-              </PanelChrome.TitleItem>
-            ),
-          })}
-          {renderPanel('Multiple title items', {
-            title: 'Default title',
-            menu,
-            hoverHeader: true,
-            dragClass: 'draggable',
-            titleItems: [
-              <PanelChrome.TitleItem title="Online" key="A">
-                <Icon name="heart" />
-              </PanelChrome.TitleItem>,
-              <PanelChrome.TitleItem title="Link" key="B" onClick={() => {}}>
-                <Icon name="external-link-alt" />
-              </PanelChrome.TitleItem>,
-            ],
-          })}
           {renderPanel('Hover header, loading loadingState', {
             loadingState: LoadingState.Loading,
             hoverHeader: true,
@@ -297,6 +271,37 @@ export const ExamplesHoverHeader = () => {
         </HorizontalGroup>
       </div>
     </DashboardStoryCanvas>
+  );
+};
+
+export const ExamplesOnPrimaryBackground = () => {
+  return (
+    <HorizontalGroup spacing="md" align="flex-start" wrap height="auto">
+      {renderPanel('loadingState is Streaming', {
+        title: 'Default title',
+        loadingState: LoadingState.Streaming,
+        displayMode: 'on-primary',
+      })}
+      {renderPanel('Actions with button no menu', {
+        title: 'Actions with button no menu',
+        displayMode: 'on-primary',
+        actions: (
+          <Button size="sm" variant="secondary" key="A">
+            Breakdown
+          </Button>
+        ),
+      })}
+      {renderPanel('Panel with two actions', {
+        title: 'I have two buttons',
+        displayMode: 'on-primary',
+        actions: [
+          <Button size="sm" variant="secondary" key="A">
+            Breakdown
+          </Button>,
+          <Button size="sm" variant="secondary" icon="times" key="B" />,
+        ],
+      })}
+    </HorizontalGroup>
   );
 };
 

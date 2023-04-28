@@ -109,10 +109,11 @@ export function PanelChrome({
   };
 
   const containerStyles: CSSProperties = { width, height };
-  if (displayMode === 'transparent') {
-    containerStyles.backgroundColor = 'transparent';
-    containerStyles.border = 'none';
-  }
+  const containerClass = cx(
+    styles.container,
+    displayMode === 'transparent' && styles.containerTransparent,
+    displayMode === 'on-primary' && styles.containerOnPrimary
+  );
 
   /** Old property name now maps to actions */
   if (leftItems) {
@@ -157,7 +158,7 @@ export function PanelChrome({
   );
 
   return (
-    <div className={styles.container} style={containerStyles} data-testid={testid}>
+    <div className={containerClass} style={containerStyles} data-testid={testid}>
       <div className={styles.loadingBarContainer}>
         {loadingState === LoadingState.Loading ? <LoadingBar width={width} ariaLabel="Panel loading bar" /> : null}
       </div>
@@ -285,13 +286,12 @@ const getStyles = (theme: GrafanaTheme2) => {
       },
     }),
     containerTransparent: css({
-      label: 'panel-container-transparent',
       backgroundColor: 'transparent',
       border: 'none',
     }),
     containerOnPrimary: css({
       backgroundColor: 'transparent',
-      border: theme.colors.border.medium,
+      borderColor: theme.colors.border.medium,
     }),
     loadingBarContainer: css({
       label: 'panel-loading-bar-container',
