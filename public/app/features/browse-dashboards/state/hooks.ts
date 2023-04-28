@@ -3,22 +3,23 @@ import { createSelector } from 'reselect';
 import { DashboardViewItem } from 'app/features/search/types';
 import { useSelector, StoreState } from 'app/types';
 
-import { useGetFolderChildrenQuery } from '../api/browseDashboardsAPI';
+import { useGetFolderChildrenQuery, endpoints } from '../api/browseDashboardsAPI';
 import { DashboardsTreeItem, DashboardTreeSelection } from '../types';
 
 // const rootItems = createSelector(
-//   endpoints.getFolderChildren.select(folderUID),
+//   endpoints.getFolderChildren.select(undefined),
 //   (rootItems) => rootItems?.data ?? []
-// );
+// )
 
 const flatTreeSelector = createSelector(
   // (wholeState: StoreState) => wholeState.browseDashboards.rootItems,
   (_wholeState: StoreState, rootItems: DashboardViewItem[]) => rootItems,
-  (wholeState: StoreState) => wholeState.browseDashboards.childrenByParentUID,
+  // (wholeState: StoreState) => wholeState.browseDashboards.childrenByParentUID,
+  (wholeState: StoreState) => wholeState.browseDashboardsAPI.queries,
   (wholeState: StoreState) => wholeState.browseDashboards.openFolders,
   (_wholeState: StoreState, _rootItems: DashboardViewItem[], rootFolderUID: string | undefined) => rootFolderUID,
-  (rootItems, childrenByParentUID, openFolders, folderUID) => {
-    return createFlatTree(folderUID, rootItems, childrenByParentUID, openFolders);
+  (rootItems, rtkQueryState, openFolders, folderUID) => {
+    return createFlatTree(folderUID, rootItems, rtkQueryState, openFolders);
   }
 );
 
@@ -69,15 +70,17 @@ export function useActionSelectionState() {
 function createFlatTree(
   folderUID: string | undefined,
   rootItems: DashboardViewItem[],
-  childrenByUID: Record<string, DashboardViewItem[] | undefined>,
+  // childrenByUID: Record<string, DashboardViewItem[] | undefined>,
+  rtkQueryState: StoreState["browseDashboardsAPI"]["queries"],
   openFolders: Record<string, boolean>,
   level = 0
 ): DashboardsTreeItem[] {
   function mapItem(item: DashboardViewItem, parentUID: string | undefined, level: number): DashboardsTreeItem[] {
-    const mappedChildren = createFlatTree(item.uid, rootItems, childrenByUID, openFolders, level + 1);
+    const mappedChildren = createFlatTree(item.uid, rootItems, rtkQueryState, openFolders, level + 1);
 
     const isOpen = Boolean(openFolders[item.uid]);
-    const emptyFolder = childrenByUID[item.uid]?.length === 0;
+    const data = rtkQueryState[`getFolderChildren("${item.uid}")`]?.data;
+    const emptyFolder = Array.isArray(data) && data.length === 0;
     if (isOpen && emptyFolder) {
       mappedChildren.push({
         isOpen: false,
@@ -98,8 +101,9 @@ function createFlatTree(
 
   const isOpen = (folderUID && openFolders[folderUID]) || level === 0;
 
+  const data = rtkQueryState[`getFolderChildren("${folderUID}")`]?.data;
   const items = folderUID
-    ? (isOpen && childrenByUID[folderUID]) || [] // keep seperate lines
+    ? (isOpen && Array.isArray(data) && data) || [] // keep seperate lines
     : rootItems;
 
   return items.flatMap((item) => mapItem(item, folderUID, level));

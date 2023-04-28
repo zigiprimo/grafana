@@ -28,26 +28,6 @@ export function extraReducerFetchChildrenFulfilled(state: BrowseDashboardsState,
   }
 }
 
-export function storeFolderChildrenInState(
-  state: BrowseDashboardsState,
-  action: PayloadAction<{ parentUID: string | undefined; children: DashboardViewItem[] }>
-) {
-  const { parentUID, children } = action.payload;
-  if (!parentUID) {
-    return;
-  }
-
-  state.childrenByParentUID[parentUID] = children;
-
-  // If the parent of the items we've loaded are selected, we must select all these items also
-  const parentIsSelected = state.selectedItems.folder[parentUID];
-  if (parentIsSelected) {
-    for (const child of children) {
-      state.selectedItems[child.kind][child.uid] = true;
-    }
-  }
-}
-
 export function setFolderOpenState(
   state: BrowseDashboardsState,
   action: PayloadAction<{ folderUID: string; isOpen: boolean }>
