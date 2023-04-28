@@ -76,13 +76,13 @@ type SessionCache interface {
 }
 
 func newExecutor(im instancemgmt.InstanceManager, cfg *setting.Cfg, sessions SessionCache, features featuremgmt.FeatureToggles,
-	metricsAPIFunc func(sess *session.Session) models.CloudWatchMetricsAPIProvider) *cloudWatchExecutor {
+	manager MetricsManager) *cloudWatchExecutor {
 	e := &cloudWatchExecutor{
 		im:             im,
 		cfg:            cfg,
 		sessions:       sessions,
 		features:       features,
-		metricsAPIFunc: metricsAPIFunc,
+		metricsManager: manager,
 	}
 
 	e.resourceHandler = httpadapter.New(e.newResourceMux())
@@ -123,7 +123,7 @@ type cloudWatchExecutor struct {
 
 	resourceHandler backend.CallResourceHandler
 
-	metricsAPIFunc func(sess *session.Session) models.CloudWatchMetricsAPIProvider
+	metricsManager MetricsManager
 }
 
 func (e *cloudWatchExecutor) getRequestContext(pluginCtx backend.PluginContext, region string) (models.RequestContext, error) {
@@ -142,7 +142,7 @@ func (e *cloudWatchExecutor) getRequestContext(pluginCtx backend.PluginContext, 
 	}
 	return models.RequestContext{
 		OAMAPIProvider:        NewOAMAPI(sess),
-		MetricsClientProvider: clients.NewMetricsClient(e.metricsAPIFunc(sess), e.cfg),
+		MetricsClientProvider: clients.NewMetricsClient(e.metricsManager.NewMetricsAPI(sess), e.cfg),
 		LogsAPIProvider:       NewLogsAPI(sess),
 		Settings:              instance.Settings,
 		Features:              e.features,

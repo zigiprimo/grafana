@@ -99,19 +99,17 @@ func Test_CheckHealth(t *testing.T) {
 	})
 
 	var client fakeCheckHealthClient
-	mockMetricAPIFunc := func(sess *session.Session) models.CloudWatchMetricsAPIProvider {
-		return client
-	}
 	NewLogsAPI = func(sess *session.Session) models.CloudWatchLogsAPIProvider {
 		return client
 	}
 
 	t.Run("successfully query metrics and logs", func(t *testing.T) {
-		client = fakeCheckHealthClient{}
+		mockMetrics := &mockMetricsManager{}
+		mockMetrics.On("").Return()
 		im := datasource.NewInstanceManager(func(s backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 			return DataSource{Settings: models.CloudWatchSettings{}}, nil
 		})
-		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, featuremgmt.WithFeatures(), mockMetricAPIFunc)
+		executor := newExecutor(im, newTestConfig(), &fakeSessionCache{}, featuremgmt.WithFeatures(), mockMetrics)
 
 		resp, err := executor.CheckHealth(context.Background(), &backend.CheckHealthRequest{
 			PluginContext: backend.PluginContext{DataSourceInstanceSettings: &backend.DataSourceInstanceSettings{}},

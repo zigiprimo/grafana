@@ -14,7 +14,12 @@ import (
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
 )
 
-func NewMetricsAPI(sess *session.Session) models.CloudWatchMetricsAPIProvider {
+type MetricsManager interface {
+	NewMetricsAPI(sess *session.Session) models.CloudWatchMetricsAPIProvider
+}
+type MetricsHandler struct{}
+
+func (h *MetricsHandler) NewMetricsAPI(sess *session.Session) models.CloudWatchMetricsAPIProvider {
 	return cloudwatch.New(sess)
 }
 

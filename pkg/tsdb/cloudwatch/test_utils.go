@@ -17,6 +17,7 @@ import (
 	"github.com/grafana/grafana-aws-sdk/pkg/awsds"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana/pkg/setting"
+	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -192,6 +193,15 @@ func (c fakeRGTAClient) GetResourcesPages(in *resourcegroupstaggingapi.GetResour
 		ResourceTagMappingList: c.tagMapping,
 	}, true)
 	return nil
+}
+
+type mockMetricsManager struct {
+	mock.Mock
+}
+
+func (m *mockMetricsManager) NewMetricsAPI(sess *session.Session) models.CloudWatchMetricsAPIProvider {
+	//TODO implement me
+	panic("implement me")
 }
 
 type fakeCheckHealthClient struct {
