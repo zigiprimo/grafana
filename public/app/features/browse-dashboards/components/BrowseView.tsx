@@ -1,9 +1,8 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback } from 'react';
 
 import { DashboardViewItem } from 'app/features/search/types';
 import { useDispatch } from 'app/types';
 
-import { endpoints } from '../api/browseDashboardsAPI';
 import {
   useFlatTreeState,
   useCheckboxSelectionState,
@@ -24,37 +23,10 @@ export function BrowseView({ folderUID, width, height }: BrowseViewProps) {
   const dispatch = useDispatch();
   const flatTree = useFlatTreeState(folderUID);
   const selectedItems = useCheckboxSelectionState();
-  // const [getFolderChildren] = useLazyGetFolderChildrenQuery();
-  const subscriptions = useRef<Record<string, any>>({});
-
-  useEffect(() => {
-    const subscriptionCopies = subscriptions.current;
-    return () => {
-      Object.values(subscriptionCopies).forEach((subscription) => {
-        subscription.unsubscribe();
-      })
-    }
-  }, [])
 
   const handleFolderClick = useCallback(
     async (clickedFolderUID: string, isOpen: boolean) => {
       dispatch(setFolderOpenState({ folderUID: clickedFolderUID, isOpen }));
-
-      if (isOpen) {
-        // getFolderChildren(clickedFolderUID);
-        const subscription = dispatch(endpoints.getFolderChildren.initiate(clickedFolderUID))
-        subscriptions.current[clickedFolderUID] = subscription;
-        // const children = await getFolderChildren(clickedFolderUID).unwrap();
-        // dispatch(
-        //   storeFolderChildrenInState({
-        //     parentUID: clickedFolderUID,
-        //     children,
-        //   })
-        // );
-      } else {
-        // remove subscription when collapsing the folder
-        subscriptions.current[clickedFolderUID].unsubscribe();
-      }
     },
     [dispatch]
   );

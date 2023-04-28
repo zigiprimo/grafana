@@ -1,7 +1,8 @@
+import { MutableRefObject, useEffect, useRef } from 'react';
 import { createSelector } from 'reselect';
 
 import { DashboardViewItem } from 'app/features/search/types';
-import { useSelector, StoreState } from 'app/types';
+import { useSelector, StoreState, useDispatch } from 'app/types';
 
 import { useGetFolderChildrenQuery, endpoints } from '../api/browseDashboardsAPI';
 import { DashboardsTreeItem, DashboardTreeSelection } from '../types';
@@ -33,7 +34,18 @@ export function useFlatTreeState(folderUID: string | undefined) {
   const rootItems = data ?? [];
   const rtkQueryState = useSelector((wholeState: StoreState) => wholeState.browseDashboardsAPI.queries);
   const openFolders = useSelector((wholeState: StoreState) => wholeState.browseDashboards.openFolders);
-  return createFlatTree(folderUID, rootItems, rtkQueryState, openFolders);
+  const dispatch = useDispatch();
+  const subscriptions = useRef<Record<string, any>>({});
+
+  useEffect(() => {
+    const subscriptionsCopy = subscriptions.current;
+    return () => {
+      Object.values(subscriptionsCopy).forEach((subscription) => {
+        subscription.unsubscribe();
+      })
+    }
+  }, [])
+  return createFlatTree(dispatch, subscriptions, folderUID, rootItems, rtkQueryState, openFolders);
 }
 
 export function useHasSelection() {
@@ -58,6 +70,8 @@ export function useActionSelectionState() {
  * @param level level of item in the tree. Only to be specified when called recursively.
  */
 function createFlatTree(
+  dispatch: ReturnType<typeof useDispatch>,
+  subscriptions: MutableRefObject<Record<string, any>>,
   folderUID: string | undefined,
   rootItems: DashboardViewItem[],
   // childrenByUID: Record<string, DashboardViewItem[] | undefined>,
@@ -66,9 +80,21 @@ function createFlatTree(
   level = 0
 ): DashboardsTreeItem[] {
   function mapItem(item: DashboardViewItem, parentUID: string | undefined, level: number): DashboardsTreeItem[] {
-    const mappedChildren = createFlatTree(item.uid, rootItems, rtkQueryState, openFolders, level + 1);
+    const mappedChildren = createFlatTree(dispatch, subscriptions, item.uid, rootItems, rtkQueryState, openFolders, level + 1);
 
     const isOpen = Boolean(openFolders[item.uid]);
+    if (isOpen) {
+      if (!subscriptions.current[item.uid]) {
+        const subscription = dispatch(endpoints.getFolderChildren.initiate(item.uid));
+        subscriptions.current[item.uid] = subscription;
+      }
+    } else {
+      const subscription = subscriptions.current[item.uid];
+      if (subscription) {
+        subscription.unsubscribe();
+        delete subscriptions.current[item.uid];
+      }
+    }
     const data = rtkQueryState[`getFolderChildren("${item.uid}")`]?.data;
     const emptyFolder = Array.isArray(data) && data.length === 0;
     if (isOpen && emptyFolder) {
@@ -90,6 +116,20 @@ function createFlatTree(
   }
 
   const isOpen = (folderUID && openFolders[folderUID]) || level === 0;
+  if (folderUID) {
+    if (isOpen) {
+      if (!subscriptions.current[folderUID]) {
+        const subscription = dispatch(endpoints.getFolderChildren.initiate(folderUID));
+        subscriptions.current[folderUID] = subscription;
+      }
+    } else {
+      const subscription = subscriptions.current[folderUID];
+      if (subscription) {
+        subscription.unsubscribe();
+        delete subscriptions.current[folderUID];
+      }
+    }
+  }
 
   const data = rtkQueryState[`getFolderChildren("${folderUID}")`]?.data;
   const items = folderUID
