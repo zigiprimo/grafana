@@ -36,6 +36,16 @@ export function setFolderOpenState(
   state.openFolders[folderUID] = isOpen;
 }
 
+export function clearItemSelectionState(state: BrowseDashboardsState) {
+  state.selectedItems['$all'] = false;
+  const kinds = ['dashboard', 'folder', 'panel'] as const;
+  for (const kind of kinds) {
+    Object.keys(state.selectedItems[kind]).forEach((uid) => {
+      state.selectedItems[kind][uid] = false;
+    });
+  }
+}
+
 export function setItemSelectionState(
   state: BrowseDashboardsState,
 

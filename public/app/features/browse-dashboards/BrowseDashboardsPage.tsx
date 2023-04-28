@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import React, { memo, useEffect, useMemo, useState } from 'react';
+import React, { memo, useEffect, useMemo } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
 import { GrafanaTheme2 } from '@grafana/data';
@@ -29,9 +29,6 @@ export interface Props extends GrafanaRouteComponentProps<BrowseDashboardsPageRo
 // New Browse/Manage/Search Dashboards views for nested folders
 
 const BrowseDashboardsPage = memo(({ match }: Props) => {
-  // this is a complete hack to force a full rerender.
-  // TODO remove once we move everything to RTK query
-  const [rerender, setRerender] = useState(0);
   const { uid: folderUID } = match.params;
 
   const styles = useStyles2(getStyles);
@@ -62,15 +59,15 @@ const BrowseDashboardsPage = memo(({ match }: Props) => {
           onChange={(e) => stateManager.onQueryChange(e)}
         />
 
-        {hasSelection ? <BrowseActions onActionComplete={() => setRerender(rerender + 1)} /> : <BrowseFilters />}
+        {hasSelection ? <BrowseActions /> : <BrowseFilters />}
 
         <div className={styles.subView}>
           <AutoSizer>
             {({ width, height }) =>
               isSearching ? (
-                <SearchView key={rerender} width={width} height={height} />
+                <SearchView width={width} height={height} />
               ) : (
-                <BrowseView key={rerender} width={width} height={height} folderUID={folderUID} />
+                <BrowseView width={width} height={height} folderUID={folderUID} />
               )
             }
           </AutoSizer>
