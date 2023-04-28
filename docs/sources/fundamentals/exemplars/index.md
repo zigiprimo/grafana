@@ -82,6 +82,6 @@ This panel shows the details of the trace in different segments.
 
 - To see the details of the span at any level, click the span itself.
 
-  This displays additional metadata associated with the span. The metadata itself is initially shown in a narrow strip but you can see more details by clicking the metadata strip.
+  This displays additional metadata associated with the span. The metadata itself is initially shown in a narrow strip but you can see more details by clicking the metadata strip. Then you will see the attributes for this span.
 
   {{< figure src="/media/docs/grafana/exemplars/screenshot-exemplar-span-details.png" class="docs-image--no-shadow" max-width= "600px" caption="Span details" >}}
