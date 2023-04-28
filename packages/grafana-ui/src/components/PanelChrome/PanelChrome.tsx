@@ -51,7 +51,11 @@ export interface PanelChromeProps {
    **/
   leftItems?: ReactNode[];
   actions?: ReactNode;
-  displayMode?: 'default' | 'transparent';
+  /**
+   * This control the background and border of the panel. When using PanelChrome on a non canvas background
+   * we recommend setting this to 'on-primary' rather then 'default'.
+   */
+  displayMode?: 'default' | 'transparent' | 'on-primary';
   onCancelQuery?: () => void;
 }
 
@@ -276,6 +280,15 @@ const getStyles = (theme: GrafanaTheme2) => {
           opacity: '1',
         },
       },
+    }),
+    containerTransparent: css({
+      label: 'panel-container-transparent',
+      backgroundColor: 'transparent',
+      border: 'none',
+    }),
+    containerOnPrimary: css({
+      backgroundColor: 'transparent',
+      border: theme.colors.border.medium,
     }),
     loadingBarContainer: css({
       label: 'panel-loading-bar-container',
