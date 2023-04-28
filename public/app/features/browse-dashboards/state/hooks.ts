@@ -4,13 +4,8 @@ import { createSelector } from 'reselect';
 import { DashboardViewItem } from 'app/features/search/types';
 import { useSelector, StoreState, useDispatch } from 'app/types';
 
-import { useGetFolderChildrenQuery, endpoints } from '../api/browseDashboardsAPI';
+import { useGetFolderChildrenQuery, endpoints, useDeleteDashboardMutation, useDeleteFolderMutation, useMoveFolderMutation, useMoveDashboardMutation } from '../api/browseDashboardsAPI';
 import { DashboardsTreeItem, DashboardTreeSelection } from '../types';
-
-// const rootItems = createSelector(
-//   endpoints.getFolderChildren.select(undefined),
-//   (rootItems) => rootItems?.data ?? []
-// )
 
 const hasSelectionSelector = createSelector(
   (wholeState: StoreState) => wholeState.browseDashboards.selectedItems,
@@ -58,6 +53,92 @@ export function useCheckboxSelectionState() {
 
 export function useActionSelectionState() {
   return useSelector((state) => selectedItemsForActionsSelector(state));
+}
+
+export function useDeleteFolder() {
+  const [deleteFolder] = useDeleteFolderMutation();
+  const rtkQueryState = useSelector((wholeState: StoreState) => wholeState.browseDashboardsAPI.queries);
+  return (folderUID: string) => {
+    let parentUID: string | undefined = undefined;
+    for (const queries of Object.values(rtkQueryState)) {
+      if (queries?.data && Array.isArray(queries.data)) {
+        for (const item of queries.data) {
+          if (item.uid === folderUID) {
+            parentUID = item.parentUID;
+          }
+        }
+      }
+    }
+    return deleteFolder({
+      uid: folderUID,
+      parentUID,
+    });
+  };
+}
+
+export function useDeleteDashboard() {
+  const [deleteDashboard] = useDeleteDashboardMutation();
+  const rtkQueryState = useSelector((wholeState: StoreState) => wholeState.browseDashboardsAPI.queries);
+  return (dashboardUID: string) => {
+    let parentUID = '';
+    for (const queries of Object.values(rtkQueryState)) {
+      if (queries?.data && Array.isArray(queries.data)) {
+        for (const item of queries.data) {
+          if (item.uid === dashboardUID) {
+            parentUID = item.parentUID;
+          }
+        }
+      }
+    }
+    return deleteDashboard({
+      uid: dashboardUID,
+      parentUID,
+    });
+  };
+}
+
+export function useMoveFolder() {
+  const [moveFolder] = useMoveFolderMutation();
+  const rtkQueryState = useSelector((wholeState: StoreState) => wholeState.browseDashboardsAPI.queries);
+  return (folderUID: string, destinationUID: string) => {
+    let parentUID: string | undefined = undefined;
+    for (const queries of Object.values(rtkQueryState)) {
+      if (queries?.data && Array.isArray(queries.data)) {
+        for (const item of queries.data) {
+          if (item.uid === folderUID) {
+            parentUID = item.parentUID;
+          }
+        }
+      }
+    }
+    return moveFolder({
+      uid: folderUID,
+      parentUID,
+      destinationUID,
+    });
+  };
+}
+
+export function useMoveDashboard() {
+  const [moveDashboard] = useMoveDashboardMutation();
+  const rtkQueryState = useSelector((wholeState: StoreState) => wholeState.browseDashboardsAPI.queries);
+  return (dashboardUID: string, destinationUID: string) => {
+    let parentUID = '';
+    for (const queries of Object.values(rtkQueryState)) {
+      if (queries?.data && Array.isArray(queries.data)) {
+        for (const item of queries.data) {
+          if (item.uid === dashboardUID) {
+            parentUID = item.parentUID;
+          }
+        }
+      }
+    }
+    return moveDashboard({
+      uid: dashboardUID,
+      parentUID,
+      destinationUID,
+    });
+  };
 }
 
 /**

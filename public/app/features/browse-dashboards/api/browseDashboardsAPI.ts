@@ -36,20 +36,30 @@ function createBackendSrvBaseQuery({ baseURL }: { baseURL: string }): BaseQueryF
 
 export const browseDashboardsAPI = createApi({
   reducerPath: 'browseDashboardsAPI',
-  tagTypes: ['Folder'],
+  tagTypes: ['folderChildren'],
   baseQuery: createBackendSrvBaseQuery({ baseURL: '/api' }),
   endpoints: (builder) => ({
-    deleteDashboard: builder.mutation<DeleteDashboardResponse, string>({
-      invalidatesTags: ['Folder'],
-      query: (dashboardUID) => ({
-        url: `/dashboards/uid/${dashboardUID}`,
+    deleteDashboard: builder.mutation<DeleteDashboardResponse, {
+      uid: string;
+      parentUID?: string;
+    }>({
+      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: `${args.parentUID}`}],
+      query: ({
+        uid,
+      }) => ({
+        url: `/dashboards/uid/${uid}`,
         method: 'DELETE',
       }),
     }),
-    deleteFolder: builder.mutation<void, string>({
-      invalidatesTags: ['Folder'],
-      query: (folderUID) => ({
-        url: `/folders/${folderUID}`,
+    deleteFolder: builder.mutation<void, {
+      uid: string;
+      parentUID?: string;
+    }>({
+      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: `${args.parentUID}`}],
+      query: ({
+        uid,
+      }) => ({
+        url: `/folders/${uid}`,
         method: 'DELETE',
         params: {
           forceDeleteRules: true,
@@ -60,7 +70,7 @@ export const browseDashboardsAPI = createApi({
       query: (folderUID) => ({ url: `/folders/${folderUID}` }),
     }),
     getFolderChildren: builder.query<DashboardViewItem[], string | undefined>({
-      providesTags: ['Folder'],
+      providesTags: (_result, _error, arg) => [{type: 'folderChildren', id: `${arg}`}],
       queryFn: async (folderUID) => {
         const children = await getFolderChildren(folderUID, undefined, true);
         return {
@@ -124,13 +134,14 @@ export const browseDashboardsAPI = createApi({
     moveDashboard: builder.mutation<
       unknown,
       {
-        dashboardUID: string;
+        uid: string;
+        parentUID?: string;
         destinationUID: string;
       }
     >({
-      invalidatesTags: ['Folder'],
-      queryFn: async ({ dashboardUID, destinationUID }, _api, _extraOptions, baseQuery) => {
-        const fullDash: DashboardDTO = await getBackendSrv().get(`/api/dashboards/uid/${dashboardUID}`);
+      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: `${args.destinationUID}`}, { type: 'folderChildren', id: `${args.parentUID}`}],
+      queryFn: async ({ uid, destinationUID }, _api, _extraOptions, baseQuery) => {
+        const fullDash: DashboardDTO = await getBackendSrv().get(`/api/dashboards/uid/${uid}`);
 
         const options = {
           dashboard: fullDash.dashboard,
@@ -152,13 +163,14 @@ export const browseDashboardsAPI = createApi({
     moveFolder: builder.mutation<
       void,
       {
-        folderUID: string;
+        uid: string;
         destinationUID: string;
+        parentUID?: string;
       }
     >({
-      invalidatesTags: ['Folder'],
-      query: ({ folderUID, destinationUID }) => ({
-        url: `/folders/${folderUID}/move`,
+      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: `${args.destinationUID}`}, { type: 'folderChildren', id: `${args.parentUID}`}],
+      query: ({ uid, destinationUID }) => ({
+        url: `/folders/${uid}/move`,
         method: 'POST',
         data: { parentUid: destinationUID },
       }),

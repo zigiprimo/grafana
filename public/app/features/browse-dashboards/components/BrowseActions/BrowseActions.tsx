@@ -7,13 +7,7 @@ import appEvents from 'app/core/app_events';
 import { useDispatch } from 'app/types';
 import { ShowModalReactEvent } from 'app/types/events';
 
-import {
-  useDeleteDashboardMutation,
-  useDeleteFolderMutation,
-  useMoveDashboardMutation,
-  useMoveFolderMutation,
-} from '../../api/browseDashboardsAPI';
-import { clearItemSelectionState, useActionSelectionState } from '../../state';
+import { clearItemSelectionState, useActionSelectionState, useDeleteDashboard, useDeleteFolder, useMoveDashboard, useMoveFolder } from '../../state';
 
 import { DeleteModal } from './DeleteModal';
 import { MoveModal } from './MoveModal';
@@ -23,10 +17,10 @@ export interface Props {}
 export function BrowseActions() {
   const styles = useStyles2(getStyles);
   const selectedItems = useActionSelectionState();
-  const [deleteDashboard] = useDeleteDashboardMutation();
-  const [deleteFolder] = useDeleteFolderMutation();
-  const [moveFolder] = useMoveFolderMutation();
-  const [moveDashboard] = useMoveDashboardMutation();
+  const deleteFolder = useDeleteFolder();
+  const deleteDashboard = useDeleteDashboard();
+  const moveFolder = useMoveFolder();
+  const moveDashboard = useMoveDashboard();
   const selectedDashboards = Object.keys(selectedItems.dashboard).filter((uid) => selectedItems.dashboard[uid]);
   const selectedFolders = Object.keys(selectedItems.folder).filter((uid) => selectedItems.folder[uid]);
   const dispatch = useDispatch();
@@ -54,19 +48,13 @@ export function BrowseActions() {
     // Move all the folders sequentially
     // TODO error handling here
     for (const folderUID of selectedFolders) {
-      await moveFolder({
-        folderUID,
-        destinationUID,
-      }).unwrap();
+      await moveFolder(folderUID, destinationUID).unwrap();
     }
 
     // Move all the dashboards sequentially
     // TODO error handling here
     for (const dashboardUID of selectedDashboards) {
-      await moveDashboard({
-        dashboardUID,
-        destinationUID,
-      }).unwrap();
+      await moveDashboard(dashboardUID, destinationUID).unwrap();
     }
     onActionComplete();
   };
