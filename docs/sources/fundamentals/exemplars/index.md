@@ -32,7 +32,7 @@ Refer to [View exemplar data]({{< relref "#view-exemplar-data" >}}) for instruct
 
 ## View exemplar data
 
-When support for exemplar support is enabled for a Prometheus data source, you can view exemplar data either in the Explore view or from the Loki log details.
+When support for exemplar is enabled for a Prometheus data source, you can view exemplar data either in the Explore view or from the Loki log details.
 
 ### In Explore
 
