@@ -108,6 +108,7 @@ export function PanelChrome({
     cursor: dragClass ? 'move' : 'auto',
   };
 
+  displayMode = 'on-primary';
   const containerStyles: CSSProperties = { width, height };
   const containerClass = cx(
     styles.container,
