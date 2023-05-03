@@ -1,14 +1,9 @@
-import {
-  ArrayVector,
-  DataTransformerConfig,
-  DataTransformerID,
-  FieldType,
-  toDataFrame,
-  transformDataFrame,
-} from '@grafana/data';
-
+import { toDataFrame } from '../../dataframe';
+import { FieldType, DataTransformerConfig } from '../../types';
 import { mockTransformationsRegistry } from '../../utils/tests/mockTransformationsRegistry';
+import { transformDataFrame } from '../transformDataFrame';
 
+import { DataTransformerID } from './ids';
 import { organizeFieldsTransformer, OrganizeFieldsTransformerOptions } from './organize';
 
 describe('OrganizeFields Transformer', () => {
@@ -57,7 +52,7 @@ describe('OrganizeFields Transformer', () => {
               multipleFrames: false,
             },
             type: FieldType.number,
-            values: new ArrayVector([10.3, 10.4, 10.5, 10.6]),
+            values: [10.3, 10.4, 10.5, 10.6],
           },
           {
             config: {
@@ -70,7 +65,7 @@ describe('OrganizeFields Transformer', () => {
               multipleFrames: false,
             },
             type: FieldType.number,
-            values: new ArrayVector([10000.3, 10000.4, 10000.5, 10000.6]),
+            values: [10000.3, 10000.4, 10000.5, 10000.6],
           },
         ]);
       });
@@ -120,7 +115,7 @@ describe('OrganizeFields Transformer', () => {
               multipleFrames: false,
             },
             type: FieldType.time,
-            values: new ArrayVector([3000, 4000, 5000, 6000]),
+            values: [3000, 4000, 5000, 6000],
           },
           {
             config: {},
@@ -131,7 +126,7 @@ describe('OrganizeFields Transformer', () => {
               multipleFrames: false,
             },
             type: FieldType.number,
-            values: new ArrayVector([10.3, 10.4, 10.5, 10.6]),
+            values: [10.3, 10.4, 10.5, 10.6],
           },
         ]);
       });

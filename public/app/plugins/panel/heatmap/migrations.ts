@@ -1,13 +1,15 @@
 import { FieldConfigSource, PanelModel, PanelTypeChangedHandler } from '@grafana/data';
-import { AxisPlacement, ScaleDistribution, VisibilityMode } from '@grafana/schema';
 import {
+  AxisPlacement,
+  ScaleDistribution,
+  VisibilityMode,
   HeatmapCellLayout,
   HeatmapCalculationMode,
   HeatmapCalculationOptions,
-} from 'app/features/transformers/calculateHeatmap/models.gen';
+} from '@grafana/schema';
 
-import { PanelOptions, defaultPanelOptions, HeatmapColorMode } from './models.gen';
 import { colorSchemes } from './palettes';
+import { PanelOptions, defaultPanelOptions, HeatmapColorMode } from './types';
 
 /** Called when the version number changes */
 export const heatmapMigrationHandler = (panel: PanelModel): Partial<PanelOptions> => {
@@ -79,6 +81,7 @@ export function angularToReactHeatmap(angular: any): { fieldConfig: FieldConfigS
     }
   }
 
+  const cellGap = asNumber(angular.cards?.cardPadding, 2);
   const options: PanelOptions = {
     calculate,
     calculation,
@@ -86,7 +89,7 @@ export function angularToReactHeatmap(angular: any): { fieldConfig: FieldConfigS
       ...defaultPanelOptions.color,
       steps: 128, // best match with existing colors
     },
-    cellGap: asNumber(angular.cards?.cardPadding, 2),
+    cellGap: cellGap ? cellGap : 1, // default to size 1
     cellRadius: asNumber(angular.cards?.cardRound), // just to keep it
     yAxis: {
       axisPlacement: oldYAxis.show === false ? AxisPlacement.Hidden : AxisPlacement.Left,
@@ -104,7 +107,7 @@ export function angularToReactHeatmap(angular: any): { fieldConfig: FieldConfigS
       layout: getHeatmapCellLayout(angular.yBucketBound),
     },
     legend: {
-      show: Boolean(angular.legend.show),
+      show: Boolean(angular.legend?.show),
     },
     showValue: VisibilityMode.Never,
     tooltip: {
@@ -121,7 +124,7 @@ export function angularToReactHeatmap(angular: any): { fieldConfig: FieldConfigS
   }
 
   // Migrate color options
-  const color = angular.color;
+  const color = angular.color ?? {};
   switch (color?.mode) {
     case 'spectrum': {
       options.color.mode = HeatmapColorMode.Scheme;
@@ -143,6 +146,12 @@ export function angularToReactHeatmap(angular: any): { fieldConfig: FieldConfigS
   options.color.fill = color.cardColor;
   options.color.min = color.min;
   options.color.max = color.max;
+
+  if (typeof color.min === 'number' && typeof color.max === 'number' && color.min > color.max) {
+    options.color.min = color.max;
+    options.color.max = color.min;
+    options.color.reverse = true;
+  }
 
   return { fieldConfig, options };
 }

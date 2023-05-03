@@ -2,7 +2,6 @@ const CopyWebpackPlugin = require('copy-webpack-plugin');
 const path = require('path');
 const webpack = require('webpack');
 
-const CopyUniconsPlugin = require('./plugins/CopyUniconsPlugin');
 const CorsWorkerPlugin = require('./plugins/CorsWorkerPlugin');
 
 module.exports = {
@@ -23,6 +22,9 @@ module.exports = {
       // some of data source plugins use global Prism object to add the language definition
       // we want to have same Prism object in core and in grafana/ui
       prismjs: require.resolve('prismjs'),
+      // some sub-dependencies use a different version of @emotion/react and generate warnings
+      // in the browser about @emotion/react loaded twice. We want to only load it once
+      '@emotion/react': require.resolve('@emotion/react'),
     },
     modules: ['node_modules', path.resolve('public')],
     fallback: {
@@ -45,7 +47,6 @@ module.exports = {
     new webpack.ProvidePlugin({
       Buffer: ['buffer', 'Buffer'],
     }),
-    new CopyUniconsPlugin(),
     new CopyWebpackPlugin({
       patterns: [
         {
@@ -98,15 +99,15 @@ module.exports = {
         test: /\.css$/,
         use: ['style-loader', 'css-loader'],
       },
-      // for pre-caching SVGs as part of the JS bundles
-      {
-        test: /\.svg$/,
-        use: 'raw-loader',
-      },
       {
         test: /\.(svg|ico|jpg|jpeg|png|gif|eot|otf|webp|ttf|woff|woff2|cur|ani|pdf)(\?.*)?$/,
-        loader: 'file-loader',
-        options: { name: 'static/img/[name].[contenthash:8].[ext]' },
+        type: 'asset/resource',
+        generator: { filename: 'static/img/[name].[hash:8][ext]' },
+      },
+      // for pre-caching SVGs as part of the JS bundles
+      {
+        test: /(unicons|mono|custom)[\\/].*\.svg$/,
+        type: 'asset/source',
       },
     ],
   },

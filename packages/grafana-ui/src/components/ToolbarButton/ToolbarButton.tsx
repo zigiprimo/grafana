@@ -1,20 +1,21 @@
 import { cx, css } from '@emotion/css';
-import { isString } from 'lodash';
 import React, { forwardRef, ButtonHTMLAttributes } from 'react';
 
-import { GrafanaTheme2 } from '@grafana/data';
+import { GrafanaTheme2, IconName, isIconName } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 
 import { styleMixins, useStyles2 } from '../../themes';
 import { getFocusStyles, getMouseFocusStyles } from '../../themes/mixins';
-import { IconName } from '../../types/icon';
+import { IconSize } from '../../types/icon';
 import { getPropertiesForVariant } from '../Button';
 import { Icon } from '../Icon/Icon';
-import { Tooltip } from '../Tooltip/Tooltip';
+import { Tooltip } from '../Tooltip';
 
 type CommonProps = {
   /** Icon name */
   icon?: IconName | React.ReactNode;
+  /** Icon size */
+  iconSize?: IconSize;
   /** Tooltip */
   tooltip?: string;
   /** For image icons */
@@ -37,13 +38,14 @@ type CommonProps = {
 
 export type ToolbarButtonProps = CommonProps & ButtonHTMLAttributes<HTMLButtonElement>;
 
-export type ToolbarButtonVariant = 'default' | 'primary' | 'destructive' | 'active';
+export type ToolbarButtonVariant = 'default' | 'primary' | 'destructive' | 'active' | 'canvas';
 
 export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   (
     {
       tooltip,
       icon,
+      iconSize,
       className,
       children,
       imgSrc,
@@ -62,13 +64,12 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     const styles = useStyles2(getStyles);
 
     const buttonStyles = cx(
-      'toolbar-button',
       {
         [styles.button]: true,
         [styles.buttonFullWidth]: fullWidth,
         [styles.narrow]: narrow,
       },
-      (styles as any)[variant],
+      styles[variant],
       className
     );
 
@@ -86,7 +87,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         aria-expanded={isOpen}
         {...rest}
       >
-        {renderIcon(icon)}
+        {renderIcon(icon, iconSize)}
         {imgSrc && <img className={styles.img} src={imgSrc} alt={imgAlt ?? ''} />}
         {children && !iconOnly && <div className={contentStyles}>{children}</div>}
         {isOpen === false && <Icon name="angle-down" />}
@@ -111,13 +112,13 @@ function getButtonAriaLabel(ariaLabel: string | undefined, tooltip: string | und
   return ariaLabel ? ariaLabel : tooltip ? selectors.components.PageToolbar.item(tooltip) : undefined;
 }
 
-function renderIcon(icon: IconName | React.ReactNode) {
+function renderIcon(icon: IconName | React.ReactNode, iconSize?: IconSize) {
   if (!icon) {
     return null;
   }
 
-  if (isString(icon)) {
-    return <Icon name={icon as IconName} size={'lg'} />;
+  if (isIconName(icon)) {
+    return <Icon name={icon} size={`${iconSize ? iconSize : 'lg'}`} />;
   }
 
   return icon;
@@ -126,6 +127,27 @@ function renderIcon(icon: IconName | React.ReactNode) {
 const getStyles = (theme: GrafanaTheme2) => {
   const primaryVariant = getPropertiesForVariant(theme, 'primary', 'solid');
   const destructiveVariant = getPropertiesForVariant(theme, 'destructive', 'solid');
+
+  const defaultOld = css`
+    color: ${theme.colors.text.secondary};
+    background-color: ${theme.colors.background.primary};
+
+    &:hover {
+      color: ${theme.colors.text.primary};
+      background: ${theme.colors.background.secondary};
+    }
+  `;
+
+  const defaultTopNav = css`
+    color: ${theme.colors.text.secondary};
+    background: transparent;
+    border: 1px solid transparent;
+
+    &:hover {
+      color: ${theme.colors.text.primary};
+      background: ${theme.colors.background.secondary};
+    }
+  `;
 
   return {
     button: css`
@@ -172,15 +194,8 @@ const getStyles = (theme: GrafanaTheme2) => {
         }
       }
     `,
-    default: css`
-      color: ${theme.colors.text.secondary};
-      background-color: ${theme.colors.background.primary};
-
-      &:hover {
-        color: ${theme.colors.text.primary};
-        background: ${theme.colors.background.secondary};
-      }
-    `,
+    default: defaultTopNav,
+    canvas: defaultOld,
     active: css`
       color: ${theme.v1.palette.orangeDark};
       border-color: ${theme.v1.palette.orangeDark};

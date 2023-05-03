@@ -1,6 +1,5 @@
 import { DataFrame, Field } from '@grafana/data';
-
-import { getMinMaxAndDelta } from '../../../../packages/grafana-data/src/field/scale';
+import { getMinMaxAndDelta } from '@grafana/data/src/field/scale';
 
 import { ScaleDimensionConfig, DimensionSupplier, ScaleDimensionOptions } from './types';
 import { findField, getLastNotNullFieldValue } from './utils';
@@ -57,7 +56,7 @@ export function getScaledDimensionForField(
   }
 
   const get = (i: number) => {
-    const value = field.values.get(i);
+    const value = field.values[i];
     let percent = 0;
     if (value !== -Infinity) {
       percent = (value - info.min!) / info.delta;

@@ -1,21 +1,20 @@
 import { collectorTypes } from '@opentelemetry/exporter-collector';
 
 import {
-  ArrayVector,
   FieldType,
-  MutableDataFrame,
+  createDataFrame,
   PluginType,
   DataSourceInstanceSettings,
   dateTime,
+  PluginMetaInfo,
 } from '@grafana/data';
 
 import {
-  SearchResponse,
   createTableFrame,
   transformToOTLP,
   transformFromOTLP,
-  transformTrace,
   createTableFrameFromSearch,
+  createTableFrameFromTraceQlQuery,
 } from './resultTransformer';
 import {
   badOTLPResponse,
@@ -23,7 +22,9 @@ import {
   otlpDataFrameFromResponse,
   otlpResponse,
   tempoSearchResponse,
+  traceQlResponse,
 } from './testResponse';
+import { TraceSearchMetadata } from './types';
 
 const defaultSettings: DataSourceInstanceSettings = {
   id: 0,
@@ -35,15 +36,16 @@ const defaultSettings: DataSourceInstanceSettings = {
     id: 'tempo',
     name: 'tempo',
     type: PluginType.datasource,
-    info: {} as any,
+    info: {} as PluginMetaInfo,
     module: '',
     baseUrl: '',
   },
+  readOnly: false,
   jsonData: {},
 };
 
 describe('transformTraceList()', () => {
-  const lokiDataFrame = new MutableDataFrame({
+  const lokiDataFrame = createDataFrame({
     fields: [
       {
         name: 'ts',
@@ -68,12 +70,12 @@ describe('transformTraceList()', () => {
   test('extracts traceIDs from log lines', () => {
     const frame = createTableFrame(lokiDataFrame, 't1', 'tempo', ['traceID=(\\w+)', 'traceID=(\\w\\w)']);
     expect(frame.fields[0].name).toBe('Time');
-    expect(frame.fields[0].values.get(0)).toBe('2020-02-12T15:05:15.265Z');
+    expect(frame.fields[0].values[0]).toBe('2020-02-12T15:05:15.265Z');
     expect(frame.fields[1].name).toBe('traceID');
-    expect(frame.fields[1].values.get(0)).toBe('asdfa1234');
+    expect(frame.fields[1].values[0]).toBe('asdfa1234');
     // Second match in new line
-    expect(frame.fields[0].values.get(1)).toBe('2020-02-12T15:05:15.265Z');
-    expect(frame.fields[1].values.get(1)).toBe('as');
+    expect(frame.fields[0].values[1]).toBe('2020-02-12T15:05:15.265Z');
+    expect(frame.fields[1].values[1]).toBe('as');
   });
 });
 
@@ -101,25 +103,45 @@ describe('createTableFrameFromSearch()', () => {
   const mockTimeUnix = dateTime(1643357709095).valueOf();
   global.Date.now = jest.fn(() => mockTimeUnix);
   test('transforms search response to dataFrame', () => {
-    const frame = createTableFrameFromSearch(tempoSearchResponse.traces as SearchResponse[], defaultSettings);
+    const frame = createTableFrameFromSearch(tempoSearchResponse.traces as TraceSearchMetadata[], defaultSettings);
     expect(frame.fields[0].name).toBe('traceID');
-    expect(frame.fields[0].values.get(0)).toBe('e641dcac1c3a0565');
+    expect(frame.fields[0].values[0]).toBe('e641dcac1c3a0565');
 
     // TraceID must have unit = 'string' to prevent the ID from rendering as Infinity
     expect(frame.fields[0].config.unit).toBe('string');
 
     expect(frame.fields[1].name).toBe('traceName');
-    expect(frame.fields[1].values.get(0)).toBe('c10d7ca4e3a00354 ');
+    expect(frame.fields[1].values[0]).toBe('c10d7ca4e3a00354 ');
 
-    // expect time in ago format if startTime less than 1 hour
     expect(frame.fields[2].name).toBe('startTime');
-    expect(frame.fields[2].values.get(0)).toBe('15 minutes ago');
+    expect(frame.fields[2].values[0]).toBe('2022-01-28 03:00:28');
+    expect(frame.fields[2].values[1]).toBe('2022-01-27 22:56:06');
 
-    // expect time in format if startTime greater than 1 hour
-    expect(frame.fields[2].values.get(1)).toBe('2022-01-27 22:56:06');
+    expect(frame.fields[3].name).toBe('traceDuration');
+    expect(frame.fields[3].values[0]).toBe(65);
+  });
+});
 
-    expect(frame.fields[3].name).toBe('duration');
-    expect(frame.fields[3].values.get(0)).toBe(65);
+describe('createTableFrameFromTraceQlQuery()', () => {
+  test('transforms TraceQL response to DataFrame', () => {
+    const frameList = createTableFrameFromTraceQlQuery(traceQlResponse.traces, defaultSettings);
+    const frame = frameList[0];
+    // Trace ID field
+    expect(frame.fields[0].name).toBe('traceID');
+    expect(frame.fields[0].values[0]).toBe('b1586c3c8c34d');
+    expect(frame.fields[0].config.unit).toBe('string');
+    // Start time field
+    expect(frame.fields[1].name).toBe('startTime');
+    expect(frame.fields[1].type).toBe('string');
+    expect(frame.fields[1].values[1]).toBe('2022-01-27 22:56:06');
+    // Trace name field
+    expect(frame.fields[2].name).toBe('traceName');
+    expect(frame.fields[2].type).toBe('string');
+    expect(frame.fields[2].values[0]).toBe('lb HTTP Client');
+    // Duration field
+    expect(frame.fields[3].name).toBe('traceDuration');
+    expect(frame.fields[3].type).toBe('number');
+    expect(frame.fields[3].values[2]).toBe(44);
   });
 });
 
@@ -152,44 +174,5 @@ describe('transformFromOTLP()', () => {
         ],
       },
     }).not.toBeFalsy();
-  });
-});
-
-describe('transformTrace()', () => {
-  // Mock the console error so that running the test suite doesnt throw the error
-  const origError = console.error;
-  const consoleErrorMock = jest.fn();
-  afterEach(() => (console.error = origError));
-  beforeEach(() => (console.error = consoleErrorMock));
-
-  const badFrame = new MutableDataFrame({
-    fields: [
-      {
-        name: 'serviceTags',
-        values: new ArrayVector([undefined]),
-      },
-    ],
-  });
-
-  const goodFrame = new MutableDataFrame({
-    fields: [
-      {
-        name: 'serviceTags',
-        values: new ArrayVector(),
-      },
-    ],
-  });
-
-  test('if passed bad data, will surface an error', () => {
-    const response = transformTrace({ data: [badFrame] }, false);
-    expect(response.data[0]).toBeFalsy();
-    expect(response.error?.message).toBeTruthy();
-  });
-
-  test('if passed good data, will parse successfully', () => {
-    const response2 = transformTrace({ data: [goodFrame] }, false);
-    expect(response2.data[0]).toBeTruthy();
-    expect(response2.data[0]).toMatchObject(goodFrame);
-    expect(response2.error).toBeFalsy();
   });
 });

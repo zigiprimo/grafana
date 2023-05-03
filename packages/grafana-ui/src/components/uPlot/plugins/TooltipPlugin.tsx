@@ -25,6 +25,7 @@ import { findMidPointYPosition, pluginLog } from '../utils';
 interface TooltipPluginProps {
   timeZone: TimeZone;
   data: DataFrame;
+  frames?: DataFrame[];
   config: UPlotConfigBuilder;
   mode?: TooltipDisplayMode;
   sortOrder?: SortOrder;
@@ -39,7 +40,7 @@ const TOOLTIP_OFFSET = 10;
 /**
  * @alpha
  */
-export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
+export const TooltipPlugin = ({
   mode = TooltipDisplayMode.Single,
   sortOrder = SortOrder.None,
   sync,
@@ -47,7 +48,7 @@ export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
   config,
   renderTooltip,
   ...otherProps
-}) => {
+}: TooltipPluginProps) => {
   const plotInstance = useRef<uPlot>();
   const theme = useTheme2();
   const [focusedSeriesIdx, setFocusedSeriesIdx] = useState<number | null>(null);
@@ -182,7 +183,7 @@ export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
   const xFieldFmt = xField.display || getDisplayProcessor({ field: xField, timeZone, theme });
   let tooltip: React.ReactNode = null;
 
-  let xVal = xFieldFmt(xField!.values.get(focusedPointIdx)).text;
+  let xVal = xFieldFmt(xField!.values[focusedPointIdx]).text;
 
   if (!renderTooltip) {
     // when interacting with a point in single mode
@@ -194,16 +195,16 @@ export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
       }
 
       const dataIdx = focusedPointIdxs?.[focusedSeriesIdx] ?? focusedPointIdx;
-      xVal = xFieldFmt(xField!.values.get(dataIdx)).text;
+      xVal = xFieldFmt(xField!.values[dataIdx]).text;
       const fieldFmt = field.display || getDisplayProcessor({ field, timeZone, theme });
-      const display = fieldFmt(field.values.get(dataIdx));
+      const display = fieldFmt(field.values[dataIdx]);
 
       tooltip = (
         <SeriesTable
           series={[
             {
               color: display.color || FALLBACK_COLOR,
-              label: getFieldDisplayName(field, otherProps.data),
+              label: getFieldDisplayName(field, otherProps.data, otherProps.frames),
               value: display ? formattedValueToString(display) : null,
             },
           ]}
@@ -216,7 +217,7 @@ export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
       let series: SeriesTableRowProps[] = [];
       const frame = otherProps.data;
       const fields = frame.fields;
-      const sortIdx: any[] = [];
+      const sortIdx: unknown[] = [];
 
       for (let i = 0; i < fields.length; i++) {
         const field = frame.fields[i];
@@ -231,13 +232,13 @@ export const TooltipPlugin: React.FC<TooltipPluginProps> = ({
           continue;
         }
 
-        const v = otherProps.data.fields[i].values.get(focusedPointIdxs[i]!);
+        const v = otherProps.data.fields[i].values[focusedPointIdxs[i]!];
         const display = field.display!(v);
 
         sortIdx.push(v);
         series.push({
           color: display.color || FALLBACK_COLOR,
-          label: getFieldDisplayName(field, frame),
+          label: getFieldDisplayName(field, frame, otherProps.frames),
           value: display ? formattedValueToString(display) : null,
           isActive: focusedSeriesIdx === i,
         });

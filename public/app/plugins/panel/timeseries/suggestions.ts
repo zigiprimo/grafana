@@ -1,15 +1,14 @@
-import { FieldColorModeId, VisualizationSuggestionsBuilder } from '@grafana/data';
 import {
-  GraphDrawStyle,
-  GraphFieldConfig,
-  GraphGradientMode,
-  LegendDisplayMode,
-  LineInterpolation,
-  StackingMode,
-} from '@grafana/schema';
+  FieldColorModeId,
+  VisualizationSuggestionsBuilder,
+  VisualizationSuggestion,
+  DataTransformerID,
+} from '@grafana/data';
+import { GraphDrawStyle, GraphFieldConfig, GraphGradientMode, LineInterpolation, StackingMode } from '@grafana/schema';
+import { getDashboardSrv } from 'app/features/dashboard/services/DashboardSrv';
 import { SuggestionName } from 'app/types/suggestions';
 
-import { TimeSeriesOptions } from './types';
+import { PanelOptions } from './panelcfg.gen';
 
 export class TimeSeriesSuggestionsSupplier {
   getSuggestionsForData(builder: VisualizationSuggestionsBuilder) {
@@ -19,7 +18,7 @@ export class TimeSeriesSuggestionsSupplier {
       return;
     }
 
-    const list = builder.getListAppender<TimeSeriesOptions, GraphFieldConfig>({
+    const list = builder.getListAppender<PanelOptions, GraphFieldConfig>({
       name: SuggestionName.LineChart,
       pluginId: 'timeseries',
       options: {
@@ -33,7 +32,7 @@ export class TimeSeriesSuggestionsSupplier {
       },
       cardOptions: {
         previewModifier: (s) => {
-          s.options!.legend.displayMode = LegendDisplayMode.Hidden;
+          s.options!.legend.showLegend = false;
 
           if (s.fieldConfig?.defaults.custom?.drawStyle !== GraphDrawStyle.Bars) {
             s.fieldConfig!.defaults.custom!.lineWidth = Math.max(s.fieldConfig!.defaults.custom!.lineWidth ?? 1, 2);
@@ -206,4 +205,25 @@ export class TimeSeriesSuggestionsSupplier {
       });
     }
   }
+}
+
+// This will try to get a suggestion that will add a long to wide conversion
+export function getPrepareTimeseriesSuggestion(panelId: number): VisualizationSuggestion | undefined {
+  const panel = getDashboardSrv().getCurrent()?.getPanelById(panelId);
+  if (panel) {
+    const transformations = panel.transformations ? [...panel.transformations] : [];
+    transformations.push({
+      id: DataTransformerID.prepareTimeSeries,
+      options: {
+        format: 'wide',
+      },
+    });
+
+    return {
+      name: 'Transform to wide time series format',
+      pluginId: 'timeseries',
+      transformations,
+    };
+  }
+  return undefined;
 }

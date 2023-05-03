@@ -1,10 +1,7 @@
 import { uniqBy } from 'lodash';
 
 import { Labels } from '@grafana/data';
-import { Matcher, MatcherOperator } from 'app/plugins/datasource/alertmanager/types';
-import { Alert } from 'app/types/unified-alerting';
-
-import { MatcherFieldValue } from '../types/silence-form';
+import { Matcher } from 'app/plugins/datasource/alertmanager/types';
 
 import { parseMatcher } from './alertmanager';
 
@@ -28,47 +25,4 @@ export const getMatcherQueryParams = (labels: Labels) => {
   );
 
   return matcherUrlParams;
-};
-
-interface MatchedInstance {
-  id: string;
-  data: {
-    matchedInstance: Alert;
-  };
-}
-
-export const findAlertInstancesWithMatchers = (
-  instances: Alert[],
-  matchers: MatcherFieldValue[]
-): MatchedInstance[] => {
-  const hasMatcher = (instance: Alert, matcher: MatcherFieldValue) => {
-    return Object.entries(instance.labels).some(([key, value]) => {
-      if (!matcher.name || !matcher.value) {
-        return false;
-      }
-      if (matcher.operator === MatcherOperator.equal) {
-        return matcher.name === key && matcher.value === value;
-      }
-      if (matcher.operator === MatcherOperator.notEqual) {
-        return matcher.name === key && matcher.value !== value;
-      }
-      if (matcher.operator === MatcherOperator.regex) {
-        return matcher.name === key && matcher.value.match(value);
-      }
-      if (matcher.operator === MatcherOperator.notRegex) {
-        return matcher.name === key && !matcher.value.match(value);
-      }
-      return false;
-    });
-  };
-
-  const filteredInstances = instances.filter((instance) => {
-    return matchers.every((matcher) => hasMatcher(instance, matcher));
-  });
-  const mappedInstances = filteredInstances.map((instance) => ({
-    id: `${instance.activeAt}-${instance.value}`,
-    data: { matchedInstance: instance },
-  }));
-
-  return mappedInstances;
 };

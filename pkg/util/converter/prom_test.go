@@ -29,7 +29,8 @@ func TestReadPromFrames(t *testing.T) {
 		"prom-series",
 		"prom-warnings",
 		"prom-error",
-		"prom-exemplars",
+		"prom-exemplars-a",
+		"prom-exemplars-b",
 		"loki-streams-a",
 		"loki-streams-b",
 		"loki-streams-c",
@@ -41,6 +42,9 @@ func TestReadPromFrames(t *testing.T) {
 	}
 }
 
+// FIXME:
+//
+//lint:ignore U1000 Ignore used function for now
 func runScenario(name string, opts Options) func(t *testing.T) {
 	return func(t *testing.T) {
 		// Safe to disable, this is a test.
@@ -61,7 +65,7 @@ func runScenario(name string, opts Options) func(t *testing.T) {
 		}
 
 		fname := name + "-frame"
-		experimental.CheckGoldenJSONResponse(t, "testdata", fname, rsp, update)
+		experimental.CheckGoldenJSONResponse(t, "testdata", fname, &rsp, update)
 	}
 }
 

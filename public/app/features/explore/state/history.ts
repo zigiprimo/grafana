@@ -1,17 +1,13 @@
 import { AnyAction, createAction } from '@reduxjs/toolkit';
 
-import { DataQuery, HistoryItem } from '@grafana/data';
-import { config, logError } from '@grafana/runtime';
-import { RICH_HISTORY_SETTING_KEYS } from 'app/core/history/richHistoryLocalStorageUtils';
-import store from 'app/core/store';
+import { HistoryItem } from '@grafana/data';
+import { DataQuery } from '@grafana/schema';
 import {
   addToRichHistory,
   deleteAllFromRichHistory,
   deleteQueryInRichHistory,
   getRichHistory,
   getRichHistorySettings,
-  LocalStorageMigrationStatus,
-  migrateQueryHistoryFromLocalStorage,
   updateCommentInRichHistory,
   updateRichHistorySettings,
   updateStarredInRichHistory,
@@ -23,7 +19,6 @@ import { RichHistorySearchFilters, RichHistorySettings } from '../../../core/uti
 
 import {
   richHistoryLimitExceededAction,
-  richHistoryMigrationFailedAction,
   richHistorySearchFiltersUpdatedAction,
   richHistorySettingsUpdatedAction,
   richHistoryStorageFullAction,
@@ -172,21 +167,6 @@ export const clearRichHistoryResults = (exploreId: ExploreId): ThunkResult<void>
  */
 export const initRichHistory = (): ThunkResult<void> => {
   return async (dispatch, getState) => {
-    const queriesMigrated = store.getBool(RICH_HISTORY_SETTING_KEYS.migrated, false);
-    const migrationFailedDuringThisSession = getState().explore.richHistoryMigrationFailed;
-
-    // Query history migration should always be successful, but in case of unexpected errors we ensure
-    // the migration attempt happens only once per session, and the user is informed about the failure
-    // in a way that can help with potential investigation.
-    if (config.queryHistoryEnabled && !queriesMigrated && !migrationFailedDuringThisSession) {
-      const migrationResult = await migrateQueryHistoryFromLocalStorage();
-      if (migrationResult.status === LocalStorageMigrationStatus.Failed) {
-        dispatch(richHistoryMigrationFailedAction());
-        logError(migrationResult.error!, { explore: { event: 'QueryHistoryMigrationFailed' } });
-      } else {
-        store.set(RICH_HISTORY_SETTING_KEYS.migrated, true);
-      }
-    }
     let settings = getState().explore.richHistorySettings;
     if (!settings) {
       settings = await getRichHistorySettings();

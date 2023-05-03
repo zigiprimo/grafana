@@ -1,9 +1,10 @@
 import { css, cx } from '@emotion/css';
-import React, { FC } from 'react';
+import React from 'react';
 
 import { DataLink, GrafanaTheme2, PanelData } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
-import { Icon, useStyles2 } from '@grafana/ui';
+import { reportInteraction } from '@grafana/runtime';
+import { Icon, useStyles2, ClickOutsideWrapper } from '@grafana/ui';
 import { DashboardModel } from 'app/features/dashboard/state/DashboardModel';
 import { PanelModel } from 'app/features/dashboard/state/PanelModel';
 import { getPanelLinksSupplier } from 'app/features/panel/panellinks/linkSuppliers';
@@ -27,11 +28,15 @@ export interface Props {
   data: PanelData;
 }
 
-export const PanelHeader: FC<Props> = ({ panel, error, isViewing, isEditing, data, alertState, dashboard }) => {
+export function PanelHeader({ panel, error, isViewing, isEditing, data, alertState, dashboard }: Props) {
   const onCancelQuery = () => panel.getQueryRunner().cancelQuery();
   const title = panel.getDisplayTitle();
   const className = cx('panel-header', !(isViewing || isEditing) ? 'grid-drag-handle' : '');
   const styles = useStyles2(panelStyles);
+
+  const onOpenMenu = () => {
+    reportInteraction('dashboards_panelheader_menu', { item: 'menu' });
+  };
 
   return (
     <>
@@ -45,44 +50,41 @@ export const PanelHeader: FC<Props> = ({ panel, error, isViewing, isEditing, dat
         error={error}
       />
       <div className={className}>
-        <PanelHeaderMenuTrigger data-testid={selectors.components.Panels.Panel.title(title)}>
+        <PanelHeaderMenuTrigger data-testid={selectors.components.Panels.Panel.title(title)} onOpenMenu={onOpenMenu}>
           {({ closeMenu, panelMenuOpen }) => {
             return (
-              <div className="panel-title">
-                <PanelHeaderNotices frames={data.series} panelId={panel.id} />
-                {alertState ? (
-                  <Icon
-                    name={alertState === 'alerting' ? 'heart-break' : 'heart'}
-                    className="icon-gf panel-alert-icon"
-                    style={{ marginRight: '4px' }}
-                    size="sm"
-                  />
-                ) : null}
-                <h2 className={styles.titleText}>{title}</h2>
-                {!dashboard.meta.publicDashboardAccessToken && (
-                  <div data-testid="panel-dropdown">
-                    <Icon name="angle-down" className="panel-menu-toggle" />
-                    <PanelHeaderMenuWrapper
-                      panel={panel}
-                      dashboard={dashboard}
-                      show={panelMenuOpen}
-                      onClose={closeMenu}
+              <ClickOutsideWrapper onClick={closeMenu} parent={document}>
+                <div className="panel-title">
+                  <PanelHeaderNotices frames={data.series} panelId={panel.id} />
+                  {alertState ? (
+                    <Icon
+                      name={alertState === 'alerting' ? 'heart-break' : 'heart'}
+                      className="icon-gf panel-alert-icon"
+                      style={{ marginRight: '4px' }}
+                      size="sm"
                     />
-                  </div>
-                )}
-                {data.request && data.request.timeInfo && (
-                  <span className="panel-time-info">
-                    <Icon name="clock-nine" size="sm" /> {data.request.timeInfo}
-                  </span>
-                )}
-              </div>
+                  ) : null}
+                  <h2 className={styles.titleText}>{title}</h2>
+                  {!dashboard.meta.publicDashboardAccessToken && (
+                    <div data-testid="panel-dropdown">
+                      <Icon name="angle-down" className="panel-menu-toggle" />
+                      {panelMenuOpen ? <PanelHeaderMenuWrapper panel={panel} dashboard={dashboard} /> : null}
+                    </div>
+                  )}
+                  {data.request && data.request.timeInfo && (
+                    <span className="panel-time-info">
+                      <Icon name="clock-nine" size="sm" /> {data.request.timeInfo}
+                    </span>
+                  )}
+                </div>
+              </ClickOutsideWrapper>
             );
           }}
         </PanelHeaderMenuTrigger>
       </div>
     </>
   );
-};
+}
 
 const panelStyles = (theme: GrafanaTheme2) => {
   return {

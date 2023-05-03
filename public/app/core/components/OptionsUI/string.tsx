@@ -1,28 +1,29 @@
-import React, { useCallback } from 'react';
+import React, { ReactNode, useCallback } from 'react';
 
 import { StandardEditorProps, StringFieldConfigSettings } from '@grafana/data';
 import { Input, TextArea } from '@grafana/ui';
 
-export const StringValueEditor: React.FC<StandardEditorProps<string, StringFieldConfigSettings>> = ({
-  value,
-  onChange,
-  item,
-}) => {
-  const Component = item.settings?.useTextarea ? TextArea : Input;
+interface Props extends StandardEditorProps<string, StringFieldConfigSettings> {
+  suffix?: ReactNode;
+}
 
+export const StringValueEditor = ({ value, onChange, item, suffix }: Props) => {
+  const Component = item.settings?.useTextarea ? TextArea : Input;
   const onValueChange = useCallback(
-    (e: React.SyntheticEvent) => {
+    (
+      e:
+        | React.KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
+        | React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>
+    ) => {
       let nextValue = value ?? '';
-      if (e.hasOwnProperty('key')) {
+      if ('key' in e) {
         // handling keyboard event
-        const evt = e as React.KeyboardEvent<HTMLInputElement>;
-        if (evt.key === 'Enter' && !item.settings?.useTextarea) {
-          nextValue = evt.currentTarget.value.trim();
+        if (e.key === 'Enter' && !item.settings?.useTextarea) {
+          nextValue = e.currentTarget.value.trim();
         }
       } else {
-        // handling form event
-        const evt = e as React.FormEvent<HTMLInputElement>;
-        nextValue = evt.currentTarget.value.trim();
+        // handling blur event
+        nextValue = e.currentTarget.value.trim();
       }
       if (nextValue === value) {
         return; // no change
@@ -39,6 +40,7 @@ export const StringValueEditor: React.FC<StandardEditorProps<string, StringField
       rows={(item.settings?.useTextarea && item.settings.rows) || 5}
       onBlur={onValueChange}
       onKeyDown={onValueChange}
+      suffix={suffix}
     />
   );
 };

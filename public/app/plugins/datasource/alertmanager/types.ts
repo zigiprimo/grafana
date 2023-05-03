@@ -7,6 +7,8 @@ export type AlertManagerCortexConfig = {
   alertmanager_config: AlertmanagerConfig;
   /** { [name]: provenance } */
   template_file_provenances?: Record<string, string>;
+  last_applied?: string;
+  id?: number;
 };
 
 export type TLSConfig = {
@@ -92,7 +94,7 @@ export type Receiver = {
   [key: string]: any;
 };
 
-type ObjectMatcher = [name: string, operator: MatcherOperator, value: string];
+export type ObjectMatcher = [name: string, operator: MatcherOperator, value: string];
 
 export type Route = {
   receiver?: string;
@@ -112,6 +114,11 @@ export type Route = {
   /** only the root policy might have a provenance field defined */
   provenance?: string;
 };
+
+export interface RouteWithID extends Route {
+  id: string;
+  routes?: RouteWithID[];
+}
 
 export type InhibitRule = {
   target_match: Record<string, string>;
@@ -150,6 +157,7 @@ export type AlertmanagerConfig = {
   mute_time_intervals?: MuteTimeInterval[];
   /** { [name]: provenance } */
   muteTimeProvenances?: Record<string, string>;
+  last_applied?: boolean;
 };
 
 export type Matcher = {
@@ -244,6 +252,7 @@ export interface AlertmanagerStatus {
 }
 
 export type TestReceiversAlert = Pick<AlertmanagerAlert, 'annotations' | 'labels'>;
+export type TestTemplateAlert = Pick<AlertmanagerAlert, 'annotations' | 'labels' | 'startsAt' | 'endsAt'>;
 
 export interface TestReceiversPayload {
   receivers?: Receiver[];
@@ -277,12 +286,16 @@ export interface AlertmanagerUrl {
 
 export interface ExternalAlertmanagersResponse {
   data: ExternalAlertmanagers;
-  status: 'string';
+}
+
+export enum AlertmanagerChoice {
+  Internal = 'internal',
+  External = 'external',
+  All = 'all',
 }
 
 export interface ExternalAlertmanagerConfig {
-  alertmanagers: string[];
-  alertmanagersChoice: string;
+  alertmanagersChoice: AlertmanagerChoice;
 }
 
 export enum AlertManagerImplementation {
@@ -310,4 +323,7 @@ export type MuteTimeInterval = {
   provenance?: string;
 };
 
-export type AlertManagerDataSourceJsonData = DataSourceJsonData & { implementation?: AlertManagerImplementation };
+export interface AlertManagerDataSourceJsonData extends DataSourceJsonData {
+  implementation?: AlertManagerImplementation;
+  handleGrafanaManagedAlerts?: boolean;
+}
