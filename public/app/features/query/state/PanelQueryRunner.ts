@@ -1,5 +1,5 @@
 import { cloneDeep } from 'lodash';
-import { MonoTypeOperatorFunction, Observable, of, ReplaySubject, Unsubscribable } from 'rxjs';
+import { MonoTypeOperatorFunction, Observable, of, ReplaySubject, Unsubscribable, merge, Subject } from 'rxjs';
 import { map, mergeMap } from 'rxjs/operators';
 
 import {
@@ -79,9 +79,12 @@ export class PanelQueryRunner {
   private lastResult?: PanelData;
   private dataConfigSource: DataConfigSource;
   private lastRequest?: DataQueryRequest;
+  private loading: Subject<PanelData>; // this will get an event 200ms after run starts
+  private loadingTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(dataConfigSource: DataConfigSource) {
     this.subject = new ReplaySubject(1);
+    this.loading = new Subject();
     this.dataConfigSource = dataConfigSource;
   }
 
@@ -104,7 +107,7 @@ export class PanelQueryRunner {
       return of(snapshotPanelData);
     }
 
-    return this.subject.pipe(
+    const dataObservable = this.subject.pipe(
       this.getTransformationsStream(withTransforms),
       map((data: PanelData) => {
         let processedData = data;
@@ -172,6 +175,11 @@ export class PanelQueryRunner {
         return { ...processedData, structureRev };
       })
     );
+
+    // If 200ms without a response emit a loading state
+    // mapTo will translate the timer event into state.panelData (which has state set to loading)
+    // takeUntil will cancel the timer emit when first response packet is received on the dataObservable
+    return merge(this.loading, dataObservable);
   }
 
   private getTransformationsStream = (withTransforms: boolean): MonoTypeOperatorFunction<PanelData> => {
@@ -270,6 +278,8 @@ export class PanelQueryRunner {
 
       this.lastRequest = request;
 
+      clearTimeout(this.loadingTimeout ?? 0);
+      this.loadingTimeout = setTimeout(this.loadedFor200ms, 25);
       this.pipeToSubject(runRequest(ds, request), panelId);
     } catch (err) {
       this.pipeToSubject(
@@ -283,6 +293,21 @@ export class PanelQueryRunner {
       );
     }
   }
+
+  private loadedFor200ms = () => {
+    this.loadingTimeout = null;
+    console.log('loading', this.lastResult);
+    const last = this.lastResult ?? {
+      state: LoadingState.Loading,
+      timeRange: this.lastRequest?.range!,
+      series: [],
+    };
+    this.loading.next({
+      ...last,
+      request: this.lastRequest,
+      state: LoadingState.Loading,
+    });
+  };
 
   private pipeToSubject(observable: Observable<PanelData>, panelId?: number) {
     if (this.subscription) {
@@ -299,6 +324,9 @@ export class PanelQueryRunner {
 
     this.subscription = panelData.subscribe({
       next: (data) => {
+        console.log('got result', this.lastRequest);
+        clearTimeout(this.loadingTimeout ?? 0);
+
         this.lastResult = preProcessPanelData(data, this.lastResult);
         // Store preprocessed query results for applying overrides later on in the pipeline
         this.subject.next(this.lastResult);

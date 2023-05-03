@@ -1,7 +1,7 @@
 // Libraries
 import { isString, map as isArray } from 'lodash';
-import { from, merge, Observable, of, timer } from 'rxjs';
-import { catchError, map, mapTo, share, takeUntil, tap } from 'rxjs/operators';
+import { from, Observable, of } from 'rxjs';
+import { catchError, map, tap } from 'rxjs/operators';
 
 // Utils & Services
 // Types
@@ -141,7 +141,7 @@ export function runRequest(
     return of(state.panelData);
   }
 
-  const dataObservable = callQueryMethod(datasource, request, queryFunction).pipe(
+  return callQueryMethod(datasource, request, queryFunction).pipe(
     // Transform response packets into PanelData with merged results
     map((packet: DataQueryResponse) => {
       if (!isArray(packet.data)) {
@@ -167,15 +167,8 @@ export function runRequest(
     tap(emitDataRequestEvent(datasource)),
     // finalize is triggered when subscriber unsubscribes
     // This makes sure any still running network requests are cancelled
-    cancelNetworkRequestsOnUnsubscribe(backendSrv, request.requestId),
-    // this makes it possible to share this observable in takeUntil
-    share()
+    cancelNetworkRequestsOnUnsubscribe(backendSrv, request.requestId)
   );
-
-  // If 50ms without a response emit a loading state
-  // mapTo will translate the timer event into state.panelData (which has state set to loading)
-  // takeUntil will cancel the timer emit when first response packet is received on the dataObservable
-  return merge(timer(200).pipe(mapTo(state.panelData), takeUntil(dataObservable)), dataObservable);
 }
 
 export function callQueryMethod(
