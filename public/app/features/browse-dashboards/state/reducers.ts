@@ -3,15 +3,15 @@ import { PayloadAction } from '@reduxjs/toolkit';
 import { GENERAL_FOLDER_UID } from 'app/features/search/constants';
 import { DashboardViewItem, DashboardViewItemKind } from 'app/features/search/types';
 
+import { endpoints } from '../api/browseDashboardsAPI';
 import { BrowseDashboardsState } from '../types';
 
-import { fetchChildren } from './actions';
 import { findItem } from './utils';
 
 type FetchChildrenAction = ReturnType<typeof fetchChildren.fulfilled>;
 
 export function extraReducerFetchChildrenFulfilled(state: BrowseDashboardsState, action: FetchChildrenAction) {
-  const parentUID = action.meta.arg;
+  const parentUID = action.meta.arg.originalArgs;
   const children = action.payload;
 
   if (!parentUID || parentUID === GENERAL_FOLDER_UID) {

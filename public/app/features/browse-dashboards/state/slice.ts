@@ -1,8 +1,8 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+import { endpoints } from '../api/browseDashboardsAPI';
 import { BrowseDashboardsState } from '../types';
 
-import { fetchChildren } from './actions';
 import * as allReducers from './reducers';
 
 const { extraReducerFetchChildrenFulfilled, ...baseReducers } = allReducers;
@@ -25,7 +25,8 @@ const browseDashboardsSlice = createSlice({
   reducers: baseReducers,
 
   extraReducers: (builder) => {
-    builder.addCase(fetchChildren.fulfilled, extraReducerFetchChildrenFulfilled);
+    // builder.addCase(fetchChildren.fulfilled, extraReducerFetchChildrenFulfilled);
+    builder.addMatcher(endpoints.getFolderChildren.matchFulfilled, extraReducerFetchChildrenFulfilled);
   },
 });
 

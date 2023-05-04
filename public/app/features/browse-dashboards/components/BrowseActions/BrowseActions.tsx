@@ -8,16 +8,12 @@ import { useDispatch, useSelector } from 'app/types';
 import { ShowModalReactEvent } from 'app/types/events';
 
 import {
-  childrenByParentUIDSelector,
-  deleteDashboard,
-  deleteFolder,
-  fetchChildren,
-  moveDashboard,
-  moveFolder,
-  rootItemsSelector,
-  setAllSelection,
-  useActionSelectionState,
-} from '../../state';
+  useDeleteDashboardMutation,
+  useDeleteFolderMutation,
+  useMoveDashboardMutation,
+  useMoveFolderMutation,
+} from '../../api/browseDashboardsAPI';
+import { childrenByParentUIDSelector, rootItemsSelector, setAllSelection, useActionSelectionState } from '../../state';
 import { findItem } from '../../state/utils';
 
 import { DeleteModal } from './DeleteModal';
@@ -28,68 +24,74 @@ export interface Props {}
 export function BrowseActions() {
   const styles = useStyles2(getStyles);
   const selectedItems = useActionSelectionState();
+  const [deleteDashboard] = useDeleteDashboardMutation();
+  const [deleteFolder] = useDeleteFolderMutation();
+  const [moveFolder] = useMoveFolderMutation();
+  const [moveDashboard] = useMoveDashboardMutation();
   const dispatch = useDispatch();
   const selectedDashboards = Object.keys(selectedItems.dashboard).filter((uid) => selectedItems.dashboard[uid]);
   const selectedFolders = Object.keys(selectedItems.folder).filter((uid) => selectedItems.folder[uid]);
   const rootItems = useSelector(rootItemsSelector);
   const childrenByParentUID = useSelector(childrenByParentUIDSelector);
 
-  const onActionComplete = (parentsToRefresh: Set<string | undefined>) => {
+  const onActionComplete = () => {
     dispatch(
       setAllSelection({
         isSelected: false,
       })
     );
-    for (const parentUID of parentsToRefresh) {
-      dispatch(fetchChildren(parentUID));
-    }
   };
 
   const onDelete = async () => {
-    const parentsToRefresh = new Set<string | undefined>();
-
     // Delete all the folders sequentially
     // TODO error handling here
     for (const folderUID of selectedFolders) {
-      await dispatch(deleteFolder(folderUID));
-      // find the parent folder uid and add it to parentsToRefresh
+      // find the folder to get it's parentUID
       const folder = findItem(rootItems ?? [], childrenByParentUID, folderUID);
-      parentsToRefresh.add(folder?.parentUID);
+      deleteFolder({
+        uid: folderUID,
+        parentUID: folder?.parentUID,
+      });
     }
 
     // Delete all the dashboards sequentially
     // TODO error handling here
     for (const dashboardUID of selectedDashboards) {
-      await dispatch(deleteDashboard(dashboardUID));
-      // find the parent folder uid and add it to parentsToRefresh
+      // find the dashboard to get it's parentUID
       const dashboard = findItem(rootItems ?? [], childrenByParentUID, dashboardUID);
-      parentsToRefresh.add(dashboard?.parentUID);
+      deleteDashboard({
+        uid: dashboardUID,
+        parentUID: dashboard?.parentUID,
+      });
     }
-    onActionComplete(parentsToRefresh);
+    onActionComplete();
   };
 
   const onMove = async (destinationUID: string) => {
-    const parentsToRefresh = new Set<string | undefined>();
-    parentsToRefresh.add(destinationUID);
-
     // Move all the folders sequentially
     // TODO error handling here
     for (const folderUID of selectedFolders) {
-      await dispatch(moveFolder({ folderUID, destinationUID }));
-      // find the parent folder uid and add it to parentsToRefresh
+      // find the folder to get it's parentUID
       const folder = findItem(rootItems ?? [], childrenByParentUID, folderUID);
-      parentsToRefresh.add(folder?.parentUID);
+      moveFolder({
+        uid: folderUID,
+        parentUID: folder?.parentUID,
+        destinationUID,
+      });
     }
 
     // Move all the dashboards sequentially
     // TODO error handling here
     for (const dashboardUID of selectedDashboards) {
-      await dispatch(moveDashboard({ dashboardUID, destinationUID }));
-      // find the parent folder uid and add it to parentsToRefresh
+      // find the dashboard to get it's parentUID
       const dashboard = findItem(rootItems ?? [], childrenByParentUID, dashboardUID);
-      parentsToRefresh.add(dashboard?.parentUID);
+      moveDashboard({
+        uid: dashboardUID,
+        parentUID: dashboard?.parentUID,
+        destinationUID,
+      });
     }
-    onActionComplete(parentsToRefresh);
+    onActionComplete();
   };
 
   const showMoveModal = () => {

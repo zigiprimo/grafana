@@ -3,7 +3,11 @@ import { lastValueFrom } from 'rxjs';
 
 import { isTruthy } from '@grafana/data';
 import { BackendSrvRequest, getBackendSrv } from '@grafana/runtime';
-import { DescendantCount, DescendantCountDTO, FolderDTO } from 'app/types';
+import { DeleteDashboardResponse } from 'app/features/manage-dashboards/types';
+import { GENERAL_FOLDER_UID } from 'app/features/search/constants';
+import { getFolderChildren } from 'app/features/search/service/folders';
+import { DashboardViewItem } from 'app/features/search/types';
+import { DashboardDTO, DescendantCount, DescendantCountDTO, FolderDTO } from 'app/types';
 
 import { DashboardTreeSelection } from '../types';
 
@@ -33,10 +37,53 @@ function createBackendSrvBaseQuery({ baseURL }: { baseURL: string }): BaseQueryF
 
 export const browseDashboardsAPI = createApi({
   reducerPath: 'browseDashboardsAPI',
+  tagTypes: ['folderChildren'],
   baseQuery: createBackendSrvBaseQuery({ baseURL: '/api' }),
   endpoints: (builder) => ({
+    deleteDashboard: builder.mutation<
+      DeleteDashboardResponse,
+      {
+        uid: string;
+        parentUID?: string;
+      }
+    >({
+      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: `${args.parentUID}` }],
+      query: ({ uid }) => ({
+        url: `/dashboards/uid/${uid}`,
+        method: 'DELETE',
+      }),
+    }),
+    deleteFolder: builder.mutation<
+      void,
+      {
+        uid: string;
+        parentUID?: string;
+      }
+    >({
+      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: `${args.parentUID}` }],
+      query: ({ uid }) => ({
+        url: `/folders/${uid}`,
+        method: 'DELETE',
+        params: {
+          // TODO: Once backend returns alert rule counts, set this back to true
+          // when this is merged https://github.com/grafana/grafana/pull/67259
+          forceDeleteRules: false,
+        },
+      }),
+    }),
     getFolder: builder.query<FolderDTO, string>({
       query: (folderUID) => ({ url: `/folders/${folderUID}`, params: { accesscontrol: true } }),
+    }),
+    getFolderChildren: builder.query<DashboardViewItem[], string | undefined>({
+      providesTags: (_result, _error, arg) => [{ type: 'folderChildren', id: `${arg}` }],
+      queryFn: async (folderUID) => {
+        // Need to handle the case where the parentUID is the root
+        const uid = folderUID === GENERAL_FOLDER_UID ? undefined : folderUID;
+        const children = await getFolderChildren(uid, undefined, true);
+        return {
+          data: children,
+        };
+      },
     }),
     getAffectedItems: builder.query<DescendantCount, DashboardTreeSelection>({
       queryFn: async (selectedItems) => {
@@ -67,8 +114,69 @@ export const browseDashboardsAPI = createApi({
         return { data: totalCounts };
       },
     }),
+    // TODO we can define this return type properly
+    moveDashboard: builder.mutation<
+      unknown,
+      {
+        uid: string;
+        parentUID?: string;
+        destinationUID: string;
+      }
+    >({
+      invalidatesTags: (_result, _error, args) => [
+        { type: 'folderChildren', id: `${args.destinationUID}` },
+        { type: 'folderChildren', id: `${args.parentUID}` },
+      ],
+      queryFn: async ({ uid, destinationUID }, _api, _extraOptions, baseQuery) => {
+        const fullDash: DashboardDTO = await getBackendSrv().get(`/api/dashboards/uid/${uid}`);
+
+        const options = {
+          dashboard: fullDash.dashboard,
+          folderUid: destinationUID,
+          overwrite: false,
+        };
+
+        return baseQuery({
+          url: '/dashboards/db',
+          method: 'POST',
+          data: {
+            message: '',
+            ...options,
+          },
+        });
+      },
+    }),
+    // TODO this doesn't return void, find where the correct type is
+    moveFolder: builder.mutation<
+      void,
+      {
+        uid: string;
+        destinationUID: string;
+        parentUID?: string;
+      }
+    >({
+      invalidatesTags: (_result, _error, args) => [
+        { type: 'folderChildren', id: `${args.destinationUID}` },
+        { type: 'folderChildren', id: `${args.parentUID}` },
+      ],
+      query: ({ uid, destinationUID }) => ({
+        url: `/folders/${uid}/move`,
+        method: 'POST',
+        data: { parentUid: destinationUID },
+      }),
+    }),
   }),
 });
 
-export const { useGetAffectedItemsQuery, useGetFolderQuery } = browseDashboardsAPI;
+export const {
+  endpoints,
+  useDeleteDashboardMutation,
+  useDeleteFolderMutation,
+  useGetAffectedItemsQuery,
+  useGetFolderQuery,
+  useGetFolderChildrenQuery,
+  useLazyGetFolderChildrenQuery,
+  useMoveDashboardMutation,
+  useMoveFolderMutation,
+} = browseDashboardsAPI;
 export { skipToken } from '@reduxjs/toolkit/query/react';

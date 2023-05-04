@@ -1,14 +1,14 @@
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 
 import { Spinner } from '@grafana/ui';
 import EmptyListCTA from 'app/core/components/EmptyListCTA/EmptyListCTA';
 import { DashboardViewItem } from 'app/features/search/types';
 import { useDispatch } from 'app/types';
 
+import { useGetFolderChildrenQuery, useLazyGetFolderChildrenQuery } from '../api/browseDashboardsAPI';
 import {
   useFlatTreeState,
   useCheckboxSelectionState,
-  fetchChildren,
   setFolderOpenState,
   setItemSelectionState,
   useChildrenByParentUIDState,
@@ -32,21 +32,19 @@ export function BrowseView({ folderUID, width, height, canSelect }: BrowseViewPr
   const flatTree = useFlatTreeState(folderUID);
   const selectedItems = useCheckboxSelectionState();
   const childrenByParentUID = useChildrenByParentUIDState();
+  useGetFolderChildrenQuery(folderUID);
+  const [getFolderChildren] = useLazyGetFolderChildrenQuery();
 
   const handleFolderClick = useCallback(
     (clickedFolderUID: string, isOpen: boolean) => {
       dispatch(setFolderOpenState({ folderUID: clickedFolderUID, isOpen }));
 
       if (isOpen) {
-        dispatch(fetchChildren(clickedFolderUID));
+        getFolderChildren(clickedFolderUID);
       }
     },
-    [dispatch]
+    [dispatch, getFolderChildren]
   );
-
-  useEffect(() => {
-    dispatch(fetchChildren(folderUID));
-  }, [handleFolderClick, dispatch, folderUID]);
 
   const handleItemSelectionChange = useCallback(
     (item: DashboardViewItem, isSelected: boolean) => {
