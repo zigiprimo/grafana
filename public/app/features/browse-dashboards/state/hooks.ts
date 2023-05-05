@@ -4,7 +4,7 @@ import { createSelector } from 'reselect';
 import { DashboardViewItem } from 'app/features/search/types';
 import { useSelector, StoreState, useDispatch } from 'app/types';
 
-import { endpoints } from '../api/browseDashboardsAPI';
+import { endpoints, useGetFolderChildrenQuery } from '../api/browseDashboardsAPI';
 import { DashboardsTreeItem, DashboardTreeSelection } from '../types';
 
 export const rootItemsSelector = (wholeState: StoreState) => wholeState.browseDashboards.rootItems;
@@ -66,10 +66,10 @@ export function useBrowseLoadingStatus(folderUID: string | undefined): 'pending'
 }
 
 export function useFlatTreeState(folderUID: string | undefined) {
-  const handleSubscription = useHandleSubscription();
-  const rootItems = useSelector(rootItemsSelector);
+  const rootItems = useGetFolderChildrenQuery(folderUID).data;
   const childrenByParentUID = useSelector(childrenByParentUIDSelector);
   const openFolders = useSelector(openFoldersSelector);
+  const handleSubscription = useHandleSubscription();
 
   return createFlatTree(folderUID, rootItems ?? [], childrenByParentUID, openFolders, handleSubscription);
 }
