@@ -9,7 +9,7 @@ type Search interface {
 type Result struct {
 	Text   string
 	Kind   string
-	UID    string
-	OrgID  int64
+	UID    string `xorm:"uid"`
+	OrgID  int64  `xorm:"org_id"`
 	Weight int
 }
