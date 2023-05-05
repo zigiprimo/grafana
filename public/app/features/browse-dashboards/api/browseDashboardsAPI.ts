@@ -16,6 +16,10 @@ interface RequestOptions extends BackendSrvRequest {
   showErrorAlert?: boolean;
 }
 
+function handleGeneralUID(uid?: string) {
+  return (!uid || uid === GENERAL_FOLDER_UID) ? undefined : uid;
+}
+
 function createBackendSrvBaseQuery({ baseURL }: { baseURL: string }): BaseQueryFn<RequestOptions> {
   async function backendSrvBaseQuery(requestOptions: RequestOptions) {
     try {
@@ -47,7 +51,7 @@ export const browseDashboardsAPI = createApi({
         parentUID?: string;
       }
     >({
-      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: `${args.parentUID}` }],
+      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: handleGeneralUID(args.parentUID) }],
       query: ({ uid }) => ({
         url: `/dashboards/uid/${uid}`,
         method: 'DELETE',
@@ -60,7 +64,7 @@ export const browseDashboardsAPI = createApi({
         parentUID?: string;
       }
     >({
-      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: `${args.parentUID}` }],
+      invalidatesTags: (_result, _error, args) => [{ type: 'folderChildren', id: handleGeneralUID(args.parentUID) }],
       query: ({ uid }) => ({
         url: `/folders/${uid}`,
         method: 'DELETE',
@@ -75,11 +79,9 @@ export const browseDashboardsAPI = createApi({
       query: (folderUID) => ({ url: `/folders/${folderUID}`, params: { accesscontrol: true } }),
     }),
     getFolderChildren: builder.query<DashboardViewItem[], string | undefined>({
-      providesTags: (_result, _error, arg) => [{ type: 'folderChildren', id: `${arg}` }],
+      providesTags: (_result, _error, arg) => [{ type: 'folderChildren', id: handleGeneralUID(arg) }],
       queryFn: async (folderUID) => {
-        // Need to handle the case where the parentUID is the root
-        const uid = folderUID === GENERAL_FOLDER_UID ? undefined : folderUID;
-        const children = await getFolderChildren(uid, undefined, true);
+        const children = await getFolderChildren(folderUID, undefined, true);
         return {
           data: children,
         };
@@ -124,8 +126,8 @@ export const browseDashboardsAPI = createApi({
       }
     >({
       invalidatesTags: (_result, _error, args) => [
-        { type: 'folderChildren', id: `${args.destinationUID}` },
-        { type: 'folderChildren', id: `${args.parentUID}` },
+        { type: 'folderChildren', id: handleGeneralUID(args.destinationUID) },
+        { type: 'folderChildren', id: handleGeneralUID(args.parentUID) },
       ],
       queryFn: async ({ uid, destinationUID }, _api, _extraOptions, baseQuery) => {
         const fullDash: DashboardDTO = await getBackendSrv().get(`/api/dashboards/uid/${uid}`);
@@ -156,8 +158,8 @@ export const browseDashboardsAPI = createApi({
       }
     >({
       invalidatesTags: (_result, _error, args) => [
-        { type: 'folderChildren', id: `${args.destinationUID}` },
-        { type: 'folderChildren', id: `${args.parentUID}` },
+        { type: 'folderChildren', id: handleGeneralUID(args.destinationUID) },
+        { type: 'folderChildren', id: handleGeneralUID(args.parentUID) },
       ],
       query: ({ uid, destinationUID }) => ({
         url: `/folders/${uid}/move`,
@@ -175,7 +177,6 @@ export const {
   useGetAffectedItemsQuery,
   useGetFolderQuery,
   useGetFolderChildrenQuery,
-  useLazyGetFolderChildrenQuery,
   useMoveDashboardMutation,
   useMoveFolderMutation,
 } = browseDashboardsAPI;

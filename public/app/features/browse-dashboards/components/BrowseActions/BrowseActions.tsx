@@ -48,7 +48,7 @@ export function BrowseActions() {
     for (const folderUID of selectedFolders) {
       // find the folder to get it's parentUID
       const folder = findItem(rootItems ?? [], childrenByParentUID, folderUID);
-      deleteFolder({
+      await deleteFolder({
         uid: folderUID,
         parentUID: folder?.parentUID,
       });
@@ -59,7 +59,7 @@ export function BrowseActions() {
     for (const dashboardUID of selectedDashboards) {
       // find the dashboard to get it's parentUID
       const dashboard = findItem(rootItems ?? [], childrenByParentUID, dashboardUID);
-      deleteDashboard({
+      await deleteDashboard({
         uid: dashboardUID,
         parentUID: dashboard?.parentUID,
       });
@@ -73,7 +73,7 @@ export function BrowseActions() {
     for (const folderUID of selectedFolders) {
       // find the folder to get it's parentUID
       const folder = findItem(rootItems ?? [], childrenByParentUID, folderUID);
-      moveFolder({
+      await moveFolder({
         uid: folderUID,
         parentUID: folder?.parentUID,
         destinationUID,
@@ -85,7 +85,7 @@ export function BrowseActions() {
     for (const dashboardUID of selectedDashboards) {
       // find the dashboard to get it's parentUID
       const dashboard = findItem(rootItems ?? [], childrenByParentUID, dashboardUID);
-      moveDashboard({
+      await moveDashboard({
         uid: dashboardUID,
         parentUID: dashboard?.parentUID,
         destinationUID,

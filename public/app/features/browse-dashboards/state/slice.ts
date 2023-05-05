@@ -5,7 +5,7 @@ import { BrowseDashboardsState } from '../types';
 
 import * as allReducers from './reducers';
 
-const { extraReducerFetchChildrenFulfilled, ...baseReducers } = allReducers;
+const { ...baseReducers } = allReducers;
 
 const initialState: BrowseDashboardsState = {
   rootItems: undefined,
@@ -25,8 +25,25 @@ const browseDashboardsSlice = createSlice({
   reducers: baseReducers,
 
   extraReducers: (builder) => {
-    // builder.addCase(fetchChildren.fulfilled, extraReducerFetchChildrenFulfilled);
-    builder.addMatcher(endpoints.getFolderChildren.matchFulfilled, extraReducerFetchChildrenFulfilled);
+    builder.addMatcher(endpoints.getFolderChildren.matchFulfilled, (state, action) => {
+      const parentUID = action.meta.arg.originalArgs;
+      const children = action.payload;
+
+      if (!parentUID) {
+        state.rootItems = children;
+        return;
+      }
+
+      state.childrenByParentUID[parentUID] = children;
+
+      // If the parent of the items we've loaded are selected, we must select all these items also
+      const parentIsSelected = state.selectedItems.folder[parentUID];
+      if (parentIsSelected) {
+        for (const child of children) {
+          state.selectedItems[child.kind][child.uid] = true;
+        }
+      }
+    });
   },
 });
 

@@ -24,6 +24,8 @@ export async function getFolderChildren(
     return folders;
   }
 
+  const folders = await getChildFolders(parentUid, parentTitle);
+
   const searcher = getGrafanaSearcher();
   const dashboardsResults = await searcher.search({
     kind: ['dashboard'],
@@ -35,8 +37,6 @@ export async function getFolderChildren(
   const dashboardItems = dashboardsResults.view.map((item) => {
     return queryResultToViewItem(item, dashboardsResults.view);
   });
-
-  const folders = await getChildFolders(parentUid, parentTitle);
 
   return [...folders, ...dashboardItems];
 }

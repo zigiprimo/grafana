@@ -2,7 +2,6 @@ import { wellFormedDashboard, wellFormedFolder } from '../fixtures/dashboardsTre
 import { BrowseDashboardsState } from '../types';
 
 import {
-  extraReducerFetchChildrenFulfilled,
   setAllSelection,
   setFolderOpenState,
   setItemSelectionState,
@@ -23,86 +22,6 @@ function createInitialState(): BrowseDashboardsState {
 }
 
 describe('browse-dashboards reducers', () => {
-  describe('extraReducerFetchChildrenFulfilled', () => {
-    it('updates state correctly for root items', () => {
-      const state = createInitialState();
-      const children = [
-        wellFormedFolder(1).item,
-        wellFormedFolder(2).item,
-        wellFormedFolder(3).item,
-        wellFormedDashboard(4).item,
-      ];
-
-      const action = {
-        payload: children,
-        type: 'action-type',
-        meta: {
-          arg: undefined,
-          requestId: 'abc-123',
-          requestStatus: 'fulfilled' as const,
-        },
-      };
-
-      extraReducerFetchChildrenFulfilled(state, action);
-
-      expect(state.rootItems).toEqual(children);
-    });
-
-    it('updates state correctly for items in folders', () => {
-      const state = createInitialState();
-      const parentFolder = wellFormedFolder(1).item;
-      const children = [wellFormedFolder(2).item, wellFormedDashboard(3).item];
-
-      const action = {
-        payload: children,
-        type: 'action-type',
-        meta: {
-          arg: parentFolder.uid,
-          requestId: 'abc-123',
-          requestStatus: 'fulfilled' as const,
-        },
-      };
-
-      extraReducerFetchChildrenFulfilled(state, action);
-
-      expect(state.childrenByParentUID).toEqual({ [parentFolder.uid]: children });
-    });
-
-    it('marks children as selected if the parent is selected', () => {
-      const parentFolder = wellFormedFolder(1).item;
-
-      const state = createInitialState();
-      state.selectedItems.folder[parentFolder.uid] = true;
-
-      const childFolder = wellFormedFolder(2).item;
-      const childDashboard = wellFormedDashboard(3).item;
-
-      const action = {
-        payload: [childFolder, childDashboard],
-        type: 'action-type',
-        meta: {
-          arg: parentFolder.uid,
-          requestId: 'abc-123',
-          requestStatus: 'fulfilled' as const,
-        },
-      };
-
-      extraReducerFetchChildrenFulfilled(state, action);
-
-      expect(state.selectedItems).toEqual({
-        $all: false,
-        dashboard: {
-          [childDashboard.uid]: true,
-        },
-        folder: {
-          [parentFolder.uid]: true,
-          [childFolder.uid]: true,
-        },
-        panel: {},
-      });
-    });
-  });
-
   describe('setFolderOpenState', () => {
     it('updates state correctly', () => {
       const state = createInitialState();

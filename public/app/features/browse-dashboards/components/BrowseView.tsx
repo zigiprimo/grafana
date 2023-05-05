@@ -5,7 +5,7 @@ import EmptyListCTA from 'app/core/components/EmptyListCTA/EmptyListCTA';
 import { DashboardViewItem } from 'app/features/search/types';
 import { useDispatch } from 'app/types';
 
-import { useGetFolderChildrenQuery, useLazyGetFolderChildrenQuery } from '../api/browseDashboardsAPI';
+import { useGetFolderChildrenQuery } from '../api/browseDashboardsAPI';
 import {
   useFlatTreeState,
   useCheckboxSelectionState,
@@ -33,17 +33,12 @@ export function BrowseView({ folderUID, width, height, canSelect }: BrowseViewPr
   const selectedItems = useCheckboxSelectionState();
   const childrenByParentUID = useChildrenByParentUIDState();
   useGetFolderChildrenQuery(folderUID);
-  const [getFolderChildren] = useLazyGetFolderChildrenQuery();
 
   const handleFolderClick = useCallback(
     (clickedFolderUID: string, isOpen: boolean) => {
       dispatch(setFolderOpenState({ folderUID: clickedFolderUID, isOpen }));
-
-      if (isOpen) {
-        getFolderChildren(clickedFolderUID);
-      }
     },
-    [dispatch, getFolderChildren]
+    [dispatch]
   );
 
   const handleItemSelectionChange = useCallback(
