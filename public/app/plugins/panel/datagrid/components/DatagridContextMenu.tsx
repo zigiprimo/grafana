@@ -206,7 +206,7 @@ export const DatagridContextMenu = ({
           label={columnFreezeLabel}
           onClick={() => {
             if (columnFreezeIndex === columnIndex) {
-              dispatch({ type: DatagridActionType.columnFreezeReset });
+              dispatch({ type: DatagridActionType.columnFreezeChanged, payload: { columnIndex: 0 } });
             } else {
               dispatch({ type: DatagridActionType.columnFreezeChanged, payload: { columnIndex } });
             }

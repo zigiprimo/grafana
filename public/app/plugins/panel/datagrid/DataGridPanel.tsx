@@ -35,6 +35,7 @@ import {
   ROW_MARKER_NUMBER,
   hasGridSelection,
   updateSnapshot,
+  ROW_LIMIT,
 } from './utils';
 
 export interface DataGridProps extends PanelProps<PanelOptions> {}
@@ -237,6 +238,10 @@ export function DataGridPanel({ options, data, id, fieldConfig, width, height }:
     return <PanelDataErrorView panelId={id} message="Datagrid is not enabled" fieldConfig={fieldConfig} data={data} />;
   }
 
+  if (frame.length > ROW_LIMIT) {
+    return <PanelDataErrorView panelId={id} message="Row limit exceeded" fieldConfig={fieldConfig} data={data} />;
+  }
+
   if (!document.getElementById('portal')) {
     const portal = document.createElement('div');
     portal.id = 'portal';
@@ -265,7 +270,7 @@ export function DataGridPanel({ options, data, id, fieldConfig, width, height }:
         onSearchClose={onSearchClose}
         gridSelection={gridSelection}
         onGridSelectionChange={isDatagridEnabled() ? onGridSelectionChange : undefined}
-        onRowAppended={isDatagridEnabled() ? addNewRow : undefined}
+        onRowAppended={isDatagridEnabled() && frame.length < ROW_LIMIT ? addNewRow : undefined}
         onDelete={isDatagridEnabled() ? onDeletePressed : undefined}
         rowMarkers={isDatagridEnabled() ? ROW_MARKER_BOTH : ROW_MARKER_NUMBER}
         onColumnResize={onColumnResize}

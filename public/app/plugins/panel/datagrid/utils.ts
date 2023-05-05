@@ -9,6 +9,7 @@ const HEADER_FONT_FAMILY = '600 13px Inter';
 const CELL_FONT_FAMILY = '400 13px Inter';
 const TEXT_CANVAS = document.createElement('canvas');
 
+export const ROW_LIMIT = 20000;
 export const CELL_PADDING = 20;
 export const MAX_COLUMN_WIDTH = 300;
 export const ICON_AND_MENU_WIDTH = 65;

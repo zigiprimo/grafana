@@ -113,9 +113,6 @@ interface OpenSearchAction {
 interface GridSelectionClearedAction {
   type: DatagridActionType.gridSelectionCleared;
 }
-interface ColumnFreezeResetAction {
-  type: DatagridActionType.columnFreezeReset;
-}
 
 export type DatagridAction =
   | UpdateColumnsAction
@@ -132,8 +129,7 @@ export type DatagridAction =
   | CloseContextMenuAction
   | CloseSearchAction
   | OpenSearchAction
-  | GridSelectionClearedAction
-  | ColumnFreezeResetAction;
+  | GridSelectionClearedAction;
 
 export enum DatagridActionType {
   columnResizeStart = 'columnResizeStart',
@@ -338,11 +334,6 @@ export const datagridReducer = (state: DatagridState, action: DatagridAction): D
       return {
         ...state,
         gridSelection: EMPTY_GRID_SELECTION,
-      };
-    case DatagridActionType.columnFreezeReset:
-      return {
-        ...state,
-        columnFreezeIndex: 0,
       };
     case DatagridActionType.columnFreezeChanged:
       const columnFreezeChangedPayload = action.payload;
