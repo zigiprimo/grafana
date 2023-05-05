@@ -7,7 +7,7 @@ import { DeleteDashboardResponse } from 'app/features/manage-dashboards/types';
 import { GENERAL_FOLDER_UID } from 'app/features/search/constants';
 import { getFolderChildren } from 'app/features/search/service/folders';
 import { DashboardViewItem } from 'app/features/search/types';
-import { DashboardDTO, DescendantCount, DescendantCountDTO, FolderDTO } from 'app/types';
+import { DashboardDTO, DescendantCount, DescendantCountDTO, FolderDTO, SaveDashboardResponseDTO } from 'app/types';
 
 import { DashboardTreeSelection } from '../types';
 
@@ -116,9 +116,8 @@ export const browseDashboardsAPI = createApi({
         return { data: totalCounts };
       },
     }),
-    // TODO we can define this return type properly
     moveDashboard: builder.mutation<
-      unknown,
+      SaveDashboardResponseDTO,
       {
         uid: string;
         parentUID?: string;
@@ -129,7 +128,7 @@ export const browseDashboardsAPI = createApi({
         { type: 'folderChildren', id: handleGeneralUID(args.destinationUID) },
         { type: 'folderChildren', id: handleGeneralUID(args.parentUID) },
       ],
-      queryFn: async ({ uid, destinationUID }, _api, _extraOptions, baseQuery) => {
+      queryFn: async ({ uid, destinationUID }) => {
         const fullDash: DashboardDTO = await getBackendSrv().get(`/api/dashboards/uid/${uid}`);
 
         const options = {
@@ -138,19 +137,18 @@ export const browseDashboardsAPI = createApi({
           overwrite: false,
         };
 
-        return baseQuery({
-          url: '/dashboards/db',
-          method: 'POST',
-          data: {
-            message: '',
-            ...options,
-          },
+        const result = await getBackendSrv().post<SaveDashboardResponseDTO>(`/api/dashboards/db`, {
+          message: '',
+          ...options,
         });
+
+        return {
+          data: result,
+        };
       },
     }),
-    // TODO this doesn't return void, find where the correct type is
     moveFolder: builder.mutation<
-      void,
+      FolderDTO,
       {
         uid: string;
         destinationUID: string;
