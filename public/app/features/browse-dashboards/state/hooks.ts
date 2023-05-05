@@ -77,21 +77,33 @@ export function useFlatTreeState(folderUID: string | undefined) {
 export function useHandleSubscription() {
   const subscriptions = useRef<Record<string, any>>({});
   const dispatch = useDispatch();
+  const childrenByParentUID = useSelector(childrenByParentUIDSelector);
 
   const handleSubscription = useCallback((clickedFolderUID: string, isOpen: boolean) => {
     if (isOpen) {
+      // Register a subscription for this folder if it doesn't already exist
       if (!subscriptions.current[clickedFolderUID]) {
         const subscription = dispatch(endpoints.getFolderChildren.initiate(clickedFolderUID));
         subscriptions.current[clickedFolderUID] = subscription;
-        }
+      }
     } else {
       const subscription = subscriptions.current[clickedFolderUID];
+      // Unsubscribe and delete subscription if it exists
       if (subscription) {
         subscription.unsubscribe();
         delete subscriptions.current[clickedFolderUID];
       }
+      // Recursively unsubscribe from all children
+      const children = childrenByParentUID[clickedFolderUID];
+      if (children && children.length > 0) {
+        children.forEach((child) => {
+          if (child.kind === 'folder') {
+            handleSubscription(child.uid, isOpen);
+          }
+        });
+      }
     }
-  }, [subscriptions, dispatch]);
+  }, [childrenByParentUID, subscriptions, dispatch]);
 
   useEffect(() => {
     const subscriptionsCopy = subscriptions.current;
