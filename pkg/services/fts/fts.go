@@ -7,6 +7,7 @@ type Search interface {
 }
 
 type Result struct {
+	ID     int64 `xorm:"pk autoincr 'id'"`
 	Text   string
 	Kind   string
 	UID    string `xorm:"uid"`
