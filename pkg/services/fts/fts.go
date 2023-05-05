@@ -4,6 +4,7 @@ type Search interface {
 	Add(text, kind, uid string, orgID int64, weight int) error
 	Search(query string) ([]Result, error)
 	Delete(kind, uid string, orgID int64) error
+	Close() error
 }
 
 type Result struct {
