@@ -22,10 +22,12 @@ export interface Props {
   sectionNav: NavModelItem;
   pageNav?: NavModelItem;
   actions: React.ReactNode;
+  megaMenuPinned?: boolean;
 }
 
 export function NavToolbar({
   actions,
+  megaMenuPinned,
   searchBarHidden,
   sectionNav,
   pageNav,
@@ -39,15 +41,17 @@ export function NavToolbar({
 
   return (
     <div data-testid={Components.NavToolbar.container} className={styles.pageToolbar}>
-      <div className={styles.menuButton}>
-        <IconButton
-          name="bars"
-          tooltip={t('navigation.toolbar.toggle-menu', 'Toggle menu')}
-          tooltipPlacement="bottom"
-          size="xl"
-          onClick={onToggleMegaMenu}
-        />
-      </div>
+      {!megaMenuPinned && (
+        <div className={styles.menuButton}>
+          <IconButton
+            name="bars"
+            tooltip={t('navigation.toolbar.toggle-menu', 'Toggle menu')}
+            tooltipPlacement="bottom"
+            size="xl"
+            onClick={onToggleMegaMenu}
+          />
+        </div>
+      )}
       <Breadcrumbs breadcrumbs={breadcrumbs} className={styles.breadcrumbs} />
       <div className={styles.actions}>
         {actions}
@@ -80,8 +84,10 @@ const getStyles = (theme: GrafanaTheme2) => {
     pageToolbar: css({
       height: TOP_BAR_LEVEL_HEIGHT,
       display: 'flex',
-      padding: theme.spacing(0, 1, 0, 2),
+      padding: theme.spacing(0, 1, 0, 3),
       alignItems: 'center',
+      flexShrink: 0,
+      borderBottom: `1px solid ${theme.colors.border.weak}`,
     }),
     menuButton: css({
       display: 'flex',

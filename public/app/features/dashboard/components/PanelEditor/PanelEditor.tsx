@@ -500,6 +500,7 @@ export const getStyles = stylesFactory((theme: GrafanaTheme2, props: Props) => {
       minHeight: 0,
       display: 'flex',
       paddingTop: theme.spacing(2),
+      background: theme.colors.background.canvas,
     }),
     verticalSplitPanesWrapper: css`
       display: flex;

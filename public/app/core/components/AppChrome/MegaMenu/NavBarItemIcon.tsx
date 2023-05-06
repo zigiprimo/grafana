@@ -18,7 +18,7 @@ export function NavBarItemIcon({ link }: NavBarItemIconProps) {
     return <Branding.MenuLogo className={styles.img} />;
   } else if (link.icon) {
     const iconName = toIconName(link.icon);
-    return <Icon name={iconName ?? 'link'} size="xl" />;
+    return <Icon name={iconName ?? 'link'} size="md" />;
   } else {
     // consumer of NavBarItemIcon gives enclosing element an appropriate label
     return <img className={cx(styles.img, link.roundIcon && styles.round)} src={link.img} alt="" />;
@@ -28,8 +28,8 @@ export function NavBarItemIcon({ link }: NavBarItemIconProps) {
 function getStyles(theme: GrafanaTheme2) {
   return {
     img: css({
-      height: theme.spacing(3),
-      width: theme.spacing(3),
+      height: theme.spacing(2),
+      width: theme.spacing(2),
     }),
     round: css({
       borderRadius: '50%',

@@ -96,7 +96,12 @@ const getStyles = (theme: GrafanaTheme2, isActive: Props['isActive'], isChild: P
     boxSizing: 'border-box',
     position: 'relative',
     color: isActive ? theme.colors.text.primary : theme.colors.text.secondary,
-    padding: theme.spacing(1, 1, 1, isChild ? 5 : 0),
+    ...(isActive && {
+      background: theme.colors.background.secondary,
+      padding: theme.spacing(0.5),
+      borderRadius: theme.shape.borderRadius(2),
+    }),
+    padding: theme.spacing(0.5, 1, 0.5, isChild ? 2 : 0),
     ...(isChild && {
       borderRadius: theme.shape.borderRadius(),
     }),
@@ -113,18 +118,6 @@ const getStyles = (theme: GrafanaTheme2, isActive: Props['isActive'], isChild: P
       outline: `2px solid ${theme.colors.primary.main}`,
       outlineOffset: '-2px',
       transition: 'none',
-    },
-    '&::before': {
-      display: isActive ? 'block' : 'none',
-      content: '" "',
-      height: theme.spacing(3),
-      position: 'absolute',
-      left: theme.spacing(1),
-      top: '50%',
-      transform: 'translateY(-50%)',
-      width: theme.spacing(0.5),
-      borderRadius: theme.shape.borderRadius(1),
-      backgroundImage: theme.colors.gradients.brandVertical,
     },
   }),
   listItem: css({

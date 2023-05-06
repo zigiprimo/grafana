@@ -18,6 +18,7 @@ export interface AppChromeState {
   actions?: React.ReactNode;
   searchBarHidden?: boolean;
   megaMenuOpen?: boolean;
+  megaMenuPinned?: boolean;
   kioskMode: KioskMode | null;
   layout: PageLayoutType;
 }
@@ -32,6 +33,7 @@ export class AppChromeService {
     sectionNav: { node: { text: t('nav.home.title', 'Home') }, main: { text: '' } },
     searchBarHidden: store.getBool(this.searchBarStorageKey, false),
     kioskMode: null,
+    megaMenuPinned: true,
     layout: PageLayoutType.Canvas,
   });
 

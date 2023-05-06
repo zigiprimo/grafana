@@ -2,17 +2,16 @@ import { css, cx } from '@emotion/css';
 import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
 
-import { GrafanaTheme2, PageLayoutType } from '@grafana/data';
+import { GrafanaTheme2 } from '@grafana/data';
 import { useStyles2 } from '@grafana/ui';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 import { CommandPalette } from 'app/features/commandPalette/CommandPalette';
 import { KioskMode } from 'app/types';
 
-import { MegaMenu } from './MegaMenu/MegaMenu';
+import { MegaMenuNew } from './MegaMenu/MegaMenuNew';
+import { MegaMenuOverlay } from './MegaMenu/MegaMenuOverlay';
 import { NavToolbar } from './NavToolbar/NavToolbar';
-import { SectionNav } from './SectionNav/SectionNav';
 import { TopSearchBar } from './TopBar/TopSearchBar';
-import { TOP_BAR_LEVEL_HEIGHT } from './types';
 
 export interface Props extends PropsWithChildren<{}> {}
 
@@ -35,9 +34,12 @@ export function AppChrome({ children }: Props) {
 
   return (
     <main className={classNames('main-view', searchBarHidden && 'main-view--search-bar-hidden')}>
-      {!state.chromeless && (
-        <div className={cx(styles.topNav)}>
-          {!searchBarHidden && <TopSearchBar />}
+      {!state.chromeless && !searchBarHidden && <TopSearchBar />}
+      <div className={styles.panes}>
+        {state.megaMenuPinned && (
+          <MegaMenuNew onCollapse={() => chrome.update({ megaMenuPinned: false })} onClose={() => {}} />
+        )}
+        <div className={contentClass}>
           <NavToolbar
             searchBarHidden={searchBarHidden}
             sectionNav={state.sectionNav.node}
@@ -46,18 +48,19 @@ export function AppChrome({ children }: Props) {
             onToggleSearchBar={chrome.onToggleSearchBar}
             onToggleMegaMenu={chrome.onToggleMegaMenu}
             onToggleKioskMode={chrome.onToggleKioskMode}
+            megaMenuPinned={state.megaMenuPinned}
           />
-        </div>
-      )}
-      <div className={contentClass}>
-        <div className={styles.panes}>
-          {state.layout === PageLayoutType.Standard && state.sectionNav && <SectionNav model={state.sectionNav} />}
           <div className={styles.pageContainer}>{children}</div>
         </div>
       </div>
+
       {!state.chromeless && (
         <>
-          <MegaMenu searchBarHidden={searchBarHidden} onClose={() => chrome.setMegaMenu(false)} />
+          <MegaMenuOverlay
+            searchBarHidden={searchBarHidden}
+            onClose={() => chrome.setMegaMenu(false)}
+            onPinned={() => chrome.update({ megaMenuPinned: true, megaMenuOpen: false })}
+          />
           <CommandPalette />
         </>
       )}
@@ -74,13 +77,14 @@ const getStyles = (theme: GrafanaTheme2) => {
     content: css({
       display: 'flex',
       flexDirection: 'column',
-      paddingTop: TOP_BAR_LEVEL_HEIGHT * 2,
+      //paddingTop: TOP_BAR_LEVEL_HEIGHT * 2,
       flexGrow: 1,
       height: '100%',
+      minWidth: 0,
     }),
-    contentNoSearchBar: css({
-      paddingTop: TOP_BAR_LEVEL_HEIGHT,
-    }),
+    // contentNoSearchBar: css({
+    //   paddingTop: TOP_BAR_LEVEL_HEIGHT,
+    // }),
     contentChromeless: css({
       paddingTop: 0,
     }),
@@ -102,10 +106,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       width: '100%',
       flexGrow: 1,
       minHeight: 0,
-      flexDirection: 'column',
-      [theme.breakpoints.up('md')]: {
-        flexDirection: 'row',
-      },
+      flexDirection: 'row',
     }),
     pageContainer: css({
       label: 'page-container',

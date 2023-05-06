@@ -5,24 +5,21 @@ import { OverlayContainer, useOverlay } from '@react-aria/overlays';
 import React, { useEffect, useRef, useState } from 'react';
 import CSSTransition from 'react-transition-group/CSSTransition';
 
-import { GrafanaTheme2, NavModelItem } from '@grafana/data';
-import { CustomScrollbar, Icon, IconButton, useTheme2 } from '@grafana/ui';
+import { GrafanaTheme2 } from '@grafana/data';
+import { Icon, IconButton, useTheme2 } from '@grafana/ui';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 
 import { TOP_BAR_LEVEL_HEIGHT } from '../types';
 
-import { NavBarMenuItemWrapper } from './NavBarMenuItemWrapper';
-
-const MENU_WIDTH = '350px';
+import { MegaMenuNew, MENU_WIDTH } from './MegaMenuNew';
 
 export interface Props {
-  activeItem?: NavModelItem;
-  navItems: NavModelItem[];
   searchBarHidden?: boolean;
   onClose: () => void;
+  onPinned?: () => void;
 }
 
-export function NavBarMenu({ activeItem, navItems, searchBarHidden, onClose }: Props) {
+export function MegaMenuOverlay({ searchBarHidden, onClose, onPinned }: Props) {
   const theme = useTheme2();
   const styles = getStyles(theme, searchBarHidden);
   const animationSpeed = theme.transitions.duration.shortest;
@@ -45,6 +42,11 @@ export function NavBarMenu({ activeItem, navItems, searchBarHidden, onClose }: P
     ref
   );
 
+  const onPinnedInternal = () => {
+    onMenuClose();
+    onPinned!();
+  };
+
   useEffect(() => {
     if (state.megaMenuOpen) {
       setIsOpen(true);
@@ -52,58 +54,59 @@ export function NavBarMenu({ activeItem, navItems, searchBarHidden, onClose }: P
   }, [state.megaMenuOpen]);
 
   return (
-    <OverlayContainer>
-      <CSSTransition
-        nodeRef={ref}
-        in={isOpen}
-        unmountOnExit={true}
-        classNames={animStyles.overlay}
-        timeout={{ enter: animationSpeed, exit: 0 }}
-        onExited={onClose}
-      >
-        <FocusScope contain autoFocus>
-          <div data-testid="navbarmenu" ref={ref} {...overlayProps} {...dialogProps} className={styles.container}>
-            <div className={styles.mobileHeader}>
-              <Icon name="bars" size="xl" />
-              <IconButton
-                aria-label="Close navigation menu"
-                name="times"
-                onClick={onMenuClose}
-                size="xl"
-                variant="secondary"
-              />
+    <div className={styles.menuWrapper}>
+      <OverlayContainer>
+        <CSSTransition
+          nodeRef={ref}
+          in={isOpen}
+          unmountOnExit={true}
+          classNames={animStyles.overlay}
+          timeout={{ enter: animationSpeed, exit: 0 }}
+          onExited={onClose}
+        >
+          <FocusScope contain autoFocus>
+            <div data-testid="navbarmenu" ref={ref} {...overlayProps} {...dialogProps} className={styles.container}>
+              <div className={styles.mobileHeader}>
+                <Icon name="bars" size="xl" />
+                <IconButton
+                  aria-label="Close navigation menu"
+                  name="times"
+                  onClick={onMenuClose}
+                  size="xl"
+                  variant="secondary"
+                />
+              </div>
+              <MegaMenuNew onClose={onMenuClose} onPinned={onPinnedInternal} />
             </div>
-            <nav className={styles.content}>
-              <CustomScrollbar showScrollIndicators hideHorizontalTrack>
-                <ul className={styles.itemList}>
-                  {navItems.map((link) => (
-                    <NavBarMenuItemWrapper link={link} onClose={onMenuClose} activeItem={activeItem} key={link.text} />
-                  ))}
-                </ul>
-              </CustomScrollbar>
-            </nav>
-          </div>
-        </FocusScope>
-      </CSSTransition>
-      <CSSTransition
-        nodeRef={backdropRef}
-        in={isOpen}
-        unmountOnExit={true}
-        classNames={animStyles.backdrop}
-        timeout={{ enter: animationSpeed, exit: 0 }}
-      >
-        <div ref={backdropRef} className={styles.backdrop} {...underlayProps} />
-      </CSSTransition>
-    </OverlayContainer>
+          </FocusScope>
+        </CSSTransition>
+        <CSSTransition
+          nodeRef={backdropRef}
+          in={isOpen}
+          unmountOnExit={true}
+          classNames={animStyles.backdrop}
+          timeout={{ enter: animationSpeed, exit: 0 }}
+        >
+          <div ref={backdropRef} className={styles.backdrop} {...underlayProps} />
+        </CSSTransition>
+      </OverlayContainer>
+    </div>
   );
 }
 
-NavBarMenu.displayName = 'NavBarMenu';
+MegaMenuOverlay.displayName = 'NavBarMenu';
 
 const getStyles = (theme: GrafanaTheme2, searchBarHidden?: boolean) => {
-  const topPosition = (searchBarHidden ? TOP_BAR_LEVEL_HEIGHT : TOP_BAR_LEVEL_HEIGHT * 2) + 1;
+  const topPosition = (searchBarHidden ? TOP_BAR_LEVEL_HEIGHT : TOP_BAR_LEVEL_HEIGHT * 2) - 1;
 
   return {
+    menuWrapper: css({
+      position: 'fixed',
+      display: 'grid',
+      gridAutoFlow: 'column',
+      height: '100%',
+      zIndex: theme.zIndex.sidemenu,
+    }),
     backdrop: css({
       backdropFilter: 'blur(1px)',
       backgroundColor: theme.components.overlay.background,

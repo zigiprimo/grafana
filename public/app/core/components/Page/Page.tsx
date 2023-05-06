@@ -97,7 +97,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       label: 'page-inner',
       padding: theme.spacing(2),
       borderRadius: theme.shape.borderRadius(1),
-      border: `1px solid ${theme.colors.border.weak}`,
+      //border: `1px solid ${theme.colors.border.weak}`,
       borderBottom: 'none',
       background: theme.colors.background.primary,
       display: 'flex',
@@ -106,7 +106,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       margin: theme.spacing(0, 0, 0, 0),
 
       [theme.breakpoints.up('md')]: {
-        margin: theme.spacing(2, 2, 0, 1),
+        //margin: theme.spacing(2, 2, 0, 1),
         padding: theme.spacing(3),
       },
     }),
@@ -114,9 +114,10 @@ const getStyles = (theme: GrafanaTheme2) => {
       label: 'canvas-content',
       display: 'flex',
       flexDirection: 'column',
-      padding: theme.spacing(2),
+      padding: theme.spacing(3),
       flexBasis: '100%',
       flexGrow: 1,
+      background: theme.colors.background.canvas,
     }),
   };
 };

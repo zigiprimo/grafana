@@ -83,11 +83,8 @@ const getStyles = (theme: GrafanaTheme2) => ({
     placeContent: 'center',
   }),
   itemWithoutMenuContent: css({
-    display: 'grid',
-    gridAutoFlow: 'column',
-    gridTemplateColumns: `${theme.spacing(7)} auto`,
-    alignItems: 'center',
-    height: '100%',
+    display: 'flex',
+    gap: theme.spacing(2),
   }),
   linkText: css({
     fontSize: theme.typography.pxToRem(14),
