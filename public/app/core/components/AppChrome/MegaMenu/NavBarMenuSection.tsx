@@ -13,15 +13,15 @@ import { hasChildMatch } from './utils';
 export function NavBarMenuSection({
   link,
   activeItem,
-  children,
   className,
   onClose,
+  depth = 0,
 }: {
   link: NavModelItem;
   activeItem?: NavModelItem;
-  children: React.ReactNode;
   className?: string;
   onClose?: () => void;
+  depth?: number;
 }) {
   const styles = useStyles2(getStyles);
   const FeatureHighlightWrapper = link.highlightText ? NavFeatureHighlight : React.Fragment;
@@ -48,13 +48,15 @@ export function NavBarMenuSection({
               [styles.hasActiveChild]: hasActiveChild,
             })}
           >
-            <FeatureHighlightWrapper>
-              <NavBarItemIcon link={link} />
-            </FeatureHighlightWrapper>
+            {depth < 2 && (
+              <FeatureHighlightWrapper>
+                <NavBarItemIcon link={link} />
+              </FeatureHighlightWrapper>
+            )}
             {link.text}
           </div>
         </NavBarMenuItem>
-        {children && (
+        {linkHasChildren(link) && (
           <Button
             aria-label={`${sectionExpanded ? 'Collapse' : 'Expand'} section`}
             variant="secondary"
@@ -62,11 +64,27 @@ export function NavBarMenuSection({
             className={styles.collapseButton}
             onClick={() => setSectionExpanded(!sectionExpanded)}
           >
-            <Icon name={sectionExpanded ? 'angle-up' : 'angle-down'} size="xl" />
+            <Icon name={sectionExpanded ? 'angle-up' : 'angle-down'} size="md" />
           </Button>
         )}
       </div>
-      {sectionExpanded && children}
+      {sectionExpanded && linkHasChildren(link) && (
+        <ul className={cx(styles.children, depth > 0 && styles.deepChildren)}>
+          {link.children!.map((childLink) => {
+            return (
+              !childLink.isCreateAction && (
+                <NavBarMenuSection
+                  key={`${link.text}-${childLink.text}`}
+                  activeItem={activeItem}
+                  link={childLink}
+                  onClose={onClose}
+                  depth={depth + 1}
+                />
+              )
+            );
+          })}
+        </ul>
+      )}
     </>
   );
 }
@@ -89,28 +107,36 @@ const getStyles = (theme: GrafanaTheme2) => ({
   }),
   labelWrapper: css({
     display: 'flex',
-    gap: theme.spacing(2),
+    gap: theme.spacing(1),
     fontSize: theme.typography.pxToRem(14),
     fontWeight: theme.typography.fontWeightMedium,
     alignItems: 'center',
   }),
   isActive: css({
     color: theme.colors.text.primary,
-
-    // '&::before': {
-    //   display: 'block',
-    //   content: '" "',
-    //   height: theme.spacing(3),
-    //   position: 'absolute',
-    //   left: theme.spacing(1),
-    //   top: '50%',
-    //   transform: 'translateY(-50%)',
-    //   width: theme.spacing(0.5),
-    //   borderRadius: theme.shape.borderRadius(1),
-    //   backgroundImage: theme.colors.gradients.brandVertical,
-    // },
   }),
   hasActiveChild: css({
     color: theme.colors.text.primary,
   }),
+  children: css({
+    display: 'flex',
+    flexDirection: 'column',
+    paddingLeft: theme.spacing(2),
+  }),
+  deepChildren: css({
+    paddingLeft: theme.spacing(3),
+    position: 'relative',
+    '&::before': {
+      content: '""',
+      height: '100%',
+      position: 'absolute',
+      width: 1,
+      left: 16,
+      borderLeft: `1px solid ${theme.colors.border.weak}`,
+    },
+  }),
 });
+
+function linkHasChildren(link: NavModelItem): link is NavModelItem & { children: NavModelItem[] } {
+  return Boolean(link.children && link.children.length > 0);
+}

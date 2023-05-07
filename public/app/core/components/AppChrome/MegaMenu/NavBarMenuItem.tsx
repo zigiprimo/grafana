@@ -97,11 +97,11 @@ const getStyles = (theme: GrafanaTheme2, isActive: Props['isActive'], isChild: P
     position: 'relative',
     color: isActive ? theme.colors.text.primary : theme.colors.text.secondary,
     ...(isActive && {
-      background: theme.colors.background.secondary,
+      background: theme.colors.action.selected,
       padding: theme.spacing(0.5),
       borderRadius: theme.shape.borderRadius(2),
     }),
-    padding: theme.spacing(0.5, 1, 0.5, isChild ? 2 : 0),
+    padding: theme.spacing(0.5, 1),
     ...(isChild && {
       borderRadius: theme.shape.borderRadius(),
     }),

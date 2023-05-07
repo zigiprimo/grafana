@@ -7,7 +7,7 @@ import { GrafanaTheme2 } from '@grafana/data';
 import { CustomScrollbar, useStyles2, Button } from '@grafana/ui';
 import { useSelector } from 'app/types';
 
-import { NavBarMenuItemWrapper } from './NavBarMenuItemWrapper';
+import { NavBarMenuSection } from './NavBarMenuSection';
 import { enrichWithInteractionTracking, getActiveItem } from './utils';
 
 export interface Props {
@@ -35,7 +35,7 @@ export const MegaMenuNew = React.memo<Props>(({ onClose, onCollapse, onPinned })
       <CustomScrollbar showScrollIndicators hideHorizontalTrack>
         <ul className={styles.itemList}>
           {navItems.map((link) => (
-            <NavBarMenuItemWrapper link={link} onClose={onClose} activeItem={activeItem} key={link.text} />
+            <NavBarMenuSection onClose={onClose} link={link} activeItem={activeItem} key={link.text} />
           ))}
         </ul>
       </CustomScrollbar>
@@ -59,7 +59,7 @@ export const MegaMenuNew = React.memo<Props>(({ onClose, onCollapse, onPinned })
 
 MegaMenuNew.displayName = 'MegaMenuNew';
 
-export const MENU_WIDTH = '280px';
+export const MENU_WIDTH = '250px';
 
 const getStyles = (theme: GrafanaTheme2) => ({
   menuWrapper: css({
@@ -78,7 +78,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
   itemList: css({
     display: 'flex',
     flexDirection: 'column',
-    padding: theme.spacing(1, 2),
+    padding: theme.spacing(1, 2, 1, 1),
     flexGrow: 1,
   }),
 });

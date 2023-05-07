@@ -487,6 +487,7 @@ func (s *ServiceImpl) buildDataConnectionsNavLink(c *contextmodel.ReqContext) *n
 			Text:     "Add new connection",
 			SubTitle: "Browse and create new connections",
 			Url:      baseUrl + "/add-new-connection",
+			Icon:     "plus",
 			Children: []*navtree.NavLink{},
 		})
 
@@ -496,6 +497,7 @@ func (s *ServiceImpl) buildDataConnectionsNavLink(c *contextmodel.ReqContext) *n
 			Text:     "Data sources",
 			SubTitle: "View and manage your connected data source connections",
 			Url:      baseUrl + "/datasources",
+			Icon:     "database",
 			Children: []*navtree.NavLink{},
 		})
 	}
