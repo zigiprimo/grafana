@@ -1,10 +1,17 @@
 package fts
 
+import (
+	"context"
+
+	"github.com/grafana/grafana/pkg/infra/db"
+)
+
 type Search interface {
-	Add(text, kind, uid string, orgID int64, weight int) error
-	Search(query string) ([]Result, error)
-	Delete(kind, uid string, orgID int64) error
-	Close() error
+	DB() db.DB
+	Add(ctx context.Context, text, kind, uid string, orgID int64, weight int) error
+	Search(ctx context.Context, query string) ([]Result, error)
+	Delete(ctx context.Context, kind, uid string, orgID int64) error
+	Close(ctx context.Context) error
 }
 
 type Result struct {
