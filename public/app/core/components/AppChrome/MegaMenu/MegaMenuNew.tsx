@@ -59,7 +59,7 @@ export const MegaMenuNew = React.memo<Props>(({ onClose, onCollapse, onPinned })
 
 MegaMenuNew.displayName = 'MegaMenuNew';
 
-export const MENU_WIDTH = '250px';
+export const MENU_WIDTH = '270px';
 
 const getStyles = (theme: GrafanaTheme2) => ({
   menuWrapper: css({

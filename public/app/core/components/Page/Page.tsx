@@ -107,7 +107,7 @@ const getStyles = (theme: GrafanaTheme2) => {
 
       [theme.breakpoints.up('md')]: {
         //margin: theme.spacing(2, 2, 0, 1),
-        padding: theme.spacing(3),
+        padding: theme.spacing(3, 4),
       },
     }),
     canvasContent: css({

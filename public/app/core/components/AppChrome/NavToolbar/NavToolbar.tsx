@@ -84,7 +84,7 @@ const getStyles = (theme: GrafanaTheme2) => {
     pageToolbar: css({
       height: TOP_BAR_LEVEL_HEIGHT,
       display: 'flex',
-      padding: theme.spacing(0, 1, 0, 3),
+      padding: theme.spacing(0, 1, 0, 4),
       alignItems: 'center',
       flexShrink: 0,
       borderBottom: `1px solid ${theme.colors.border.weak}`,
