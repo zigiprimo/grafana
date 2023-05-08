@@ -63,7 +63,7 @@ func (bs *blugeSearcher) Search(query string) ([]Result, error) {
 	}
 	defer r.Close()
 	q := bluge.NewPrefixQuery(query).SetField("text")
-	request := bluge.NewAllMatches(q)
+	request := bluge.NewTopNSearch(50, q)
 	documentMatchIterator, err := r.Search(context.Background(), request)
 	if err != nil {
 		return nil, err

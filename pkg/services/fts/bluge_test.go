@@ -131,13 +131,12 @@ func TestSimpleSearch(t *testing.T) {
 		Matches []string
 	}{
 		{"day", []string{"One Day in the Life of Ivan Denisovich by Alexander Solzhenitsyn (1962)"}},
-		{"sea", []string{"Wide Sargasso Sea by Jean Rhys (1966)", "The Sea, The Sea by Iris Murdoch (1978)"}},
+		{"sea", []string{"The Sea, The Sea by Iris Murdoch (1978)", "Wide Sargasso Sea by Jean Rhys (1966)"}},
 		{"count", []string{"Another Country by James Baldwin (1962)", "The Count of Monte Cristo by Alexandre Dumas (1844)"}},
-		{"1938", []string{"The Death of the Heart by Elizabeth Bowen (1938)", "The Code of the Woosters by P. G. Wodehouse (1938)", "Scoop by Evelyn Waugh (1938)"}},
+		{"1938", []string{"Scoop by Evelyn Waugh (1938)", "The Death of the Heart by Elizabeth Bowen (1938)", "The Code of the Woosters by P. G. Wodehouse (1938)"}},
 		{"atlas", nil}, // Atlas ¯\_(ツ)_/¯
 
 		// TODO: make "bronte" find all of the Bront[eë]s
-		// TODO: should "sky" or "ov" match all the depressing russians?
 	} {
 		res, err := search.Search(test.Query)
 		if err != nil {
