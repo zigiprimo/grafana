@@ -77,7 +77,7 @@ const getStyles = (theme: GrafanaTheme2) => {
     breadcrumbs: css({
       maxWidth: '60%',
       [theme.breakpoints.down('md')]: {
-        maxWidth: '50%',
+        maxWidth: '45%',
       },
     }),
     pageToolbar: css({
