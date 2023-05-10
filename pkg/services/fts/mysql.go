@@ -41,7 +41,7 @@ func (m *mysqlSearch) Delete(kind, uid string, orgID int64) error {
 
 func (m *mysqlSearch) Search(query string) ([]Result, error) {
 	rows, err := m.db.GetSqlxSession().Query(context.Background(), `
-		SELECT kind, org_id, uid, MATCH(text) AGAINST (? IN NATURAL LANGUAGE MODE) as rel FROM fts WHERE MATCH(text) AGAINST(? IN NATURAL LANGUAGE MODE)
+		SELECT kind, org_id, uid, MATCH(text) AGAINST (? IN BOOLEAN MODE) as rel FROM fts WHERE MATCH(text) AGAINST(? IN BOOLEAN MODE)
 	`, query, query)
 	if err != nil {
 		return nil, err
