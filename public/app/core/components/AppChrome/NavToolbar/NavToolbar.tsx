@@ -75,7 +75,10 @@ export function NavToolbar({
 const getStyles = (theme: GrafanaTheme2) => {
   return {
     breadcrumbs: css({
-      maxWidth: '50%',
+      maxWidth: '60%',
+      [theme.breakpoints.down('md')]: {
+        maxWidth: '50%',
+      },
     }),
     pageToolbar: css({
       height: TOP_BAR_LEVEL_HEIGHT,
