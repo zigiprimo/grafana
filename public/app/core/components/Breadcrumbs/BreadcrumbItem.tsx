@@ -4,7 +4,7 @@ import React from 'react';
 import { GrafanaTheme2, NavModelItem } from '@grafana/data';
 import { Components } from '@grafana/e2e-selectors';
 import { reportInteraction } from '@grafana/runtime';
-import { Button, Dropdown, Icon, Menu, useStyles2 } from '@grafana/ui';
+import { Dropdown, Icon, Menu, useStyles2 } from '@grafana/ui';
 
 import { Breadcrumb } from './types';
 
@@ -14,7 +14,7 @@ type Props = Breadcrumb & {
   flexGrow: number;
 };
 
-const useMenuFeature = new URLSearchParams(window.location.href).get('useMenus') != null;
+const useMenuFeature = new URLSearchParams(window.location.search).get('useMenus') != null;
 
 export function BreadcrumbItem({ href, isCurrent, text, index, flexGrow, navItem }: Props) {
   const styles = useStyles2(getStyles);
