@@ -71,7 +71,6 @@ func testSearch(t *testing.T, search Search) {
 		// {"poem:keeper", []string{"1", "4", "5"}, false},
 		// TODO: weight ordering
 	} {
-		t.Log("QUERY:", test.Query)
 		res, err := search.Search(context.Background(), test.Query)
 		if err != nil {
 			t.Fatal(test.Query, err)
