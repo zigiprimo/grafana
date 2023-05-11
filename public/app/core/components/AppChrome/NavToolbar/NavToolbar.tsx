@@ -52,7 +52,7 @@ export function NavToolbar({
           />
         </div>
       )}
-      <Breadcrumbs breadcrumbs={breadcrumbs} className={styles.breadcrumbs} />
+      <Breadcrumbs breadcrumbs={breadcrumbs} className={styles.breadcrumbsWrapper} />
       <div className={styles.actions}>
         {actions}
         {actions && <NavToolbarSeparator />}
@@ -78,8 +78,12 @@ export function NavToolbar({
 
 const getStyles = (theme: GrafanaTheme2) => {
   return {
-    breadcrumbs: css({
-      maxWidth: '50%',
+    breadcrumbsWrapper: css({
+      display: 'flex',
+      overflow: 'hidden',
+      [theme.breakpoints.down('sm')]: {
+        minWidth: '50%',
+      },
     }),
     pageToolbar: css({
       height: TOP_BAR_LEVEL_HEIGHT,

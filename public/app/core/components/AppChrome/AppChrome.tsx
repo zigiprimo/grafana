@@ -113,5 +113,15 @@ const getStyles = (theme: GrafanaTheme2) => {
       flexGrow: 1,
       minHeight: 0,
     }),
+    skipLink: css({
+      position: 'absolute',
+      top: -1000,
+
+      ':focus': {
+        left: theme.spacing(1),
+        top: theme.spacing(1),
+        zIndex: theme.zIndex.portal,
+      },
+    }),
   };
 };
