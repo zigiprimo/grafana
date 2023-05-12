@@ -20,7 +20,14 @@ export function NewsContainer({ className }: NewsContainerProps) {
 
   return (
     <>
-      <ToolbarButton className={className} onClick={onChildClick} iconOnly icon="rss" aria-label="News" />
+      <ToolbarButton
+        className={className}
+        onClick={onChildClick}
+        iconOnly
+        icon="rss"
+        aria-label="News"
+        variant="default"
+      />
       {showNewsDrawer && (
         <Drawer
           title={t('news.title', 'Latest from the blog')}
