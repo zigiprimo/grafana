@@ -166,11 +166,7 @@ const getStyles = (theme: GrafanaTheme2) => {
     `,
     drawer: css`
       .main-view & {
-        top: 81px;
-      }
-
-      .main-view--search-bar-hidden & {
-        top: 41px;
+        top: 54px;
       }
 
       .rc-drawer-content-wrapper {

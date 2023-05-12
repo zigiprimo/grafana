@@ -340,7 +340,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
     const inspectPanel = this.getInspectPanel();
     const showSubMenu = !editPanel && !kioskMode && !this.props.queryParams.editview;
 
-    const showToolbar = kioskMode !== KioskMode.Full && !queryParams.editview;
+    //const showToolbar = kioskMode !== KioskMode.Full && !queryParams.editview;
 
     const pageClassName = cx({
       'panel-in-fullscreen': Boolean(viewPanel),
@@ -365,24 +365,17 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
           scrollRef={this.setScrollRef}
           scrollTop={updateScrollTop}
         >
-          {showToolbar && (
-            <header data-testid={selectors.pages.Dashboard.DashNav.navV2}>
-              <DashNav
-                dashboard={dashboard}
-                title={dashboard.title}
-                folderTitle={dashboard.meta.folderTitle}
-                isFullscreen={!!viewPanel}
-                onAddPanel={this.onAddPanel}
-                kioskMode={kioskMode}
-                hideTimePicker={dashboard.timepicker.hidden}
-              />
-            </header>
-          )}
           <DashboardPrompt dashboard={dashboard} />
           {initError && <DashboardFailed />}
           {showSubMenu && (
             <section aria-label={selectors.pages.Dashboard.SubMenu.submenu}>
-              <SubMenu dashboard={dashboard} annotations={dashboard.annotations.list} links={dashboard.links} />
+              <SubMenu
+                dashboard={dashboard}
+                annotations={dashboard.annotations.list}
+                links={dashboard.links}
+                onAddPanel={this.onAddPanel}
+                kioskMode={kioskMode}
+              />
             </section>
           )}
           <DashboardGrid

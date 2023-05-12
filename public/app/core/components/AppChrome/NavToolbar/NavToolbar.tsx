@@ -75,6 +75,7 @@ export function NavToolbar({
           <ToolbarButton
             onClick={onToggleKioskMode}
             narrow
+            variant="default"
             title={t('navigation.toolbar.enable-kiosk', 'Enable kiosk mode')}
             icon="monitor"
           />
@@ -84,6 +85,7 @@ export function NavToolbar({
         {profileNode && (
           <Dropdown overlay={() => <TopNavBarMenu node={profileNode} />} placement="bottom-end">
             <ToolbarButton
+              variant="default"
               className={styles.profileButton}
               imgSrc={contextSrv.user.gravatarUrl}
               imgAlt="User avatar"

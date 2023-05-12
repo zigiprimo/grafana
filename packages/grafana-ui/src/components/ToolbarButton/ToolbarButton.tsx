@@ -53,7 +53,7 @@ export const ToolbarButton = forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       fullWidth,
       isOpen,
       narrow,
-      variant = 'default',
+      variant = 'canvas',
       iconOnly,
       'aria-label': ariaLabel,
       isHighlighted,

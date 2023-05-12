@@ -197,6 +197,8 @@ export const DashNav = React.memo<Props>((props) => {
     }
 
     addCustomContent(customLeftActions, buttons);
+
+    buttons.push(<NavToolbarSeparator leftActionsSeparator />);
     return buttons;
   };
 
@@ -230,7 +232,12 @@ export const DashNav = React.memo<Props>((props) => {
     }
 
     return (
-      <DashNavTimeControls dashboard={dashboard} onChangeTimeZone={updateTimeZoneForSession} key="time-controls" />
+      <DashNavTimeControls
+        dashboard={dashboard}
+        onChangeTimeZone={updateTimeZoneForSession}
+        key="time-controls"
+        isOnCanvas={true}
+      />
     );
   };
 
@@ -324,15 +331,10 @@ export const DashNav = React.memo<Props>((props) => {
   };
 
   return (
-    <AppChromeUpdate
-      actions={
-        <>
-          {renderLeftActions()}
-          <NavToolbarSeparator leftActionsSeparator />
-          <ToolbarButtonRow alignment="right">{renderRightActions()}</ToolbarButtonRow>
-        </>
-      }
-    />
+    <>
+      <AppChromeUpdate actions={renderLeftActions()} />
+      <ToolbarButtonRow alignment="right">{renderRightActions()}</ToolbarButtonRow>
+    </>
   );
 });
 

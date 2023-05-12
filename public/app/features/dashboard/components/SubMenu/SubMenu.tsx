@@ -3,12 +3,14 @@ import React, { PureComponent } from 'react';
 import { connect, MapStateToProps } from 'react-redux';
 
 import { AnnotationQuery, DataQuery } from '@grafana/data';
+import { selectors } from '@grafana/e2e-selectors';
 
-import { StoreState } from '../../../../types';
+import { KioskMode, StoreState } from '../../../../types';
 import { getSubMenuVariables, getVariablesState } from '../../../variables/state/selectors';
 import { VariableModel } from '../../../variables/types';
-import { DashboardModel } from '../../state';
+import { DashboardModel, PanelModel } from '../../state';
 import { DashboardLink } from '../../state/DashboardModel';
+import { DashNav } from '../DashNav';
 
 import { Annotations } from './Annotations';
 import { DashboardLinks } from './DashboardLinks';
@@ -18,6 +20,9 @@ interface OwnProps {
   dashboard: DashboardModel;
   links: DashboardLink[];
   annotations: AnnotationQuery[];
+  viewPanel?: PanelModel;
+  kioskMode?: KioskMode | null;
+  onAddPanel: () => void;
 }
 
 interface ConnectedProps {
@@ -43,11 +48,7 @@ class SubMenuUnConnected extends PureComponent<Props> {
   };
 
   render() {
-    const { dashboard, variables, links, annotations } = this.props;
-
-    if (!dashboard.isSubMenuVisible()) {
-      return null;
-    }
+    const { dashboard, variables, links, annotations, onAddPanel, viewPanel, kioskMode } = this.props;
 
     const readOnlyVariables = dashboard.meta.isSnapshot ?? false;
 
@@ -63,6 +64,17 @@ class SubMenuUnConnected extends PureComponent<Props> {
         />
         <div className="gf-form gf-form--grow" />
         {dashboard && <DashboardLinks dashboard={dashboard} links={links} />}
+        <header data-testid={selectors.pages.Dashboard.DashNav.navV2}>
+          <DashNav
+            dashboard={dashboard}
+            title={dashboard.title}
+            folderTitle={dashboard.meta.folderTitle}
+            isFullscreen={!!viewPanel}
+            onAddPanel={onAddPanel}
+            kioskMode={kioskMode}
+            hideTimePicker={dashboard.timepicker.hidden}
+          />
+        </header>
       </div>
     );
   }
