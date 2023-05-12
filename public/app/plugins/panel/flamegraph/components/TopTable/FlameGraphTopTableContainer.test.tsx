@@ -5,14 +5,12 @@ import { CoreApp, createDataFrame } from '@grafana/data';
 
 import { FlameGraphDataContainer, nestedSetToLevels } from '../FlameGraph/dataTransform';
 import { data } from '../FlameGraph/testData/dataNestedSet';
-import { SelectedView } from '../types';
 
 import FlameGraphTopTableContainer from './FlameGraphTopTableContainer';
 
 describe('FlameGraphTopTableContainer', () => {
   const FlameGraphTopTableContainerWithProps = () => {
     const [search, setSearch] = useState('');
-    const [selectedView, _] = useState(SelectedView.Both);
 
     const flameGraphData = createDataFrame(data);
     const container = new FlameGraphDataContainer(flameGraphData);
@@ -23,7 +21,6 @@ describe('FlameGraphTopTableContainer', () => {
         data={container}
         app={CoreApp.Explore}
         totalLevels={levels.length}
-        selectedView={selectedView}
         search={search}
         setSearch={setSearch}
         setTopLevelIndex={jest.fn()}

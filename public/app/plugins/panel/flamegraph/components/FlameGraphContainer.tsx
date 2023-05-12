@@ -83,7 +83,6 @@ const FlameGraphContainer = (props: Props) => {
                 data={dataContainer}
                 app={props.app}
                 totalLevels={levels.length}
-                selectedView={selectedView}
                 search={search}
                 setSearch={setSearch}
                 setTopLevelIndex={setTopLevelIndex}

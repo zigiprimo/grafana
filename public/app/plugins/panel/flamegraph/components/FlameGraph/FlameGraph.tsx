@@ -52,7 +52,6 @@ type Props = {
 
 const FlameGraph = ({
   data,
-  app,
   levels,
   topLevelIndex,
   selectedBarIndex,

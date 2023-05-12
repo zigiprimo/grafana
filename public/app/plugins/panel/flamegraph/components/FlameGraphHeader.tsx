@@ -1,9 +1,12 @@
 import { css } from '@emotion/css';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useDebounce } from 'react-use';
 
 import { GrafanaTheme2, CoreApp } from '@grafana/data';
+import { reportInteraction } from '@grafana/runtime';
 import { Button, Input, RadioButtonGroup, useStyles2 } from '@grafana/ui';
 
+import { config } from '../../../../core/config';
 import { MIN_WIDTH_TO_SHOW_BOTH_TOPTABLE_AND_FLAMEGRAPH } from '../constants';
 
 import { SelectedView } from './types';
@@ -48,6 +51,8 @@ const FlameGraphHeader = ({
     });
   }
 
+  const [localSearch, setLocalSearch] = useSearchInput(search, setSearch, app);
+
   const onResetView = () => {
     setTopLevelIndex(0);
     setSelectedBarIndex(0);
@@ -61,9 +66,9 @@ const FlameGraphHeader = ({
       <div className={styles.leftContainer}>
         <div className={styles.inputContainer}>
           <Input
-            value={search || ''}
-            onChange={(v) => {
-              setSearch(v.currentTarget.value);
+            value={localSearch || ''}
+            onChange={(e) => {
+              setLocalSearch(e.currentTarget.value);
             }}
             placeholder={'Search..'}
             width={44}
@@ -79,6 +84,11 @@ const FlameGraphHeader = ({
           options={viewOptions}
           value={selectedView}
           onChange={(view) => {
+            reportInteraction('grafana_flamegraph_view_selected', {
+              app,
+              grafana_version: config.buildInfo.version,
+              view,
+            });
             setSelectedView(view);
           }}
         />
@@ -86,6 +96,45 @@ const FlameGraphHeader = ({
     </div>
   );
 };
+
+function useSearchInput(
+  search: string,
+  setSearch: (search: string) => void,
+  app: CoreApp
+): [string | undefined, (search: string) => void] {
+  const [localSearchState, setLocalSearchState] = useState(search);
+  // Debouncing cause changing parent search triggers rerender on both the flamegraph and table
+  const [isReady] = useDebounce(
+    () => {
+      setSearch(localSearchState);
+    },
+    250,
+    [localSearchState]
+  );
+
+  // Debouncing this differently just so we don't have as many events as that is not needed.
+  useDebounce(
+    () => {
+      reportInteraction('grafana_flamegraph_search_input_changed_manually', {
+        app,
+        grafana_version: config.buildInfo.version,
+      });
+    },
+    1000,
+    [localSearchState]
+  );
+
+  // Make sure we still handle updates from parent (from clicking on a table item). To make this bidirectional flow
+  // work we have to be checking the state of the debounce cause while debouncing the local state and the parent state
+  // will differ by design. Only if we are not debouncing and the parent state changes we have to update.
+  useEffect(() => {
+    if (isReady() && search !== localSearchState) {
+      setLocalSearchState(search);
+    }
+  }, [search, localSearchState, isReady]);
+
+  return [localSearchState, setLocalSearchState];
+}
 
 const getStyles = (theme: GrafanaTheme2, app: CoreApp) => ({
   header: css`
