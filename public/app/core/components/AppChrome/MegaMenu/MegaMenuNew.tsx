@@ -46,21 +46,6 @@ export const MegaMenuNew = React.memo<Props>(({ onClose, onCollapse, onPinned })
     <nav className={styles.menuWrapper}>
       <div className={styles.header}>
         <div className={styles.headerLevel}>
-          <LinkButton icon="grafana" variant="secondary" fill="text" onClick={onClose} href={homeUrl}>
-            Grafana
-          </LinkButton>
-          {profileNode && (
-            <Dropdown overlay={() => <TopNavBarMenu node={profileNode} />} placement="bottom-end">
-              <ToolbarButton
-                className={styles.profileButton}
-                imgSrc={contextSrv.user.gravatarUrl}
-                imgAlt="User avatar"
-                aria-label="Profile"
-              />
-            </Dropdown>
-          )}
-        </div>
-        <div className={styles.headerLevel}>
           <TopSearchBarCommandPaletteTrigger />
           <QuickAdd />
         </div>
