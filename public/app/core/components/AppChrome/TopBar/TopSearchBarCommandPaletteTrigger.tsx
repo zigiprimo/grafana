@@ -83,10 +83,11 @@ const getStyles = (theme: GrafanaTheme2) => {
     wrapper: cx(
       baseStyles.wrapper,
       css({
-        height: 26,
+        height: 24,
         width: 'auto',
         flexGrow: 1,
         fontSize: theme.typography.bodySmall.fontSize,
+        paddingLeft: theme.spacing(1),
       })
     ),
     inputWrapper: cx(
