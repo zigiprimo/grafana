@@ -1,13 +1,12 @@
 import { css, cx } from '@emotion/css';
 import { useKBar, VisualState } from 'kbar';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
 import { getInputStyles, Icon, ToolbarButton, useStyles2, useTheme2 } from '@grafana/ui';
 import { focusCss } from '@grafana/ui/src/themes/mixins';
 import { useMediaQueryChange } from 'app/core/hooks/useMediaQueryChange';
 import { t } from 'app/core/internationalization';
-import { getModKey } from 'app/core/utils/browser';
 
 export function TopSearchBarCommandPaletteTrigger() {
   const theme = useTheme2();
@@ -51,7 +50,7 @@ interface PretendTextInputProps {
 
 function PretendTextInput({ onClick }: PretendTextInputProps) {
   const styles = useStyles2(getStyles);
-  const modKey = useMemo(() => getModKey(), []);
+  //const modKey = useMemo(() => getModKey(), []);
 
   // We want the desktop command palette trigger to look like a search box,
   // but it actually behaves like a button - you active it and it performs an
@@ -85,11 +84,24 @@ const getStyles = (theme: GrafanaTheme2) => {
       baseStyles.wrapper,
       css({
         height: 26,
+        width: 'auto',
+        flexGrow: 1,
         fontSize: theme.typography.bodySmall.fontSize,
       })
     ),
-    inputWrapper: baseStyles.inputWrapper,
-    prefix: baseStyles.prefix,
+    inputWrapper: cx(
+      baseStyles.inputWrapper,
+      css({
+        width: 'auto',
+        display: 'flex',
+      })
+    ),
+    prefix: cx(
+      baseStyles.prefix,
+      css({
+        padding: 0,
+      })
+    ),
     suffix: css([
       baseStyles.suffix,
       {
@@ -103,6 +115,7 @@ const getStyles = (theme: GrafanaTheme2) => {
     fakeInput: css([
       baseStyles.input,
       {
+        width: 'auto',
         textAlign: 'left',
         paddingLeft: 28,
         color: theme.colors.text.disabled,
