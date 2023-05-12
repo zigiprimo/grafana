@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
-import { Dropdown, Button, useTheme2, Icon, ToolbarButton } from '@grafana/ui';
+import { Dropdown, useTheme2, Icon, ToolbarButton } from '@grafana/ui';
 import { Trans } from 'app/core/internationalization';
 import { DashboardModel } from 'app/features/dashboard/state';
 

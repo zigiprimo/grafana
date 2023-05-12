@@ -11,7 +11,6 @@ import { KioskMode } from 'app/types';
 import { MegaMenuNew } from './MegaMenu/MegaMenuNew';
 import { MegaMenuOverlay } from './MegaMenu/MegaMenuOverlay';
 import { NavToolbar } from './NavToolbar/NavToolbar';
-import { TopSearchBar } from './TopBar/TopSearchBar';
 
 export interface Props extends PropsWithChildren<{}> {}
 
@@ -24,7 +23,6 @@ export function AppChrome({ children }: Props) {
 
   const contentClass = cx({
     [styles.content]: true,
-    [styles.contentNoSearchBar]: searchBarHidden,
     [styles.contentChromeless]: state.chromeless,
   });
 

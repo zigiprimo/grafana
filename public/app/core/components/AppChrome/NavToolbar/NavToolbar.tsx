@@ -1,17 +1,14 @@
 import { css } from '@emotion/css';
 import React from 'react';
-import { useLocation } from 'react-router-dom';
 
-import { GrafanaTheme2, locationUtil, NavModelItem, textUtil } from '@grafana/data';
+import { GrafanaTheme2, NavModelItem } from '@grafana/data';
 import { Components } from '@grafana/e2e-selectors';
-import { config } from '@grafana/runtime';
-import { Dropdown, Icon, IconButton, ToolbarButton, useStyles2 } from '@grafana/ui';
+import { Dropdown, IconButton, ToolbarButton, useStyles2 } from '@grafana/ui';
 import { contextSrv } from 'app/core/core';
 import { t } from 'app/core/internationalization';
 import { HOME_NAV_ID } from 'app/core/reducers/navModel';
 import { useSelector } from 'app/types';
 
-import { Branding } from '../../Branding/Branding';
 import { Breadcrumbs } from '../../Breadcrumbs/Breadcrumbs';
 import { buildBreadcrumbs } from '../../Breadcrumbs/utils';
 import { NewsContainer } from '../News/NewsContainer';
@@ -44,19 +41,10 @@ export function NavToolbar({
   const styles = useStyles2(getStyles);
   const breadcrumbs = buildBreadcrumbs(sectionNav, pageNav, homeNav);
   const navIndex = useSelector((state) => state.navIndex);
-  const location = useLocation();
   const profileNode = navIndex['profile'];
-
-  let homeUrl = config.appSubUrl || '/';
-  if (!contextSrv.isSignedIn && !config.anonymousEnabled) {
-    homeUrl = textUtil.sanitizeUrl(locationUtil.getUrlForPartial(location, { forceLogin: 'true' }));
-  }
 
   return (
     <div data-testid={Components.NavToolbar.container} className={styles.pageToolbar}>
-      {/* <a className={styles.logo} href={homeUrl} title="Go to home">
-        <Branding.MenuLogo className={styles.img} />
-      </a> */}
       {!megaMenuPinned && (
         <div className={styles.menuButton}>
           <IconButton

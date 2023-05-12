@@ -5,13 +5,11 @@ import { useLocation } from 'react-router-dom';
 
 import { GrafanaTheme2, locationUtil, textUtil } from '@grafana/data';
 import { config } from '@grafana/runtime';
-import { CustomScrollbar, useStyles2, Button, Dropdown, ToolbarButton, LinkButton, getInputStyles } from '@grafana/ui';
+import { CustomScrollbar, useStyles2, Button, LinkButton } from '@grafana/ui';
 import { contextSrv } from 'app/core/core';
 import { useSelector } from 'app/types';
 
 import { QuickAdd } from '../QuickAdd/QuickAdd';
-import { TopNavBarMenu } from '../TopBar/TopNavBarMenu';
-import { TopSearchBarCommandPaletteTrigger } from '../TopBar/TopSearchBarCommandPaletteTrigger';
 
 import { NavBarMenuSection } from './NavBarMenuSection';
 import { enrichWithInteractionTracking, getActiveItem } from './utils';
@@ -26,7 +24,6 @@ export const MegaMenuNew = React.memo<Props>(({ onClose, onCollapse, onPinned })
   const navBarTree = useSelector((state) => state.navBarTree);
   const styles = useStyles2(getStyles);
   const location = useLocation();
-  const navIndex = useSelector((state) => state.navIndex);
   const navTree = cloneDeep(navBarTree);
 
   // Remove profile + help from tree
@@ -35,7 +32,6 @@ export const MegaMenuNew = React.memo<Props>(({ onClose, onCollapse, onPinned })
     .map((item) => enrichWithInteractionTracking(item, true));
 
   const activeItem = getActiveItem(navItems, location.pathname);
-  const profileNode = navIndex['profile'];
 
   let homeUrl = config.appSubUrl || '/';
   if (!contextSrv.isSignedIn && !config.anonymousEnabled) {
@@ -51,10 +47,6 @@ export const MegaMenuNew = React.memo<Props>(({ onClose, onCollapse, onPinned })
           </LinkButton>
           <QuickAdd />
         </div>
-        {/* <div className={styles.headerLevel}>
-          <TopSearchBarCommandPaletteTrigger />
-          <QuickAdd />
-        </div> */}
       </div>
       <div className={styles.body}>
         <CustomScrollbar showScrollIndicators hideHorizontalTrack>
@@ -88,8 +80,6 @@ MegaMenuNew.displayName = 'MegaMenuNew';
 export const MENU_WIDTH = '250px';
 
 const getStyles = (theme: GrafanaTheme2) => {
-  const baseStyles = getInputStyles({ theme });
-
   return {
     menuWrapper: css({
       display: 'flex',
