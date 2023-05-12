@@ -76,7 +76,9 @@ export function MegaMenuOverlay({ searchBarHidden, onClose, onPinned }: Props) {
                   variant="secondary"
                 />
               </div>
-              <MegaMenuNew onClose={onMenuClose} onPinned={onPinnedInternal} />
+              <div className={styles.content}>
+                <MegaMenuNew onClose={onMenuClose} onPinned={onPinnedInternal} />
+              </div>
             </div>
           </FocusScope>
         </CSSTransition>
@@ -97,7 +99,7 @@ export function MegaMenuOverlay({ searchBarHidden, onClose, onPinned }: Props) {
 MegaMenuOverlay.displayName = 'NavBarMenu';
 
 const getStyles = (theme: GrafanaTheme2, searchBarHidden?: boolean) => {
-  const topPosition = (searchBarHidden ? TOP_BAR_LEVEL_HEIGHT : TOP_BAR_LEVEL_HEIGHT * 2) - 1;
+  const topPosition = TOP_BAR_LEVEL_HEIGHT;
 
   return {
     menuWrapper: css({
@@ -114,7 +116,7 @@ const getStyles = (theme: GrafanaTheme2, searchBarHidden?: boolean) => {
       left: 0,
       position: 'fixed',
       right: 0,
-      top: searchBarHidden ? 0 : TOP_BAR_LEVEL_HEIGHT,
+      top: TOP_BAR_LEVEL_HEIGHT,
       zIndex: theme.zIndex.modalBackdrop,
 
       [theme.breakpoints.up('md')]: {
@@ -131,13 +133,12 @@ const getStyles = (theme: GrafanaTheme2, searchBarHidden?: boolean) => {
       // Needs to below navbar should we change the navbarFixed? add add a new level?
       zIndex: theme.zIndex.modal,
       position: 'fixed',
-      top: searchBarHidden ? 0 : TOP_BAR_LEVEL_HEIGHT,
+      top: TOP_BAR_LEVEL_HEIGHT,
       backgroundColor: theme.colors.background.primary,
       boxSizing: 'content-box',
       flex: '1 1 0',
 
       [theme.breakpoints.up('md')]: {
-        borderRight: `1px solid ${theme.colors.border.weak}`,
         right: 'unset',
         top: topPosition,
       },

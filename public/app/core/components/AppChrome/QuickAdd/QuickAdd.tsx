@@ -3,7 +3,7 @@ import React, { useMemo, useState } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime';
-import { Menu, Dropdown, useStyles2, useTheme2, ToolbarButton } from '@grafana/ui';
+import { Menu, Dropdown, useStyles2, useTheme2, ToolbarButton, Button } from '@grafana/ui';
 import { useMediaQueryChange } from 'app/core/hooks/useMediaQueryChange';
 import { useSelector } from 'app/types';
 
@@ -48,14 +48,10 @@ export const QuickAdd = ({}: Props) => {
   return createActions.length > 0 ? (
     <>
       <Dropdown overlay={MenuActions} placement="bottom-end" onVisibleChange={setIsOpen}>
-        <ToolbarButton
-          iconOnly
-          icon={isSmallScreen ? 'plus-circle' : 'plus'}
-          isOpen={isSmallScreen ? undefined : isOpen}
-          aria-label="New"
-        />
+        <Button variant="secondary" size="sm" icon="plus">
+          New
+        </Button>
       </Dropdown>
-      <NavToolbarSeparator className={styles.separator} />
     </>
   ) : null;
 };

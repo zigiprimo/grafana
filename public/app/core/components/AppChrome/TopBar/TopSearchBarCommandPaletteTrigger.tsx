@@ -1,4 +1,4 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { useKBar, VisualState } from 'kbar';
 import React, { useMemo, useState } from 'react';
 
@@ -61,17 +61,17 @@ function PretendTextInput({ onClick }: PretendTextInputProps) {
     <div className={styles.wrapper}>
       <div className={styles.inputWrapper}>
         <div className={styles.prefix}>
-          <Icon name="search" />
+          <Icon name="search" size="sm" />
         </div>
 
         <button className={styles.fakeInput} onClick={onClick}>
-          {t('nav.search.placeholderCommandPalette', 'Search or jump to...')}
+          Search...
         </button>
 
-        <div className={styles.suffix}>
+        {/* <div className={styles.suffix}>
           <Icon name="keyboard" />
           <span className={styles.shortcut}>{modKey}+k</span>
-        </div>
+        </div> */}
       </div>
     </div>
   );
@@ -81,7 +81,13 @@ const getStyles = (theme: GrafanaTheme2) => {
   const baseStyles = getInputStyles({ theme });
 
   return {
-    wrapper: baseStyles.wrapper,
+    wrapper: cx(
+      baseStyles.wrapper,
+      css({
+        height: 26,
+        fontSize: theme.typography.bodySmall.fontSize,
+      })
+    ),
     inputWrapper: baseStyles.inputWrapper,
     prefix: baseStyles.prefix,
     suffix: css([

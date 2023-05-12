@@ -12,8 +12,6 @@ import { Breadcrumbs } from '../../Breadcrumbs/Breadcrumbs';
 import { buildBreadcrumbs } from '../../Breadcrumbs/utils';
 import { TOP_BAR_LEVEL_HEIGHT } from '../types';
 
-import { NavToolbarSeparator } from './NavToolbarSeparator';
-
 export interface Props {
   onToggleSearchBar(): void;
   onToggleMegaMenu(): void;
@@ -55,7 +53,7 @@ export function NavToolbar({
       <Breadcrumbs breadcrumbs={breadcrumbs} className={styles.breadcrumbsWrapper} />
       <div className={styles.actions}>
         {actions}
-        {actions && <NavToolbarSeparator />}
+        {actions}
         {searchBarHidden && (
           <ToolbarButton
             onClick={onToggleKioskMode}
@@ -64,13 +62,6 @@ export function NavToolbar({
             icon="monitor"
           />
         )}
-        <ToolbarButton
-          onClick={onToggleSearchBar}
-          narrow
-          title={t('navigation.toolbar.toggle-search-bar', 'Toggle top search bar')}
-        >
-          <Icon name={searchBarHidden ? 'angle-down' : 'angle-up'} size="xl" />
-        </ToolbarButton>
       </div>
     </div>
   );

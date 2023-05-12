@@ -34,7 +34,6 @@ export function AppChrome({ children }: Props) {
 
   return (
     <main className={classNames('main-view', searchBarHidden && 'main-view--search-bar-hidden')}>
-      {!state.chromeless && !searchBarHidden && <TopSearchBar />}
       <div className={styles.panes}>
         {state.megaMenuPinned && (
           <MegaMenuNew onCollapse={() => chrome.update({ megaMenuPinned: false })} onClose={() => {}} />
