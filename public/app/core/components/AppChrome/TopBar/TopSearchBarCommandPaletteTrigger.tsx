@@ -83,9 +83,8 @@ const getStyles = (theme: GrafanaTheme2) => {
     wrapper: cx(
       baseStyles.wrapper,
       css({
-        height: 24,
-        width: 'auto',
-        flexGrow: 1,
+        //height: 24,
+        width: '200px',
         fontSize: theme.typography.bodySmall.fontSize,
         paddingLeft: theme.spacing(1),
       })

@@ -46,9 +46,15 @@ export const MegaMenuNew = React.memo<Props>(({ onClose, onCollapse, onPinned })
     <nav className={styles.menuWrapper}>
       <div className={styles.header}>
         <div className={styles.headerLevel}>
-          <TopSearchBarCommandPaletteTrigger />
+          <LinkButton icon="grafana" variant="secondary" fill="text" onClick={onClose} href={homeUrl}>
+            Grafana
+          </LinkButton>
           <QuickAdd />
         </div>
+        {/* <div className={styles.headerLevel}>
+          <TopSearchBarCommandPaletteTrigger />
+          <QuickAdd />
+        </div> */}
       </div>
       <div className={styles.body}>
         <CustomScrollbar showScrollIndicators hideHorizontalTrack>
@@ -105,6 +111,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       display: 'flex',
       justifyContent: 'space-between',
       gap: theme.spacing(1),
+      alignItems: 'center',
     }),
     body: css({
       flexGrow: 1,

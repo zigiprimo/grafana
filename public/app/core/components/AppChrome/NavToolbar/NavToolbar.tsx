@@ -14,7 +14,9 @@ import { useSelector } from 'app/types';
 import { Branding } from '../../Branding/Branding';
 import { Breadcrumbs } from '../../Breadcrumbs/Breadcrumbs';
 import { buildBreadcrumbs } from '../../Breadcrumbs/utils';
+import { NewsContainer } from '../News/NewsContainer';
 import { TopNavBarMenu } from '../TopBar/TopNavBarMenu';
+import { TopSearchBarCommandPaletteTrigger } from '../TopBar/TopSearchBarCommandPaletteTrigger';
 import { TOP_BAR_LEVEL_HEIGHT } from '../types';
 
 export interface Props {
@@ -52,9 +54,9 @@ export function NavToolbar({
 
   return (
     <div data-testid={Components.NavToolbar.container} className={styles.pageToolbar}>
-      <a className={styles.logo} href={homeUrl} title="Go to home">
+      {/* <a className={styles.logo} href={homeUrl} title="Go to home">
         <Branding.MenuLogo className={styles.img} />
-      </a>
+      </a> */}
       {!megaMenuPinned && (
         <div className={styles.menuButton}>
           <IconButton
@@ -77,6 +79,8 @@ export function NavToolbar({
             icon="monitor"
           />
         )}
+        <TopSearchBarCommandPaletteTrigger />
+        <NewsContainer />
         {profileNode && (
           <Dropdown overlay={() => <TopNavBarMenu node={profileNode} />} placement="bottom-end">
             <ToolbarButton
@@ -141,9 +145,9 @@ const getStyles = (theme: GrafanaTheme2) => {
       padding: theme.spacing(0, 0.25),
       img: {
         borderRadius: '50%',
-        height: '16px',
+        height: '24px',
         marginRight: 0,
-        width: '16px',
+        width: '24px',
       },
     }),
   };
