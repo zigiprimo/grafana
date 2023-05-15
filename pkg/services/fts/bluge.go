@@ -47,16 +47,16 @@ func parseID(s string) (id, error) {
 	return id{Kind: parts[0], OrgID: orgID, UID: parts[2]}, nil
 }
 
-func (bs *blugeSearcher) Add(text, kind, uid string, orgID int64, weight int) error {
+func (bs *blugeSearcher) Add(_ context.Context, text, kind, uid string, orgID int64, weight int) error {
 	doc := bluge.NewDocument(id{kind, orgID, uid}.String()).AddField(bluge.NewTextField("text", text))
 	return bs.w.Update(doc.ID(), doc)
 }
 
-func (bs *blugeSearcher) Delete(kind, uid string, orgID int64) error {
+func (bs *blugeSearcher) Delete(_ context.Context, kind, uid string, orgID int64) error {
 	return bs.w.Delete(bluge.NewDocument(id{kind, orgID, uid}.String()).ID())
 }
 
-func (bs *blugeSearcher) Search(query string) ([]Result, error) {
+func (bs *blugeSearcher) Search(_ context.Context, query string) ([]Result, error) {
 	r, err := bs.w.Reader()
 	if err != nil {
 		return nil, err
@@ -98,6 +98,6 @@ func (bs *blugeSearcher) Search(query string) ([]Result, error) {
 	return results, nil
 }
 
-func (bs *blugeSearcher) Close() error {
+func (bs *blugeSearcher) Close(_ context.Context) error {
 	return bs.w.Close()
 }

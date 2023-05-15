@@ -1,6 +1,7 @@
 package fts
 
 import (
+	"context"
 	"testing"
 
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -14,11 +15,11 @@ func TestSQLiteSimpleSearch(t *testing.T) {
 	}
 
 	for _, b := range books {
-		if err := search.Add(b, "book", b, 0, 1); err != nil {
+		if err := search.Add(context.Background(), b, "book", b, 0, 1); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := search.Delete("book", "Atlas Shrugged by Ayn Rand (1957)", 0); err != nil {
+	if err := search.Delete(context.Background(), "book", "Atlas Shrugged by Ayn Rand (1957)", 0); err != nil {
 		t.Fatal(err)
 	}
 
@@ -32,7 +33,7 @@ func TestSQLiteSimpleSearch(t *testing.T) {
 		{"1938", []string{"The Death of the Heart by Elizabeth Bowen (1938)", "The Code of the Woosters by P. G. Wodehouse (1938)", "Scoop by Evelyn Waugh (1938)"}},
 		{"atlas", nil},
 	} {
-		res, err := search.Search(test.Query)
+		res, err := search.Search(context.Background(), test.Query)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -29,17 +29,17 @@ func (m *mysqlSearch) createTable() error {
 	return err
 }
 
-func (m *mysqlSearch) Add(text, kind, uid string, orgID int64, weight int) error {
+func (m *mysqlSearch) Add(_ context.Context, text, kind, uid string, orgID int64, weight int) error {
 	_, err := m.db.GetSqlxSession().Exec(context.Background(), `INSERT INTO fts(text, kind, uid, org_id, weight) VALUES(?, ?, ?, ?, ?)`, text, kind, uid, orgID, weight)
 	return err
 }
 
-func (m *mysqlSearch) Delete(kind, uid string, orgID int64) error {
+func (m *mysqlSearch) Delete(_ context.Context, kind, uid string, orgID int64) error {
 	_, err := m.db.GetSqlxSession().Exec(context.Background(), `DELETE FROM fts WHERE kind=? AND uid=? AND org_id=?`, kind, uid, orgID)
 	return err
 }
 
-func (m *mysqlSearch) Search(query string) ([]Result, error) {
+func (m *mysqlSearch) Search(_ context.Context, query string) ([]Result, error) {
 	rows, err := m.db.GetSqlxSession().Query(context.Background(), `
 		SELECT kind, org_id, uid, MATCH(text) AGAINST (? IN BOOLEAN MODE) as rel FROM fts WHERE MATCH(text) AGAINST(? IN BOOLEAN MODE)
 	`, query, query)
@@ -59,4 +59,4 @@ func (m *mysqlSearch) Search(query string) ([]Result, error) {
 	return results, nil
 }
 
-func (m *mysqlSearch) Close() error { return nil }
+func (m *mysqlSearch) Close(_ context.Context) error { return nil }

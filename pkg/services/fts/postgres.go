@@ -10,7 +10,6 @@ import (
 )
 
 type basePostgresImpl struct {
-	baseSearch
 	db db.DB
 }
 

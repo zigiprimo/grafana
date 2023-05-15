@@ -22,17 +22,17 @@ func (m *sqliteSearch) createTable() error {
 	return err
 }
 
-func (m *sqliteSearch) Add(text, kind, uid string, orgID int64, weight int) error {
+func (m *sqliteSearch) Add(_ context.Context, text, kind, uid string, orgID int64, weight int) error {
 	_, err := m.db.GetSqlxSession().Exec(context.Background(), `INSERT INTO fts(text, kind, uid, org_id, weight) VALUES(?, ?, ?, ?, ?)`, text, kind, uid, orgID, weight)
 	return err
 }
 
-func (m *sqliteSearch) Delete(kind, uid string, orgID int64) error {
+func (m *sqliteSearch) Delete(_ context.Context, kind, uid string, orgID int64) error {
 	_, err := m.db.GetSqlxSession().Exec(context.Background(), `DELETE FROM fts WHERE kind=? AND uid=? AND org_id=?`, kind, uid, orgID)
 	return err
 }
 
-func (m *sqliteSearch) Search(query string) ([]Result, error) {
+func (m *sqliteSearch) Search(_ context.Context, query string) ([]Result, error) {
 	rows, err := m.db.GetSqlxSession().Query(context.Background(), `
 	SELECT text, kind, uid, org_id, weight FROM fts WHERE text MATCH ?
 	`, query)
@@ -52,4 +52,4 @@ func (m *sqliteSearch) Search(query string) ([]Result, error) {
 	return results, nil
 }
 
-func (m *sqliteSearch) Close() error { return nil }
+func (m *sqliteSearch) Close(_ context.Context) error { return nil }

@@ -1,6 +1,7 @@
 package fts
 
 import (
+	"context"
 	"os"
 	"sort"
 	"strings"
@@ -29,12 +30,12 @@ func testSearch(t *testing.T, search Search) {
 		{"poet", "9", "John Keats son of Thomas Keats, a livery stable-keeper, was born at Moorfields", 10},
 		{"wiki", "10", "Extrembügeln ist eine ausschließlich im Freien ausgetragene Extremsportart mit dem Ziel, selbst unter anspruchsvollsten klimatischen, geographischen und körperlichen Bedingungen mittels eines heißen Bügeleisens und eines Bügelbretts Wäsche zu bügeln.", 10},
 	} {
-		if err := search.Add(doc.Text, doc.Kind, doc.UID, 0, doc.Weight); err != nil {
+		if err := search.Add(context.Background(), doc.Text, doc.Kind, doc.UID, 0, doc.Weight); err != nil {
 			t.Fatal(err)
 		}
 	}
 	// Remove a document
-	if err := search.Delete("song", "7", 0); err != nil {
+	if err := search.Delete(context.Background(), "song", "7", 0); err != nil {
 		t.Fatal(err)
 	}
 	// Search queries
@@ -71,7 +72,7 @@ func testSearch(t *testing.T, search Search) {
 		// TODO: weight ordering
 	} {
 		t.Log("QUERY:", test.Query)
-		res, err := search.Search(test.Query)
+		res, err := search.Search(context.Background(), test.Query)
 		if err != nil {
 			t.Fatal(test.Query, err)
 		}

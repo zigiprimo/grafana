@@ -1,6 +1,9 @@
 package fts
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 var books = []string{
 	"Pride and Prejudice by Jane Austen (1813)",
@@ -111,7 +114,7 @@ func TestSimpleSearch(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, b := range books {
-		if err := search.Add(b, "book", b, 0, 1); err != nil {
+		if err := search.Add(context.Background(), b, "book", b, 0, 1); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -121,7 +124,7 @@ func TestSimpleSearch(t *testing.T) {
 	// often engenders a lifelong obsession with its unbelievable heroes,
 	// leading to an emotionally stunted, socially crippled adulthood, unable to
 	// deal with the real world. The other, of course, involves orcs."
-	if err := search.Delete("book", "Atlas Shrugged by Ayn Rand (1957)", 0); err != nil {
+	if err := search.Delete(context.Background(), "book", "Atlas Shrugged by Ayn Rand (1957)", 0); err != nil {
 		t.Fatal(err)
 	}
 
@@ -137,7 +140,7 @@ func TestSimpleSearch(t *testing.T) {
 		{"atlas", nil}, // Atlas ¯\_(ツ)_/¯
 		// TODO: make "bronte" find all of the Bront[eë]s
 	} {
-		res, err := search.Search(test.Query)
+		res, err := search.Search(context.Background(), test.Query)
 		if err != nil {
 			t.Fatal(err)
 		}
