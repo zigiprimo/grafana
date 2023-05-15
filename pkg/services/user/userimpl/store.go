@@ -404,9 +404,9 @@ func (ss *sqlStore) GetSignedInUser(ctx context.Context, query *user.GetSignedIn
 		org.id                as org_id,
 		u.is_service_account  as is_service_account
 		FROM ` + ss.dialect.Quote("user") + ` as u
-		LEFT OUTER JOIN user_auth on user_auth.user_id = u.id
-		LEFT OUTER JOIN org_user on org_user.org_id = ` + orgId + ` and org_user.user_id = u.id
-		LEFT OUTER JOIN org on org.id = org_user.org_id `
+		LEFT OUTER JOIN user_auth ON user_auth.user_id = u.id
+		LEFT OUTER JOIN org_user ON org_user.user_id = u.id AND ( org_user.org_id = ` + orgId + ` OR org_user.org_id = ` + user.GlobalOrgIDStr + ` )
+		LEFT OUTER JOIN org ON org.id = ` + orgId + ` `
 
 		sess := dbSess.Table("user")
 		sess = sess.Context(ctx)
@@ -426,15 +426,28 @@ func (ss *sqlStore) GetSignedInUser(ctx context.Context, query *user.GetSignedIn
 				sess.SQL(rawSQL+"WHERE u.email=?", query.Email)
 			}
 		}
-		has, err := sess.Get(&signedInUser)
-		if err != nil {
+
+		res := make([]user.SignedInUser, 0)
+		if err := sess.Find(&res); err != nil {
 			return err
-		} else if !has {
+		}
+		if len(res) == 0 {
 			return user.ErrUserNotFound
 		}
+		// Compute the highest org role between global and the queried org
+		orgRole := res[0].OrgRole
+		for i := 1; i < len(res); i++ {
+			if res[i].OrgRole.Includes(orgRole) {
+				signedInUser = res[i]
+				orgRole = res[i].OrgRole
+			}
+		}
+		signedInUser = res[0]
+		signedInUser.OrgRole = orgRole
+		signedInUser.OrgID = query.OrgID
 
 		if signedInUser.OrgRole == "" {
-			signedInUser.OrgID = -1
+			signedInUser.OrgID = user.NoOrgID
 			signedInUser.OrgName = "Org missing"
 		}
 

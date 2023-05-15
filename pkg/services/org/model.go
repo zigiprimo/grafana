@@ -10,6 +10,10 @@ import (
 	"github.com/grafana/grafana/pkg/util/errutil"
 )
 
+const (
+	GlobalOrgIDStr = "-2"
+)
+
 // Typed errors
 var (
 	ErrOrgNameTaken                            = errors.New("organization name is taken")

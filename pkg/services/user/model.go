@@ -17,6 +17,10 @@ func (f *HelpFlags1) AddFlag(flag HelpFlags1)     { *f |= flag }
 const (
 	HelpFlagGettingStartedPanelDismissed HelpFlags1 = 1 << iota
 	HelpFlagDashboardHelp1
+	NoOrgID = int64(-1)
+	// Picking up -2 value to avoid conflicts with default value 0 and NoOrg value -1
+	GlobalOrgID    = int64(-2)
+	GlobalOrgIDStr = "-2"
 )
 
 // Typed errors
