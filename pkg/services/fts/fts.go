@@ -22,3 +22,11 @@ type Result struct {
 	OrgID  int64  `xorm:"org_id"`
 	Weight int
 }
+
+type baseSearch struct {
+	db db.DB
+}
+
+func (s baseSearch) DB() db.DB {
+	return s.db
+}
