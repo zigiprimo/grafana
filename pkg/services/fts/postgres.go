@@ -10,11 +10,15 @@ import (
 )
 
 type basePostgresImpl struct {
+	baseSearch
 	db db.DB
 }
 
-func (s basePostgresImpl) DB() db.DB {
-	return s.db
+func (m basePostgresImpl) createTable() error {
+	return m.db.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
+		// TODO create indexes
+		return sess.CreateTable(Result{})
+	})
 }
 
 func (s basePostgresImpl) Add(ctx context.Context, text, kind, uid string, orgID int64, weight int) error {
@@ -26,13 +30,13 @@ func (s basePostgresImpl) Add(ctx context.Context, text, kind, uid string, orgID
 	})
 }
 
-func (s basePostgresImpl) Search(query string) ([]Result, error) {
+func (s basePostgresImpl) Search(ctx context.Context, query string) ([]Result, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
 func (s basePostgresImpl) Delete(ctx context.Context, kind, uid string, orgID int64) error {
 	return s.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
-		_, err := sess.Exec("DELETE FROM folder WHERE uid=? AND org_id=?", uid, orgID)
+		_, err := sess.Exec("DELETE FROM result WHERE uid=? AND org_id=?", uid, orgID)
 		return err
 	})
 }
@@ -64,10 +68,16 @@ type PostgresImplFTS struct {
 	basePostgresImpl
 }
 
+func NewPostgresSearch(db db.DB) (Search, error) {
+	m := &PostgresImplFTS{}
+	m.db = db
+	return m, m.createTable()
+}
+
 func (s PostgresImplFTS) Search(ctx context.Context, query string) ([]Result, error) {
-	var results []Result
+	results := []Result{}
 	err := s.db.WithDbSession(ctx, func(sess *sqlstore.DBSession) error {
-		sql := fmt.Sprintf("SELECT * FROM result WHERE to_tsvector(text) @@ plainto_tsquery(?)")
+		sql := fmt.Sprintf("SELECT * FROM result WHERE to_tsvector(text) @@ plainto_tsquery(?) ORDER by text")
 		err := sess.SQL(sql, query).Find(&results)
 		return err
 	})
