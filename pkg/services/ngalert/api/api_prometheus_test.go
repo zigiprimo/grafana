@@ -499,10 +499,11 @@ func TestRouteGetRuleStatuses(t *testing.T) {
 			ruleStore.PutRule(context.Background(), rules...)
 
 			api := PrometheusSrv{
-				log:     log.NewNopLogger(),
-				manager: fakeAIM,
-				store:   ruleStore,
-				ac:      acmock.New().WithDisabled(),
+				log:             log.NewNopLogger(),
+				manager:         fakeAIM,
+				store:           ruleStore,
+				ac:              acmock.New().WithDisabled(),
+				datasourceCache: fakeGenCacheService(),
 			}
 
 			response := api.RouteGetRuleStatuses(c)
@@ -543,10 +544,11 @@ func TestRouteGetRuleStatuses(t *testing.T) {
 			ruleStore.PutRule(context.Background(), ngmodels.GenerateAlertRules(rand.Intn(4)+2, ngmodels.AlertRuleGen(withOrgID(orgID)))...)
 
 			api := PrometheusSrv{
-				log:     log.NewNopLogger(),
-				manager: fakeAIM,
-				store:   ruleStore,
-				ac:      acimpl.ProvideAccessControl(setting.NewCfg()),
+				log:             log.NewNopLogger(),
+				manager:         fakeAIM,
+				store:           ruleStore,
+				ac:              acimpl.ProvideAccessControl(setting.NewCfg()),
+				datasourceCache: fakeGenCacheService(),
 			}
 
 			c := &contextmodel.ReqContext{Context: &web.Context{Req: req}, SignedInUser: &user.SignedInUser{OrgID: orgID, Permissions: createPermissionsForRules(rules, orgID)}}
@@ -1256,10 +1258,11 @@ func setupAPI(t *testing.T) (*fakes.RuleStore, *fakeAlertInstanceManager, Promet
 	fakeAIM := NewFakeAlertInstanceManager(t)
 
 	api := PrometheusSrv{
-		log:     log.NewNopLogger(),
-		manager: fakeAIM,
-		store:   fakeStore,
-		ac:      acimpl.ProvideAccessControl(setting.NewCfg()),
+		log:             log.NewNopLogger(),
+		manager:         fakeAIM,
+		store:           fakeStore,
+		ac:              acimpl.ProvideAccessControl(setting.NewCfg()),
+		datasourceCache: fakeGenCacheService(),
 	}
 
 	return fakeStore, fakeAIM, api

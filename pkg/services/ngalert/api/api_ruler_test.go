@@ -599,6 +599,7 @@ func createService(store *fakes.RuleStore) *RulerSrv {
 		log:             log.New("test"),
 		cfg:             nil,
 		ac:              acimpl.ProvideAccessControl(setting.NewCfg()),
+		datasourceCache: fakeGenCacheService(),
 	}
 }
 

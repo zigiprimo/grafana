@@ -63,7 +63,10 @@ func (srv TestingApiSrv) RouteTestGrafanaRuleConfig(c *contextmodel.ReqContext, 
 
 	if !authorizeDatasourceAccessForRule(rule, func(evaluator accesscontrol.Evaluator) bool {
 		return accesscontrol.HasAccess(srv.accessControl, c)(evaluator)
-	}) {
+		// do not provide any function for checking if data source exists
+		// because if data source does not exist we will not be able to test it anyway
+		// and it will fail on creation of the evaluator, which will happen below
+	}, nil) {
 		return errorToResponse(fmt.Errorf("%w to query one or many data sources used by the rule", ErrAuthorization))
 	}
 
@@ -146,7 +149,9 @@ func (srv TestingApiSrv) RouteEvalQueries(c *contextmodel.ReqContext, cmd apimod
 	queries := AlertQueriesFromApiAlertQueries(cmd.Data)
 	if !authorizeDatasourceAccessForRule(&ngmodels.AlertRule{Data: queries}, func(evaluator accesscontrol.Evaluator) bool {
 		return accesscontrol.HasAccess(srv.accessControl, c)(evaluator)
-	}) {
+		// do not provide any function for checking if data source exists
+		// because if data source does not exist we will not be able to test it anyway and it will fail on creation of the evaluator.
+	}, nil) {
 		return ErrResp(http.StatusUnauthorized, fmt.Errorf("%w to query one or many data sources used by the rule", ErrAuthorization), "")
 	}
 
@@ -204,7 +209,9 @@ func (srv TestingApiSrv) BacktestAlertRule(c *contextmodel.ReqContext, cmd apimo
 	queries := AlertQueriesFromApiAlertQueries(cmd.Data)
 	if !authorizeDatasourceAccessForRule(&ngmodels.AlertRule{Data: queries}, func(evaluator accesscontrol.Evaluator) bool {
 		return accesscontrol.HasAccess(srv.accessControl, c)(evaluator)
-	}) {
+		// do not provide any function for checking if data source exists
+		// because if data source does not exist we will not be able to test it anyway and it will fail on creation of the evaluator.
+	}, nil) {
 		return errorToResponse(fmt.Errorf("%w to query one or many data sources used by the rule", ErrAuthorization))
 	}
 
