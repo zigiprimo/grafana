@@ -33,7 +33,15 @@ export default function migrateQuery(query: AzureMonitorQuery): AzureMonitorQuer
   }
 
   if (workingQuery.azureLogAnalytics?.resource) {
-    workingQuery = migrateLogsResource(workingQuery);
+    workingQuery = {
+      ...workingQuery,
+      azureLogAnalytics: {
+        ...workingQuery.azureLogAnalytics,
+        resources: [workingQuery.azureLogAnalytics.resource],
+      },
+    };
+
+    delete workingQuery.azureLogAnalytics?.resource;
   }
 
   return workingQuery;
@@ -168,25 +176,22 @@ function migrateDimensionToResourceObj(query: AzureMonitorQuery): AzureMonitorQu
 function migrateResourceGroupAndName(query: AzureMonitorQuery): AzureMonitorQuery {
   let workingQuery = query;
 
-  if (workingQuery.azureMonitor) {
-    workingQuery.azureMonitor.resources = [
-      { resourceGroup: workingQuery.azureMonitor.resourceGroup, resourceName: workingQuery.azureMonitor.resourceName },
-    ];
+  if (workingQuery.azureMonitor?.resourceGroup && workingQuery.azureMonitor?.resourceName) {
+    workingQuery = {
+      ...workingQuery,
+      azureMonitor: {
+        ...workingQuery.azureMonitor,
+        resources: [
+          {
+            resourceGroup: workingQuery.azureMonitor.resourceGroup,
+            resourceName: workingQuery.azureMonitor.resourceName,
+          },
+        ],
+      },
+    };
 
-    delete workingQuery.azureMonitor.resourceGroup;
-    delete workingQuery.azureMonitor.resourceName;
-  }
-
-  return workingQuery;
-}
-
-function migrateLogsResource(query: AzureMonitorQuery): AzureMonitorQuery {
-  let workingQuery = query;
-
-  if (workingQuery.azureLogAnalytics && workingQuery.azureLogAnalytics.resource) {
-    workingQuery.azureLogAnalytics.resources = [workingQuery.azureLogAnalytics.resource];
-
-    delete workingQuery.azureLogAnalytics.resource;
+    delete workingQuery.azureMonitor?.resourceGroup;
+    delete workingQuery.azureMonitor?.resourceName;
   }
 
   return workingQuery;

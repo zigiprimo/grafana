@@ -1,4 +1,4 @@
-import { fireEvent, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React, { ComponentProps } from 'react';
 import AutoSizer from 'react-virtualized-auto-sizer';
@@ -6,7 +6,6 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 import { serializeStateToUrlParam } from '@grafana/data';
 import { locationService, config } from '@grafana/runtime';
 
-import { changeDatasource } from './spec/helper/interactions';
 import { makeLogsQueryResponse } from './spec/helper/query';
 import { setupExplore, tearDown, waitForExplore } from './spec/helper/setup';
 import * as mainState from './state/main';
@@ -39,38 +38,12 @@ describe('ExplorePage', () => {
     tearDown();
   });
 
-  describe('Handles datasource states', () => {
-    it('shows warning if there are no data sources', async () => {
-      setupExplore({ datasources: [] });
-      await waitFor(() => screen.getByText(/Explore requires at least one data source/i));
-    });
-
-    it('handles changing the datasource manually', async () => {
-      const urlParams = { left: JSON.stringify(['now-1h', 'now', 'loki', { expr: '{ label="value"}', refId: 'A' }]) };
-      const { datasources } = setupExplore({ urlParams });
-      jest.mocked(datasources.loki.query).mockReturnValueOnce(makeLogsQueryResponse());
-      await waitForExplore();
-      await changeDatasource('elastic');
-
-      await screen.findByText('elastic Editor input:');
-      expect(datasources.elastic.query).not.toBeCalled();
-      expect(locationService.getSearchObject()).toEqual({
-        orgId: '1',
-        left: serializeStateToUrlParam({
-          datasource: 'elastic-uid',
-          queries: [{ refId: 'A', datasource: { type: 'logs', uid: 'elastic-uid' } }],
-          range: { from: 'now-1h', to: 'now' },
-        }),
-      });
-    });
-  });
-
   describe('Handles open/close splits and related events in UI and URL', () => {
     it('opens the split pane when split button is clicked', async () => {
       setupExplore();
       // Wait for rendering the editor
       const splitButton = await screen.findByText(/split/i);
-      fireEvent.click(splitButton);
+      await userEvent.click(splitButton);
       await waitFor(() => {
         const editors = screen.getAllByText('loki Editor input:');
         expect(editors.length).toBe(2);
@@ -150,9 +123,11 @@ describe('ExplorePage', () => {
       jest.mocked(datasources.loki.query).mockReturnValue(makeLogsQueryResponse());
       jest.mocked(datasources.elastic.query).mockReturnValue(makeLogsQueryResponse());
 
-      locationService.partial({
-        left: JSON.stringify(['now-1h', 'now', 'loki', { expr: '{ label="value"}' }]),
-        right: JSON.stringify(['now-1h', 'now', 'elastic', { expr: 'error' }]),
+      act(() => {
+        locationService.partial({
+          left: JSON.stringify(['now-1h', 'now', 'loki', { expr: '{ label="value"}' }]),
+          right: JSON.stringify(['now-1h', 'now', 'elastic', { expr: 'error' }]),
+        });
       });
 
       // Editor renders the new query
@@ -172,7 +147,9 @@ describe('ExplorePage', () => {
       // to work
       await screen.findByText(`loki Editor input: { label="value"}`);
 
-      store.dispatch(mainState.splitOpen({ datasourceUid: 'elastic', query: { expr: 'error', refId: 'A' } }));
+      act(() => {
+        store.dispatch(mainState.splitOpen({ datasourceUid: 'elastic', query: { expr: 'error', refId: 'A' } }));
+      });
 
       // Editor renders the new query
       await screen.findByText(`elastic Editor input: error`);
@@ -182,7 +159,7 @@ describe('ExplorePage', () => {
     it('handles split size events and sets relevant variables', async () => {
       setupExplore();
       const splitButton = await screen.findByText(/split/i);
-      fireEvent.click(splitButton);
+      await userEvent.click(splitButton);
       await waitForExplore(undefined, true);
       let widenButton = await screen.findAllByLabelText('Widen pane');
       let narrowButton = await screen.queryAllByLabelText('Narrow pane');
@@ -229,7 +206,9 @@ describe('ExplorePage', () => {
       // to work
       await screen.findByText(`loki Editor input: { label="value"}`);
 
-      store.dispatch(mainState.splitOpen({ datasourceUid: 'elastic', query: { expr: 'error', refId: 'A' } }));
+      act(() => {
+        store.dispatch(mainState.splitOpen({ datasourceUid: 'elastic', query: { expr: 'error', refId: 'A' } }));
+      });
       await waitFor(() => expect(document.title).toEqual('Explore - loki | elastic - Grafana'));
     });
   });
@@ -431,6 +410,7 @@ describe('ExplorePage', () => {
 
   it('removes `from` and `to` parameters from url when first mounted', async () => {
     setupExplore({ searchParams: 'from=1&to=2&orgId=1' });
+    await waitForExplore();
 
     expect(locationService.getSearchObject()).toEqual(expect.not.objectContaining({ from: '1', to: '2' }));
     expect(locationService.getSearchObject()).toEqual(expect.objectContaining({ orgId: '1' }));

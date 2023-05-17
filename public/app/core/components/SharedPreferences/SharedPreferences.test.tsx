@@ -1,7 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
-import { assertInstanceOf } from 'test/helpers/asserts';
 import { getSelectParent, selectOptionInTest } from 'test/helpers/selectOptionInTest';
 
 import { Preferences as UserPreferencesDTO } from '@grafana/schema/src/raw/preferences/x/preferences_types.gen';
@@ -129,13 +128,15 @@ describe('SharedPreferences', () => {
   });
 
   it('renders the theme preference', () => {
-    const lightThemeRadio = assertInstanceOf(screen.getByLabelText('Light'), HTMLInputElement);
-    expect(lightThemeRadio.checked).toBeTruthy();
+    const themeSelect = getSelectParent(screen.getByLabelText('Interface theme'));
+    expect(themeSelect).toHaveTextContent('Light');
   });
 
-  it('renders the home dashboard preference', () => {
+  it('renders the home dashboard preference', async () => {
     const dashboardSelect = getSelectParent(screen.getByLabelText('Home Dashboard'));
-    expect(dashboardSelect).toHaveTextContent('My Dashboard');
+    await waitFor(() => {
+      expect(dashboardSelect).toHaveTextContent('My Dashboard');
+    });
   });
 
   it('renders the timezone preference', () => {
@@ -154,14 +155,13 @@ describe('SharedPreferences', () => {
   });
 
   it("saves the user's new preferences", async () => {
-    const darkThemeRadio = assertInstanceOf(screen.getByLabelText('Dark'), HTMLInputElement);
-    await userEvent.click(darkThemeRadio);
-
+    await selectOptionInTest(screen.getByLabelText('Interface theme'), 'Dark');
     await selectOptionInTest(screen.getByLabelText('Timezone'), 'Australia/Sydney');
     await selectOptionInTest(screen.getByLabelText('Week start'), 'Saturday');
     await selectOptionInTest(screen.getByLabelText(/language/i), 'Français');
 
     await userEvent.click(screen.getByText('Save'));
+
     expect(mockPrefsUpdate).toHaveBeenCalledWith({
       timezone: 'Australia/Sydney',
       weekStart: 'saturday',
@@ -175,9 +175,7 @@ describe('SharedPreferences', () => {
   });
 
   it("saves the user's default preferences", async () => {
-    const defThemeRadio = assertInstanceOf(screen.getByLabelText('Default'), HTMLInputElement);
-    await userEvent.click(defThemeRadio);
-
+    await selectOptionInTest(screen.getByLabelText('Interface theme'), 'Default');
     await selectOptionInTest(screen.getByLabelText('Home Dashboard'), 'Default');
     await selectOptionInTest(screen.getByLabelText('Timezone'), 'Default');
     await selectOptionInTest(screen.getByLabelText('Week start'), 'Default');

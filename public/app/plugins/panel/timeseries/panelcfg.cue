@@ -24,11 +24,12 @@ composableKinds: PanelCfg: {
 			{
 				schemas: [
 					{
-						PanelOptions: {
+						Options: common.OptionsWithTimezones & {
 							legend:  common.VizLegendOptions
 							tooltip: common.VizTooltipOptions
 						} @cuetsy(kind="interface")
-						PanelFieldConfig: common.GraphFieldConfig & {} @cuetsy(kind="interface")
+
+						FieldConfig: common.GraphFieldConfig & {} @cuetsy(kind="interface")
 					},
 				]
 			},

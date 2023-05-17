@@ -75,7 +75,7 @@ rendering_ignore_https_errors = true
 enable = newNavigation
 ```
 
-You can override them on Linux machines with:
+You can override variables on Linux machines with:
 
 ```bash
 export GF_DEFAULT_INSTANCE_NAME=my-instance
@@ -189,9 +189,16 @@ Folder that contains [provisioning]({{< relref "../../administration/provisionin
 
 `http`,`https`,`h2` or `socket`
 
+### min_tls_version
+
+The TLS Handshake requires a minimum TLS version. The available options are TLS1.2 and TLS1.3.
+If you do not specify a version, the system uses TLS1.2.
+
 ### http_addr
 
-The IP address to bind to. If empty will bind to all interfaces
+The host for the server to listen on. If your machine has more than one network interface, you can use this setting to expose the Grafana service on only one network interface and not have it available on others, such as the loopback interface. An empty value is equivalent to setting the value to `0.0.0.0`, which means the Grafana service binds to all interfaces.
+
+In environments where network address translation (NAT) is used, ensure you use the network interface address and not a final public address; otherwise, you might see errors such as `bind: cannot assign requested address` in the logs.
 
 ### http_port
 
@@ -231,9 +238,8 @@ callback URL to be correct).
 
 Serve Grafana from subpath specified in `root_url` setting. By default it is set to `false` for compatibility reasons.
 
-By enabling this setting and using a subpath in `root_url` above, e.g.
-`root_url = http://localhost:3000/grafana`, Grafana is accessible on
-`http://localhost:3000/grafana`.
+By enabling this setting and using a subpath in `root_url` above, e.g.`root_url = http://localhost:3000/grafana`, Grafana is accessible on `http://localhost:3000/grafana`. If accessed without subpath Grafana will redirect to
+an URL with the subpath.
 
 ### router_logging
 
@@ -402,6 +408,10 @@ This setting applies to `sqlite` only and controls the number of times the syste
 
 This setting applies to `sqlite` only and controls the number of times the system retries a transaction when the database is locked. The default value is `5`.
 
+### instrument_queries
+
+Set to `true` to add metrics and tracing for database queries. The default value is `false`.
+
 <hr />
 
 ## [remote_cache]
@@ -483,6 +493,10 @@ Limits the amount of bytes that will be read/accepted from responses of outgoing
 ### row_limit
 
 Limits the number of rows that Grafana will process from SQL (relational) data sources. Default is `1000000`.
+
+### user_agent
+
+Sets a custom value for the `User-Agent` header for outgoing data proxy requests. If empty, the default value is `Grafana/<BuildVersion>` (for example `Grafana/9.0.0`).
 
 <hr />
 
@@ -673,6 +687,10 @@ List of additional allowed URLs to pass by the CSRF check. Suggested when authen
 
 List of allowed headers to be set by the user. Suggested to use for if authentication lives behind reverse proxies.
 
+### csrf_always_check
+
+Set to `true` to execute the CSRF check even if the login cookie is not in a request (default `false`).
+
 ## [snapshots]
 
 ### enabled
@@ -723,6 +741,22 @@ Path to the default home dashboard. If this value is empty, then Grafana uses St
 > **Note:** On Linux, Grafana uses `/usr/share/grafana/public/dashboards/home.json` as the default home dashboard location.
 
 <hr />
+
+## [sql_datasources]
+
+### max_open_conns_default
+
+For SQL data sources (MySql, Postgres, MSSQL) you can override the default maximum number of open connections (default: 100). The value configured in data source settings will be preferred over the default value.
+
+### max_idle_conns_default
+
+For SQL data sources (MySql, Postgres, MSSQL) you can override the default allowed number of idle connections (default: 100). The value configured in data source settings will be preferred over the default value.
+
+### max_conn_lifetime_default
+
+For SQL data sources (MySql, Postgres, MSSQL) you can override the default maximum connection lifetime specified in seconds (default: 14400). The value configured in data source settings will be preferred over the default value.
+
+<hr/>
 
 ## [users]
 
@@ -1082,6 +1116,30 @@ The client ID to use for user-assigned managed identity.
 
 Should be set for user-assigned identity and should be empty for system-assigned identity.
 
+### user_identity_enabled
+
+Specifies whether user identity authentication (on behalf of currently signed-in user) should be enabled in datasources that support it (requires AAD authentication).
+
+Disabled by default, needs to be explicitly enabled.
+
+### user_identity_token_url
+
+Override token URL for Azure Active Directory.
+
+By default is the same as token URL configured for AAD authentication settings.
+
+### user_identity_client_id
+
+Override ADD application ID which would be used to exchange users token to an access token for the datasource.
+
+By default is the same as used in AAD authentication or can be set to another application (for OBO flow).
+
+### user_identity_client_secret
+
+Override the AAD application client secret.
+
+By default is the same as used in AAD authentication or can be set to another application (for OBO flow).
+
 ## [auth.jwt]
 
 Refer to [JWT authentication]({{< relref "../configure-security/configure-authentication/jwt/" >}}) for more information.
@@ -1254,31 +1312,19 @@ Syslog tag. By default, the process's `argv[0]` is used.
 
 ### enabled
 
-Sentry javascript agent is initialized. Default is `false`.
-
-### provider
-
-Defines which provider to use `sentry` or `grafana`. Default is `sentry`
-
-### sentry_dsn
-
-Sentry DSN if you want to send events to Sentry
+Faro javascript agent is initialized. Default is `false`.
 
 ### custom_endpoint
 
-Custom HTTP endpoint to send events captured by the Sentry agent to. Default, `/log`, will log the events to stdout.
-
-### sample_rate
-
-Rate of events to be reported between `0` (none) and `1` (all, default), float.
+Custom HTTP endpoint to send events captured by the Faro agent to. Default, `/log-grafana-javascript-agent`, will log the events to stdout.
 
 ### log_endpoint_requests_per_second_limit
 
-Requests per second limit enforced per an extended period, for Grafana backend log ingestion endpoint, `/log`. Default is `3`.
+Requests per second limit enforced per an extended period, for Grafana backend log ingestion endpoint, `/log-grafana-javascript-agent`. Default is `3`.
 
 ### log_endpoint_burst_limit
 
-Maximum requests accepted per short interval of time for Grafana backend log ingestion endpoint, `/log`. Default is `15`.
+Maximum requests accepted per short interval of time for Grafana backend log ingestion endpoint, `/log-grafana-javascript-agent`. Default is `15`.
 
 ### instrumentations_errors_enabled
 
@@ -1353,6 +1399,10 @@ Sets a global limit on number of users that can be logged in at one time. Defaul
 ### global_alert_rule
 
 Sets a global limit on number of alert rules that can be created. Default is -1 (unlimited).
+
+### global_correlations
+
+Sets a global limit on number of correlations that can be created. Default is -1 (unlimited).
 
 <hr>
 
@@ -1442,7 +1492,7 @@ The interval string is a possibly signed sequence of decimal numbers, followed b
 
 ## [unified_alerting.screenshots]
 
-For more information about screenshots, refer to [Images in notifications(https://grafana.com/docs/grafana/next/alerting/manage-notifications/images-in-notifications)].
+For more information about screenshots, refer to [Images in notifications]({{< relref "../../alerting/manage-notifications/images-in-notifications">}}).
 
 ### capture
 
@@ -1744,7 +1794,7 @@ The host:port destination for reporting spans. (ex: `localhost:14268/api/traces`
 
 ### propagation
 
-The propagation specifies the text map propagation format.(ex: jaeger, w3c)
+The propagation specifies the text map propagation format. The values `jaeger` and `w3c` are supported. Add a comma (`,`) between values to specify multiple formats (for example, `"jaeger,w3c"`). The default value is `w3c`.
 
 <hr>
 
@@ -1758,7 +1808,7 @@ The host:port destination for reporting spans. (ex: `localhost:4317`)
 
 ### propagation
 
-The propagation specifies the text map propagation format.(ex: jaeger, w3c)
+The propagation specifies the text map propagation format. The values `jaeger` and `w3c` are supported. Add a comma (`,`) between values to specify multiple formats (for example, `"jaeger,w3c"`). The default value is `w3c`.
 
 <hr>
 
@@ -2010,6 +2060,20 @@ ha_engine_address = 127.0.0.1:6379
 
 <hr>
 
+## [plugin.plugin_id]
+
+This section can be used to configure plugin-specific settings. Replace the `plugin_id` attribute with the plugin ID present in `plugin.json`.
+
+Properties described in this section are available for all plugins, but you must set them individually for each plugin.
+
+### tracing
+
+> **Note**: Available in Grafana v9.5.0 or later, and [OpenTelemetry must be configured as well](#tracingopentelemetry).
+
+If `true`, propagate the tracing context to the plugin backend and enable tracing (if the backend supports it).
+
+<hr>
+
 ## [plugin.grafana-image-renderer]
 
 For more information, refer to [Image rendering]({{< relref "../image-rendering/" >}}).
@@ -2184,30 +2248,6 @@ default_baselayer_config = `{
 ### enable_custom_baselayers
 
 Set this to `false` to disable loading other custom base maps and hide them in the Grafana UI. Default is `true`.
-
-## [dashboard_previews]
-
-### [crawler]
-
-> **Note:** This feature is available in Grafana v9.0 and later versions.
-
-#### thread_count
-
-Number of dashboards rendered in parallel. Default is 6
-
-#### rendering_timeout
-
-Timeout passed down to the Image Renderer plugin. It is used in two separate places within a single rendering request - during the initial navigation to the dashboard, and when waiting for all the panels to load. Default is 20s.
-
-#### max_crawl_duration
-
-Maximum duration of a single crawl. Default is 1h.
-
-#### scheduler_interval
-
-Minimum interval between two subsequent scheduler runs. Default is 12h.
-
-Refer to the [dashboards previews]({{< relref "../../search/dashboard-previews/" >}}) documentation for detailed instructions.
 
 ## [rbac]
 

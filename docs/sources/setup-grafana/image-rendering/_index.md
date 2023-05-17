@@ -22,7 +22,7 @@ While an image is being rendered, the PNG image is temporarily written to the fi
 
 A background job runs every 10 minutes and removes temporary images. You can configure how long an image should be stored before being removed by configuring the [temp_data_lifetime]({{< relref "../configure-grafana/#temp_data_lifetime" >}}) setting.
 
-You can also render a PNG by clicking the dropdown arrow next to a panel title, then clicking **Share > Direct link rendered image**.
+You can also render a PNG by clicking hovering over the panel to display the actions menu in the top right corner, and then clicking **Share > Direct link rendered image** in the Link tab.
 
 ## Alerting and render limits
 
@@ -123,29 +123,6 @@ RENDERING_CLUSTERING_TIMEOUT=30
     "mode": "clustered",
     "clustering": {
       "mode": "browser",
-      "maxConcurrency": 5,
-      "timeout": 30
-    }
-  }
-}
-```
-
-##### Cluster mode `contextPerRenderKey` (experimental)
-
-> **Note:** This feature is available in Image Renderer v3.4.0 and later versions.
-
-In `contextPerRenderKey` mode, the plugin will reuse the same [browser context](https://chromedevtools.github.io/devtools-protocol/tot/Target/#method-createBrowserContext) for all rendering requests sharing the same `renderKey` auth cookie and target domain within a short time window. Each new request will open a new page within the existing context. Contexts are closed automatically after 5s of inactivity.
-
-In the case of `contextPerRenderKey` mode, the `clustering.max_concurrency` option refers to the number of open contexts rather than the number of open pages. There is no way to limit the number of open pages in a context.
-
-`contextPerRenderKey` was designed to improve the performance of the [dashboard previews crawler]({{< relref "../../search/dashboard-previews/#about-the-dashboard-previews-crawler" >}}).
-
-```json
-{
-  "rendering": {
-    "mode": "clustered",
-    "clustering": {
-      "mode": "contextPerRenderKey",
       "maxConcurrency": 5,
       "timeout": 30
     }
