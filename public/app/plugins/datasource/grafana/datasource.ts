@@ -92,6 +92,9 @@ export class GrafanaDatasource extends DataSourceWithBackend<GrafanaQuery> {
           })
         );
       }
+      if (target.queryType === GrafanaQueryType.DBSnapshot) {
+        return from(this.getSnapshotData(target.snapshotUID!));
+      }
       if (target.hide) {
         continue;
       }
@@ -189,6 +192,16 @@ export class GrafanaDatasource extends DataSourceWithBackend<GrafanaQuery> {
 
   metricFindQuery(options: any) {
     return Promise.resolve([]);
+  }
+
+  async getSnapshotData(snapshotUID: string): Promise<DataQueryResponse> {
+    const response = await getBackendSrv().get(`/api/snapshot-data/${snapshotUID}`);
+    const json = JSON.parse(response.data)[0];
+    const frame = dataFrameFromJSON(json);
+    return Promise.resolve({
+      data: frame ? [frame] : [],
+      state: LoadingState.Done,
+    });
   }
 
   async getAnnotations(options: AnnotationQueryRequest<GrafanaQuery>): Promise<DataQueryResponse> {

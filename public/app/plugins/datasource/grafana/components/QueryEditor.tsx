@@ -87,6 +87,13 @@ export class UnthemedQueryEditor extends PureComponent<Props, State> {
         description: 'Query an uploaded spreadsheet or a snapshot',
       });
     }
+    if (config.featureToggles.enableDatagridEditing) {
+      this.queryTypes.push({
+        label: 'DB saved snapshot',
+        value: GrafanaQueryType.DBSnapshot,
+        description: 'Query a db saved snapshot',
+      });
+    }
   }
 
   loadChannelInfo() {

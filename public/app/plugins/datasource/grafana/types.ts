@@ -12,6 +12,7 @@ export enum GrafanaQueryType {
   LiveMeasurements = 'measurements',
   Annotations = 'annotations',
   Snapshot = 'snapshot',
+  DBSnapshot = 'db_snapshot',
   TimeRegions = 'timeRegions',
 
   // backend
@@ -29,6 +30,7 @@ export interface GrafanaQuery extends DataQuery {
   path?: string; // for list and read
   search?: SearchQuery;
   snapshot?: DataFrameJSON[];
+  snapshotUID?: string;
   timeRegion?: TimeRegionConfig;
   file?: GrafanaQueryFile;
 }

@@ -18,6 +18,8 @@ type GetSnapshotDataCommand struct {
 
 type CreateSnapshotDataCommand struct {
 	Data string `json:"data"`
+	// UID of the data source for which correlation is created.
+	UID string `json:"uid"`
 }
 
 type UpdateSnapshotDataByIdCommand struct {

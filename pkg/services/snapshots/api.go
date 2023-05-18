@@ -3,7 +3,6 @@ package snapshots
 import (
 	"net/http"
 
-	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana/pkg/api/response"
 	"github.com/grafana/grafana/pkg/api/routing"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
@@ -38,7 +37,6 @@ func (s *SnapshotDataService) getSnapshotDataHandler(c *contextmodel.ReqContext)
 	cmd := GetSnapshotDataCommand{}
 
 	cmd.UID = web.Params(c.Req)[":uid"]
-	log.DefaultLogger.Error("TESTING ITS HERE", cmd.UID)
 
 	snapshot, err := s.GetSnapshotDataByID(c.Req.Context(), cmd)
 	if err != nil {

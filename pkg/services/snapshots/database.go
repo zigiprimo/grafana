@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/grafana/grafana/pkg/infra/db"
-	"github.com/grafana/grafana/pkg/util"
 )
 
 func (s *SnapshotDataService) getSnapshotDataByID(ctx context.Context, cmd GetSnapshotDataCommand) (SnapshotData, error) {
@@ -25,7 +24,7 @@ func (s *SnapshotDataService) getSnapshotDataByID(ctx context.Context, cmd GetSn
 func (s *SnapshotDataService) createSnapshotData(ctx context.Context, cmd CreateSnapshotDataCommand) error {
 	return s.SQLStore.WithTransactionalDbSession(ctx, func(sess *db.Session) error {
 		var rawSQL = "INSERT INTO snapshot_data (uid, data) VALUES (?, ?)"
-		_, err := sess.Exec(rawSQL, util.GenerateShortUID(), cmd.Data)
+		_, err := sess.Exec(rawSQL, cmd.UID, cmd.Data)
 		return err
 	})
 }

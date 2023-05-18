@@ -1,4 +1,7 @@
+import { v4 as uuidv4 } from 'uuid';
+
 import { DataFrame, DataFrameJSON, dataFrameToJSON } from '@grafana/data';
+import { getBackendSrv } from '@grafana/runtime';
 import appEvents from 'app/core/app_events';
 import { GRAFANA_DATASOURCE_NAME } from 'app/features/alerting/unified/utils/datasource';
 import { PanelModel } from 'app/features/dashboard/state';
@@ -37,13 +40,22 @@ export function onUpdatePanelSnapshotData(panel: PanelModel, frames: DataFrame[]
   });
 }
 
-function updateSnapshotData(frames: DataFrame[], panel: PanelModel) {
+async function updateSnapshotData(frames: DataFrame[], panel: PanelModel) {
   const snapshot: DataFrameJSON[] = frames.map((f) => dataFrameToJSON(f));
+
+  const uuid = uuidv4();
+
+  const payload = {
+    uid: uuid,
+    data: JSON.stringify(snapshot),
+  };
+
+  await getBackendSrv().post(`/api/snapshot-data/`, payload);
 
   const query: GrafanaQuery = {
     refId: 'A',
-    queryType: GrafanaQueryType.Snapshot,
-    snapshot,
+    queryType: GrafanaQueryType.DBSnapshot,
+    snapshotUID: uuid,
     datasource: { uid: GRAFANA_DATASOURCE_NAME },
   };
 
