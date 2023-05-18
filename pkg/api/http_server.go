@@ -85,6 +85,7 @@ import (
 	spm "github.com/grafana/grafana/pkg/services/secrets/kvstore/migrations"
 	"github.com/grafana/grafana/pkg/services/serviceaccounts"
 	"github.com/grafana/grafana/pkg/services/shorturls"
+	"github.com/grafana/grafana/pkg/services/snapshots"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/services/star"
 	starApi "github.com/grafana/grafana/pkg/services/star/api"
@@ -195,6 +196,7 @@ type HTTPServer struct {
 	apiKeyService                apikey.Service
 	kvStore                      kvstore.KVStore
 	pluginsCDNService            *pluginscdn.Service
+	SnapshotDataService          snapshots.Service
 
 	userService          user.Service
 	tempUserService      tempUser.Service
@@ -249,7 +251,7 @@ func ProvideHTTPServer(opts ServerOptions, cfg *setting.Cfg, routeRegister routi
 	accesscontrolService accesscontrol.Service, navTreeService navtree.Service,
 	annotationRepo annotations.Repository, tagService tag.Service, searchv2HTTPService searchV2.SearchHTTPService, oauthTokenService oauthtoken.OAuthTokenService,
 	statsService stats.Service, authnService authn.Service, pluginsCDNService *pluginscdn.Service,
-	starApi *starApi.API,
+	starApi *starApi.API, SnapshotDataService snapshots.Service,
 
 ) (*HTTPServer, error) {
 	web.Env = cfg.Env
@@ -353,6 +355,7 @@ func ProvideHTTPServer(opts ServerOptions, cfg *setting.Cfg, routeRegister routi
 		statsService:                 statsService,
 		authnService:                 authnService,
 		pluginsCDNService:            pluginsCDNService,
+		SnapshotDataService:          SnapshotDataService,
 		starApi:                      starApi,
 	}
 	if hs.Listener != nil {

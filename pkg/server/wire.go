@@ -117,6 +117,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/shorturls/shorturlimpl"
 	"github.com/grafana/grafana/pkg/services/signingkeys"
 	"github.com/grafana/grafana/pkg/services/signingkeys/signingkeysimpl"
+	"github.com/grafana/grafana/pkg/services/snapshots"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	starApi "github.com/grafana/grafana/pkg/services/star/api"
 	"github.com/grafana/grafana/pkg/services/star/starimpl"
@@ -330,6 +331,8 @@ var wireBasicSet = wire.NewSet(
 	publicdashboardsmetric.ProvideService,
 	publicdashboardsApi.ProvideApi,
 	starApi.ProvideApi,
+	snapshots.ProvideService,
+	wire.Bind(new(snapshots.Service), new(*snapshots.SnapshotDataService)),
 	userimpl.ProvideService,
 	orgimpl.ProvideService,
 	statsimpl.ProvideService,
