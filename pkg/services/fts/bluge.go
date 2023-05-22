@@ -65,13 +65,11 @@ func (bs *blugeSearcher) Search(_ context.Context, query string) ([]Result, erro
 
 	q := bluge.NewBooleanQuery()
 	for _, s := range splitFields(query) {
-		fmt.Println("  TOKEN: " + s)
 		if strings.HasPrefix(s, "+") {
 			q.AddMust(bluge.NewMatchQuery(s[1:]).SetField("text"))
 		} else if strings.HasPrefix(s, "-") {
 			q.AddMustNot(bluge.NewMatchQuery(s[1:]).SetField("text"))
 		} else if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) {
-			fmt.Println("LIT:", s[1:len(s)-1])
 			q.AddShould(bluge.NewMatchPhraseQuery(s).SetField("text").SetSlop(1))
 		} else if strings.HasSuffix(s, `*`) {
 			q.AddShould(bluge.NewPrefixQuery(s[:len(s)-1]).SetField("text"))

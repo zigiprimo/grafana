@@ -17,7 +17,7 @@ func NewSQLiteSearch(db db.DB) (Search, error) {
 
 func (m *sqliteSearch) createTable() error {
 	_, err := m.db.GetSqlxSession().Exec(context.Background(), `
-	CREATE VIRTUAL TABLE fts USING FTS4(text, kind, uid, org_id, weight);
+	CREATE VIRTUAL TABLE IF NOT EXISTS fts USING FTS4(text, kind, uid, org_id, weight);
 	`)
 	return err
 }
@@ -34,7 +34,7 @@ func (m *sqliteSearch) Delete(_ context.Context, kind, uid string, orgID int64) 
 
 func (m *sqliteSearch) Search(_ context.Context, query string) ([]Result, error) {
 	rows, err := m.db.GetSqlxSession().Query(context.Background(), `
-	SELECT text, kind, uid, org_id, weight FROM fts WHERE text MATCH ?
+	SELECT kind, uid, org_id, weight FROM fts WHERE text MATCH ? LIMIT 50
 	`, query)
 	if err != nil {
 		return nil, err
@@ -43,7 +43,7 @@ func (m *sqliteSearch) Search(_ context.Context, query string) ([]Result, error)
 	for rows.Next() {
 		r := Result{}
 		f := 0.0
-		if err := rows.Scan(&r.Text, &r.Kind, &r.UID, &r.OrgID, &f); err != nil {
+		if err := rows.Scan(&r.Kind, &r.UID, &r.OrgID, &f); err != nil {
 			return nil, err
 		}
 		r.Weight = int(f * 100)

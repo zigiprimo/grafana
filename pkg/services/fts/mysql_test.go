@@ -4,11 +4,211 @@ import (
 	"context"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 
+	_ "embed"
+
 	"github.com/grafana/grafana/pkg/infra/db"
 )
+
+var (
+	//go:embed testdata/movies.txt
+	movieTitles string
+	//go:embed testdata/dashboards.txt
+	dashboardTitles string
+	//go:embed testdata/movies.csv
+	moviesCSV []byte
+	//go:embed testdata/books.csv
+	booksCSV []byte
+)
+
+func BenchmarkDashboardTitles(b *testing.B) {
+	init := func(b *testing.B, search Search) {
+		for i, dash := range strings.Split(dashboardTitles, "\n") {
+			uid := strconv.Itoa(i)
+			if err := search.Add(context.Background(), dash, "dashboard", uid, 0, 1); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+	run := func(b *testing.B, search Search, query string) {
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if _, err := search.Search(context.Background(), query); err != nil {
+				b.Fatal(err)
+			}
+		}
+	}
+
+	b.Run("bluge", func(b *testing.B) {
+		search, err := NewBlugeInMemorySearch()
+		if err != nil {
+			b.Fatal(err)
+		}
+		init(b, search)
+		run(b, search, "prometheus")
+	})
+	// b.Run("sqlite", func(b *testing.B) {
+	// 	db := db.InitTestDB(b)
+	// 	search, err := NewSQLiteSearch(db)
+	// 	if err != nil {
+	// 		b.Fatal(err)
+	// 	}
+	// 	init(b, search)
+	// 	run(b, search, "prometheus")
+	// })
+	os.Setenv("GRAFANA_TEST_DB", "postgres")
+	os.Setenv("SKIP_MIGRATIONS", "true")
+	db := db.InitTestDB(b)
+	search, err := NewPostgresSearch(db)
+	if err != nil {
+		b.Fatal(err)
+	}
+	init(b, search)
+	b.Run("postgres", func(b *testing.B) {
+		run(b, search, "prometheus")
+		// sess := db.GetSqlxSession()
+		// b.ResetTimer()
+		// for i := 0; i < b.N; i++ {
+		// 	rows, err := sess.Query(context.Background(), "SELECT 1")
+		// 	if err != nil {
+		// 		b.Fatal(err)
+		// 	}
+		// 	rows.Close()
+		// }
+	})
+	// b.Run("mysql", func(b *testing.B) {
+	// 	os.Setenv("GRAFANA_TEST_DB", "mysql")
+	// 	os.Setenv("SKIP_MIGRATIONS", "true")
+	// 	db := db.InitTestDB(b)
+	// 	// search, err := NewMySQLSearch(db)
+	// 	// if err != nil {
+	// 	// b.Fatal(err)
+	// 	// }
+	// 	// init(b, search)
+	// 	// run(b, search, "prometheus")
+	// 	sess := db.GetSqlxSession()
+	// 	b.ResetTimer()
+	// 	for i := 0; i < b.N; i++ {
+	// 		rows, err := sess.Query(context.Background(), "SELECT 1")
+	// 		if err != nil {
+	// 			b.Fatal(err)
+	// 		}
+	// 		rows.Close()
+	// 	}
+	// })
+}
+
+func BenchmarkMovieTitlesBluge(b *testing.B) {
+	search, err := NewBlugeInMemorySearch()
+	if err != nil {
+		b.Fatal(err)
+	}
+	for i, movie := range strings.Split(movieTitles, "\n") {
+		uid := strconv.Itoa(i)
+		if err := search.Add(context.Background(), movie, "movie", uid, 0, 1); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		search.Search(context.Background(), "world strong*")
+	}
+}
+
+func BenchmarkMovieTitlesSQLite(b *testing.B) {
+	db := db.InitTestDB(b)
+	search, err := NewSQLiteSearch(db)
+	if err != nil {
+		b.Fatal(err)
+	}
+	for i, movie := range strings.Split(movieTitles, "\n") {
+		uid := strconv.Itoa(i)
+		if err := search.Add(context.Background(), movie, "movie", uid, 0, 1); err != nil {
+			b.Fatal(err)
+		}
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		search.Search(context.Background(), "world strong*")
+	}
+}
+
+func BenchmarkMovieTitlesMySQL(b *testing.B) {
+	os.Setenv("GRAFANA_TEST_DB", "mysql")
+	os.Setenv("SKIP_MIGRATIONS", "true")
+	db := db.InitTestDB(b)
+	search, err := NewMySQLSearch(db)
+	// search, err := NewBlugeInMemorySearch()
+	if err != nil {
+		b.Fatal(err)
+	}
+	sqlStr := "INSERT INTO fts(uid, kind, org_id, text, weight) VALUES "
+	vals := []interface{}{}
+	for i, movie := range strings.Split(movieTitles, "\n") {
+		uid := strconv.Itoa(i)
+		sqlStr += "(?, ?, ?, ?, ?),"
+		vals = append(vals, uid, "movie", 1, movie, 1)
+		if i%10000 == 0 {
+			sqlStr = sqlStr[0 : len(sqlStr)-1]
+			sess := db.GetSqlxSession()
+			if _, err := sess.Exec(context.Background(), sqlStr, vals...); err != nil {
+				b.Fatal(err)
+			}
+			sqlStr = "INSERT INTO fts(uid, kind, org_id, text, weight) VALUES "
+			vals = []interface{}{}
+		}
+	}
+	sqlStr = sqlStr[0 : len(sqlStr)-1]
+	sess := db.GetSqlxSession()
+	if _, err := sess.Exec(context.Background(), sqlStr, vals...); err != nil {
+		b.Fatal(err)
+	}
+	b.Run("mysql", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			search.Search(context.Background(), "world strong*")
+		}
+	})
+}
+
+func BenchmarkMovieTitles(b *testing.B) {
+	run := func(b *testing.B, search Search) {
+		b.Helper()
+		b.ResetTimer()
+		for i := 0; i < b.N; i++ {
+			if res, err := search.Search(context.Background(), "world"); err != nil || len(res) == 0 {
+				b.Fatal(res, err)
+			}
+		}
+	}
+	b.Run("bluge", func(b *testing.B) {
+		search, err := NewBlugeInMemorySearch()
+		if err != nil {
+			b.Fatal(err)
+		}
+		run(b, search)
+	})
+	// b.Run("sqlite", func(b *testing.B) {
+	// 	db := db.InitTestDB(b)
+	// 	search, err := NewSQLiteSearch(db)
+	// 	if err != nil {
+	// 		b.Fatal(err)
+	// 	}
+	// 	run(b, search)
+	// })
+	b.Run("mysql", func(b *testing.B) {
+		os.Setenv("GRAFANA_TEST_DB", "mysql")
+		os.Setenv("SKIP_MIGRATIONS", "true")
+		db := db.InitTestDB(b)
+		search, err := NewMySQLSearch(db)
+		if err != nil {
+			b.Fatal(err)
+		}
+		run(b, search)
+	})
+}
 
 func testSearch(t *testing.T, search Search) {
 	t.Helper()
@@ -31,7 +231,7 @@ func testSearch(t *testing.T, search Search) {
 		{"wiki", "10", "Extrembügeln ist eine ausschließlich im Freien ausgetragene Extremsportart mit dem Ziel, selbst unter anspruchsvollsten klimatischen, geographischen und körperlichen Bedingungen mittels eines heißen Bügeleisens und eines Bügelbretts Wäsche zu bügeln.", 10},
 	} {
 		if err := search.Add(context.Background(), doc.Text, doc.Kind, doc.UID, 0, doc.Weight); err != nil {
-			t.Fatal(err)
+			t.Fatal(doc, err)
 		}
 	}
 	// Remove a document
@@ -107,6 +307,15 @@ func TestMySQLSearch(t *testing.T) {
 
 func TestBlugeSearch(t *testing.T) {
 	search, err := NewBlugeInMemorySearch()
+	if err != nil {
+		t.Fatal(err)
+	}
+	testSearch(t, search)
+}
+
+func TestSQLiteSearch(t *testing.T) {
+	db := db.InitTestDB(t)
+	search, err := NewSQLiteSearch(db)
 	if err != nil {
 		t.Fatal(err)
 	}
