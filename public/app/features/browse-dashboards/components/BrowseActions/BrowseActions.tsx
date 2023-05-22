@@ -13,7 +13,7 @@ import {
   childrenByParentUIDSelector,
   deleteDashboard,
   deleteFolder,
-  fetchChildren,
+  fetchNextChildrenPage,
   moveDashboard,
   moveFolder,
   rootItemsSelector,
@@ -47,7 +47,7 @@ export function BrowseActions() {
     } else {
       // Refetch parents
       for (const parentUID of parentsToRefresh) {
-        dispatch(fetchChildren({ parentUID, pageSize: parentUID ? PAGE_SIZE : ROOT_PAGE_SIZE }));
+        dispatch(fetchNextChildrenPage({ parentUID, pageSize: parentUID ? PAGE_SIZE : ROOT_PAGE_SIZE }));
       }
     }
   };
