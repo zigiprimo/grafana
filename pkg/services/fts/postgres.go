@@ -14,7 +14,6 @@ type basePostgresImpl struct {
 }
 
 func (s basePostgresImpl) createTable() error {
-	return nil
 	sess := s.db.GetSqlxSession()
 	_, err := sess.Exec(context.Background(), `
 		CREATE TABLE IF NOT EXISTS result (
@@ -32,15 +31,20 @@ func (s basePostgresImpl) createTable() error {
 	return err
 }
 
-func (s basePostgresImpl) Add(ctx context.Context, ref Ref, text string, weight int) error {
+func (s basePostgresImpl) Add(ctx context.Context, fields ...Field) error {
 	sess := s.db.GetSqlxSession()
-	sql := "INSERT INTO result(kind, uid , org_id, text, weight) VALUES(?, ?, ?, ?, ?)"
-	args := []interface{}{ref.Kind, ref.UID, ref.OrgID, text, weight}
-	_, err := sess.Exec(ctx, sql, args...)
-	return err
+	for _, f := range fields {
+		sql := "INSERT INTO result(kind, uid , org_id, text, weight) VALUES(?, ?, ?, ?, ?)"
+		args := []interface{}{f.Ref.Kind, f.Ref.UID, f.Ref.OrgID, f.Text, f.Weight}
+		_, err := sess.Exec(ctx, sql, args...)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (s basePostgresImpl) Search(ctx context.Context, query string) ([]Result, error) {
+func (s basePostgresImpl) Search(ctx context.Context, query string) ([]Ref, error) {
 	return nil, fmt.Errorf("not implemented")
 }
 
@@ -49,10 +53,6 @@ func (s basePostgresImpl) Delete(ctx context.Context, ref Ref) error {
 		_, err := sess.Exec("DELETE FROM result WHERE kind=? AND uid=? AND org_id=?", ref.Kind, ref.UID, ref.OrgID)
 		return err
 	})
-}
-
-func (s basePostgresImpl) Close(ctx context.Context) error {
-	return fmt.Errorf("not implemented")
 }
 
 type PostgresImplLike struct {

@@ -114,7 +114,7 @@ func TestSimpleSearch(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, b := range books {
-		if err := search.Add(context.Background(), Ref{0, "book", b}, b, 1); err != nil {
+		if err := search.Add(context.Background(), Field{Ref{0, "book", b}, b, 1}); err != nil {
 			t.Fatal(err)
 		}
 	}

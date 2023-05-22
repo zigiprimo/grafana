@@ -28,7 +28,7 @@ func BenchmarkDashboardTitles(b *testing.B) {
 	init := func(b *testing.B, search Search) {
 		for i, dash := range strings.Split(dashboardTitles, "\n") {
 			uid := strconv.Itoa(i)
-			if err := search.Add(context.Background(), Ref{0, "dashboard", uid}, dash, 1); err != nil {
+			if err := search.Add(context.Background(), Field{Ref{0, "dashboard", uid}, dash, 1}); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -108,7 +108,7 @@ func BenchmarkMovieTitlesBluge(b *testing.B) {
 	}
 	for i, movie := range strings.Split(movieTitles, "\n") {
 		uid := strconv.Itoa(i)
-		if err := search.Add(context.Background(), Ref{0, "movie", uid}, movie, 1); err != nil {
+		if err := search.Add(context.Background(), Field{Ref{0, "movie", uid}, movie, 1}); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -126,7 +126,7 @@ func BenchmarkMovieTitlesSQLite(b *testing.B) {
 	}
 	for i, movie := range strings.Split(movieTitles, "\n") {
 		uid := strconv.Itoa(i)
-		if err := search.Add(context.Background(), Ref{0, "movie", uid}, movie, 1); err != nil {
+		if err := search.Add(context.Background(), Field{Ref{0, "movie", uid}, movie, 1}); err != nil {
 			b.Fatal(err)
 		}
 	}
@@ -230,7 +230,7 @@ func testSearch(t *testing.T, search Search) {
 		{"poet", "9", "John Keats son of Thomas Keats, a livery stable-keeper, was born at Moorfields", 10},
 		{"wiki", "10", "Extrembügeln ist eine ausschließlich im Freien ausgetragene Extremsportart mit dem Ziel, selbst unter anspruchsvollsten klimatischen, geographischen und körperlichen Bedingungen mittels eines heißen Bügeleisens und eines Bügelbretts Wäsche zu bügeln.", 10},
 	} {
-		if err := search.Add(context.Background(), Ref{0, doc.Kind, doc.UID}, doc.Text, doc.Weight); err != nil {
+		if err := search.Add(context.Background(), Field{Ref{0, doc.Kind, doc.UID}, doc.Text, doc.Weight}); err != nil {
 			t.Fatal(doc, err)
 		}
 	}

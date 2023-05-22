@@ -43,9 +43,14 @@ func parseID(s string) (id, error) {
 	return id{Kind: parts[0], OrgID: orgID, UID: parts[2]}, nil
 }
 
-func (bs *blugeSearcher) Add(_ context.Context, ref Ref, text string, weight int) error {
-	doc := bluge.NewDocument(id(ref).String()).AddField(bluge.NewTextField("text", text))
-	return bs.w.Update(doc.ID(), doc)
+func (bs *blugeSearcher) Add(_ context.Context, fields ...Field) error {
+	batch := bluge.NewBatch()
+	for _, f := range fields {
+		// TODO: support weight?
+		doc := bluge.NewDocument(id(f.Ref).String()).AddField(bluge.NewTextField("text", f.Text))
+		batch.Update(doc.ID(), doc)
+	}
+	return bs.w.Batch(batch)
 }
 
 func (bs *blugeSearcher) Delete(_ context.Context, ref Ref) error {
@@ -109,7 +114,7 @@ func (bs *blugeSearcher) Search(_ context.Context, query string) ([]Ref, error) 
 	return results, nil
 }
 
-func (bs *blugeSearcher) Close(_ context.Context) error {
+func (bs *blugeSearcher) Close() error {
 	return bs.w.Close()
 }
 

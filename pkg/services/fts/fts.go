@@ -4,25 +4,25 @@ import (
 	"context"
 )
 
+// Ref is an object reference, it is used to idenfity external documents that contain searchable texts.
+// It is identical to GRN and should probable be replaced with the latter at some point.
 type Ref struct {
 	OrgID int64
 	Kind  string
 	UID   string
 }
 
-type Search interface {
-	Add(ctx context.Context, ref Ref, text string, weight int) error
-	Delete(ctx context.Context, ref Ref) error
-	Search(ctx context.Context, query string) ([]Ref, error)
-	Close(ctx context.Context) error
+// Field is an indexed textual content from an object/document.
+type Field struct {
+	Ref    Ref
+	Text   string
+	Weight int
 }
 
-type Result struct {
-	Text   string
-	Kind   string
-	UID    string `xorm:"uid"`
-	OrgID  int64  `xorm:"org_id"`
-	Weight int
+type Search interface {
+	Add(ctx context.Context, fields ...Field) error
+	Delete(ctx context.Context, ref Ref) error
+	Search(ctx context.Context, query string) ([]Ref, error)
 }
 
 type op int

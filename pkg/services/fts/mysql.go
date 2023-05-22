@@ -29,9 +29,14 @@ func (m *mysqlSearch) createTable() error {
 	return err
 }
 
-func (m *mysqlSearch) Add(ctx context.Context, ref Ref, text string, weight int) error {
-	_, err := m.db.GetSqlxSession().Exec(ctx, `INSERT INTO fts(kind, uid, org_id, text, weight) VALUES(?, ?, ?, ?, ?)`, ref.Kind, ref.UID, ref.OrgID, text, weight)
-	return err
+func (m *mysqlSearch) Add(ctx context.Context, fields ...Field) error {
+	for _, f := range fields {
+		_, err := m.db.GetSqlxSession().Exec(ctx, `INSERT INTO fts(kind, uid, org_id, text, weight) VALUES(?, ?, ?, ?, ?)`, f.Ref.Kind, f.Ref.UID, f.Ref.OrgID, f.Text, f.Weight)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (m *mysqlSearch) Delete(ctx context.Context, ref Ref) error {
@@ -59,5 +64,3 @@ func (m *mysqlSearch) Search(ctx context.Context, query string) ([]Ref, error) {
 	}
 	return results, nil
 }
-
-func (m *mysqlSearch) Close(_ context.Context) error { return nil }

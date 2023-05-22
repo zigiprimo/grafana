@@ -15,7 +15,7 @@ func TestSQLiteSimpleSearch(t *testing.T) {
 	}
 
 	for _, b := range books {
-		if err := search.Add(context.Background(), Ref{0, "book", b}, b, 1); err != nil {
+		if err := search.Add(context.Background(), Field{Ref{0, "book", b}, b, 1}); err != nil {
 			t.Fatal(err)
 		}
 	}

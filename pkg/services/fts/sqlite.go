@@ -22,9 +22,15 @@ func (m *sqliteSearch) createTable() error {
 	return err
 }
 
-func (m *sqliteSearch) Add(_ context.Context, ref Ref, text string, weight int) error {
-	_, err := m.db.GetSqlxSession().Exec(context.Background(), `INSERT INTO fts(kind, uid, org_id, text, weight) VALUES(?, ?, ?, ?, ?)`, ref.Kind, ref.UID, ref.OrgID, text, weight)
-	return err
+func (m *sqliteSearch) Add(_ context.Context, fields ...Field) error {
+	for _, f := range fields {
+		_, err := m.db.GetSqlxSession().Exec(context.Background(), `INSERT INTO fts(kind, uid, org_id, text, weight) VALUES(?, ?, ?, ?, ?)`,
+			f.Ref.Kind, f.Ref.UID, f.Ref.OrgID, f.Text, f.Weight)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (m *sqliteSearch) Delete(_ context.Context, ref Ref) error {
@@ -49,5 +55,3 @@ func (m *sqliteSearch) Search(_ context.Context, query string) ([]Ref, error) {
 	}
 	return results, nil
 }
-
-func (m *sqliteSearch) Close(_ context.Context) error { return nil }
