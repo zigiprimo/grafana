@@ -4,14 +4,16 @@ import (
 	"context"
 )
 
-// TODO: add context
-// TODO: add limit to Search()
-// TODO: make kind+org+uid a separate type and use that instead of Result?
+type Ref struct {
+	OrgID int64
+	Kind  string
+	UID   string
+}
 
 type Search interface {
-	Add(ctx context.Context, text, kind, uid string, orgID int64, weight int) error
-	Search(ctx context.Context, query string) ([]Result, error)
-	Delete(ctx context.Context, kind, uid string, orgID int64) error
+	Add(ctx context.Context, ref Ref, text string, weight int) error
+	Delete(ctx context.Context, ref Ref) error
+	Search(ctx context.Context, query string) ([]Ref, error)
 	Close(ctx context.Context) error
 }
 

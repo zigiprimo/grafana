@@ -114,7 +114,7 @@ func TestSimpleSearch(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, b := range books {
-		if err := search.Add(context.Background(), b, "book", b, 0, 1); err != nil {
+		if err := search.Add(context.Background(), Ref{0, "book", b}, b, 1); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -124,7 +124,7 @@ func TestSimpleSearch(t *testing.T) {
 	// often engenders a lifelong obsession with its unbelievable heroes,
 	// leading to an emotionally stunted, socially crippled adulthood, unable to
 	// deal with the real world. The other, of course, involves orcs."
-	if err := search.Delete(context.Background(), "book", "Atlas Shrugged by Ayn Rand (1957)", 0); err != nil {
+	if err := search.Delete(context.Background(), Ref{0, "book", "Atlas Shrugged by Ayn Rand (1957)"}); err != nil {
 		t.Fatal(err)
 	}
 

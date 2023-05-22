@@ -15,11 +15,11 @@ func TestSQLiteSimpleSearch(t *testing.T) {
 	}
 
 	for _, b := range books {
-		if err := search.Add(context.Background(), b, "book", b, 0, 1); err != nil {
+		if err := search.Add(context.Background(), Ref{0, "book", b}, b, 1); err != nil {
 			t.Fatal(err)
 		}
 	}
-	if err := search.Delete(context.Background(), "book", "Atlas Shrugged by Ayn Rand (1957)", 0); err != nil {
+	if err := search.Delete(context.Background(), Ref{0, "book", "Atlas Shrugged by Ayn Rand (1957)"}); err != nil {
 		t.Fatal(err)
 	}
 

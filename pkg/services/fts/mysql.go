@@ -29,17 +29,17 @@ func (m *mysqlSearch) createTable() error {
 	return err
 }
 
-func (m *mysqlSearch) Add(ctx context.Context, text, kind, uid string, orgID int64, weight int) error {
-	_, err := m.db.GetSqlxSession().Exec(ctx, `INSERT INTO fts(text, kind, uid, org_id, weight) VALUES(?, ?, ?, ?, ?)`, text, kind, uid, orgID, weight)
+func (m *mysqlSearch) Add(ctx context.Context, ref Ref, text string, weight int) error {
+	_, err := m.db.GetSqlxSession().Exec(ctx, `INSERT INTO fts(kind, uid, org_id, text, weight) VALUES(?, ?, ?, ?, ?)`, ref.Kind, ref.UID, ref.OrgID, text, weight)
 	return err
 }
 
-func (m *mysqlSearch) Delete(ctx context.Context, kind, uid string, orgID int64) error {
-	_, err := m.db.GetSqlxSession().Exec(ctx, `DELETE FROM fts WHERE kind=? AND uid=? AND org_id=?`, kind, uid, orgID)
+func (m *mysqlSearch) Delete(ctx context.Context, ref Ref) error {
+	_, err := m.db.GetSqlxSession().Exec(ctx, `DELETE FROM fts WHERE kind=? AND uid=? AND org_id=?`, ref.Kind, ref.UID, ref.OrgID)
 	return err
 }
 
-func (m *mysqlSearch) Search(ctx context.Context, query string) ([]Result, error) {
+func (m *mysqlSearch) Search(ctx context.Context, query string) ([]Ref, error) {
 	// SELECT kind, org_id, uid, MATCH(text) AGAINST (? IN BOOLEAN MODE) as rel FROM fts WHERE MATCH(text) AGAINST(? IN BOOLEAN MODE)
 	rows, err := m.db.GetSqlxSession().Query(ctx, `
 		SELECT kind, org_id, uid FROM fts WHERE MATCH(text) AGAINST(? IN BOOLEAN MODE)
@@ -47,9 +47,9 @@ func (m *mysqlSearch) Search(ctx context.Context, query string) ([]Result, error
 	if err != nil {
 		return nil, err
 	}
-	results := []Result{}
+	results := []Ref{}
 	for rows.Next() {
-		r := Result{}
+		r := Ref{}
 		// f := 0.0
 		if err := rows.Scan(&r.Kind, &r.OrgID, &r.UID /*, &f*/); err != nil {
 			return nil, err

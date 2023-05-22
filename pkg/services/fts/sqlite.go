@@ -22,31 +22,29 @@ func (m *sqliteSearch) createTable() error {
 	return err
 }
 
-func (m *sqliteSearch) Add(_ context.Context, text, kind, uid string, orgID int64, weight int) error {
-	_, err := m.db.GetSqlxSession().Exec(context.Background(), `INSERT INTO fts(text, kind, uid, org_id, weight) VALUES(?, ?, ?, ?, ?)`, text, kind, uid, orgID, weight)
+func (m *sqliteSearch) Add(_ context.Context, ref Ref, text string, weight int) error {
+	_, err := m.db.GetSqlxSession().Exec(context.Background(), `INSERT INTO fts(kind, uid, org_id, text, weight) VALUES(?, ?, ?, ?, ?)`, ref.Kind, ref.UID, ref.OrgID, text, weight)
 	return err
 }
 
-func (m *sqliteSearch) Delete(_ context.Context, kind, uid string, orgID int64) error {
-	_, err := m.db.GetSqlxSession().Exec(context.Background(), `DELETE FROM fts WHERE kind=? AND uid=? AND org_id=?`, kind, uid, orgID)
+func (m *sqliteSearch) Delete(_ context.Context, ref Ref) error {
+	_, err := m.db.GetSqlxSession().Exec(context.Background(), `DELETE FROM fts WHERE kind=? AND uid=? AND org_id=?`, ref.Kind, ref.UID, ref.OrgID)
 	return err
 }
 
-func (m *sqliteSearch) Search(_ context.Context, query string) ([]Result, error) {
+func (m *sqliteSearch) Search(_ context.Context, query string) ([]Ref, error) {
 	rows, err := m.db.GetSqlxSession().Query(context.Background(), `
-	SELECT kind, uid, org_id, weight FROM fts WHERE text MATCH ? LIMIT 50
+	SELECT kind, uid, org_id FROM fts WHERE text MATCH ? LIMIT 50
 	`, query)
 	if err != nil {
 		return nil, err
 	}
-	results := []Result{}
+	results := []Ref{}
 	for rows.Next() {
-		r := Result{}
-		f := 0.0
-		if err := rows.Scan(&r.Kind, &r.UID, &r.OrgID, &f); err != nil {
+		r := Ref{}
+		if err := rows.Scan(&r.Kind, &r.UID, &r.OrgID); err != nil {
 			return nil, err
 		}
-		r.Weight = int(f * 100)
 		results = append(results, r)
 	}
 	return results, nil
