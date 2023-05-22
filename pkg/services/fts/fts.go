@@ -25,6 +25,8 @@ type Search interface {
 	Search(ctx context.Context, query string) ([]Ref, error)
 }
 
+const BatchSize = 1000
+
 type op int
 
 const (

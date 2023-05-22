@@ -2,6 +2,7 @@ package fts
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/grafana/grafana/pkg/infra/db"
 )
@@ -24,16 +25,26 @@ func (m *mysqlSearch) createTable() error {
 			org_id INTEGER,
 			weight INTEGER,
 			FULLTEXT(text)
-		) ENGINE=MEMORY
+		)
 	`)
+	fmt.Println("MUYSQL CREATE TABLE", err)
 	return err
 }
 
 func (m *mysqlSearch) Add(ctx context.Context, fields ...Field) error {
-	for _, f := range fields {
-		_, err := m.db.GetSqlxSession().Exec(ctx, `INSERT INTO fts(kind, uid, org_id, text, weight) VALUES(?, ?, ?, ?, ?)`, f.Ref.Kind, f.Ref.UID, f.Ref.OrgID, f.Text, f.Weight)
-		if err != nil {
-			return err
+	sess := m.db.GetSqlxSession()
+	insert := "INSERT INTO fts(org_id, kind, uid, text, weight) VALUES "
+	vals := ""
+	args := []any{}
+	for i, f := range fields {
+		vals += "(?, ?, ?, ?, ?),"
+		args = append(args, f.Ref.OrgID, f.Ref.Kind, f.Ref.UID, f.Text, f.Weight)
+		if i%BatchSize == 0 || i == len(fields)-1 {
+			_, err := sess.Exec(ctx, insert+vals[0:len(vals)-1], args...)
+			if err != nil {
+				return err
+			}
+			args, vals = []any{}, ""
 		}
 	}
 	return nil

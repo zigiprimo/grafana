@@ -7,30 +7,17 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	_ "embed"
 
 	"github.com/grafana/grafana/pkg/infra/db"
 )
 
-var (
-	//go:embed testdata/movies.txt
-	movieTitles string
-	//go:embed testdata/dashboards.txt
-	dashboardTitles string
-	//go:embed testdata/movies.csv
-	moviesCSV []byte
-	//go:embed testdata/books.csv
-	booksCSV []byte
-)
-
 func BenchmarkDashboardTitles(b *testing.B) {
 	init := func(b *testing.B, search Search) {
-		for i, dash := range strings.Split(dashboardTitles, "\n") {
-			uid := strconv.Itoa(i)
-			if err := search.Add(context.Background(), Field{Ref{0, "dashboard", uid}, dash, 1}); err != nil {
-				b.Fatal(err)
-			}
+		if err := search.Add(context.Background(), DashboardTitles()...); err != nil {
+			b.Fatal(err)
 		}
 	}
 	run := func(b *testing.B, search Search, query string) {
@@ -59,46 +46,41 @@ func BenchmarkDashboardTitles(b *testing.B) {
 	// 	init(b, search)
 	// 	run(b, search, "prometheus")
 	// })
-	os.Setenv("GRAFANA_TEST_DB", "postgres")
-	os.Setenv("SKIP_MIGRATIONS", "true")
-	db := db.InitTestDB(b)
-	search, err := NewPostgresSearch(db)
-	if err != nil {
-		b.Fatal(err)
-	}
-	init(b, search)
-	b.Run("postgres", func(b *testing.B) {
-		run(b, search, "prometheus")
-		// sess := db.GetSqlxSession()
-		// b.ResetTimer()
-		// for i := 0; i < b.N; i++ {
-		// 	rows, err := sess.Query(context.Background(), "SELECT 1")
-		// 	if err != nil {
-		// 		b.Fatal(err)
-		// 	}
-		// 	rows.Close()
-		// }
-	})
-	// b.Run("mysql", func(b *testing.B) {
-	// 	os.Setenv("GRAFANA_TEST_DB", "mysql")
+	// b.Run("psql", func(b *testing.B) {
+	// 	os.Setenv("GRAFANA_TEST_DB", "postgres")
 	// 	os.Setenv("SKIP_MIGRATIONS", "true")
 	// 	db := db.InitTestDB(b)
-	// 	// search, err := NewMySQLSearch(db)
-	// 	// if err != nil {
-	// 	// b.Fatal(err)
-	// 	// }
-	// 	// init(b, search)
-	// 	// run(b, search, "prometheus")
-	// 	sess := db.GetSqlxSession()
-	// 	b.ResetTimer()
-	// 	for i := 0; i < b.N; i++ {
-	// 		rows, err := sess.Query(context.Background(), "SELECT 1")
-	// 		if err != nil {
-	// 			b.Fatal(err)
-	// 		}
-	// 		rows.Close()
+	// 	search, err := NewPostgresSearch(db)
+	// 	if err != nil {
+	// 		b.Fatal(err)
 	// 	}
+	// 	init(b, search)
+	// 	b.Run("postgres", func(b *testing.B) {
+	// 		run(b, search, "prometheus")
+	// 		// sess := db.GetSqlxSession()
+	// 		// b.ResetTimer()
+	// 		// for i := 0; i < b.N; i++ {
+	// 		// 	rows, err := sess.Query(context.Background(), "SELECT 1")
+	// 		// 	if err != nil {
+	// 		// 		b.Fatal(err)
+	// 		// 	}
+	// 		// 	rows.Close()
+	// 		// }
+	// 	})
 	// })
+	b.Run("mysql", func(b *testing.B) {
+		os.Setenv("GRAFANA_TEST_DB", "mysql")
+		os.Setenv("SKIP_MIGRATIONS", "true")
+		db := db.InitTestDB(b)
+		search, err := NewMySQLSearch(db)
+		if err != nil {
+			b.Fatal(err)
+		}
+		now := time.Now()
+		init(b, search)
+		b.Log("INIT:", time.Now().Sub(now))
+		run(b, search, "prometheus")
+	})
 }
 
 func BenchmarkMovieTitlesBluge(b *testing.B) {
@@ -106,11 +88,8 @@ func BenchmarkMovieTitlesBluge(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	for i, movie := range strings.Split(movieTitles, "\n") {
-		uid := strconv.Itoa(i)
-		if err := search.Add(context.Background(), Field{Ref{0, "movie", uid}, movie, 1}); err != nil {
-			b.Fatal(err)
-		}
+	if err := search.Add(context.Background(), MovieTitles()...); err != nil {
+		b.Fatal(err)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -124,11 +103,8 @@ func BenchmarkMovieTitlesSQLite(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
-	for i, movie := range strings.Split(movieTitles, "\n") {
-		uid := strconv.Itoa(i)
-		if err := search.Add(context.Background(), Field{Ref{0, "movie", uid}, movie, 1}); err != nil {
-			b.Fatal(err)
-		}
+	if err := search.Add(context.Background(), MovieTitles()...); err != nil {
+		b.Fatal(err)
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {

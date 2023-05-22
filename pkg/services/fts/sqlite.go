@@ -22,12 +22,20 @@ func (m *sqliteSearch) createTable() error {
 	return err
 }
 
-func (m *sqliteSearch) Add(_ context.Context, fields ...Field) error {
-	for _, f := range fields {
-		_, err := m.db.GetSqlxSession().Exec(context.Background(), `INSERT INTO fts(kind, uid, org_id, text, weight) VALUES(?, ?, ?, ?, ?)`,
-			f.Ref.Kind, f.Ref.UID, f.Ref.OrgID, f.Text, f.Weight)
-		if err != nil {
-			return err
+func (m *sqliteSearch) Add(ctx context.Context, fields ...Field) error {
+	sess := m.db.GetSqlxSession()
+	insert := "INSERT INTO fts(org_id, kind, uid, text, weight) VALUES "
+	vals := ""
+	args := []any{}
+	for i, f := range fields {
+		vals += "(?, ?, ?, ?, ?),"
+		args = append(args, f.Ref.OrgID, f.Ref.Kind, f.Ref.UID, f.Text, f.Weight)
+		if i%BatchSize == 0 || i == len(fields)-1 {
+			_, err := sess.Exec(ctx, insert+vals[0:len(vals)-1], args...)
+			if err != nil {
+				return err
+			}
+			args, vals = []any{}, ""
 		}
 	}
 	return nil
