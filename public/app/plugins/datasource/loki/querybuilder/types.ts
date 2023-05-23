@@ -95,9 +95,9 @@ export enum LokiOperationId {
 
 export enum LokiOperationOrder {
   LineFilters = 1,
-  LineFormats = 2,
+  Parsers = 2,
   LabelFilters = 3,
-  Unwrap = 4,
+  PipeOperations = 4,
   NoErrors = 5,
   RangeVectorFunction = 5,
   Last = 6,
