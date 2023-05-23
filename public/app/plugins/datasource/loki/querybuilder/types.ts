@@ -95,9 +95,10 @@ export enum LokiOperationId {
 
 export enum LokiOperationOrder {
   LineFilters = 1,
-  Parsers = 2,
+  PipeOperations = 2,
   LabelFilters = 3,
-  PipeOperations = 4,
+  // Unwrap is a special pipe operation cause usually it is applied as last pipe operation
+  Unwrap = 4,
   NoErrors = 5,
   RangeVectorFunction = 5,
   Last = 6,

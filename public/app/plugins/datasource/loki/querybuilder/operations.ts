@@ -91,7 +91,7 @@ export function getOperationDefinitions(): QueryBuilderOperationDef[] {
       defaultParams: [],
       alternativesKey: 'format',
       category: LokiVisualQueryOperationCategory.Formats,
-      orderRank: LokiOperationOrder.Parsers,
+      orderRank: LokiOperationOrder.PipeOperations,
       renderer: (model, def, innerExpr) => `${innerExpr} | json ${model.params.join(', ')}`.trim(),
       addOperationHandler: addLokiOperation,
       explainHandler: () =>
@@ -104,7 +104,7 @@ export function getOperationDefinitions(): QueryBuilderOperationDef[] {
       defaultParams: [],
       alternativesKey: 'format',
       category: LokiVisualQueryOperationCategory.Formats,
-      orderRank: LokiOperationOrder.Parsers,
+      orderRank: LokiOperationOrder.PipeOperations,
       renderer: pipelineRenderer,
       addOperationHandler: addLokiOperation,
       explainHandler: () =>
@@ -126,7 +126,7 @@ export function getOperationDefinitions(): QueryBuilderOperationDef[] {
       defaultParams: [''],
       alternativesKey: 'format',
       category: LokiVisualQueryOperationCategory.Formats,
-      orderRank: LokiOperationOrder.Parsers,
+      orderRank: LokiOperationOrder.PipeOperations,
       renderer: (model, def, innerExpr) => `${innerExpr} | regexp \`${model.params[0]}\``,
       addOperationHandler: addLokiOperation,
       explainHandler: () =>
@@ -148,7 +148,7 @@ export function getOperationDefinitions(): QueryBuilderOperationDef[] {
       defaultParams: [''],
       alternativesKey: 'format',
       category: LokiVisualQueryOperationCategory.Formats,
-      orderRank: LokiOperationOrder.Parsers,
+      orderRank: LokiOperationOrder.PipeOperations,
       renderer: (model, def, innerExpr) => `${innerExpr} | pattern \`${model.params[0]}\``,
       addOperationHandler: addLokiOperation,
       explainHandler: () =>
@@ -161,7 +161,7 @@ export function getOperationDefinitions(): QueryBuilderOperationDef[] {
       defaultParams: [],
       alternativesKey: 'format',
       category: LokiVisualQueryOperationCategory.Formats,
-      orderRank: LokiOperationOrder.Parsers,
+      orderRank: LokiOperationOrder.PipeOperations,
       renderer: pipelineRenderer,
       addOperationHandler: addLokiOperation,
       explainHandler: () =>
