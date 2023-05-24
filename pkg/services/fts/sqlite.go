@@ -2,6 +2,7 @@ package fts
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/grafana/grafana/pkg/infra/db"
 )
@@ -41,15 +42,39 @@ func (m *sqliteSearch) Add(ctx context.Context, fields ...Field) error {
 	return nil
 }
 
-func (m *sqliteSearch) Delete(_ context.Context, ref Ref) error {
-	_, err := m.db.GetSqlxSession().Exec(context.Background(), `DELETE FROM fts WHERE kind=? AND uid=? AND org_id=?`, ref.Kind, ref.UID, ref.OrgID)
+func (m *sqliteSearch) Delete(ctx context.Context, ref Ref) error {
+	_, err := m.db.GetSqlxSession().Exec(ctx, `DELETE FROM fts WHERE kind=? AND uid=? AND org_id=?`, ref.Kind, ref.UID, ref.OrgID)
 	return err
 }
 
-func (m *sqliteSearch) Search(_ context.Context, query string) ([]Ref, error) {
-	rows, err := m.db.GetSqlxSession().Query(context.Background(), `
-	SELECT kind, uid, org_id FROM fts WHERE text MATCH ? LIMIT 50
-	`, query)
+func (m *sqliteSearch) Search(ctx context.Context, query Query, limit int) ([]Ref, error) {
+	q := ""
+	for i, c := range query.Children {
+		if c.Mode == ModeMust {
+			if i > 0 {
+				q += ` AND ` + c.Term + ` `
+			} else {
+				q += ` ` + c.Term + ` `
+			}
+		} else if c.Mode == ModeNot {
+			q += ` NOT ` + c.Term + " "
+		} else if c.Mode == ModePhrase {
+			q += `"` + c.Term + `" `
+		} else if c.Mode == ModePrefix {
+			q += c.Term + `* `
+		} else {
+			if i > 0 {
+				q += ` OR ` + c.Term + ` `
+			} else {
+				q += ` ` + c.Term + ` `
+			}
+		}
+	}
+	fmt.Println("QUERY: ", q)
+
+	rows, err := m.db.GetSqlxSession().Query(ctx, `
+	SELECT kind, uid, org_id FROM fts WHERE text MATCH ? LIMIT ?
+	`, q, limit)
 	if err != nil {
 		return nil, err
 	}

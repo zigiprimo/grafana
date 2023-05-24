@@ -57,7 +57,7 @@ func (bs *blugeSearcher) Delete(_ context.Context, ref Ref) error {
 	return bs.w.Delete(bluge.NewDocument(id(ref).String()).ID())
 }
 
-func (bs *blugeSearcher) Search(_ context.Context, query string) ([]Ref, error) {
+func (bs *blugeSearcher) Search(_ context.Context, query Query, limit int) ([]Ref, error) {
 	r, err := bs.w.Reader()
 	if err != nil {
 		return nil, err
@@ -65,21 +65,21 @@ func (bs *blugeSearcher) Search(_ context.Context, query string) ([]Ref, error) 
 	defer r.Close()
 
 	q := bluge.NewBooleanQuery()
-	for _, s := range splitFields(query) {
-		if strings.HasPrefix(s, "+") {
-			q.AddMust(bluge.NewMatchQuery(s[1:]).SetField("text"))
-		} else if strings.HasPrefix(s, "-") {
-			q.AddMustNot(bluge.NewMatchQuery(s[1:]).SetField("text"))
-		} else if strings.HasPrefix(s, `"`) && strings.HasSuffix(s, `"`) {
-			q.AddShould(bluge.NewMatchPhraseQuery(s).SetField("text").SetSlop(1))
-		} else if strings.HasSuffix(s, `*`) {
-			q.AddShould(bluge.NewPrefixQuery(s[:len(s)-1]).SetField("text"))
+	for _, c := range query.Children {
+		if c.Mode == ModeMust {
+			q.AddMust(bluge.NewMatchQuery(c.Term).SetField("text"))
+		} else if c.Mode == ModeNot {
+			q.AddMustNot(bluge.NewMatchQuery(c.Term).SetField("text"))
+		} else if c.Mode == ModePhrase {
+			fmt.Println("PHRASE", c.Term)
+			q.AddShould(bluge.NewMatchPhraseQuery(c.Term).SetField("text").SetSlop(1))
+		} else if c.Mode == ModePrefix {
+			q.AddShould(bluge.NewPrefixQuery(c.Term).SetField("text"))
 		} else {
-			q.AddShould(bluge.NewMatchQuery(s).SetField("text"))
+			q.AddShould(bluge.NewMatchQuery(c.Term).SetField("text"))
 		}
 	}
-	// q := bluge.NewPrefixQuery(query).SetField("text")
-	request := bluge.NewTopNSearch(50, q)
+	request := bluge.NewTopNSearch(limit, q)
 	documentMatchIterator, err := r.Search(context.Background(), request)
 	if err != nil {
 		return nil, err
@@ -116,14 +116,4 @@ func (bs *blugeSearcher) Search(_ context.Context, query string) ([]Ref, error) 
 
 func (bs *blugeSearcher) Close() error {
 	return bs.w.Close()
-}
-
-func splitFields(s string) []string {
-	quoted := false
-	return strings.FieldsFunc(s, func(r rune) bool {
-		if r == '"' {
-			quoted = !quoted
-		}
-		return !quoted && r == ' '
-	})
 }

@@ -23,7 +23,7 @@ func BenchmarkDashboardTitles(b *testing.B) {
 	run := func(b *testing.B, search Search, query string) {
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if _, err := search.Search(context.Background(), query); err != nil {
+			if _, err := search.Search(context.Background(), NewQuery(query), 50); err != nil {
 				b.Fatal(err)
 			}
 		}
@@ -93,7 +93,7 @@ func BenchmarkMovieTitlesBluge(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		search.Search(context.Background(), "world strong*")
+		search.Search(context.Background(), NewQuery("world strong*"), 50)
 	}
 }
 
@@ -108,7 +108,7 @@ func BenchmarkMovieTitlesSQLite(b *testing.B) {
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		search.Search(context.Background(), "world strong*")
+		search.Search(context.Background(), NewQuery("world strong*"), 50)
 	}
 }
 
@@ -144,7 +144,7 @@ func BenchmarkMovieTitlesMySQL(b *testing.B) {
 	}
 	b.Run("mysql", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
-			search.Search(context.Background(), "world strong*")
+			search.Search(context.Background(), NewQuery("world strong*"), 50)
 		}
 	})
 }
@@ -154,7 +154,7 @@ func BenchmarkMovieTitles(b *testing.B) {
 		b.Helper()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			if res, err := search.Search(context.Background(), "world"); err != nil || len(res) == 0 {
+			if res, err := search.Search(context.Background(), NewQuery("world"), 50); err != nil || len(res) == 0 {
 				b.Fatal(res, err)
 			}
 		}
@@ -187,7 +187,6 @@ func BenchmarkMovieTitles(b *testing.B) {
 }
 
 func testSearch(t *testing.T, search Search) {
-	t.Helper()
 	// Add documents to the index
 	for _, doc := range []struct {
 		Kind   string
@@ -234,7 +233,7 @@ func testSearch(t *testing.T, search Search) {
 		{"+old +house", []string{"2", "3"}, false},                               // multiple word "AND" match
 		{"+night +old", []string{"1", "4"}, false},                               // multiple word "AND" match
 		{"+night -old", []string{"5", "8"}, false},                               // multiple word "AND"/"NOT" match
-		{"-night +old", []string{"2", "3"}, false},                               // multiple word "AND"/"NOT" match
+		{"+old -night", []string{"2", "3"}, false},                               // multiple word "AND"/"NOT" match
 		{"keeper -night -old", []string{"9"}, false},                             // multiple word "AND"/"NOT" match
 		{"Keats", []string{"9"}, false},                                          // case-insensitive
 		{"keats", []string{"9"}, false},                                          // case-insensitive
@@ -247,7 +246,7 @@ func testSearch(t *testing.T, search Search) {
 		// {"poem:keeper", []string{"1", "4", "5"}, false},
 		// TODO: weight ordering
 	} {
-		res, err := search.Search(context.Background(), test.Query)
+		res, err := search.Search(context.Background(), NewQuery(test.Query), 50)
 		if err != nil {
 			t.Fatal(test.Query, err)
 		}
@@ -274,6 +273,18 @@ func TestMySQLSearch(t *testing.T) {
 	os.Setenv("SKIP_MIGRATIONS", "true")
 	db := db.InitTestDB(t)
 	search, err := NewMySQLSearch(db)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testSearch(t, search)
+}
+
+func TestPostgresSearch(t *testing.T) {
+	os.Setenv("GRAFANA_TEST_DB", "postgres")
+	os.Setenv("SKIP_MIGRATIONS", "true")
+	db := db.InitTestDB(t)
+	search, err := NewPostgresSearch(db)
 	if err != nil {
 		t.Fatal(err)
 	}

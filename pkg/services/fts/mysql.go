@@ -55,22 +55,33 @@ func (m *mysqlSearch) Delete(ctx context.Context, ref Ref) error {
 	return err
 }
 
-func (m *mysqlSearch) Search(ctx context.Context, query string) ([]Ref, error) {
-	// SELECT kind, org_id, uid, MATCH(text) AGAINST (? IN BOOLEAN MODE) as rel FROM fts WHERE MATCH(text) AGAINST(? IN BOOLEAN MODE)
+func (m *mysqlSearch) Search(ctx context.Context, query Query, limit int) ([]Ref, error) {
+	q := ""
+	for _, c := range query.Children {
+		if c.Mode == ModeMust {
+			q += `+` + c.Term + " "
+		} else if c.Mode == ModeNot {
+			q += `-` + c.Term + " "
+		} else if c.Mode == ModePhrase {
+			q += `"` + c.Term + `" `
+		} else if c.Mode == ModePrefix {
+			q += c.Term + `* `
+		} else {
+			q += c.Term + ` `
+		}
+	}
 	rows, err := m.db.GetSqlxSession().Query(ctx, `
-		SELECT kind, org_id, uid FROM fts WHERE MATCH(text) AGAINST(? IN BOOLEAN MODE)
-	`, query)
+		SELECT kind, org_id, uid FROM fts WHERE MATCH(text) AGAINST(? IN BOOLEAN MODE) LIMIT ?
+	`, q, limit)
 	if err != nil {
 		return nil, err
 	}
 	results := []Ref{}
 	for rows.Next() {
 		r := Ref{}
-		// f := 0.0
 		if err := rows.Scan(&r.Kind, &r.OrgID, &r.UID /*, &f*/); err != nil {
 			return nil, err
 		}
-		// r.Weight = int(f * 100)
 		results = append(results, r)
 	}
 	return results, nil

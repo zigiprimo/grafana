@@ -33,7 +33,7 @@ func TestSQLiteSimpleSearch(t *testing.T) {
 		{"1938", []string{"The Death of the Heart by Elizabeth Bowen (1938)", "The Code of the Woosters by P. G. Wodehouse (1938)", "Scoop by Evelyn Waugh (1938)"}},
 		{"atlas", nil},
 	} {
-		res, err := search.Search(context.Background(), test.Query)
+		res, err := search.Search(context.Background(), NewQuery(test.Query), 50)
 		if err != nil {
 			t.Fatal(err)
 		}
