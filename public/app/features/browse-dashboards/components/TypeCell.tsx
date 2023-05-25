@@ -1,4 +1,5 @@
 import React from 'react';
+import Skeleton from 'react-loading-skeleton';
 import { CellProps } from 'react-table';
 
 import { Icon } from '@grafana/ui';
@@ -29,6 +30,8 @@ export function TypeCell({ row: { original: data } }: CellProps<DashboardsTreeIt
           <Icon name={iconName} /> Panel
         </TextModifier>
       );
+    case 'ui':
+      return <Skeleton width={100} />;
     default:
       return null;
   }

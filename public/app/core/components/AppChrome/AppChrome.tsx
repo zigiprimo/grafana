@@ -1,9 +1,10 @@
 import { css, cx } from '@emotion/css';
 import classNames from 'classnames';
 import React, { PropsWithChildren } from 'react';
+import { SkeletonTheme } from 'react-loading-skeleton';
 
 import { GrafanaTheme2, PageLayoutType } from '@grafana/data';
-import { useStyles2, LinkButton } from '@grafana/ui';
+import { useStyles2, LinkButton, useTheme2 } from '@grafana/ui';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 import { CommandPalette } from 'app/features/commandPalette/CommandPalette';
 import { KioskMode } from 'app/types';
@@ -17,6 +18,7 @@ import { TOP_BAR_LEVEL_HEIGHT } from './types';
 export interface Props extends PropsWithChildren<{}> {}
 
 export function AppChrome({ children }: Props) {
+  const theme = useTheme2();
   const styles = useStyles2(getStyles);
   const { chrome } = useGrafana();
   const state = chrome.useState();
@@ -54,12 +56,18 @@ export function AppChrome({ children }: Props) {
           </div>
         </>
       )}
-      <main className={contentClass} id="pageContent">
-        <div className={styles.panes}>
-          {state.layout === PageLayoutType.Standard && state.sectionNav && <SectionNav model={state.sectionNav} />}
-          <div className={styles.pageContainer}>{children}</div>
-        </div>
-      </main>
+      <SkeletonTheme
+        baseColor={theme.colors.background.secondary}
+        highlightColor={theme.colors.emphasize(theme.colors.background.secondary)}
+        borderRadius={theme.shape.borderRadius()}
+      >
+        <main className={contentClass} id="pageContent">
+          <div className={styles.panes}>
+            {state.layout === PageLayoutType.Standard && state.sectionNav && <SectionNav model={state.sectionNav} />}
+            <div className={styles.pageContainer}>{children}</div>
+          </div>
+        </main>
+      </SkeletonTheme>
       {!state.chromeless && (
         <>
           <MegaMenu searchBarHidden={searchBarHidden} onClose={() => chrome.setMegaMenu(false)} />

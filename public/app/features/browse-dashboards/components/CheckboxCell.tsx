@@ -1,4 +1,5 @@
 import React from 'react';
+import Skeleton from 'react-loading-skeleton';
 
 import { selectors } from '@grafana/e2e-selectors';
 import { Checkbox } from '@grafana/ui';
@@ -13,7 +14,7 @@ export default function CheckboxCell({
   const item = row.item;
 
   if (item.kind === 'ui' || !isSelected) {
-    return null;
+    return <Skeleton width={16} />;
   }
 
   const state = isSelected(item);

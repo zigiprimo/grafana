@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
 import React from 'react';
+import Skeleton from 'react-loading-skeleton';
 import { CellProps } from 'react-table';
 
 import { GrafanaTheme2 } from '@grafana/data';
@@ -25,7 +26,9 @@ export function NameCell({ row: { original: data }, onFolderClick }: NameCellPro
         <Indent level={level} />
         <span className={styles.folderButtonSpacer} />
         <em>
-          <TextModifier color="secondary">{item.uiKind === 'empty-folder' ? 'No items' : 'Loading...'}</TextModifier>
+          <TextModifier color="secondary">
+            {item.uiKind === 'empty-folder' ? 'No items' : <Skeleton width={200} />}
+          </TextModifier>
         </em>
       </>
     );
@@ -65,7 +68,7 @@ const getStyles = (theme: GrafanaTheme2) => {
   return {
     // Should be the same size as the <IconButton /> so Dashboard name is aligned to Folder name siblings
     folderButtonSpacer: css({
-      paddingLeft: `calc(${getSvgSize('md')}px + ${theme.spacing(0.5)})`,
+      paddingLeft: `calc(${getSvgSize('md')}px + ${theme.spacing(1)})`,
     }),
     link: css({
       '&:hover': {
