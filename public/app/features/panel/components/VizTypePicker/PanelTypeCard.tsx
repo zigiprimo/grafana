@@ -86,6 +86,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       align-items: center;
       padding: 8px;
       width: 100%;
+      min-height: 60px;
       position: relative;
       overflow: hidden;
       transition: ${theme.transitions.create(['background'], {

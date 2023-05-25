@@ -1,5 +1,6 @@
 import { css, cx } from '@emotion/css';
 import React, { useMemo, useReducer } from 'react';
+import Skeleton from 'react-loading-skeleton';
 import { useDebounce } from 'react-use';
 
 import { GrafanaTheme2, LoadingState } from '@grafana/data';
@@ -68,8 +69,9 @@ export const LibraryPanelsView = ({
     <div className={cx(styles.container, className)}>
       <div className={styles.libraryPanelList}>
         {loadingState === LoadingState.Loading ? (
-          <p>Loading library panels...</p>
-        ) : libraryPanels.length < 1 ? (
+          <Skeleton inline containerClassName={styles.skeletonContainer} count={3} height={60} />
+        ) : // <p>Loading library panels...</p>
+        libraryPanels.length < 1 ? (
           <p className={styles.noPanelsFound}>No library panels found.</p>
         ) : (
           libraryPanels?.map((item, i) => (
@@ -99,6 +101,12 @@ export const LibraryPanelsView = ({
 
 const getPanelViewStyles = (theme: GrafanaTheme2) => {
   return {
+    skeletonContainer: css({
+      display: 'flex',
+      flexDirection: 'column',
+      lineHeight: 1,
+      gap: theme.spacing(1),
+    }),
     container: css`
       display: flex;
       flex-direction: column;
