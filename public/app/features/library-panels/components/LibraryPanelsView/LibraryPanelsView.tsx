@@ -69,7 +69,7 @@ export const LibraryPanelsView = ({
     <div className={cx(styles.container, className)}>
       <div className={styles.libraryPanelList}>
         {loadingState === LoadingState.Loading ? (
-          <Skeleton inline containerClassName={styles.skeletonContainer} count={3} height={60} />
+          <Skeleton inline containerClassName={styles.skeletonContainer} count={10} height={60} />
         ) : // <p>Loading library panels...</p>
         libraryPanels.length < 1 ? (
           <p className={styles.noPanelsFound}>No library panels found.</p>
