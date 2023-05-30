@@ -1,4 +1,5 @@
 import { isString } from 'lodash';
+import pako from 'pako';
 import { from, merge, Observable, of } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -196,8 +197,24 @@ export class GrafanaDatasource extends DataSourceWithBackend<GrafanaQuery> {
 
   async getSnapshotData(snapshotUID: string): Promise<DataQueryResponse> {
     const response = await getBackendSrv().get(`/api/snapshot-data/${snapshotUID}`);
-    const json = JSON.parse(response.data)[0];
-    const frame = dataFrameFromJSON(json);
+    const byteChars = window.atob(response.data);
+
+    const byteNumbers = new Array(byteChars.length);
+    for (let i = 0; i < byteChars.length; i++) {
+      byteNumbers[i] = byteChars.charCodeAt(i);
+    }
+
+    const byteArray = new Uint8Array(byteNumbers);
+
+    const blob = pako.ungzip(byteArray);
+
+    const encodedJson = blob.reduce(function (data, byte) {
+      return data + String.fromCharCode(byte);
+    }, '');
+
+    const json = JSON.parse(decodeURIComponent(encodedJson));
+
+    const frame = dataFrameFromJSON(json[0]);
     return Promise.resolve({
       data: frame ? [frame] : [],
       state: LoadingState.Done,

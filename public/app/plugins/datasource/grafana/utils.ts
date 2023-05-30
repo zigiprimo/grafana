@@ -1,3 +1,4 @@
+import * as pako from 'pako';
 import { v4 as uuidv4 } from 'uuid';
 
 import { DataFrame, DataFrameJSON, dataFrameToJSON } from '@grafana/data';
@@ -45,12 +46,26 @@ async function updateSnapshotData(frames: DataFrame[], panel: PanelModel) {
 
   const uuid = uuidv4();
 
+  const str = JSON.stringify(snapshot); //2
+  const utf8Data = encodeURIComponent(str); //3
+  const geoJsonGz = pako.gzip(utf8Data); //4
+  const gzipedEncoded = window.btoa(
+    geoJsonGz.reduce(function (data, byte) {
+      return data + String.fromCharCode(byte);
+    }, '')
+  );
+
+  console.log('snapshot size: ', JSON.stringify(snapshot).length);
+  console.log('blob size: ', geoJsonGz.byteLength);
+
   const payload = {
     uid: uuid,
-    data: JSON.stringify(snapshot),
+    data: gzipedEncoded,
   };
 
-  await getBackendSrv().post(`/api/snapshot-data/`, payload);
+  await getBackendSrv().post(`/api/snapshot-data/`, payload, {
+    headers: { 'Content-Type': 'application/json', 'Content-Encoding': 'gzip' },
+  });
 
   const query: GrafanaQuery = {
     refId: 'A',
@@ -65,4 +80,14 @@ async function updateSnapshotData(frames: DataFrame[], panel: PanelModel) {
   });
 
   panel.refresh();
+}
+
+function _arrayBufferToBase64(bytes: Uint8Array) {
+  let binary = '';
+  let len = bytes.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+
+  return window.btoa(binary);
 }
