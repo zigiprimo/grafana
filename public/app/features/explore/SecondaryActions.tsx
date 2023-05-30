@@ -3,8 +3,12 @@ import React from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
 import { Button, HorizontalGroup, useTheme2 } from '@grafana/ui';
+import { ExploreId } from 'app/types';
+
+import { ExploreQueryOptions } from './ExploreQueryOptions';
 
 type Props = {
+  exploreId: ExploreId;
   addQueryRowButtonDisabled?: boolean;
   addQueryRowButtonHidden?: boolean;
   richHistoryRowButtonHidden?: boolean;
@@ -28,7 +32,7 @@ export function SecondaryActions(props: Props) {
   const styles = getStyles(theme);
   return (
     <div className={styles.containerMargin}>
-      <HorizontalGroup>
+      <HorizontalGroup align="flex-start">
         {!props.addQueryRowButtonHidden && (
           <Button
             variant="secondary"
@@ -60,6 +64,7 @@ export function SecondaryActions(props: Props) {
         >
           Inspector
         </Button>
+        <ExploreQueryOptions exploreId={props.exploreId} />
       </HorizontalGroup>
     </div>
   );

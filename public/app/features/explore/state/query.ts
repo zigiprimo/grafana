@@ -46,7 +46,7 @@ import {
   ThunkDispatch,
   ThunkResult,
 } from 'app/types';
-import { ExploreId, ExploreState, QueryOptions, SupplementaryQueries } from 'app/types/explore';
+import { ExploreId, ExploreQueryOptions, ExploreState, QueryOptions, SupplementaryQueries } from 'app/types/explore';
 
 import { notifyApp } from '../../../core/actions';
 import { createErrorNotification } from '../../../core/copy/appNotification';
@@ -231,10 +231,25 @@ export interface ClearCachePayload {
   exploreId: ExploreId;
 }
 export const clearCacheAction = createAction<ClearCachePayload>('explore/clearCache');
+/**
+ * Change the interval value in Explore. Usually called from the Query settings.
+ */
+export interface ChangeQueryOptionsPayload {
+  exploreId: ExploreId;
+  queryOptions: ExploreQueryOptions;
+}
+export const changeQueryOptionsAction = createAction<ChangeQueryOptionsPayload>('explore/changeQueryOptions');
 
 //
 // Action creators
 //
+
+export function changeQueryOptions(
+  exploreId: ExploreId,
+  queryOptions: ExploreQueryOptions
+): PayloadAction<ChangeQueryOptionsPayload> {
+  return changeQueryOptionsAction({ exploreId, queryOptions });
+}
 
 /**
  * Adds a query row after the row with the given index.
@@ -493,6 +508,7 @@ export const runQueries = (
       absoluteRange,
       cache,
       supplementaryQueries,
+      queryOptions: { interval },
     } = exploreItemState;
     let newQuerySource: Observable<ExplorePanelData>;
     let newQuerySubscription: SubscriptionLike;
@@ -556,7 +572,7 @@ export const runQueries = (
       };
 
       const timeZone = getTimeZone(getState().user);
-      const transaction = buildQueryTransaction(exploreId, queries, queryOptions, range, scanning, timeZone);
+      const transaction = buildQueryTransaction(exploreId, queries, queryOptions, range, scanning, timeZone, interval);
 
       dispatch(changeLoadingStateAction({ exploreId, loadingState: LoadingState.Loading }));
 
@@ -870,6 +886,14 @@ export function setSupplementaryQueryEnabled(
 // the frozen state.
 // https://github.com/reduxjs/redux-toolkit/issues/242
 export const queryReducer = (state: ExploreItemState, action: AnyAction): ExploreItemState => {
+  if (changeQueryOptionsAction.match(action)) {
+    const { queryOptions } = action.payload;
+    return {
+      ...state,
+      queryOptions,
+    };
+  }
+
   if (addQueryRowAction.match(action)) {
     const { queries } = state;
     const { index, query } = action.payload;

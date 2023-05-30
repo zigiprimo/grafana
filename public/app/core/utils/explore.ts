@@ -25,6 +25,7 @@ import {
   toUtc,
   urlUtil,
 } from '@grafana/data';
+import { intervalToMs } from '@grafana/data/src/datetime/rangeutil';
 import { DataSourceSrv, getDataSourceSrv } from '@grafana/runtime';
 import { RefreshPicker } from '@grafana/ui';
 import store from 'app/core/store';
@@ -36,6 +37,7 @@ import { ExploreId, QueryOptions, QueryTransaction } from 'app/types/explore';
 import { config } from '../config';
 
 import { getNextRefIdChar } from './query';
+// TODO: Fix this import
 
 export const DEFAULT_RANGE = {
   from: 'now-1h',
@@ -125,14 +127,32 @@ export function buildQueryTransaction(
   queryOptions: QueryOptions,
   range: TimeRange,
   scanning: boolean,
-  timeZone?: TimeZone
+  timeZone?: TimeZone,
+  interval?: string
 ): QueryTransaction {
   const key = queries.reduce((combinedKey, query) => {
     combinedKey += query.key;
     return combinedKey;
   }, '');
 
-  const { interval, intervalMs } = getIntervals(range, queryOptions.minInterval, queryOptions.maxDataPoints);
+  let requestInterval, requestIntervalMs;
+
+  if (interval) {
+    requestInterval = interval;
+    try {
+      requestIntervalMs = intervalToMs(interval);
+    } catch (error) {
+      // This should not happen as the interval is validated before.
+      console.error(`Invalid interval: ${interval}`);
+      requestInterval = undefined;
+    }
+  }
+
+  if (!requestInterval || !requestIntervalMs) {
+    const { interval, intervalMs } = getIntervals(range, queryOptions.minInterval, queryOptions.maxDataPoints);
+    requestInterval = interval;
+    requestIntervalMs = intervalMs;
+  }
 
   // Most datasource is using `panelId + query.refId` for cancellation logic.
   // Using `format` here because it relates to the view panel that the request is for.
@@ -145,8 +165,8 @@ export function buildQueryTransaction(
     // TODO probably should be taken from preferences but does not seem to be used anyway.
     timezone: timeZone || DefaultTimeZone,
     startTime: Date.now(),
-    interval,
-    intervalMs,
+    interval: requestInterval,
+    intervalMs: requestIntervalMs,
     // TODO: the query request expects number and we are using string here. Seems like it works so far but can create
     // issues down the road.
     panelId: panelId as any,
@@ -155,8 +175,8 @@ export function buildQueryTransaction(
     requestId: 'explore_' + exploreId,
     rangeRaw: range.raw,
     scopedVars: {
-      __interval: { text: interval, value: interval },
-      __interval_ms: { text: intervalMs, value: intervalMs },
+      __interval: { text: requestInterval, value: requestInterval },
+      __interval_ms: { text: requestIntervalMs, value: requestIntervalMs },
     },
     maxDataPoints: queryOptions.maxDataPoints,
     liveStreaming: queryOptions.liveStreaming,

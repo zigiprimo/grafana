@@ -485,6 +485,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
                 onClickAddQueryRowButton={this.onClickAddQueryRowButton}
                 onClickRichHistoryButton={this.toggleShowRichHistory}
                 onClickQueryInspectorButton={this.toggleShowQueryInspector}
+                exploreId={exploreId}
               />
               <ResponseErrorContainer exploreId={exploreId} />
             </PanelContainer>

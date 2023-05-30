@@ -30,6 +30,10 @@ export type ExploreQueryParams = {
   right: string;
 };
 
+export type ExploreQueryOptions = {
+  interval: string;
+};
+
 /**
  * Global Explore state
  */
@@ -130,6 +134,10 @@ export interface ExploreItemState {
   range: TimeRange;
 
   absoluteRange: AbsoluteTimeRange;
+  /**
+   * Interval value in Explore. Managed in the query options and used by all query runs.
+   */
+  queryOptions: ExploreQueryOptions;
   /**
    * True if scanning for more results is active.
    */
