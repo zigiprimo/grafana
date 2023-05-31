@@ -44,6 +44,8 @@ composableKinds: DataQuery: {
 				range?: bool
 				// @deprecated, now use queryType.
 				instant?: bool
+				// Used to set the step parameter.
+				step?: string
 
 				#QueryEditorMode: "code" | "builder" @cuetsy(kind="enum")
 

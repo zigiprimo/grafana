@@ -63,14 +63,19 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
       }
     }
 
+    function onStepChange(e: React.SyntheticEvent<HTMLInputElement>) {
+      onChange({ ...query, step: e.currentTarget.value });
+      onRunQuery();
+    }
+
     let queryType = query.queryType ?? (query.instant ? LokiQueryType.Instant : LokiQueryType.Range);
-    let showMaxLines = isLogsQuery(query.expr);
+    let isLogQuery = isLogsQuery(query.expr);
 
     return (
       <EditorRow>
         <QueryOptionGroup
           title="Options"
-          collapsedInfo={getCollapsedInfo(query, queryType, showMaxLines, maxLines)}
+          collapsedInfo={getCollapsedInfo(query, queryType, isLogQuery, maxLines)}
           queryStats={queryStats}
         >
           <EditorField
@@ -89,7 +94,7 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
           <EditorField label="Type">
             <RadioButtonGroup options={queryTypeOptions} value={queryType} onChange={onQueryTypeChange} />
           </EditorField>
-          {showMaxLines && (
+          {isLogQuery && (
             <EditorField label="Line limit" tooltip="Upper limit for number of log lines returned by query.">
               <AutoSizeInput
                 className="width-4"
@@ -101,18 +106,34 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
               />
             </EditorField>
           )}
-          <EditorField
-            label="Resolution"
-            tooltip="Sets the step parameter of Loki metrics range queries. With a resolution of 1/1, each pixel corresponds to one data point. 1/10 retrieves one data point per 10 pixels. Lower resolutions perform better."
-          >
-            <Select
-              isSearchable={false}
-              onChange={onResolutionChange}
-              options={RESOLUTION_OPTIONS}
-              value={query.resolution || 1}
-              aria-label="Select resolution"
-            />
-          </EditorField>
+          {!isLogQuery && (
+            <>
+              <EditorField
+                label="Step"
+                tooltip="Use the step parameter when making metric queries to Loki. The query will be evaluated at start and then evaluated again at start + step and again at start + step + step until end is reached. If not filled, Grafana's calculated $__interval will be used."
+              >
+                <AutoSizeInput
+                  className="width-6"
+                  placeholder={'auto'}
+                  type="string"
+                  defaultValue={''}
+                  onCommitChange={onStepChange}
+                />
+              </EditorField>
+              <EditorField
+                label="Resolution"
+                tooltip="Sets the step parameter of Loki metrics range queries. With a resolution of 1/1, each pixel corresponds to one data point. 1/10 retrieves one data point per 10 pixels. Lower resolutions perform better."
+              >
+                <Select
+                  isSearchable={false}
+                  onChange={onResolutionChange}
+                  options={RESOLUTION_OPTIONS}
+                  value={query.resolution || 1}
+                  aria-label="Select resolution"
+                />
+              </EditorField>
+            </>
+          )}
           {config.featureToggles.lokiQuerySplittingConfig && config.featureToggles.lokiQuerySplitting && (
             <EditorField
               label="Split Duration"
