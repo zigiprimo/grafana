@@ -47,7 +47,7 @@ func TestRouteTestGrafanaRuleConfig(t *testing.T) {
 				Expr: "",
 				GrafanaManagedCondition: &definitions.EvalAlertConditionCommand{
 					Condition: data1.RefID,
-					Data:      []models.AlertQuery{data1, data2},
+					Data:      ApiAlertQueriesFromAlertQueries([]models.AlertQuery{data1, data2}),
 					Now:       time.Time{},
 				},
 			})
@@ -83,62 +83,7 @@ func TestRouteTestGrafanaRuleConfig(t *testing.T) {
 				Expr: "",
 				GrafanaManagedCondition: &definitions.EvalAlertConditionCommand{
 					Condition: data1.RefID,
-					Data:      []models.AlertQuery{data1, data2},
-					Now:       currentTime,
-				},
-			})
-
-			require.Equal(t, http.StatusOK, response.Status())
-
-			evaluator.AssertCalled(t, "Evaluate", mock.Anything, currentTime)
-		})
-	})
-
-	t.Run("when fine-grained access is disabled", func(t *testing.T) {
-		rc := &contextmodel.ReqContext{
-			Context: &web.Context{
-				Req: &http.Request{},
-			},
-			IsSignedIn: false,
-			SignedInUser: &user.SignedInUser{
-				OrgID: 1,
-			},
-		}
-		ac := acMock.New().WithDisabled()
-
-		t.Run("should require user to be signed in", func(t *testing.T) {
-			data1 := models.GenerateAlertQuery()
-
-			ds := &fakes.FakeCacheService{DataSources: []*datasources.DataSource{
-				{UID: data1.DatasourceUID},
-			}}
-			currentTime := time.Now()
-
-			evaluator := &eval_mocks.ConditionEvaluatorMock{}
-			var result []eval.Result
-			evaluator.EXPECT().Evaluate(mock.Anything, mock.Anything).Return(result, nil)
-
-			srv := createTestingApiSrv(ds, ac, eval_mocks.NewEvaluatorFactory(evaluator))
-
-			response := srv.RouteTestGrafanaRuleConfig(rc, definitions.TestRulePayload{
-				Expr: "",
-				GrafanaManagedCondition: &definitions.EvalAlertConditionCommand{
-					Condition: data1.RefID,
-					Data:      []models.AlertQuery{data1},
-					Now:       currentTime,
-				},
-			})
-
-			require.Equal(t, http.StatusUnauthorized, response.Status())
-			evaluator.AssertNotCalled(t, "Evaluate", mock.Anything, currentTime)
-
-			rc.IsSignedIn = true
-
-			response = srv.RouteTestGrafanaRuleConfig(rc, definitions.TestRulePayload{
-				Expr: "",
-				GrafanaManagedCondition: &definitions.EvalAlertConditionCommand{
-					Condition: data1.RefID,
-					Data:      []models.AlertQuery{data1},
+					Data:      ApiAlertQueriesFromAlertQueries([]models.AlertQuery{data1, data2}),
 					Now:       currentTime,
 				},
 			})
@@ -174,7 +119,7 @@ func TestRouteEvalQueries(t *testing.T) {
 			}
 
 			response := srv.RouteEvalQueries(rc, definitions.EvalQueriesPayload{
-				Data: []models.AlertQuery{data1, data2},
+				Data: ApiAlertQueriesFromAlertQueries([]models.AlertQuery{data1, data2}),
 				Now:  time.Time{},
 			})
 
@@ -211,62 +156,7 @@ func TestRouteEvalQueries(t *testing.T) {
 			srv := createTestingApiSrv(ds, ac, eval_mocks.NewEvaluatorFactory(evaluator))
 
 			response := srv.RouteEvalQueries(rc, definitions.EvalQueriesPayload{
-				Data: []models.AlertQuery{data1, data2},
-				Now:  currentTime,
-			})
-
-			require.Equal(t, http.StatusOK, response.Status())
-
-			evaluator.AssertCalled(t, "EvaluateRaw", mock.Anything, currentTime)
-		})
-	})
-
-	t.Run("when fine-grained access is disabled", func(t *testing.T) {
-		rc := &contextmodel.ReqContext{
-			Context: &web.Context{
-				Req: &http.Request{},
-			},
-			IsSignedIn: false,
-			SignedInUser: &user.SignedInUser{
-				OrgID: 1,
-			},
-		}
-		ac := acMock.New().WithDisabled()
-
-		t.Run("should require user to be signed in", func(t *testing.T) {
-			data1 := models.GenerateAlertQuery()
-
-			ds := &fakes.FakeCacheService{DataSources: []*datasources.DataSource{
-				{UID: data1.DatasourceUID},
-			}}
-
-			currentTime := time.Now()
-
-			evaluator := &eval_mocks.ConditionEvaluatorMock{}
-			result := &backend.QueryDataResponse{
-				Responses: map[string]backend.DataResponse{
-					"test": {
-						Frames: nil,
-						Error:  nil,
-					},
-				},
-			}
-			evaluator.EXPECT().EvaluateRaw(mock.Anything, mock.Anything).Return(result, nil)
-
-			srv := createTestingApiSrv(ds, ac, eval_mocks.NewEvaluatorFactory(evaluator))
-
-			response := srv.RouteEvalQueries(rc, definitions.EvalQueriesPayload{
-				Data: []models.AlertQuery{data1},
-				Now:  currentTime,
-			})
-
-			require.Equal(t, http.StatusUnauthorized, response.Status())
-			evaluator.AssertNotCalled(t, "EvaluateRaw", mock.Anything, mock.Anything)
-
-			rc.IsSignedIn = true
-
-			response = srv.RouteEvalQueries(rc, definitions.EvalQueriesPayload{
-				Data: []models.AlertQuery{data1},
+				Data: ApiAlertQueriesFromAlertQueries([]models.AlertQuery{data1, data2}),
 				Now:  currentTime,
 			})
 

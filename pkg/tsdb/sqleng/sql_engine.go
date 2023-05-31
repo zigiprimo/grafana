@@ -23,6 +23,9 @@ import (
 	"github.com/grafana/grafana/pkg/tsdb/intervalv2"
 )
 
+// XormDriverMu is used to allow safe concurrent registering and querying of drivers in xorm
+var XormDriverMu sync.RWMutex
+
 // MetaKeyExecutedQueryString is the key where the executed query should get stored
 const MetaKeyExecutedQueryString = "executedQueryString"
 
@@ -51,22 +54,24 @@ var NewXormEngine = func(driverName string, connectionString string) (*xorm.Engi
 }
 
 type JsonData struct {
-	MaxOpenConns        int    `json:"maxOpenConns"`
-	MaxIdleConns        int    `json:"maxIdleConns"`
-	ConnMaxLifetime     int    `json:"connMaxLifetime"`
-	ConnectionTimeout   int    `json:"connectionTimeout"`
-	Timescaledb         bool   `json:"timescaledb"`
-	Mode                string `json:"sslmode"`
-	ConfigurationMethod string `json:"tlsConfigurationMethod"`
-	TlsSkipVerify       bool   `json:"tlsSkipVerify"`
-	RootCertFile        string `json:"sslRootCertFile"`
-	CertFile            string `json:"sslCertFile"`
-	CertKeyFile         string `json:"sslKeyFile"`
-	Timezone            string `json:"timezone"`
-	Encrypt             string `json:"encrypt"`
-	Servername          string `json:"servername"`
-	TimeInterval        string `json:"timeInterval"`
-	Database            string `json:"database"`
+	MaxOpenConns            int    `json:"maxOpenConns"`
+	MaxIdleConns            int    `json:"maxIdleConns"`
+	ConnMaxLifetime         int    `json:"connMaxLifetime"`
+	ConnectionTimeout       int    `json:"connectionTimeout"`
+	Timescaledb             bool   `json:"timescaledb"`
+	Mode                    string `json:"sslmode"`
+	ConfigurationMethod     string `json:"tlsConfigurationMethod"`
+	TlsSkipVerify           bool   `json:"tlsSkipVerify"`
+	RootCertFile            string `json:"sslRootCertFile"`
+	CertFile                string `json:"sslCertFile"`
+	CertKeyFile             string `json:"sslKeyFile"`
+	Timezone                string `json:"timezone"`
+	Encrypt                 string `json:"encrypt"`
+	Servername              string `json:"servername"`
+	TimeInterval            string `json:"timeInterval"`
+	Database                string `json:"database"`
+	SecureDSProxy           bool   `json:"enableSecureSocksProxy"`
+	AllowCleartextPasswords bool   `json:"allowCleartextPasswords"`
 }
 
 type DataSourceInfo struct {
@@ -78,6 +83,13 @@ type DataSourceInfo struct {
 	Updated                 time.Time
 	UID                     string
 	DecryptedSecureJSONData map[string]string
+}
+
+// Defaults for the xorm connection pool
+type DefaultConnectionInfo struct {
+	MaxOpenConns    int
+	MaxIdleConns    int
+	ConnMaxLifetime int
 }
 
 type DataPluginConfiguration struct {
@@ -97,7 +109,6 @@ type DataSourceHandler struct {
 	log                    log.Logger
 	dsInfo                 DataSourceInfo
 	rowLimit               int64
-	session                *xorm.Session
 }
 
 type QueryJson struct {
@@ -147,7 +158,6 @@ func NewQueryDataHandler(config DataPluginConfiguration, queryResultTransformer 
 		queryDataHandler.metricColumnTypes = config.MetricColumnTypes
 	}
 
-	// Create the xorm engine
 	engine, err := NewXormEngine(config.DriverName, config.ConnectionString)
 	if err != nil {
 		return nil, err
@@ -158,11 +168,6 @@ func NewQueryDataHandler(config DataPluginConfiguration, queryResultTransformer 
 	engine.SetConnMaxLifetime(time.Duration(config.DSInfo.JsonData.ConnMaxLifetime) * time.Second)
 
 	queryDataHandler.engine = engine
-
-	// Create the xorm session
-	session := engine.NewSession()
-	queryDataHandler.session = session
-
 	return &queryDataHandler, nil
 }
 
@@ -273,7 +278,9 @@ func (e *DataSourceHandler) executeQuery(query backend.DataQuery, wg *sync.WaitG
 		return
 	}
 
-	db := e.session.DB()
+	session := e.engine.NewSession()
+	defer session.Close()
+	db := session.DB()
 
 	rows, err := db.QueryContext(queryContext, interpolatedQuery)
 	if err != nil {
@@ -306,9 +313,13 @@ func (e *DataSourceHandler) executeQuery(query backend.DataQuery, wg *sync.WaitG
 
 	frame.Meta.ExecutedQueryString = interpolatedQuery
 
-	// If no rows were returned, no point checking anything else.
+	// If no rows were returned, clear any previously set `Fields` with a single empty `data.Field` slice.
+	// Then assign `queryResult.dataResponse.Frames` the current single frame with that single empty Field.
+	// This assures 1) our visualization doesn't display unwanted empty fields, and also that 2)
+	// additionally-needed frame data stays intact and is correctly passed to our visulization.
 	if frame.Rows() == 0 {
-		queryResult.dataResponse.Frames = data.Frames{}
+		frame.Fields = []*data.Field{}
+		queryResult.dataResponse.Frames = data.Frames{frame}
 		ch <- queryResult
 		return
 	}
@@ -1009,7 +1020,7 @@ func (m *SQLMacroEngineBase) ReplaceAllStringSubmatchFunc(re *regexp.Regexp, str
 	result := ""
 	lastIndex := 0
 
-	for _, v := range re.FindAllSubmatchIndex([]byte(str), -1) {
+	for _, v := range re.FindAllStringSubmatchIndex(str, -1) {
 		groups := []string{}
 		for i := 0; i < len(v); i += 2 {
 			groups = append(groups, str[v[i]:v[i+1]])

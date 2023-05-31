@@ -22,6 +22,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/licensing"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginsettings"
 	"github.com/grafana/grafana/pkg/services/rendering"
+	"github.com/grafana/grafana/pkg/services/supportbundles/supportbundlestest"
 	"github.com/grafana/grafana/pkg/services/updatechecker"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/web"
@@ -71,7 +72,7 @@ func setupTestEnvironment(t *testing.T, cfg *setting.Cfg, features *featuremgmt.
 			PluginsCDNURLTemplate: cfg.PluginsCDNURLTemplate,
 			PluginSettings:        cfg.PluginSettings,
 		}),
-		SocialService: social.ProvideService(cfg, features, &usagestats.UsageStatsMock{}),
+		SocialService: social.ProvideService(cfg, features, &usagestats.UsageStatsMock{}, supportbundlestest.NewFakeBundleService()),
 	}
 
 	m := web.New()
@@ -275,6 +276,41 @@ func TestHTTPServer_GetFrontendSettings_apps(t *testing.T) {
 						Preload: true,
 						Path:    "/test-app/module.js",
 						Version: "0.5.0",
+					},
+				},
+			},
+		},
+		{
+			desc: "angular app plugin",
+			pluginStore: func() plugins.Store {
+				return &plugins.FakePluginStore{
+					PluginList: []plugins.PluginDTO{
+						{
+							Module: fmt.Sprintf("/%s/module.js", "test-app"),
+							JSONData: plugins.JSONData{
+								ID:      "test-app",
+								Info:    plugins.Info{Version: "0.5.0"},
+								Type:    plugins.App,
+								Preload: true,
+							},
+							AngularDetected: true,
+						},
+					},
+				}
+			},
+			pluginSettings: func() pluginsettings.Service {
+				return &pluginsettings.FakePluginSettings{
+					Plugins: newAppSettings("test-app", true),
+				}
+			},
+			expected: settings{
+				Apps: map[string]*plugins.AppDTO{
+					"test-app": {
+						ID:              "test-app",
+						Preload:         true,
+						Path:            "/test-app/module.js",
+						Version:         "0.5.0",
+						AngularDetected: true,
 					},
 				},
 			},
