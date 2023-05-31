@@ -30,8 +30,9 @@ export type ExploreQueryParams = {
   right: string;
 };
 
+// Currently only used for interval, but if needed we can add other options here
 export type ExploreQueryOptions = {
-  interval: string;
+  interval?: string;
 };
 
 /**

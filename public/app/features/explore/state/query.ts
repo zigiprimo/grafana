@@ -232,7 +232,7 @@ export interface ClearCachePayload {
 }
 export const clearCacheAction = createAction<ClearCachePayload>('explore/clearCache');
 /**
- * Change the interval value in Explore. Usually called from the Query settings.
+ * Change the value of query options in Explore. Usually called from the Query settings.
  */
 export interface ChangeQueryOptionsPayload {
   exploreId: ExploreId;
@@ -508,7 +508,7 @@ export const runQueries = (
       absoluteRange,
       cache,
       supplementaryQueries,
-      queryOptions: { interval },
+      queryOptions,
     } = exploreItemState;
     let newQuerySource: Observable<ExplorePanelData>;
     let newQuerySubscription: SubscriptionLike;
@@ -559,7 +559,7 @@ export const runQueries = (
 
       stopQueryState(querySubscription);
 
-      const queryOptions: QueryOptions = {
+      const qo: QueryOptions = {
         minInterval,
         // maxDataPoints is used in:
         // Loki - used for logs streaming for buffer size, with undefined it falls back to datasource config if it supports that.
@@ -572,7 +572,15 @@ export const runQueries = (
       };
 
       const timeZone = getTimeZone(getState().user);
-      const transaction = buildQueryTransaction(exploreId, queries, queryOptions, range, scanning, timeZone, interval);
+      const transaction = buildQueryTransaction(
+        exploreId,
+        queries,
+        qo,
+        range,
+        scanning,
+        timeZone,
+        queryOptions.interval
+      );
 
       dispatch(changeLoadingStateAction({ exploreId, loadingState: LoadingState.Loading }));
 

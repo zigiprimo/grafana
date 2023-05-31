@@ -135,23 +135,22 @@ export function buildQueryTransaction(
     return combinedKey;
   }, '');
 
-  let requestInterval, requestIntervalMs;
-
+  let queryInterval, queryIntervalMs;
   if (interval) {
-    requestInterval = interval;
+    queryInterval = interval;
     try {
-      requestIntervalMs = intervalToMs(interval);
+      queryIntervalMs = intervalToMs(interval);
     } catch (error) {
       // This should not happen as the interval is validated before.
       console.error(`Invalid interval: ${interval}`);
-      requestInterval = undefined;
     }
   }
 
-  if (!requestInterval || !requestIntervalMs) {
+  if (!queryInterval || !queryIntervalMs) {
+    // If we don't have an interval, we need to calculate one based on the time range and the number of data points
     const { interval, intervalMs } = getIntervals(range, queryOptions.minInterval, queryOptions.maxDataPoints);
-    requestInterval = interval;
-    requestIntervalMs = intervalMs;
+    queryInterval = interval;
+    queryIntervalMs = intervalMs;
   }
 
   // Most datasource is using `panelId + query.refId` for cancellation logic.
@@ -165,8 +164,8 @@ export function buildQueryTransaction(
     // TODO probably should be taken from preferences but does not seem to be used anyway.
     timezone: timeZone || DefaultTimeZone,
     startTime: Date.now(),
-    interval: requestInterval,
-    intervalMs: requestIntervalMs,
+    interval: queryInterval,
+    intervalMs: queryIntervalMs,
     // TODO: the query request expects number and we are using string here. Seems like it works so far but can create
     // issues down the road.
     panelId: panelId as any,
@@ -175,8 +174,8 @@ export function buildQueryTransaction(
     requestId: 'explore_' + exploreId,
     rangeRaw: range.raw,
     scopedVars: {
-      __interval: { text: requestInterval, value: requestInterval },
-      __interval_ms: { text: requestIntervalMs, value: requestIntervalMs },
+      __interval: { text: queryInterval, value: queryInterval },
+      __interval_ms: { text: queryIntervalMs, value: queryIntervalMs },
     },
     maxDataPoints: queryOptions.maxDataPoints,
     liveStreaming: queryOptions.liveStreaming,

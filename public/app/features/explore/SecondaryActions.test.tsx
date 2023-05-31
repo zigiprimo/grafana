@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { noop } from 'lodash';
 import React from 'react';
 
+import { ExploreId } from 'app/types/explore';
+
 import { SecondaryActions } from './SecondaryActions';
 
 describe('SecondaryActions', () => {
@@ -12,6 +14,7 @@ describe('SecondaryActions', () => {
         onClickAddQueryRowButton={noop}
         onClickRichHistoryButton={noop}
         onClickQueryInspectorButton={noop}
+        exploreId={ExploreId.left}
       />
     );
 
@@ -28,6 +31,7 @@ describe('SecondaryActions', () => {
         onClickAddQueryRowButton={noop}
         onClickRichHistoryButton={noop}
         onClickQueryInspectorButton={noop}
+        exploreId={ExploreId.left}
       />
     );
 
@@ -43,6 +47,7 @@ describe('SecondaryActions', () => {
         onClickAddQueryRowButton={noop}
         onClickRichHistoryButton={noop}
         onClickQueryInspectorButton={noop}
+        exploreId={ExploreId.left}
       />
     );
 
@@ -63,6 +68,7 @@ describe('SecondaryActions', () => {
         onClickAddQueryRowButton={onClickAddRow}
         onClickRichHistoryButton={onClickHistory}
         onClickQueryInspectorButton={onClickQueryInspector}
+        exploreId={ExploreId.left}
       />
     );
 
