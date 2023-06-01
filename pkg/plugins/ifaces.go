@@ -29,6 +29,8 @@ type PluginSource interface {
 	PluginClass(ctx context.Context) Class
 	PluginURIs(ctx context.Context) []string
 	DefaultSignature(ctx context.Context) (Signature, bool)
+	Base(ctx context.Context, pluginJSON JSONData, fs FS) (string, error)
+	Module(ctx context.Context, pluginJSON JSONData, fs FS) (string, error)
 }
 
 type FileStore interface {

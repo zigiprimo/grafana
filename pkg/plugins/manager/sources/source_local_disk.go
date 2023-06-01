@@ -2,6 +2,8 @@ package sources
 
 import (
 	"context"
+	"path"
+	"path/filepath"
 
 	"github.com/grafana/grafana/pkg/plugins"
 )
@@ -35,4 +37,18 @@ func (s *LocalSource) DefaultSignature(_ context.Context) (plugins.Signature, bo
 	default:
 		return plugins.Signature{}, false
 	}
+}
+
+func (s *LocalSource) Base(_ context.Context, jsonData plugins.JSONData, fs plugins.FS) (string, error) {
+	if s.class == plugins.Core {
+		return path.Join("public/app/plugins", string(jsonData.Type), filepath.Base(fs.Base())), nil
+	}
+	return path.Join("public/plugins", jsonData.ID), nil
+}
+
+func (s *LocalSource) Module(_ context.Context, jsonData plugins.JSONData, fs plugins.FS) (string, error) {
+	if s.class == plugins.Core {
+		return path.Join("app/plugins", string(jsonData.Type), filepath.Base(fs.Base()), "module"), nil
+	}
+	return path.Join("plugins", jsonData.ID, "module"), nil
 }
