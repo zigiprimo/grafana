@@ -390,8 +390,8 @@ type FakePluginSource struct {
 	PluginClassFunc      func(ctx context.Context) plugins.Class
 	PluginURIsFunc       func(ctx context.Context) []string
 	DefaultSignatureFunc func(ctx context.Context) (plugins.Signature, bool)
-	BaseFunc             func(_ context.Context, pluginJSON plugins.JSONData, fs plugins.FS) (string, error)
-	ModuleFunc           func(_ context.Context, pluginJSON plugins.JSONData, fs plugins.FS) (string, error)
+	BaseFunc             func(ctx context.Context, pluginJSON plugins.JSONData, fs plugins.FS) (string, error)
+	ModuleFunc           func(ctx context.Context, pluginJSON plugins.JSONData, fs plugins.FS) (string, error)
 }
 
 func (s *FakePluginSource) PluginClass(ctx context.Context) plugins.Class {

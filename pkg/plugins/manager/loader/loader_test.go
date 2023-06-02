@@ -466,14 +466,7 @@ func TestLoader_Load_CustomSource(t *testing.T) {
 			return
 		}
 
-		cfg := &config.Cfg{
-			PluginsCDNURLTemplate: "https://cdn.example.com",
-			PluginSettings: setting.PluginSettings{
-				"grafana-worldmap-panel": {"cdn": "true"},
-			},
-		}
-
-		pluginPaths := []string{"../testdata/cdn"}
+		pluginPaths := []string{"../testdata/worldmap-panel"}
 		expected := []*plugins.Plugin{{
 			JSONData: plugins.JSONData{
 				ID:   "grafana-worldmap-panel",
@@ -486,22 +479,21 @@ func TestLoader_Load_CustomSource(t *testing.T) {
 						{Name: "MIT License", URL: "https://github.com/grafana/worldmap-panel/blob/master/LICENSE"},
 					},
 					Logos: plugins.Logos{
-						// Path substitution
-						Small: "/custom/base/grafana-worldmap-panel/images/worldmap_logo.svg",
-						Large: "/custom/base/grafana-worldmap-panel/images/worldmap_logo.svg",
+						Small: "public/grafana-worldmap-panel/images/worldmap_logo.svg",
+						Large: "public/grafana-worldmap-panel/images/worldmap_logo.svg",
 					},
 					Screenshots: []plugins.Screenshots{
 						{
 							Name: "World",
-							Path: "/custom/base/grafana-worldmap-panel/images/worldmap-world.png",
+							Path: "public/grafana-worldmap-panel/images/worldmap-world.png",
 						},
 						{
 							Name: "USA",
-							Path: "/custom/base/grafana-worldmap-panel/images/worldmap-usa.png",
+							Path: "public/grafana-worldmap-panel/images/worldmap-usa.png",
 						},
 						{
 							Name: "Light Theme",
-							Path: "/custom/base/grafana-worldmap-panel/images/worldmap-light-theme.png",
+							Path: "public/grafana-worldmap-panel/images/worldmap-light-theme.png",
 						},
 					},
 				},
@@ -510,14 +502,14 @@ func TestLoader_Load_CustomSource(t *testing.T) {
 					Plugins:        []plugins.Dependency{},
 				},
 			},
-			FS:        mustNewStaticFSForTests(t, filepath.Join(parentDir, "testdata/cdn/plugin")),
+			FS:        mustNewStaticFSForTests(t, filepath.Join(parentDir, "testdata/worldmap-panel")),
 			Class:     plugins.Bundled,
 			Signature: plugins.SignatureValid,
-			BaseURL:   "/custom/base/grafana-worldmap-panel",
-			Module:    "/custom/module/grafana-worldmap-panel",
+			BaseURL:   "public/grafana-worldmap-panel",
+			Module:    "https://plugins.grafana/grafana-worldmap-panel/module",
 		}}
 
-		l := newLoader(cfg)
+		l := newLoader(&config.Cfg{})
 		got, err := l.Load(context.Background(), &fakes.FakePluginSource{
 			PluginClassFunc: func(ctx context.Context) plugins.Class {
 				return plugins.Bundled
@@ -531,10 +523,10 @@ func TestLoader_Load_CustomSource(t *testing.T) {
 				}, true
 			},
 			BaseFunc: func(_ context.Context, pluginJSON plugins.JSONData, fs plugins.FS) (string, error) {
-				return "/custom/base/grafana-worldmap-panel", nil
+				return "public/grafana-worldmap-panel/", nil
 			},
 			ModuleFunc: func(_ context.Context, pluginJSON plugins.JSONData, fs plugins.FS) (string, error) {
-				return "/custom/module/grafana-worldmap-panel", nil
+				return "https://plugins.grafana/grafana-worldmap-panel/module", nil
 			},
 		})
 
