@@ -378,6 +378,7 @@ export class UnthemedQueryEditor extends PureComponent<Props, State> {
   };
 
   onFileDrop = (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
+    // TODO: Dynamic import here
     DFImport.filesToDataframes(acceptedFiles).subscribe((next) => {
       const snapshot: DataFrameJSON[] = [];
       next.dataFrames.forEach((df) => {
@@ -423,6 +424,7 @@ export class UnthemedQueryEditor extends PureComponent<Props, State> {
               readAs="readAsArrayBuffer"
               fileListRenderer={this.fileListRenderer}
               options={{
+                // TODO: Refactor these constants
                 onDrop: this.onFileDrop,
                 maxSize: DFImport.maxFileSize,
                 multiple: false,

@@ -129,6 +129,7 @@ export function DataSourceModal({
               readAs="readAsArrayBuffer"
               fileListRenderer={() => undefined}
               options={{
+                // TODO: Refactor these constants
                 maxSize: DFImport.maxFileSize,
                 multiple: false,
                 accept: DFImport.acceptedFiles,

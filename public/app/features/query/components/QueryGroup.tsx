@@ -287,6 +287,7 @@ export class QueryGroup extends PureComponent<Props, State> {
       enableFileUpload: config.featureToggles.editPanelCSVDragAndDrop,
       fileUploadOptions: {
         onDrop: this.onFileDrop,
+        // TODO: Refactor these constants
         maxSize: DFImport.maxFileSize,
         multiple: false,
         accept: DFImport.acceptedFiles,
@@ -349,6 +350,7 @@ export class QueryGroup extends PureComponent<Props, State> {
   };
 
   onFileDrop = (acceptedFiles: File[], fileRejections: FileRejection[], event: DropEvent) => {
+    // TOOD: Dynamic import here
     DFImport.filesToDataframes(acceptedFiles).subscribe(async (next) => {
       const snapshot: DataFrameJSON[] = [];
       next.dataFrames.forEach((df) => {
