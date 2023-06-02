@@ -115,10 +115,6 @@ const (
 	// Enables a new top-level page called Connections. This page is an experiment that provides a better experience when you install and configure data sources and other plugins.
 	FlagDataConnectionsConsole = "dataConnectionsConsole"
 
-	// FlagInternationalization
-	// Enables internationalization
-	FlagInternationalization = "internationalization"
-
 	// FlagTopnav
 	// Enables new top navigation and page layouts
 	FlagTopnav = "topnav"
@@ -262,6 +258,10 @@ const (
 	// FlagAlertStateHistoryLokiSecondary
 	// Enable Grafana to write alert state history to an external Loki instance in addition to Grafana annotations.
 	FlagAlertStateHistoryLokiSecondary = "alertStateHistoryLokiSecondary"
+
+	// FlagAlertingNotificationsPoliciesMatchingInstances
+	// Enables the preview of matching instances for notification policies
+	FlagAlertingNotificationsPoliciesMatchingInstances = "alertingNotificationsPoliciesMatchingInstances"
 
 	// FlagAlertStateHistoryLokiPrimary
 	// Enable a remote Loki instance as the primary source for state history reads.
