@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { CoreApp, isValidDuration, SelectableValue } from '@grafana/data';
 import { EditorField, EditorRow } from '@grafana/experimental';
@@ -61,14 +61,42 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
       }
     }
 
-    let queryType = query.queryType ?? (query.instant ? LokiQueryType.Instant : LokiQueryType.Range);
-    let showMaxLines = isLogsQuery(query.expr);
+    function onStepChange(e: React.SyntheticEvent<HTMLInputElement>) {
+      let step = e.currentTarget.value.trimEnd();
+      // If we have number, append "s" to make it a duration
+      if (step && !isNaN(Number(step))) {
+        step += 's';
+      }
+      onChange({ ...query, step });
+      onRunQuery();
+    }
+
+    const queryType = query.queryType ?? (query.instant ? LokiQueryType.Instant : LokiQueryType.Range);
+    const isLogQuery = isLogsQuery(query.expr);
+
+    const isValidStep = useMemo(() => {
+      const templateVars = ['$__interval', '$__range'];
+      if (!query.step) {
+        return true;
+      }
+      if (isValidDuration(query.step)) {
+        return true;
+      }
+      if (!isNaN(Number(query.step))) {
+        return true;
+      }
+
+      if (templateVars.includes(query.step)) {
+        return true;
+      }
+      return false;
+    }, [query.step]);
 
     return (
       <EditorRow>
         <QueryOptionGroup
           title="Options"
-          collapsedInfo={getCollapsedInfo(query, queryType, showMaxLines, maxLines)}
+          collapsedInfo={getCollapsedInfo(query, queryType, maxLines, isLogQuery)}
           queryStats={queryStats}
         >
           <EditorField
@@ -87,7 +115,8 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
           <EditorField label="Type">
             <RadioButtonGroup options={queryTypeOptions} value={queryType} onChange={onQueryTypeChange} />
           </EditorField>
-          {showMaxLines && (
+          {isLogQuery && (
+            // Show log specific options only for log queries
             <EditorField label="Line limit" tooltip="Upper limit for number of log lines returned by query.">
               <AutoSizeInput
                 className="width-4"
@@ -111,6 +140,20 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
               aria-label="Select resolution"
             />
           </EditorField>
+          <EditorField
+            label="Step"
+            tooltip="Use the step parameter when making metric queries to Loki. If not filled, Grafana's calculated $__interval will be used."
+            error={'Invalid step. Example valid values: 1s, 5m, 10h, 1d, $__interval, $__range'}
+            invalid={!isValidStep}
+          >
+            <AutoSizeInput
+              className="width-6"
+              placeholder={'auto'}
+              type="string"
+              defaultValue={query.step}
+              onCommitChange={onStepChange}
+            />
+          </EditorField>
           {config.featureToggles.lokiQuerySplittingConfig && config.featureToggles.lokiQuerySplitting && (
             <EditorField
               label="Split Duration"
@@ -132,12 +175,7 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
   }
 );
 
-function getCollapsedInfo(
-  query: LokiQuery,
-  queryType: LokiQueryType,
-  showMaxLines: boolean,
-  maxLines: number
-): string[] {
+function getCollapsedInfo(query: LokiQuery, queryType: LokiQueryType, maxLines: number, isLogQuery: boolean): string[] {
   const queryTypeLabel = queryTypeOptions.find((x) => x.value === queryType);
   const resolutionLabel = RESOLUTION_OPTIONS.find((x) => x.value === (query.resolution ?? 1));
 
@@ -147,14 +185,20 @@ function getCollapsedInfo(
     items.push(`Legend: ${query.legendFormat}`);
   }
 
-  if (query.resolution) {
-    items.push(`Resolution: ${resolutionLabel?.label}`);
-  }
-
   items.push(`Type: ${queryTypeLabel?.label}`);
 
-  if (showMaxLines) {
+  if (isLogQuery) {
     items.push(`Line limit: ${query.maxLines ?? maxLines}`);
+  }
+
+  if (!isLogQuery) {
+    if (query.step) {
+      items.push(`Step: ${query.step}`);
+    }
+
+    if (query.resolution) {
+      items.push(`Resolution: ${resolutionLabel?.label}`);
+    }
   }
 
   return items;

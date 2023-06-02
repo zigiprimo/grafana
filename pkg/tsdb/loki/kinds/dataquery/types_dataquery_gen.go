@@ -105,6 +105,9 @@ type LokiDataQuery struct {
 
 	// Used to scale the interval value.
 	Resolution *int64 `json:"resolution,omitempty"`
+
+	// Used to set the step parameter.
+	Step *string `json:"step,omitempty"`
 }
 
 // LokiQueryDirection defines model for LokiQueryDirection.

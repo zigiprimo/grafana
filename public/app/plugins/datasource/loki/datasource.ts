@@ -75,6 +75,7 @@ import {
   getStreamSelectorsFromQuery,
   isLogsQuery,
   isValidQuery,
+  normalizeStepInLokiQuery,
   requestSupportsSplitting,
 } from './queryUtils';
 import { doLokiChannelStream } from './streaming';
@@ -254,8 +255,9 @@ export class LokiDatasource
 
   query(request: DataQueryRequest<LokiQuery>): Observable<DataQueryResponse> {
     const queries = request.targets
-      .map(getNormalizedLokiQuery) // "fix" the `.queryType` prop
-      .map((q) => ({ ...q, maxLines: q.maxLines ?? this.maxLines }));
+      .map(getNormalizedLokiQuery) // "fix" the `.queryType` prop and normalize step
+      .map((q) => ({ ...q, maxLines: q.maxLines ?? this.maxLines }))
+      .map((q) => normalizeStepInLokiQuery(q));
 
     const fixedRequest: DataQueryRequest<LokiQuery> = {
       ...request,
@@ -825,6 +827,7 @@ export class LokiDatasource
       ...target,
       legendFormat: this.templateSrv.replace(target.legendFormat, rest),
       expr: this.templateSrv.replace(exprWithAdHoc, rest, this.interpolateQueryExpr),
+      step: this.templateSrv.replace(target.step, rest),
     };
   }
 

@@ -39,6 +39,8 @@ composableKinds: DataQuery: {
 				maxLines?: int64
 				// Used to scale the interval value.
 				resolution?: int64
+				// Used to set the step parameter.
+				step?:       string
 				editorMode?: #QueryEditorMode
 				// @deprecated, now use queryType.
 				range?: bool
