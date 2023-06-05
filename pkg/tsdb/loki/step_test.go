@@ -30,6 +30,22 @@ func TestLokiStep(t *testing.T) {
 			require.Equal(t, time.Second*14, step)
 		})
 
+		// calculateStep parses a duration with support for unit that Grafana uses (e.g 1d)
+		t.Run("step with 1d", func(t *testing.T) {
+			queryStep := "1d"
+			step, err := calculateStep(time.Second*7, time.Second, 2, &queryStep)
+			require.NoError(t, err)
+			require.Equal(t, time.Hour*48, step)
+		})
+
+		// calculateStep parses a duration with support for unit that Grafana uses (e.g 1w)
+		t.Run("step with 1w", func(t *testing.T) {
+			queryStep := "1w"
+			step, err := calculateStep(time.Second*7, time.Second, 2, &queryStep)
+			require.NoError(t, err)
+			require.Equal(t, time.Hour*336, step)
+		})
+
 		// Returns error
 		t.Run("invalid step", func(t *testing.T) {
 			queryStep := "invalid"

@@ -84,23 +84,6 @@ export function getHighlighterExpressionsFromQuery(input: string): string[] {
   return results;
 }
 
-export function normalizeStepInLokiQuery(query: LokiQuery): LokiQuery {
-  if (!query.step) {
-    return query;
-  }
-  try {
-    // Unfortunately, go has problem with some intervals such as "1d" or "1w",
-    // so we try to convert them to seconds. If not possible, we leave them as they are.
-    const seconds = rangeUtil.intervalToSeconds(query.step);
-    return {
-      ...query,
-      step: `${seconds}s`,
-    };
-  } catch (e) {
-    return query;
-  }
-}
-
 // we are migrating from `.instant` and `.range` to `.queryType`
 // this function returns a new query object that:
 // - has `.queryType`

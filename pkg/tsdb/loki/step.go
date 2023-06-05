@@ -3,6 +3,8 @@ package loki
 import (
 	"math"
 	"time"
+
+	"github.com/grafana/grafana/pkg/tsdb/intervalv2"
 )
 
 // round the duration to the nearest millisecond larger-or-equal-to the duration
@@ -29,11 +31,10 @@ func calculateStep(interval time.Duration, timeRange time.Duration, resolution i
 		return ceilMs(chosenStep), nil
 	}
 
-	// If we have step, we use it. In this case, if the step is incorrect, we return an error
-	qs, err := time.ParseDuration(interpolateVariables(*queryStep, interval, timeRange))
+	step, err := intervalv2.ParseIntervalStringToTimeDuration(interpolateVariables(*queryStep, interval, timeRange))
 	if err != nil {
-		return qs, err
+		return step, err
 	}
-	return time.Duration(qs.Nanoseconds() * resolution), nil
 
+	return time.Duration(step.Nanoseconds() * resolution), nil
 }
