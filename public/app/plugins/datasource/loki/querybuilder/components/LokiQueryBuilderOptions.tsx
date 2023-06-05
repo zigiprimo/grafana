@@ -63,10 +63,6 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
 
     function onStepChange(e: React.SyntheticEvent<HTMLInputElement>) {
       let step = e.currentTarget.value.trimEnd();
-      // If we have number, append "s" to make it a duration
-      if (step && !isNaN(Number(step))) {
-        step += 's';
-      }
       onChange({ ...query, step });
       onRunQuery();
     }
@@ -75,20 +71,14 @@ export const LokiQueryBuilderOptions = React.memo<Props>(
     const isLogQuery = isLogsQuery(query.expr);
 
     const isValidStep = useMemo(() => {
-      const templateVars = ['$__interval', '$__range'];
+      const supportedVariables = ['$__interval', '$__range'];
       if (!query.step) {
         return true;
       }
-      if (isValidDuration(query.step)) {
-        return true;
-      }
-      if (!isNaN(Number(query.step))) {
+      if (isValidDuration(query.step) || !isNaN(Number(query.step)) || supportedVariables.includes(query.step)) {
         return true;
       }
 
-      if (templateVars.includes(query.step)) {
-        return true;
-      }
       return false;
     }, [query.step]);
 

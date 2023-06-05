@@ -1,7 +1,6 @@
 import { SyntaxNode } from '@lezer/common';
 import { escapeRegExp } from 'lodash';
 
-import { rangeUtil } from '@grafana/data';
 import {
   parser,
   LineFilter,
