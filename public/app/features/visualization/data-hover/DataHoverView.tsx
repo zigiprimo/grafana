@@ -23,24 +23,15 @@ export interface Props {
   header?: string;
 }
 
-interface DisplayValue {
-  name: string;
-  value: unknown;
-  valueString: string;
-  highlight: boolean;
-}
-
 export const DataHoverView = ({ data, rowIndex, columnIndex, sortOrder, mode, header = undefined }: Props) => {
   const styles = useStyles2(getStyles);
 
   if (!data || rowIndex == null) {
     return null;
   }
-  const fields = data.fields.map((f, idx) => {
-    return { ...f, hovered: idx === columnIndex };
-  });
-  const visibleFields = fields.filter((f) => !Boolean(f.config.custom?.hideFrom?.tooltip));
-  const traceIDField = visibleFields.find((field) => field.name === 'traceID') || fields[0];
+
+  const visibleFields = data.fields.filter((f) => !Boolean(f.config.custom?.hideFrom?.tooltip));
+  const traceIDField = visibleFields.find((field) => field.name === 'traceID') || data.fields[0];
   const orderedVisibleFields = [];
   // Only include traceID if it's visible and put it in front.
   if (visibleFields.filter((field) => traceIDField === field).length > 0) {
@@ -52,18 +43,15 @@ export const DataHoverView = ({ data, rowIndex, columnIndex, sortOrder, mode, he
     return null;
   }
 
-  const displayValues: DisplayValue[] = [];
+  const displayValues: Array<[string, unknown, string]> = [];
   const links: Array<LinkModel<Field>> = [];
   const linkLookup = new Set<string>();
 
-  for (const field of orderedVisibleFields) {
-    if (mode === TooltipDisplayMode.Single && columnIndex != null && !field.hovered) {
-      continue;
-    }
-    const value = field.values[rowIndex];
-    const fieldDisplay = field.display ? field.display(value) : { text: `${value}`, numeric: +value };
-    if (field.getLinks) {
-      field.getLinks({ calculatedValue: fieldDisplay, valueRowIndex: rowIndex }).forEach((link) => {
+  for (const f of orderedVisibleFields) {
+    const v = f.values[rowIndex];
+    const disp = f.display ? f.display(v) : { text: `${v}`, numeric: +v };
+    if (f.getLinks) {
+      f.getLinks({ calculatedValue: disp, valueRowIndex: rowIndex }).forEach((link) => {
         const key = `${link.title}/${link.href}`;
         if (!linkLookup.has(key)) {
           links.push(link);
@@ -72,16 +60,11 @@ export const DataHoverView = ({ data, rowIndex, columnIndex, sortOrder, mode, he
       });
     }
 
-    displayValues.push({
-      name: getFieldDisplayName(field, data),
-      value,
-      valueString: formattedValueToString(fieldDisplay),
-      highlight: field.hovered,
-    });
+    displayValues.push([getFieldDisplayName(f, data), v, formattedValueToString(disp)]);
   }
 
   if (sortOrder && sortOrder !== SortOrder.None) {
-    displayValues.sort((a, b) => arrayUtils.sortValues(sortOrder)(a.value, b.value));
+    displayValues.sort((a, b) => arrayUtils.sortValues(sortOrder)(a[1], b[1]));
   }
 
   const renderLinks = () =>
@@ -116,12 +99,19 @@ export const DataHoverView = ({ data, rowIndex, columnIndex, sortOrder, mode, he
       )}
       <table className={styles.infoWrap}>
         <tbody>
-          {displayValues.map((displayValue, i) => (
-            <tr key={`${i}/${rowIndex}`} className={displayValue.highlight ? styles.highlight : ''}>
-              <th>{displayValue.name}:</th>
-              <td>{renderValue(displayValue.valueString)}</td>
+          {(mode === TooltipDisplayMode.Multi || mode == null) &&
+            displayValues.map((v, i) => (
+              <tr key={`${i}/${rowIndex}`} className={i === columnIndex ? styles.highlight : ''}>
+                <th>{v[0]}:</th>
+                <td>{renderValue(v[2])}</td>
+              </tr>
+            ))}
+          {mode === TooltipDisplayMode.Single && columnIndex && (
+            <tr key={`${columnIndex}/${rowIndex}`}>
+              <th>{displayValues[columnIndex][0]}:</th>
+              <td>{renderValue(displayValues[columnIndex][2])}</td>
             </tr>
-          ))}
+          )}
           {renderLinks()}
         </tbody>
       </table>
@@ -168,8 +158,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       }
     `,
     highlight: css`
-      /* !important is required to overwrite default table styles */
-      background: ${theme.colors.action.hover} !important;
+      background: ${theme.colors.action.hover};
     `,
     link: css`
       color: #6e9fff;
