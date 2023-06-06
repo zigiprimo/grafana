@@ -57,14 +57,19 @@ function createMidnight(): GrafanaTheme2 {
     colors: {
       mode: 'dark',
       background: {
-        canvas: '#000000',
-        primary: '#000000',
-        secondary: '#181818',
+        canvas: '#050505',
+        primary: '#050505',
+        secondary: '#101115',
       },
       border: {
-        weak: `rgba(${whiteBase}, 0.17)`,
-        medium: `rgba(${whiteBase}, 0.25)`,
+        weak: `rgba(${whiteBase}, 0.12)`,
+        medium: `rgba(${whiteBase}, 0.20)`,
         strong: `rgba(${whiteBase}, 0.35)`,
+      },
+    },
+    components: {
+      panel: {
+        background: '#101115',
       },
     },
   });
