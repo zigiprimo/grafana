@@ -204,6 +204,24 @@ Grafana v10.0.0 ships with the new React 18 upgrade. In turn, changes in the bat
 
 Update the plugin to version 1.8.3 or higher in your Grafana instance management console. This will ensure your plugin query editor works as intended.
 
+### Changing the folder UID through the API is deprecated and will be removed in a future release
+
+#### You are affected if:
+
+You provision folders using Grafana's API, and you use the `PUT /api/folders/:uid` to change folder UIDs during provisioning.
+
+<!-- TODO 
+
+#### Description:
+
+Describe why this change is happening.
+
+#### Migration path
+
+Set the folder UID when creating a folder, and delete/recreate the folder to change its UID
+
+-->
+
 ## For Plugin Developers
 
 ### Upgrading to React 18
