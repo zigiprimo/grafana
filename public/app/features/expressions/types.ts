@@ -1,4 +1,5 @@
-import { DataQuery, ReducerID, SelectableValue } from '@grafana/data';
+import { ReducerID, SelectableValue } from '@grafana/data';
+import type { DataQuery } from '@grafana/schema';
 
 import { EvalFunction } from '../alerting/state/alertDef';
 
@@ -46,6 +47,14 @@ export const gelTypes: Array<SelectableValue<ExpressionQueryType>> = [
   },
 ];
 
+export type SupportedReducerFns =
+  | ReducerID.min
+  | ReducerID.max
+  | ReducerID.mean
+  | ReducerID.sum
+  | ReducerID.count
+  | ReducerID.last;
+
 export const reducerTypes: Array<SelectableValue<string>> = [
   { value: ReducerID.min, label: 'Min', description: 'Get the minimum value' },
   { value: ReducerID.max, label: 'Max', description: 'Get the maximum value' },
@@ -79,6 +88,13 @@ export const reducerModes: Array<SelectableValue<ReducerMode>> = [
   },
 ];
 
+export type SupportedDownsamplingTypes =
+  | ReducerID.last
+  | ReducerID.min
+  | ReducerID.max
+  | ReducerID.mean
+  | ReducerID.sum;
+
 export const downsamplingTypes: Array<SelectableValue<string>> = [
   { value: ReducerID.last, label: 'Last', description: 'Fill with the last value' },
   { value: ReducerID.min, label: 'Min', description: 'Fill with the minimum value' },
@@ -87,7 +103,9 @@ export const downsamplingTypes: Array<SelectableValue<string>> = [
   { value: ReducerID.sum, label: 'Sum', description: 'Fill with the sum of all values' },
 ];
 
-export const upsamplingTypes: Array<SelectableValue<string>> = [
+export type SupportedUpsamplingTypes = 'pad' | 'backfilling' | 'fillna';
+
+export const upsamplingTypes: Array<SelectableValue<SupportedUpsamplingTypes>> = [
   { value: 'pad', label: 'pad', description: 'fill with the last known value' },
   { value: 'backfilling', label: 'backfilling', description: 'fill with the next known value' },
   { value: 'fillna', label: 'fillna', description: 'Fill with NaNs' },
@@ -104,20 +122,44 @@ export const thresholdFunctions: Array<SelectableValue<EvalFunction>> = [
  * For now this is a single object to cover all the types.... would likely
  * want to split this up by type as the complexity increases
  */
-export interface ExpressionQuery extends DataQuery {
-  type: ExpressionQueryType;
-  reducer?: string;
-  expression?: string;
-  window?: string;
-  downsampler?: string;
-  upsampler?: string;
-  conditions?: ClassicCondition[];
-  settings?: ExpressionQuerySettings;
+export type ExpressionQuery =
+  | ThresholdExpression
+  | ReduceExpression
+  | ResampleExpression
+  | MathExpression
+  | ClassicConditionsExpression;
+
+export interface ReduceExpression extends DataQuery {
+  type: ExpressionQueryType.reduce;
+  expression: string; // this is the refId we want to reduce on
+  reducer: SupportedReducerFns;
+  settings?: {
+    mode?: ReducerMode;
+    replaceWithValue?: number;
+  };
 }
 
-export interface ExpressionQuerySettings {
-  mode?: ReducerMode;
-  replaceWithValue?: number;
+export interface ResampleExpression extends DataQuery {
+  type: ExpressionQueryType.resample;
+  expression: string; // this is the refId we want to reduce on
+  downsampler: SupportedDownsamplingTypes;
+  upsampler: SupportedUpsamplingTypes;
+  window: string;
+}
+
+export interface MathExpression extends DataQuery {
+  type: ExpressionQueryType.math;
+  expression: string;
+}
+
+export interface ThresholdExpression extends DataQuery {
+  type: ExpressionQueryType.threshold;
+  conditions: [ThresholdCondition];
+}
+
+export interface ClassicConditionsExpression extends DataQuery {
+  type: ExpressionQueryType.classic;
+  conditions: ClassicCondition[];
 }
 
 export interface ClassicCondition {
@@ -126,16 +168,23 @@ export interface ClassicCondition {
     type: EvalFunction;
   };
   operator?: {
-    type: string;
+    type: 'and' | 'or';
   };
   query: {
-    params: string[];
+    params: [string];
   };
   reducer: {
     params: [];
     type: ReducerType;
   };
   type: 'query';
+}
+
+export interface ThresholdCondition {
+  evaluator: {
+    params: number[];
+    type: Exclude<EvalFunction, 'HasNoValue'>;
+  };
 }
 
 export type ReducerType =
