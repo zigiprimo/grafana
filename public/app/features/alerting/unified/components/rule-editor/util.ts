@@ -5,7 +5,7 @@ import { GraphTresholdsStyleMode, LoadingState } from '@grafana/schema';
 import { config } from 'app/core/config';
 import { EvalFunction } from 'app/features/alerting/state/alertDef';
 import { isExpressionQuery } from 'app/features/expressions/guards';
-import { ClassicCondition, ExpressionQueryType } from 'app/features/expressions/types';
+import { ClassicCondition, ExpressionQueryType, ThresholdCondition } from 'app/features/expressions/types';
 import { AlertQuery } from 'app/types/unified-alerting-dto';
 
 import { RuleFormType } from '../../types/rule-form';
@@ -26,47 +26,43 @@ export function queriesWithUpdatedReferences(
       return query;
     }
 
-    const isMathExpression = query.model.type === 'math';
-    const isReduceExpression = query.model.type === 'reduce';
-    const isResampleExpression = query.model.type === 'resample';
-    const isClassicExpression = query.model.type === 'classic_conditions';
-    const isThresholdExpression = query.model.type === 'threshold';
+    switch (query.model.type) {
+      case ExpressionQueryType.math: {
+        return {
+          ...query,
+          model: {
+            ...query.model,
+            expression: updateMathExpressionRefs(query.model.expression ?? '', previousRefId, newRefId),
+          },
+        };
+      }
+      case ExpressionQueryType.resample:
+      case ExpressionQueryType.reduce:
+      case ExpressionQueryType.threshold: {
+        const isReferencing = query.model.expression === previousRefId;
 
-    if (isMathExpression) {
-      return {
-        ...query,
-        model: {
-          ...query.model,
-          expression: updateMathExpressionRefs(query.model.expression ?? '', previousRefId, newRefId),
-        },
-      };
+        return {
+          ...query,
+          model: {
+            ...query.model,
+            expression: isReferencing ? newRefId : query.model.expression,
+          },
+        };
+      }
+      case ExpressionQueryType.classic: {
+        const conditions = query.model.conditions?.map((condition) => ({
+          ...condition,
+          query: {
+            ...condition.query,
+            params: condition.query.params.map((param: string) => (param === previousRefId ? newRefId : param)),
+          },
+        }));
+
+        return { ...query, model: { ...query.model, conditions } };
+      }
+      default:
+        return query;
     }
-
-    if (isResampleExpression || isReduceExpression || isThresholdExpression) {
-      const isReferencing = query.model.expression === previousRefId;
-
-      return {
-        ...query,
-        model: {
-          ...query.model,
-          expression: isReferencing ? newRefId : query.model.expression,
-        },
-      };
-    }
-
-    if (isClassicExpression) {
-      const conditions = query.model.conditions?.map((condition) => ({
-        ...condition,
-        query: {
-          ...condition.query,
-          params: condition.query.params.map((param: string) => (param === previousRefId ? newRefId : param)),
-        },
-      }));
-
-      return { ...query, model: { ...query.model, conditions } };
-    }
-
-    return query;
   });
 }
 
@@ -137,6 +133,10 @@ export function getThresholdsForQueries(queries: AlertQuery[]) {
 
     // currently only supporting "threshold" & "classic_condition" expressions
     if (!SUPPORTED_EXPRESSION_TYPES.includes(query.model.type)) {
+      continue;
+    }
+
+    if (!('conditions' in query.model)) {
       continue;
     }
 
@@ -276,7 +276,7 @@ export function getThresholdsForQueries(queries: AlertQuery[]) {
   return thresholds;
 }
 
-function isRangeCondition(condition: ClassicCondition) {
+function isRangeCondition(condition: ClassicCondition | ThresholdCondition) {
   return (
     condition.evaluator.type === EvalFunction.IsWithinRange || condition.evaluator.type === EvalFunction.IsOutsideRange
   );

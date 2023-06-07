@@ -17,5 +17,6 @@ export const isExpressionQuery = (dataQuery?: DataQuery): dataQuery is Expressio
   if (typeof expression.type !== 'string') {
     return false;
   }
+
   return Object.values(ExpressionQueryType).includes(expression.type);
 };

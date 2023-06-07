@@ -2,10 +2,17 @@ import { createAction, createReducer } from '@reduxjs/toolkit';
 
 import { DataQuery, getDefaultRelativeTimeRange, RelativeTimeRange } from '@grafana/data';
 import { getNextRefIdChar } from 'app/core/utils/query';
+import { EvalFunction } from 'app/features/alerting/state/alertDef';
 import { findDataSourceFromExpressionRecursive } from 'app/features/alerting/utils/dataSourceFromExpression';
 import { dataSource as expressionDatasource } from 'app/features/expressions/ExpressionDatasource';
 import { isExpressionQuery } from 'app/features/expressions/guards';
-import { ExpressionQuery, ExpressionQueryType, ExpressionDatasourceUID } from 'app/features/expressions/types';
+import {
+  ExpressionQuery,
+  ExpressionQueryType,
+  ExpressionDatasourceUID,
+  ThresholdCondition,
+  ClassicCondition,
+} from 'app/features/expressions/types';
 import { defaultCondition } from 'app/features/expressions/utils/expressionTypes';
 import { AlertQuery } from 'app/types/unified-alerting-dto';
 
@@ -22,6 +29,7 @@ const findDataSourceFromExpression = (
 ): AlertQuery | null | undefined => {
   const firstReference = queries.find((alertQuery) => alertQuery.refId === expression);
   const dataSource = firstReference && findDataSourceFromExpressionRecursive(queries, firstReference);
+
   return dataSource;
 };
 
@@ -103,7 +111,6 @@ export const queriesAndExpressionsReducer = createReducer(initialState, (builder
         datasourceUid: ExpressionDatasourceUID,
         model: expressionDatasource.newQuery({
           type: ExpressionQueryType.math,
-          conditions: [{ ...defaultCondition, query: { params: [] } }],
           expression: '',
         }),
       });
@@ -113,7 +120,11 @@ export const queriesAndExpressionsReducer = createReducer(initialState, (builder
     })
     .addCase(updateExpression, (state, { payload }) => {
       state.queries = state.queries.map((query) => {
-        const dataSourceAlertQuery = findDataSourceFromExpression(state.queries, payload.expression);
+        let dataSourceAlertQuery;
+
+        if ('expression' in payload) {
+          dataSourceAlertQuery = findDataSourceFromExpression(state.queries, payload.expression);
+        }
 
         const relativeTimeRange = dataSourceAlertQuery
           ? dataSourceAlertQuery.relativeTimeRange
@@ -170,19 +181,44 @@ export const queriesAndExpressionsReducer = createReducer(initialState, (builder
     })
     .addCase(updateExpressionType, (state, action) => {
       state.queries = state.queries.map((query) => {
-        return query.refId === action.payload.refId
-          ? {
-              ...query,
-              model: {
-                ...expressionDatasource.newQuery({
-                  type: action.payload.type,
-                  conditions: [{ ...defaultCondition, query: { params: [] } }],
-                  expression: '',
-                }),
-                refId: action.payload.refId,
-              },
-            }
-          : query;
+        const classicConditions: ClassicCondition[] = [{ ...defaultCondition, query: { params: [] } }];
+        const thresholdConditions: ThresholdCondition[] = [{ evaluator: { params: [], type: EvalFunction.IsAbove } }];
+
+        if (query.refId !== action.payload.refId) {
+          return query;
+        }
+
+        const newExpression = {
+          ...query,
+          model: {
+            ...expressionDatasource.newQuery({
+              type: action.payload.type,
+            }),
+            refId: action.payload.refId,
+          },
+        };
+
+        if (action.payload.type === ExpressionQueryType.classic) {
+          newExpression.model = {
+            ...expressionDatasource.newQuery({
+              type: action.payload.type,
+              conditions: classicConditions,
+            }),
+            refId: action.payload.refId,
+          };
+        }
+
+        if (action.payload.type === ExpressionQueryType.threshold) {
+          newExpression.model = {
+            ...expressionDatasource.newQuery({
+              type: action.payload.type,
+              conditions: thresholdConditions,
+            }),
+            refId: action.payload.refId,
+          };
+        }
+
+        return newExpression;
       });
     });
 });

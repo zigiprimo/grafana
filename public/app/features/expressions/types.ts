@@ -129,7 +129,11 @@ export type ExpressionQuery =
   | MathExpression
   | ClassicConditionsExpression;
 
-export interface ReduceExpression extends DataQuery {
+export interface GenericExpression extends DataQuery {
+  type: ExpressionQueryType | string;
+}
+
+export interface ReduceExpression extends GenericExpression {
   type: ExpressionQueryType.reduce;
   expression: string; // this is the refId we want to reduce on
   reducer: SupportedReducerFns;
@@ -139,7 +143,7 @@ export interface ReduceExpression extends DataQuery {
   };
 }
 
-export interface ResampleExpression extends DataQuery {
+export interface ResampleExpression extends GenericExpression {
   type: ExpressionQueryType.resample;
   expression: string; // this is the refId we want to reduce on
   downsampler: SupportedDownsamplingTypes;
@@ -147,17 +151,18 @@ export interface ResampleExpression extends DataQuery {
   window: string;
 }
 
-export interface MathExpression extends DataQuery {
+export interface MathExpression extends GenericExpression {
   type: ExpressionQueryType.math;
   expression: string;
 }
 
-export interface ThresholdExpression extends DataQuery {
+export interface ThresholdExpression extends GenericExpression {
   type: ExpressionQueryType.threshold;
-  conditions: [ThresholdCondition];
+  expression: string;
+  conditions: ThresholdCondition[];
 }
 
-export interface ClassicConditionsExpression extends DataQuery {
+export interface ClassicConditionsExpression extends GenericExpression {
   type: ExpressionQueryType.classic;
   conditions: ClassicCondition[];
 }
@@ -171,7 +176,7 @@ export interface ClassicCondition {
     type: 'and' | 'or';
   };
   query: {
-    params: [string];
+    params: string[];
   };
   reducer: {
     params: [];

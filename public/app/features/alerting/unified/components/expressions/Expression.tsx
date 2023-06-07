@@ -88,7 +88,7 @@ export const Expression: FC<ExpressionProps> = ({
           return <Threshold onChange={onChangeQuery} query={query} labelWidth={'auto'} refIds={availableRefIds} />;
 
         default:
-          return <>Expression not supported: {query.type}</>;
+          return <>Expression not supported</>;
       }
     },
     [onChangeQuery, queries]
@@ -203,7 +203,7 @@ export const PreviewSummary: FC<{ firing: number; normal: number }> = ({ firing,
 
 interface HeaderProps {
   refId: string;
-  queryType: ExpressionQueryType;
+  queryType: ExpressionQueryType | string;
   onUpdateRefId: (refId: string) => void;
   onRemoveExpression: () => void;
   onUpdateExpressionType: (type: ExpressionQueryType) => void;
