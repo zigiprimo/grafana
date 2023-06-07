@@ -350,4 +350,8 @@ const (
 	// FlagFlameGraphV2
 	// New version of flame graph with new features
 	FlagFlameGraphV2 = "flameGraphV2"
+
+	// FlagTransformationsRedesign
+	// Enables the transformations redesign
+	FlagTransformationsRedesign = "transformationsRedesign"
 )
