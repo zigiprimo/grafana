@@ -23,8 +23,7 @@ export default {
   'no undocumented stories': () => countUndocumentedStories().include('**/!(*.internal).story.tsx'),
 };
 
-// const noCache = process.env.NO_CACHE;
-const noCache = true;
+const noCache = process.env.NO_CACHE;
 
 function countUndocumentedStories() {
   return new BettererFileTest(async (filePaths, fileTestResult) => {
