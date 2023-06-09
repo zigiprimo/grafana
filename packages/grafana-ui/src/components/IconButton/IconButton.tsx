@@ -82,6 +82,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, BasePropsWithToolt
         aria-label={ariaLabel || tooltipString}
         {...restProps}
         className={cx(styles.button, className)}
+        type="button"
       >
         <Icon name={name} size={limitedIconSize} className={styles.icon} type={iconType} />
       </button>
