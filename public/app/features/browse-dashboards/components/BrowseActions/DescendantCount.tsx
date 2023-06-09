@@ -1,8 +1,8 @@
-import { css } from '@emotion/css';
 import React from 'react';
+import Skeleton from 'react-loading-skeleton';
 
-import { GrafanaTheme2 } from '@grafana/data';
-import { Alert, Spinner, useStyles2 } from '@grafana/ui';
+import { Alert } from '@grafana/ui';
+import { P } from '@grafana/ui/src/unstable';
 
 import { useGetAffectedItemsQuery } from '../../api/browseDashboardsAPI';
 import { DashboardTreeSelection } from '../../types';
@@ -14,24 +14,15 @@ export interface Props {
 }
 
 export const DescendantCount = ({ selectedItems }: Props) => {
-  const styles = useStyles2(getStyles);
   const { data, isFetching, isLoading, error } = useGetAffectedItemsQuery(selectedItems);
 
   return (
-    <div className={styles.breakdown}>
-      <>
+    <>
+      <P color="secondary">
         {data && buildBreakdownString(data.folder, data.dashboard, data.libraryPanel, data.alertRule)}
-        {(isFetching || isLoading) && <Spinner size={12} />}
-        {error && <Alert severity="error" title="Unable to retrieve descendant information" />}
-      </>
-    </div>
+        {(isFetching || isLoading) && <Skeleton width={200} />}
+      </P>
+      {error && <Alert severity="error" title="Unable to retrieve descendant information" />}
+    </>
   );
 };
-
-const getStyles = (theme: GrafanaTheme2) => ({
-  breakdown: css({
-    ...theme.typography.bodySmall,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing(2),
-  }),
-});
