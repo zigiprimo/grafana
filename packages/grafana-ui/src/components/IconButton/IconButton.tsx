@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 
 import { GrafanaTheme2, colorManipulator, deprecationWarning } from '@grafana/data';
 
@@ -72,8 +72,14 @@ export const IconButton = React.forwardRef<HTMLButtonElement, BasePropsWithToolt
       limitedIconSize = size;
     }
 
+    const [tooltipShown, setTooltipShown] = useState(false);
+
     const styles = getStyles(theme, limitedIconSize, variant);
     const tooltipString = typeof tooltip === 'string' ? tooltip : '';
+
+    const handleVisibleChange = useCallback((visible: boolean) => {
+      setTooltipShown(visible);
+    }, []);
 
     // When using tooltip, ref is forwarded to Tooltip component instead for https://github.com/grafana/grafana/issues/65632
     const button = (
@@ -82,7 +88,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, BasePropsWithToolt
         {...restProps}
         className={cx(styles.button, className)}
         type="button"
-        aria-describedby="tooltip-body"
+        aria-labelledby={'tooltip-body'}
       >
         <Icon name={name} size={limitedIconSize} className={styles.icon} type={iconType} />
       </button>
@@ -90,7 +96,12 @@ export const IconButton = React.forwardRef<HTMLButtonElement, BasePropsWithToolt
 
     if (tooltip) {
       return (
-        <Tooltip ref={ref} content={<span id="tooltip-body">{tooltip}</span>} placement={tooltipPlacement}>
+        <Tooltip
+          onTooltipVisible={handleVisibleChange}
+          ref={ref}
+          content={<span id="tooltip-body">{tooltip}</span>}
+          placement={tooltipPlacement}
+        >
           {button}
         </Tooltip>
       );
