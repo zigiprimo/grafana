@@ -6,6 +6,7 @@ import React, { PropsWithChildren, useRef } from 'react';
 
 import { useTheme2 } from '../../themes';
 import { IconName } from '../../types';
+import { Icon } from '../Icon/Icon';
 import { IconButton } from '../IconButton/IconButton';
 import { HorizontalGroup } from '../Layout/Layout';
 
@@ -84,7 +85,11 @@ export function Modal(props: PropsWithChildren<Props>) {
               typeof title !== 'string' && title
             }
             <div className={styles.modalHeaderClose}>
-              <IconButton aria-label="Close dialog" name="times" size="xl" onClick={onDismiss} tooltip="Close" />
+              <IconButton name="times" size="xl" onClick={onDismiss} tooltip="Close" />
+              <button aria-labelledby="my-label">
+                <Icon name="times" />
+              </button>
+              <div id="my-label">Close dialogue</div>
             </div>
           </div>
           <div className={cx(styles.modalContent, contentClassName)}>{children}</div>

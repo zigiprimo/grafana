@@ -28,7 +28,7 @@ interface BaseProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 interface BasePropsWithTooltip extends BaseProps {
   /** Tooltip content to display on hover */
-  tooltip: PopoverContent;
+  tooltip: React.ReactNode;
   /** Position of the tooltip */
   tooltipPlacement?: TooltipPlacement;
   /** Text available only for screen readers. Will use tooltip text as fallback. */
@@ -37,7 +37,7 @@ interface BasePropsWithTooltip extends BaseProps {
 
 interface BasePropsWithAriaLabel extends BaseProps {
   /** Tooltip content to display on hover */
-  tooltip?: PopoverContent;
+  tooltip?: React.ReactNode;
   /** Position of the tooltip */
   tooltipPlacement?: TooltipPlacement;
   /** Text available only for screen readers. Will use tooltip text as fallback. */
@@ -79,10 +79,10 @@ export const IconButton = React.forwardRef<HTMLButtonElement, BasePropsWithToolt
     const button = (
       <button
         ref={tooltip ? undefined : ref}
-        aria-label={ariaLabel || tooltipString}
         {...restProps}
         className={cx(styles.button, className)}
         type="button"
+        aria-describedby="tooltip-body"
       >
         <Icon name={name} size={limitedIconSize} className={styles.icon} type={iconType} />
       </button>
@@ -90,7 +90,7 @@ export const IconButton = React.forwardRef<HTMLButtonElement, BasePropsWithToolt
 
     if (tooltip) {
       return (
-        <Tooltip ref={ref} content={tooltip} placement={tooltipPlacement}>
+        <Tooltip ref={ref} content={<span id="tooltip-body">{tooltip}</span>} placement={tooltipPlacement}>
           {button}
         </Tooltip>
       );
