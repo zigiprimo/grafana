@@ -115,7 +115,8 @@ export class QueryGroup extends PureComponent<Props, State> {
       const ds = await this.dataSourceSrv.get(options.dataSource);
       const dsSettings = this.dataSourceSrv.getInstanceSettings(options.dataSource);
 
-      const defaultDataSource = await this.dataSourceSrv.get();
+      const lastSelectedDataSourceUID = await localStorage.getItem(`grafana.lastSelectedDatasource`);
+      const defaultDataSource = await this.dataSourceSrv.get(lastSelectedDataSourceUID || undefined);
       const datasource = ds.getRef();
       const queries = options.queries.map((q) => ({
         ...(queryIsEmpty(q) && ds?.getDefaultQuery?.(CoreApp.PanelEditor)),
@@ -147,6 +148,7 @@ export class QueryGroup extends PureComponent<Props, State> {
     const queries = await updateQueries(nextDS, newSettings.uid, this.state.queries, currentDS);
 
     const dataSource = await this.dataSourceSrv.get(newSettings.name);
+    localStorage.setItem(`grafana.lastSelectedDatasource`, dataSource.uid);
 
     this.onChange({
       queries,

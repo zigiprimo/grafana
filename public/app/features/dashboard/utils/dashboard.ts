@@ -8,6 +8,7 @@ import { DashboardModel, PanelModel } from 'app/features/dashboard/state';
 import { calculateNewPanelGridPos } from 'app/features/dashboard/utils/panel';
 
 export function onCreateNewPanel(dashboard: DashboardModel, datasource?: string): number | undefined {
+  console.log('onCreateNewPanel', datasource);
   const newPanel: Partial<PanelModel> = {
     type: 'timeseries',
     title: 'Panel Title',

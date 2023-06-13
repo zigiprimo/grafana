@@ -24,6 +24,9 @@ const AddPanelMenu = ({ dashboard }: Props) => {
   const copiedPanelPlugin = useMemo(() => getCopiedPanelPlugin(), []);
   const dispatch = useDispatch();
   const initialDatasource = useSelector((state) => state.dashboard.initialDatasource);
+  const lastSelectedDataSourceUID = localStorage.getItem('grafana.lastSelectedDataSource') || undefined;
+  console.log('AddPanelMenu', lastSelectedDataSourceUID);
+  console.log('AddPanelMenu initialDatasource', initialDatasource);
 
   return (
     <Menu>
@@ -32,7 +35,7 @@ const AddPanelMenu = ({ dashboard }: Props) => {
         testId={selectors.pages.AddDashboard.itemButton('Add new visualization menu item')}
         label={t('dashboard.add-menu.visualization', 'Visualization')}
         onClick={() => {
-          const id = onCreateNewPanel(dashboard, initialDatasource);
+          const id = onCreateNewPanel(dashboard, initialDatasource || lastSelectedDataSourceUID);
           reportInteraction('dashboards_toolbar_add_clicked', { item: 'add_visualization' });
           locationService.partial({ editPanel: id });
           dispatch(setInitialDatasource(undefined));
