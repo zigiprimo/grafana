@@ -163,8 +163,12 @@ export const joinByLabelsTransformRegistryItem: TransformerRegistryItem<JoinByLa
   name: joinByLabelsTransformer.name,
   description: joinByLabelsTransformer.description,
   state: PluginState.beta,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.Combine]),
   image: joinByLabel,
+=======
+  categories: new Set(['combine']),
+>>>>>>> 96856a1936 (Update)
   //   help: `
   // ### Use cases
 

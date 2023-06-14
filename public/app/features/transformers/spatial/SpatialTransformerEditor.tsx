@@ -168,6 +168,10 @@ export const spatialTransformRegistryItem: TransformerRegistryItem<SpatialTransf
   name: spatialTransformer.name,
   description: spatialTransformer.description,
   state: PluginState.alpha,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.PerformSpatialOperations]),
   image: spatialOperations,
+=======
+  categories: new Set(['performSpatialOperations']),
+>>>>>>> 96856a1936 (Update)
 };

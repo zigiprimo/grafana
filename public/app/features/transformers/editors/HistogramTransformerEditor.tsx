@@ -89,6 +89,10 @@ export const histogramTransformRegistryItem: TransformerRegistryItem<HistogramTr
   transformation: standardTransformers.histogramTransformer,
   name: standardTransformers.histogramTransformer.name,
   description: standardTransformers.histogramTransformer.description,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.CreateNewVisualization]),
   image: histogram,
+=======
+  categories: new Set(['createNewVisualization']),
+>>>>>>> 96856a1936 (Update)
 };

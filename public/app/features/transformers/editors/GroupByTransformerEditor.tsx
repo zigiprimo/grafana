@@ -147,10 +147,14 @@ export const groupByTransformRegistryItem: TransformerRegistryItem<GroupByTransf
   transformation: standardTransformers.groupByTransformer,
   name: standardTransformers.groupByTransformer.name,
   description: standardTransformers.groupByTransformer.description,
+<<<<<<< HEAD
   categories: new Set([
     TransformerCategory.Combine,
     TransformerCategory.CalculateNewFields,
     TransformerCategory.Reformat,
   ]),
   image: groupBy,
+=======
+  categories: new Set(['combine', 'calculateNewFields', 'reformat']),
+>>>>>>> 96856a1936 (Update)
 };

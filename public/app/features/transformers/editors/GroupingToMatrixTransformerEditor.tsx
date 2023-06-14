@@ -95,6 +95,10 @@ export const groupingToMatrixTransformRegistryItem: TransformerRegistryItem<Grou
   transformation: standardTransformers.groupingToMatrixTransformer,
   name: 'Grouping to matrix',
   description: `Takes a three fields combination and produces a Matrix`,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.Combine, TransformerCategory.Reformat]),
   image: groupingByMatrix,
+=======
+  categories: new Set(['combine', 'reformat']),
+>>>>>>> 96856a1936 (Update)
 };

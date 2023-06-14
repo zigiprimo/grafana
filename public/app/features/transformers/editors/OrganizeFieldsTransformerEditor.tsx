@@ -214,6 +214,10 @@ export const organizeFieldsTransformRegistryItem: TransformerRegistryItem<Organi
   name: 'Organize fields',
   description:
     "Allows the user to re-order, hide, or rename fields / columns. Useful when data source doesn't allow overrides for visualizing data.",
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.ReorderAndRename]),
   image: organize,
+=======
+  categories: new Set(['reorderAndRename']),
+>>>>>>> 96856a1936 (Update)
 };

@@ -121,6 +121,10 @@ export const extractFieldsTransformRegistryItem: TransformerRegistryItem<Extract
   transformation: extractFieldsTransformer,
   name: 'Extract fields',
   description: `Parse fields from content (JSON, labels, etc)`,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.Reformat]),
   image: extractFields,
+=======
+  categories: new Set(['reformat']),
+>>>>>>> 96856a1936 (Update)
 };

@@ -127,6 +127,10 @@ export const prepareTimeseriesTransformerRegistryItem: TransformerRegistryItem<P
   This transformer may be especially useful when using old panels that only expect the
   many-frame timeseries format.
   `,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.Reformat]),
   image: prepareTimeSeries,
+=======
+  categories: new Set(['reformat']),
+>>>>>>> 96856a1936 (Update)
 };

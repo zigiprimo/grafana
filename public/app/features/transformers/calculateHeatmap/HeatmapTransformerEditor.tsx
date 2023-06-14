@@ -50,6 +50,10 @@ export const heatmapTransformRegistryItem: TransformerRegistryItem<HeatmapTransf
   name: heatmapTransformer.name,
   description: heatmapTransformer.description,
   state: PluginState.alpha,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.CreateNewVisualization]),
   image: createHeatmap,
+=======
+  categories: new Set(['createNewVisualization']),
+>>>>>>> 96856a1936 (Update)
 };

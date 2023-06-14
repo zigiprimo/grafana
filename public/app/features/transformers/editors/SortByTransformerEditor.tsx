@@ -62,6 +62,10 @@ export const sortByTransformRegistryItem: TransformerRegistryItem<SortByTransfor
   transformation: standardTransformers.sortByTransformer,
   name: standardTransformers.sortByTransformer.name,
   description: standardTransformers.sortByTransformer.description,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.ReorderAndRename]),
   image: sort,
+=======
+  categories: new Set(['reorderAndRename']),
+>>>>>>> 96856a1936 (Update)
 };

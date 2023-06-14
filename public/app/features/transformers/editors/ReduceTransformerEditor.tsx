@@ -124,6 +124,10 @@ export const reduceTransformRegistryItem: TransformerRegistryItem<ReduceTransfor
   transformation: standardTransformers.reduceTransformer,
   name: standardTransformers.reduceTransformer.name,
   description: standardTransformers.reduceTransformer.description,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.CalculateNewFields]),
   image: reduce,
+=======
+  categories: new Set(['calculateNewFields']),
+>>>>>>> 96856a1936 (Update)
 };

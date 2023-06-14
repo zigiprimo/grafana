@@ -130,6 +130,10 @@ export const labelsToFieldsTransformerRegistryItem: TransformerRegistryItem<Labe
   name: 'Labels to fields',
   description: `Groups series by time and return labels or tags as fields.
                 Useful for showing time series with labels in a table where each label key becomes a separate column`,
+<<<<<<< HEAD
   categories: new Set([TransformerCategory.Reformat]),
   image: labelsToFields,
+=======
+  categories: new Set(['reformat']),
+>>>>>>> 96856a1936 (Update)
 };
