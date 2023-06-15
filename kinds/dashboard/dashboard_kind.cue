@@ -176,15 +176,15 @@ lineage: schemas: [{
 		// A variable in Grafana is a container that can hold different types of data. It varies depending on the query.
 		#BaseVariableModel: {
 			id:            string | *"00000000-0000-0000-0000-000000000000"
-			type:          #VariableType
+//			type:          #VariableType
 			name:          string
 			label?:        string
 			rootStateKey?: string
 			global:        bool | *false
-			hide:          #VariableHide
-			skipUrlSync:   bool | *false
-			index:         int32 | *-1
-			state:         #LoadingState
+//			hide:          #VariableHide
+			skipUrlSync: bool | *false
+			index:       int32 | *-1
+//			state:         #LoadingState
 			error?: {...}
 			description?: string
 		} @cuetsy(kind="interface") @grafana(TSVeneer="type")
@@ -251,8 +251,8 @@ lineage: schemas: [{
 
 		// Variables which value is selected from a list of options.
 		#VariableWithOptions: {
-			#BaseVariableModel
-			current: #VariableOption
+			//			#BaseVariableModel
+			//			current: #VariableOption
 			options: [...#VariableOption]
 			query: string
 		} @cuetsy(kind="interface") @grafana(TSVeneer="type")
