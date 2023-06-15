@@ -30,7 +30,7 @@ describe('LokiQueryCodeEditor', () => {
   it('shows explain section when showExplain is true', async () => {
     const props = createDefaultProps();
     props.showExplain = true;
-    props.datasource.metadataRequest = jest.fn().mockResolvedValue([]);
+    props.datasource.getMetadataRequest = jest.fn().mockResolvedValue([]);
     render(<LokiQueryCodeEditor {...props} query={defaultQuery} />);
     expect(await screen.findByText('Loading...')).toBeInTheDocument();
     expect(screen.getByText(EXPLAIN_LABEL_FILTER_CONTENT)).toBeInTheDocument();
@@ -38,7 +38,7 @@ describe('LokiQueryCodeEditor', () => {
 
   it('does not show explain section when showExplain is false', async () => {
     const props = createDefaultProps();
-    props.datasource.metadataRequest = jest.fn().mockResolvedValue([]);
+    props.datasource.getMetadataRequest = jest.fn().mockResolvedValue([]);
     render(<LokiQueryCodeEditor {...props} query={defaultQuery} />);
     expect(await screen.findByText('Loading...')).toBeInTheDocument();
     expect(screen.queryByText(EXPLAIN_LABEL_FILTER_CONTENT)).not.toBeInTheDocument();

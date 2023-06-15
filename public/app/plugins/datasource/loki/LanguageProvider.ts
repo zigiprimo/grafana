@@ -101,7 +101,7 @@ export default class LokiLanguageProvider extends LanguageProvider {
 
   request = async (url: string, params?: any): Promise<any> => {
     try {
-      return await this.datasource.metadataRequest(url, params);
+      return await this.datasource.getMetadataRequest(url, params);
     } catch (error) {
       console.error(error);
     }

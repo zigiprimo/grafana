@@ -8,7 +8,7 @@ describe('LokiVariableSupport', () => {
   beforeEach(() => {
     const datasource = createLokiDatasource();
     jest
-      .spyOn(datasource, 'metadataRequest')
+      .spyOn(datasource, 'getMetadataRequest')
       .mockImplementation(
         createMetadataRequest(
           { label1: ['value1', 'value2'], label2: ['value3', 'value4'] },

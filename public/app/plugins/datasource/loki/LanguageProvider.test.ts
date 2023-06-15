@@ -265,7 +265,7 @@ describe('Request URL', () => {
   it('should contain range params', async () => {
     const datasourceWithLabels = setup({ other: [] });
     const rangeParams = datasourceWithLabels.getTimeRangeParams();
-    const datasourceSpy = jest.spyOn(datasourceWithLabels, 'metadataRequest');
+    const datasourceSpy = jest.spyOn(datasourceWithLabels, 'getMetadataRequest');
 
     const instance = new LanguageProvider(datasourceWithLabels);
     instance.fetchLabels();
@@ -436,7 +436,7 @@ function setup(
   };
 
   jest.spyOn(datasource, 'getTimeRangeParams').mockReturnValue(rangeMock);
-  jest.spyOn(datasource, 'metadataRequest').mockImplementation(createMetadataRequest(labelsAndValues, series));
+  jest.spyOn(datasource, 'getMetadataRequest').mockImplementation(createMetadataRequest(labelsAndValues, series));
   jest.spyOn(datasource, 'interpolateString').mockImplementation((string: string) => string);
 
   return datasource;

@@ -27,7 +27,7 @@ describe('LabelBrowserModal', () => {
       onRunQuery: jest.fn(),
     };
 
-    jest.spyOn(datasource, 'metadataRequest').mockResolvedValue({});
+    jest.spyOn(datasource, 'getMetadataRequest').mockResolvedValue({});
   });
 
   it('renders the label browser modal when open', async () => {

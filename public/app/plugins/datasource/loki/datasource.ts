@@ -418,7 +418,11 @@ export class LokiDatasource
     return queries.map((query) => this.languageProvider.exportToAbstractQuery(query));
   }
 
-  async metadataRequest(url: string, params?: Record<string, string | number>, options?: Partial<BackendSrvRequest>) {
+  async getMetadataRequest(
+    url: string,
+    params?: Record<string, string | number>,
+    options?: Partial<BackendSrvRequest>
+  ) {
     // url must not start with a `/`, otherwise the AJAX-request
     // going from the browser will contain `//`, which can cause problems.
     if (url.startsWith('/')) {
@@ -429,6 +433,16 @@ export class LokiDatasource
     return res.data || [];
   }
 
+  async postMetadataRequest(url: string, data?: BackendSrvRequest['data'], options?: Partial<BackendSrvRequest>) {
+    // url must not start with a `/`, otherwise the AJAX-request
+    // going from the browser will contain `//`, which can cause problems.
+    if (url.startsWith('/')) {
+      throw new Error(`invalid metadata request url: ${url}`);
+    }
+
+    const res = await this.postResource(url, data, options);
+    return res.data || [];
+  }
   // We need a specific metadata method for stats endpoint as it does not return res.data,
   // but it returns stats directly in res object.
   async statsMetadataRequest(
@@ -533,14 +547,14 @@ export class LokiDatasource
   async labelNamesQuery() {
     const url = 'labels';
     const params = this.getTimeRangeParams();
-    const result = await this.metadataRequest(url, params);
+    const result = await this.getMetadataRequest(url, params);
     return result.map((value: string) => ({ text: value }));
   }
 
   async labelValuesQuery(label: string) {
     const params = this.getTimeRangeParams();
     const url = `label/${label}/values`;
-    const result = await this.metadataRequest(url, params);
+    const result = await this.getMetadataRequest(url, params);
     return result.map((value: string) => ({ text: value }));
   }
 
@@ -552,7 +566,7 @@ export class LokiDatasource
     };
     const url = 'series';
     const streams = new Set();
-    const result = await this.metadataRequest(url, params);
+    const result = await this.getMetadataRequest(url, params);
     result.forEach((stream: { [key: string]: string }) => {
       if (stream[label]) {
         streams.add({ text: stream[label] });
@@ -700,7 +714,7 @@ export class LokiDatasource
       end: nowMs * NS_IN_MS,
     };
 
-    return this.metadataRequest('labels', params).then(
+    return this.getMetadataRequest('labels', params).then(
       (values) => {
         return values.length > 0
           ? { status: 'success', message: 'Data source successfully connected.' }

@@ -329,7 +329,7 @@ describe('LokiDatasource', () => {
     });
 
     it('should return successfully when call succeeds with labels', async () => {
-      ds.metadataRequest = () => Promise.resolve(['avalue']);
+      ds.getMetadataRequest = () => Promise.resolve(['avalue']);
 
       const result = await ds.testDatasource();
 
@@ -340,7 +340,7 @@ describe('LokiDatasource', () => {
     });
 
     it('should return error when call succeeds without labels', async () => {
-      ds.metadataRequest = () => Promise.resolve([]);
+      ds.getMetadataRequest = () => Promise.resolve([]);
 
       const result = await ds.testDatasource();
 
@@ -352,7 +352,7 @@ describe('LokiDatasource', () => {
     });
 
     it('should return error status with no details when call fails with no details', async () => {
-      ds.metadataRequest = () => Promise.reject({});
+      ds.getMetadataRequest = () => Promise.reject({});
 
       const result = await ds.testDatasource();
 
@@ -363,7 +363,7 @@ describe('LokiDatasource', () => {
     });
 
     it('should return error status with details when call fails with details', async () => {
-      ds.metadataRequest = () =>
+      ds.getMetadataRequest = () =>
         Promise.reject({
           data: {
             message: 'error42',
@@ -524,7 +524,7 @@ describe('LokiDatasource', () => {
     const getTestContext = () => {
       const ds = createLokiDatasource(templateSrvStub);
       jest
-        .spyOn(ds, 'metadataRequest')
+        .spyOn(ds, 'getMetadataRequest')
         .mockImplementation(
           createMetadataRequest(
             { label1: ['value1', 'value2'], label2: ['value3', 'value4'] },

@@ -103,7 +103,23 @@ func (s *Service) CallResource(ctx context.Context, req *backend.CallResourceReq
 }
 
 func callResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender, dsInfo *datasourceInfo, plog log.Logger, tracer tracing.Tracer) error {
+	respHeaders := map[string][]string{
+		"content-type": {"application/json"},
+	}
 	url := req.URL
+
+	if req.Method == "POST" && url == "step" {
+		resBytes, err := getStepResponse(req.Body)
+		if err != nil {
+			return fmt.Errorf("failed to get step from provided data: %w", err)
+		}
+
+		return sender.Send(&backend.CallResourceResponse{
+			Status:  http.StatusOK,
+			Headers: respHeaders,
+			Body:    resBytes,
+		})
+	}
 
 	// a very basic is-this-url-valid check
 	if req.Method != "GET" {
@@ -126,10 +142,6 @@ func callResource(ctx context.Context, req *backend.CallResourceRequest, sender 
 
 	if err != nil {
 		return err
-	}
-
-	respHeaders := map[string][]string{
-		"content-type": {"application/json"},
 	}
 	if rawLokiResponse.Encoding != "" {
 		respHeaders["content-encoding"] = []string{rawLokiResponse.Encoding}
