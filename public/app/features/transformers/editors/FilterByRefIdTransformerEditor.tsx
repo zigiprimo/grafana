@@ -148,10 +148,6 @@ export const filterFramesByRefIdTransformRegistryItem: TransformerRegistryItem<F
     name: 'Filter data by query',
     description:
       'Filter data by query. This is useful if you are sharing the results from a different panel that has many queries and you want to only visualize a subset of that in this panel.',
-<<<<<<< HEAD
     categories: new Set([TransformerCategory.Filter]),
     image: filterByQuery,
-=======
-    categories: new Set(['filterAndReduce']),
->>>>>>> 96856a1936 (Update)
   };

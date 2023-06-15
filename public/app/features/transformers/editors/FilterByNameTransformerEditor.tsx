@@ -212,10 +212,6 @@ export const filterFieldsByNameTransformRegistryItem: TransformerRegistryItem<Fi
   transformation: standardTransformers.filterFieldsByNameTransformer,
   name: 'Filter by name',
   description: 'Removes part of the query results using a regex pattern. The pattern can be inclusive or exclusive.',
-<<<<<<< HEAD
   categories: new Set([TransformerCategory.Filter]),
   image: filterByName,
-=======
-  categories: new Set(['filterAndReduce']),
->>>>>>> 96856a1936 (Update)
 };

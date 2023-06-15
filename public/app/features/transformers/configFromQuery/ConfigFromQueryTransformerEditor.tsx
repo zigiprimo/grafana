@@ -95,12 +95,8 @@ export const configFromQueryTransformRegistryItem: TransformerRegistryItem<Confi
   name: configFromDataTransformer.name,
   description: configFromDataTransformer.description,
   state: PluginState.beta,
-<<<<<<< HEAD
   categories: new Set([TransformerCategory.CalculateNewFields]),
   image: configFromQueryResults,
-=======
-  categories: new Set(['calculateNewFields']),
->>>>>>> 96856a1936 (Update)
   help: `
 ### Use cases
 

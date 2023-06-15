@@ -132,10 +132,6 @@ export const renameByRegexTransformRegistryItem: TransformerRegistryItem<RenameB
   transformation: standardTransformers.renameByRegexTransformer,
   name: 'Rename by regex',
   description: 'Renames part of the query result by using regular expression with placeholders.',
-<<<<<<< HEAD
   categories: new Set([TransformerCategory.ReorderAndRename]),
   image: renameByRegex,
-=======
-  categories: new Set(['reorderAndRename']),
->>>>>>> 96856a1936 (Update)
 };

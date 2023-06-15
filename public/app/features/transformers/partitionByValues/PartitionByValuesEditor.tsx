@@ -107,10 +107,6 @@ export const partitionByValuesTransformRegistryItem: TransformerRegistryItem<Par
   name: partitionByValuesTransformer.name,
   description: partitionByValuesTransformer.description,
   state: PluginState.alpha,
-<<<<<<< HEAD
   categories: new Set([TransformerCategory.Reformat]),
   image: partitionByValues,
-=======
-  categories: new Set(['reformat']),
->>>>>>> 96856a1936 (Update)
 };

@@ -24,10 +24,6 @@ export const seriesToRowsTransformerRegistryItem: TransformerRegistryItem<Series
   name: 'Series to rows',
   description: `Merge many series and return a single series with time, metric and value as columns.
                 Useful for showing multiple time series visualized in a table.`,
-<<<<<<< HEAD
   categories: new Set([TransformerCategory.Combine, TransformerCategory.Reformat]),
   image: seriesToRows,
-=======
-  categories: new Set(['combine', 'reformat']),
->>>>>>> 96856a1936 (Update)
 };

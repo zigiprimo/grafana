@@ -176,10 +176,6 @@ export const convertFieldTypeTransformRegistryItem: TransformerRegistryItem<Conv
   transformation: standardTransformers.convertFieldTypeTransformer,
   name: standardTransformers.convertFieldTypeTransformer.name,
   description: standardTransformers.convertFieldTypeTransformer.description,
-<<<<<<< HEAD
   categories: new Set([TransformerCategory.Reformat]),
   image: convertFieldType,
-=======
-  categories: new Set(['reformat']),
->>>>>>> 96856a1936 (Update)
 };

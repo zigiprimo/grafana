@@ -387,10 +387,6 @@ export const calculateFieldTransformRegistryItem: TransformerRegistryItem<Calcul
   transformation: standardTransformers.calculateFieldTransformer,
   name: 'Add field from calculation',
   description: 'Use the row values to calculate a new field',
-<<<<<<< HEAD
   categories: new Set([TransformerCategory.CalculateNewFields]),
   image: addToField,
-=======
-  categories: new Set(['calculateNewFields']),
->>>>>>> 96856a1936 (Update)
 };

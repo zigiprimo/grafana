@@ -71,10 +71,6 @@ export const joinByFieldTransformerRegistryItem: TransformerRegistryItem<JoinByF
   transformation: standardTransformers.joinByFieldTransformer,
   name: standardTransformers.joinByFieldTransformer.name,
   description: standardTransformers.joinByFieldTransformer.description,
-<<<<<<< HEAD
   categories: new Set([TransformerCategory.Combine]),
   image: joinByField,
-=======
-  categories: new Set(['combine']),
->>>>>>> 96856a1936 (Update)
 };
