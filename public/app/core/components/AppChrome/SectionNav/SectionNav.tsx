@@ -2,8 +2,11 @@ import { css, cx } from '@emotion/css';
 import React, { useEffect, useState } from 'react';
 import { useLocalStorage } from 'react-use';
 
-import { NavModel, GrafanaTheme2 } from '@grafana/data';
+import { NavModel, GrafanaTheme2, PageLayoutType } from '@grafana/data';
 import { useStyles2, CustomScrollbar, useTheme2 } from '@grafana/ui';
+import { useGrafana } from 'app/core/context/GrafanaContext';
+
+import { MegaMenu } from '../MegaMenu/MegaMenu';
 
 import { SectionNavItem } from './SectionNavItem';
 import { SectionNavToggle } from './SectionNavToggle';
@@ -14,7 +17,8 @@ export interface Props {
 
 export function SectionNav({ model }: Props) {
   const styles = useStyles2(getStyles);
-  const { isExpanded, onToggleSectionNav } = useSectionNavState();
+  const { chrome } = useGrafana();
+  const state = chrome.useState();
 
   if (!Boolean(model.main?.children?.length)) {
     return null;
@@ -24,16 +28,18 @@ export function SectionNav({ model }: Props) {
     <div className={styles.navContainer}>
       <nav
         className={cx(styles.nav, {
-          [styles.navExpanded]: isExpanded,
+          [styles.navExpanded]: state.megaMenuOpen,
+          [styles.canvasContainer]: state.layout === PageLayoutType.Canvas,
         })}
       >
         <CustomScrollbar showScrollIndicators>
-          <div className={styles.items} role="tablist">
+          <MegaMenu onClose={() => chrome.setMegaMenu(false)} />
+          {/* <div className={styles.items} role="tablist">
             <SectionNavItem item={model.main} isSectionRoot />
-          </div>
+          </div> */}
         </CustomScrollbar>
       </nav>
-      <SectionNavToggle isExpanded={isExpanded} onClick={onToggleSectionNav} />
+      {/* <SectionNavToggle isExpanded={isExpanded} onClick={onToggleSectionNav} /> */}
     </div>
   );
 }
@@ -65,10 +71,17 @@ function useSectionNavState() {
 
 const getStyles = (theme: GrafanaTheme2) => {
   return {
+    canvasContainer: css({
+      borderRight: `1px solid ${theme.colors.border.weak}`,
+      boxShadow: theme.shadows.z2,
+      // transition: 'none',
+      zIndex: theme.zIndex.sidemenu,
+    }),
     navContainer: css({
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
+      transition: theme.transitions.create(['border', 'box-shadow', 'z-index']),
 
       [theme.breakpoints.up('md')]: {
         flexDirection: 'row',
@@ -79,7 +92,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       flexDirection: 'column',
       background: theme.colors.background.canvas,
       flexShrink: 0,
-      transition: theme.transitions.create(['width', 'max-height']),
+      // transition: theme.transitions.create(['width', 'max-height']),
       maxHeight: 0,
       visibility: 'hidden',
       [theme.breakpoints.up('md')]: {

@@ -41,10 +41,10 @@ MegaMenu.displayName = 'MegaMenu';
 
 const getStyles = (theme: GrafanaTheme2) => ({
   menuWrapper: css({
-    position: 'fixed',
+    // position: 'fixed',
     display: 'grid',
     gridAutoFlow: 'column',
     height: '100%',
-    zIndex: theme.zIndex.sidemenu,
+    // zIndex: theme.zIndex.sidemenu,
   }),
 });

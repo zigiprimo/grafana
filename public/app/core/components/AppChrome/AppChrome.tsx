@@ -56,13 +56,13 @@ export function AppChrome({ children }: Props) {
       )}
       <main className={contentClass} id="pageContent">
         <div className={styles.panes}>
-          {state.layout === PageLayoutType.Standard && state.sectionNav && <SectionNav model={state.sectionNav} />}
+          <SectionNav model={state.sectionNav} />
           <div className={styles.pageContainer}>{children}</div>
         </div>
       </main>
       {!state.chromeless && (
         <>
-          <MegaMenu searchBarHidden={searchBarHidden} onClose={() => chrome.setMegaMenu(false)} />
+          {/* <MegaMenu searchBarHidden={searchBarHidden} onClose={() => chrome.setMegaMenu(false)} /> */}
           <CommandPalette />
         </>
       )}

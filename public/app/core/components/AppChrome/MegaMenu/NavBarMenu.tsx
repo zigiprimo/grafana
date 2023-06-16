@@ -1,11 +1,11 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
 import { useDialog } from '@react-aria/dialog';
 import { FocusScope } from '@react-aria/focus';
 import { OverlayContainer, useOverlay } from '@react-aria/overlays';
 import React, { useEffect, useRef, useState } from 'react';
 import CSSTransition from 'react-transition-group/CSSTransition';
 
-import { GrafanaTheme2, NavModelItem } from '@grafana/data';
+import { GrafanaTheme2, NavModelItem, PageLayoutType } from '@grafana/data';
 import { CustomScrollbar, Icon, IconButton, useTheme2 } from '@grafana/ui';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 
@@ -13,7 +13,7 @@ import { TOP_BAR_LEVEL_HEIGHT } from '../types';
 
 import { NavBarMenuItemWrapper } from './NavBarMenuItemWrapper';
 
-const MENU_WIDTH = '350px';
+const MENU_WIDTH = '250px';
 
 export interface Props {
   activeItem?: NavModelItem;
@@ -32,70 +32,76 @@ export function NavBarMenu({ activeItem, navItems, searchBarHidden, onClose }: P
   const ref = useRef(null);
   const backdropRef = useRef(null);
   const { dialogProps } = useDialog({}, ref);
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const onMenuClose = () => setIsOpen(false);
 
-  const { overlayProps, underlayProps } = useOverlay(
-    {
-      isDismissable: true,
-      isOpen: true,
-      onClose: onMenuClose,
-    },
-    ref
-  );
+  // const { overlayProps, underlayProps } = useOverlay(
+  //   {
+  //     isDismissable: true,
+  //     isOpen: true,
+  //     onClose: onMenuClose,
+  //   },
+  //   ref
+  // );
 
-  useEffect(() => {
-    if (state.megaMenuOpen) {
-      setIsOpen(true);
-    }
-  }, [state.megaMenuOpen]);
+  // useEffect(() => {
+  //   if (state.megaMenuOpen) {
+  //     setIsOpen(true);
+  //   }
+  // }, [state.megaMenuOpen]);
 
   return (
-    <OverlayContainer>
-      <CSSTransition
-        nodeRef={ref}
-        in={isOpen}
-        unmountOnExit={true}
-        classNames={animStyles.overlay}
-        timeout={{ enter: animationSpeed, exit: 0 }}
-        onExited={onClose}
-      >
-        <FocusScope contain autoFocus>
-          <div data-testid="navbarmenu" ref={ref} {...overlayProps} {...dialogProps} className={styles.container}>
-            <div className={styles.mobileHeader}>
-              <Icon name="bars" size="xl" />
-              <IconButton
-                aria-label="Close navigation menu"
-                tooltip="Close menu"
-                name="times"
-                onClick={onMenuClose}
-                size="xl"
-                variant="secondary"
-              />
-            </div>
-            <nav className={styles.content}>
-              <CustomScrollbar showScrollIndicators hideHorizontalTrack>
-                <ul className={styles.itemList}>
-                  {navItems.map((link) => (
-                    <NavBarMenuItemWrapper link={link} onClose={onMenuClose} activeItem={activeItem} key={link.text} />
-                  ))}
-                </ul>
-              </CustomScrollbar>
-            </nav>
-          </div>
-        </FocusScope>
-      </CSSTransition>
-      <CSSTransition
-        nodeRef={backdropRef}
-        in={isOpen}
-        unmountOnExit={true}
-        classNames={animStyles.backdrop}
-        timeout={{ enter: animationSpeed, exit: 0 }}
-      >
-        <div ref={backdropRef} className={styles.backdrop} {...underlayProps} />
-      </CSSTransition>
-    </OverlayContainer>
+    // <OverlayContainer>
+    // <CSSTransition
+    //   nodeRef={ref}
+    //   in={isOpen}
+    //   unmountOnExit={true}
+    //   classNames={animStyles.overlay}
+    //   timeout={{ enter: animationSpeed, exit: 0 }}
+    //   onExited={onClose}
+    // >
+    //   <FocusScope contain autoFocus>
+    <div
+      data-testid="navbarmenu"
+      ref={ref}
+      className={cx(styles.container, {
+        [styles.canvasContainer]: state.layout === PageLayoutType.Canvas,
+      })}
+    >
+      <div className={styles.mobileHeader}>
+        <Icon name="bars" size="xl" />
+        <IconButton
+          aria-label="Close navigation menu"
+          tooltip="Close menu"
+          name="times"
+          onClick={onMenuClose}
+          size="xl"
+          variant="secondary"
+        />
+      </div>
+      <nav className={styles.content}>
+        <CustomScrollbar showScrollIndicators hideHorizontalTrack>
+          <ul className={styles.itemList}>
+            {navItems.map((link) => (
+              <NavBarMenuItemWrapper link={link} onClose={onMenuClose} activeItem={activeItem} key={link.text} />
+            ))}
+          </ul>
+        </CustomScrollbar>
+      </nav>
+    </div>
+    //   </FocusScope>
+    // </CSSTransition>
+    // <CSSTransition
+    //   nodeRef={backdropRef}
+    //   in={isOpen}
+    //   unmountOnExit={true}
+    //   classNames={animStyles.backdrop}
+    //   timeout={{ enter: animationSpeed, exit: 0 }}
+    // >
+    //   <div ref={backdropRef} className={styles.backdrop} {...underlayProps} />
+    // </CSSTransition>
+    // </OverlayContainer>
   );
 }
 
@@ -124,21 +130,22 @@ const getStyles = (theme: GrafanaTheme2, searchBarHidden?: boolean) => {
       bottom: 0,
       flexDirection: 'column',
       left: 0,
-      marginRight: theme.spacing(1.5),
       right: 0,
+      paddingTop: theme.spacing(2),
       // Needs to below navbar should we change the navbarFixed? add add a new level?
-      zIndex: theme.zIndex.modal,
-      position: 'fixed',
       top: searchBarHidden ? 0 : TOP_BAR_LEVEL_HEIGHT,
-      backgroundColor: theme.colors.background.primary,
       boxSizing: 'content-box',
       flex: '1 1 0',
+      transition: theme.transitions.create('background-color'),
 
       [theme.breakpoints.up('md')]: {
-        borderRight: `1px solid ${theme.colors.border.weak}`,
         right: 'unset',
         top: topPosition,
       },
+    }),
+    canvasContainer: css({
+      backgroundColor: theme.colors.background.primary,
+      borderRight: `1px solid ${theme.colors.border.weak}`,
     }),
     content: css({
       display: 'flex',
