@@ -20,9 +20,9 @@ export function SectionNav({ model }: Props) {
   const { chrome } = useGrafana();
   const state = chrome.useState();
 
-  if (!Boolean(model.main?.children?.length)) {
-    return null;
-  }
+  // if (!Boolean(model.main?.children?.length)) {
+  //   return null;
+  // }
 
   return (
     <div className={styles.navContainer}>

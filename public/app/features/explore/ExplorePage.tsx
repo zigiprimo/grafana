@@ -3,7 +3,9 @@ import { inRange } from 'lodash';
 import React, { useEffect, useState } from 'react';
 import { useWindowSize } from 'react-use';
 
+import { PageLayoutType } from '@grafana/data';
 import { ErrorBoundaryAlert } from '@grafana/ui';
+import { Page } from 'app/core/components/Page/Page';
 import { SplitPaneWrapper } from 'app/core/components/SplitPaneWrapper/SplitPaneWrapper';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 import { useNavModel } from 'app/core/hooks/useNavModel';
@@ -86,31 +88,33 @@ export default function ExplorePage(props: GrafanaRouteComponentProps<{}, Explor
   }
 
   return (
-    <div className={styles.pageScrollbarWrapper}>
-      <ExploreActions exploreIdLeft={ExploreId.left} exploreIdRight={ExploreId.right} />
+    <Page navId="explore" layout={PageLayoutType.Canvas}>
+      <div className={styles.pageScrollbarWrapper}>
+        <ExploreActions exploreIdLeft={ExploreId.left} exploreIdRight={ExploreId.right} />
 
-      <SplitPaneWrapper
-        splitOrientation="vertical"
-        paneSize={widthCalc}
-        minSize={minWidth}
-        maxSize={minWidth * -1}
-        primary="second"
-        splitVisible={hasSplit}
-        paneStyle={{ overflow: 'auto', display: 'flex', flexDirection: 'column' }}
-        onDragFinished={(size) => {
-          if (size) {
-            updateSplitSize(size);
-          }
-        }}
-      >
-        {Object.keys(panes).map((exploreId) => {
-          return (
-            <ErrorBoundaryAlert key={exploreId} style="page">
-              <ExplorePaneContainer exploreId={exploreId as ExploreId} />
-            </ErrorBoundaryAlert>
-          );
-        })}
-      </SplitPaneWrapper>
-    </div>
+        <SplitPaneWrapper
+          splitOrientation="vertical"
+          paneSize={widthCalc}
+          minSize={minWidth}
+          maxSize={minWidth * -1}
+          primary="second"
+          splitVisible={hasSplit}
+          paneStyle={{ overflow: 'auto', display: 'flex', flexDirection: 'column' }}
+          onDragFinished={(size) => {
+            if (size) {
+              updateSplitSize(size);
+            }
+          }}
+        >
+          {Object.keys(panes).map((exploreId) => {
+            return (
+              <ErrorBoundaryAlert key={exploreId} style="page">
+                <ExplorePaneContainer exploreId={exploreId as ExploreId} />
+              </ErrorBoundaryAlert>
+            );
+          })}
+        </SplitPaneWrapper>
+      </div>
+    </Page>
   );
 }
