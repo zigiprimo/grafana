@@ -10,6 +10,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel/attribute"
 
+	"github.com/grafana/grafana/pkg/api/response"
+	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/network"
 	"github.com/grafana/grafana/pkg/infra/remotecache"
@@ -23,6 +25,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/authn"
 	"github.com/grafana/grafana/pkg/services/authn/authnimpl/sync"
 	"github.com/grafana/grafana/pkg/services/authn/clients"
+	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/ldap/service"
 	"github.com/grafana/grafana/pkg/services/login"
@@ -66,6 +69,7 @@ func ProvideService(
 	socialService social.Service, cache *remotecache.RemoteCache,
 	ldapService service.LDAP, registerer prometheus.Registerer,
 	signingKeysService signingkeys.Service, oauthServer oauthserver.OAuth2Server,
+	routerRegister routing.RouteRegister,
 ) authn.Service {
 	s := &Service{
 		log:            log.New("authn.service"),
@@ -165,6 +169,8 @@ func ProvideService(
 	s.RegisterPostAuthHook(userSyncService.FetchSyncedUserHook, 100)
 	s.RegisterPostAuthHook(sync.ProvidePermissionsSync(accessControlService).SyncPermissionsHook, 110)
 
+	s.registerAPIRoutes(routerRegister)
+
 	return s
 }
 
@@ -184,6 +190,25 @@ type Service struct {
 	postAuthHooks *queue[authn.PostAuthHookFn]
 	// postLoginHooks are called after a login request is performed, both for failing and successful requests.
 	postLoginHooks *queue[authn.PostLoginHookFn]
+}
+
+func (s *Service) registerAPIRoutes(router routing.RouteRegister) {
+	router.Get("/api/auth", s.authRoute)
+}
+
+func (s *Service) authRoute(reqCtx *contextmodel.ReqContext) response.Response {
+	ctx, span := s.tracer.Start(reqCtx.Req.Context(), "authn.AuthRoute")
+	defer span.End()
+
+	identity, err := s.Authenticate(ctx, &authn.Request{
+		OrgID:       0,
+		HTTPRequest: reqCtx.Req},
+	)
+	if err != nil {
+		return response.Error(401, "Invalid username or password", err)
+	}
+
+	return response.JSON(http.StatusOK, identity)
 }
 
 func (s *Service) Authenticate(ctx context.Context, r *authn.Request) (*authn.Identity, error) {
