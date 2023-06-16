@@ -101,7 +101,7 @@ export const Examples: StoryFn<typeof Button> = () => {
 export const Basic: StoryFn<typeof Button> = (args: ButtonProps) => <Button {...args} />;
 
 Basic.args = {
-  children: 'Example button',
+  children: 'Example Button',
   size: 'md',
   variant: 'primary',
   fill: 'solid',
