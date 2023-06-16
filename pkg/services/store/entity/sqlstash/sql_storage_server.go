@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -25,6 +26,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/store/resolver"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util"
+	"github.com/jmoiron/sqlx"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 )
@@ -37,7 +39,7 @@ func ProvideSQLEntityServer(db entityDB.EntityDB, cfg *setting.Cfg, grpcServerPr
 	entityServer := &sqlEntityServer{
 		db:       db,
 		sess:     db.GetSession(),
-		dialect:	migrator.NewDialect(db.GetEngine().DriverName()),
+		dialect:  migrator.NewDialect(db.GetEngine().DriverName()),
 		log:      log.New("sql-entity-server"),
 		kinds:    kinds,
 		resolver: resolver,
@@ -55,7 +57,7 @@ func ProvideSQLEntityServer(db entityDB.EntityDB, cfg *setting.Cfg, grpcServerPr
 
 type sqlEntityServer struct {
 	log      log.Logger
-	db			 entityDB.EntityDB // needed to keep xorm engine in scope
+	db       entityDB.EntityDB // needed to keep xorm engine in scope
 	sess     *session.SessionDB
 	dialect  migrator.Dialect
 	kinds    kind.KindRegistry
@@ -86,10 +88,11 @@ func (s *sqlEntityServer) getReadSelect(r *entity.ReadEntityRequest) string {
 	return "SELECT " + strings.Join(quotedFields, ",") + " FROM entity WHERE "
 }
 
-func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql.Rows, r *entity.ReadEntityRequest) (*entity.Entity, error) {
+func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sqlx.Rows, r *entity.ReadEntityRequest) (*entity.Entity, error) {
 	raw := &entity.Entity{
 		GRN:    &entity.GRN{},
 		Origin: &entity.EntityOriginInfo{},
+
 	}
 
 	summaryjson := &summarySupport{}
@@ -173,10 +176,12 @@ func (s *sqlEntityServer) Read(ctx context.Context, r *entity.ReadEntityRequest)
 		return nil, err
 	}
 
-	args := []interface{}{grn.ToGRNString()}
 	where := "grn=?"
+	args := []interface{}{
+		grn.ToGRNString(),
+	}
 
-	rows, err := s.sess.Query(ctx, s.getReadSelect(r)+where, args...)
+	rows, err := s.sess.Queryx(ctx, s.getReadSelect(r)+where, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -196,41 +201,32 @@ func (s *sqlEntityServer) readFromHistory(ctx context.Context, r *entity.ReadEnt
 	}
 	oid := grn.ToGRNString()
 
-	fields := []string{
-		"body", "size", "etag",
-		"updated_at", "updated_by",
+	fields := []string{"grn", "version", "size", "etag", "updated_at", "updated_by"}
+	if r.WithBody {
+		fields = append(fields, `body`)
 	}
 
-	rows, err := s.sess.Query(ctx,
+	raw := &entity.Entity{}
+
+	err = s.sess.Get(ctx, raw,
 		"SELECT "+strings.Join(fields, ",")+
 			" FROM entity_history WHERE grn=? AND version=?", oid, r.Version)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &entity.Entity{}, nil
+		}
 		return nil, err
 	}
-	defer func() { _ = rows.Close() }()
 
-	// Version or key not found
-	if !rows.Next() {
-		return &entity.Entity{}, nil
-	}
-
-	raw := &entity.Entity{
-		GRN: r.GRN,
-	}
-	err = rows.Scan(&raw.Body, &raw.Size, &raw.ETag, &raw.UpdatedAt, &raw.UpdatedBy)
-	if err != nil {
-		return nil, err
-	}
 	// For versioned files, the created+updated are the same
 	raw.CreatedAt = raw.UpdatedAt
 	raw.CreatedBy = raw.UpdatedBy
-	raw.Version = r.Version // from the query
 
 	// Dynamically create the summary
 	if r.WithSummary {
-		builder := s.kinds.GetSummaryBuilder(r.GRN.Kind)
+		builder := s.kinds.GetSummaryBuilder(raw.GRN.Kind)
 		if builder != nil {
-			val, out, err := builder(ctx, r.GRN.UID, raw.Body)
+			val, out, err := builder(ctx, raw.GRN.UID, raw.Body)
 			if err == nil {
 				raw.Body = out // cleaned up
 				raw.SummaryJson, err = json.Marshal(val)
@@ -239,11 +235,6 @@ func (s *sqlEntityServer) readFromHistory(ctx context.Context, r *entity.ReadEnt
 				}
 			}
 		}
-	}
-
-	// Clear the body if not requested
-	if !r.WithBody {
-		raw.Body = nil
 	}
 
 	return raw, err
@@ -268,7 +259,7 @@ func (s *sqlEntityServer) BatchRead(ctx context.Context, b *entity.BatchReadEnti
 			return nil, err
 		}
 
-		where := s.dialect.Quote("grn")+"=?"
+		where := s.dialect.Quote("grn") + "=?"
 		args = append(args, grn.ToGRNString())
 		if r.Version > 0 {
 			return nil, fmt.Errorf("version not supported for batch read (yet?)")
@@ -278,7 +269,7 @@ func (s *sqlEntityServer) BatchRead(ctx context.Context, b *entity.BatchReadEnti
 
 	req := b.Batch[0]
 	query := s.getReadSelect(req) + strings.Join(constraints, " OR ")
-	rows, err := s.sess.Query(ctx, query, args...)
+	rows, err := s.sess.Queryx(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +293,7 @@ func (s *sqlEntityServer) Write(ctx context.Context, r *entity.WriteEntityReques
 
 //nolint:gocyclo
 func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEntityRequest) (*entity.WriteEntityResponse, error) {
-		grn, err := s.validateGRN(ctx, r.GRN)
+	grn, err := s.validateGRN(ctx, r.GRN)
 	if err != nil {
 		s.log.Error("error validating GRN", "msg", err.Error())
 		return nil, err
@@ -878,7 +869,7 @@ func (s *sqlEntityServer) History(ctx context.Context, r *entity.EntityHistoryRe
 	query := "SELECT version,size,etag,updated_at,updated_by,message " +
 		"FROM entity_history " +
 		"WHERE grn=? " + page + " " +
-		"ORDER BY updated_at DESC "+
+		"ORDER BY updated_at DESC " +
 		"LIMIT 100"
 
 	rows, err := s.sess.Query(ctx, query, args...)

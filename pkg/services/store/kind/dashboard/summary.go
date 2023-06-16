@@ -102,7 +102,7 @@ func NewStaticDashboardSummaryBuilder(lookup DatasourceLookup, sanitize bool) en
 
 		summary.References = dashboardRefs.Get()
 		if sanitize {
-			body, err = json.MarshalIndent(parsed, "", "  ")
+			body, err = json.Marshal(parsed)
 		}
 		return summary, body, err
 	}

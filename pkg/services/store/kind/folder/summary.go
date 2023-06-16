@@ -39,7 +39,7 @@ func GetEntitySummaryBuilder() entity.EntitySummaryBuilder {
 			UID:         uid,
 		}
 
-		out, err := json.MarshalIndent(obj, "", "  ")
+		out, err := json.Marshal(obj)
 		return summary, out, err
 	}
 }

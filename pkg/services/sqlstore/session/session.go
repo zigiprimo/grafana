@@ -34,6 +34,10 @@ func (gs *SessionDB) Query(ctx context.Context, query string, args ...interface{
 	return gs.sqlxdb.QueryContext(ctx, gs.sqlxdb.Rebind(query), args...)
 }
 
+func (gs *SessionDB) Queryx(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error) {
+	return gs.sqlxdb.QueryxContext(ctx, gs.sqlxdb.Rebind(query), args...)
+}
+
 func (gs *SessionDB) Exec(ctx context.Context, query string, args ...interface{}) (sql.Result, error) {
 	return gs.sqlxdb.ExecContext(ctx, gs.sqlxdb.Rebind(query), args...)
 }

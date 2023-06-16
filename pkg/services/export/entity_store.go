@@ -574,7 +574,7 @@ func (e *entityStoreJob) start(ctx context.Context) {
 	}
 	e.status.Changed = time.Now().UnixMilli()
 	e.status.Last = "finished"
-	e.status.Status = "done"
+	e.status.Status = ""
 	e.broadcaster(e.status)
 }
 
