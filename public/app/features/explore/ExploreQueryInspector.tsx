@@ -3,6 +3,7 @@ import { connect, ConnectedProps } from 'react-redux';
 
 import { CoreApp, TimeZone } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime/src';
+import { LoadingState } from '@grafana/schema';
 import { TabbedContainer, TabConfig } from '@grafana/ui';
 import { ExploreDrawer } from 'app/features/explore/ExploreDrawer';
 import { InspectDataTab } from 'app/features/inspector/InspectDataTab';
@@ -24,7 +25,7 @@ interface DispatchProps {
 type Props = DispatchProps & ConnectedProps<typeof connector>;
 
 export function ExploreQueryInspector(props: Props) {
-  const { loading, width, onClose, queryResponse, timeZone } = props;
+  const { width, onClose, queryResponse, timeZone } = props;
   const dataFrames = queryResponse?.series || [];
   let errors = queryResponse?.errors;
   if (!errors?.length && queryResponse?.error) {
@@ -56,7 +57,7 @@ export function ExploreQueryInspector(props: Props) {
     content: (
       <InspectDataTab
         data={dataFrames}
-        isLoading={loading}
+        isLoading={queryResponse.state === LoadingState.Loading}
         options={{ withTransforms: false, withFieldConfig: false }}
         timeZone={timeZone}
         app={CoreApp.Explore}
@@ -93,10 +94,9 @@ export function ExploreQueryInspector(props: Props) {
 function mapStateToProps(state: StoreState, { exploreId }: { exploreId: ExploreId }) {
   const explore = state.explore;
   const item: ExploreItemState = explore.panes[exploreId]!;
-  const { loading, queryResponse } = item;
+  const { queryResponse } = item;
 
   return {
-    loading,
     queryResponse,
   };
 }

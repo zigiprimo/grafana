@@ -28,7 +28,6 @@ describe('Logs', () => {
         logRows={logs ?? rows}
         timeZone={'utc'}
         width={50}
-        loading={false}
         loadingState={LoadingState.Done}
         absoluteRange={{
           from: toUtc('2019-01-01 10:00:00').valueOf(),
@@ -81,7 +80,6 @@ describe('Logs', () => {
         onStartScanning={scanningStarted}
         timeZone={'utc'}
         width={50}
-        loading={false}
         loadingState={LoadingState.Done}
         absoluteRange={{
           from: toUtc('2019-01-01 10:00:00').valueOf(),
@@ -118,7 +116,6 @@ describe('Logs', () => {
         scanning={true}
         timeZone={'utc'}
         width={50}
-        loading={false}
         loadingState={LoadingState.Done}
         absoluteRange={{
           from: toUtc('2019-01-01 10:00:00').valueOf(),
@@ -159,7 +156,6 @@ describe('Logs', () => {
         onStopScanning={scanningStopped}
         timeZone={'utc'}
         width={50}
-        loading={false}
         loadingState={LoadingState.Done}
         absoluteRange={{
           from: toUtc('2019-01-01 10:00:00').valueOf(),

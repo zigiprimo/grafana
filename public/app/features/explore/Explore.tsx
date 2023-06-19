@@ -284,11 +284,10 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
   }
 
   renderGraphPanel(width: number) {
-    const { graphResult, absoluteRange, timeZone, queryResponse, loading, showFlameGraph } = this.props;
+    const { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph } = this.props;
 
     return (
       <GraphContainer
-        loading={loading}
         data={graphResult!}
         height={showFlameGraph ? 180 : 400}
         width={width}
@@ -304,7 +303,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
   }
 
   renderTablePanel(width: number) {
-    const { exploreId, timeZone } = this.props;
+    const { exploreId, timeZone, queryResponse } = this.props;
     return (
       <TableContainer
         ariaLabel={selectors.pages.Explore.General.table}
@@ -313,14 +312,16 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
         onCellFilterAdded={this.onCellFilterAdded}
         timeZone={timeZone}
         splitOpenFn={this.onSplitOpen('table')}
+        loadingState={queryResponse.state}
       />
     );
   }
 
   renderRawPrometheus(width: number) {
-    const { exploreId, datasourceInstance, timeZone } = this.props;
+    const { exploreId, queryResponse, datasourceInstance, timeZone } = this.props;
     return (
       <RawPrometheusContainer
+        loadingState={queryResponse.state}
         showRawPrometheus={true}
         ariaLabel={selectors.pages.Explore.General.table}
         width={width}
@@ -550,7 +551,6 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     queryResponse,
     showNodeGraph,
     showFlameGraph,
-    loading,
     showRawPrometheus,
     supplementaryQueries,
   } = item;
@@ -578,7 +578,6 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     showRawPrometheus,
     showFlameGraph,
     splitted: isSplit(state),
-    loading,
     logsSample,
     showLogsSample,
   };

@@ -120,7 +120,6 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
 
   render() {
     const {
-      loading,
       loadingState,
       logRows,
       logsMeta,
@@ -185,7 +184,6 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
             logsQueries={logsQueries}
             width={width}
             splitOpen={splitOpenFn}
-            loading={loading}
             loadingState={loadingState}
             loadLogsVolumeData={() => loadSupplementaryQueryData(exploreId, SupplementaryQueryType.LogsVolume)}
             onChangeTime={this.onChangeTime}
@@ -218,7 +216,6 @@ function mapStateToProps(state: StoreState, { exploreId }: { exploreId: ExploreI
   const item: ExploreItemState = explore.panes[exploreId]!;
   const {
     logsResult,
-    loading,
     scanning,
     datasourceInstance,
     isLive,
@@ -232,7 +229,6 @@ function mapStateToProps(state: StoreState, { exploreId }: { exploreId: ExploreI
   const logsVolume = supplementaryQueries[SupplementaryQueryType.LogsVolume];
 
   return {
-    loading,
     logRows: logsResult?.rows,
     logsMeta: logsResult?.meta,
     logsSeries: logsResult?.series,

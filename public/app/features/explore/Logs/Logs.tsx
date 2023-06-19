@@ -60,7 +60,6 @@ interface Props extends Themeable2 {
   logsQueries?: DataQuery[];
   visibleRange?: AbsoluteTimeRange;
   theme: GrafanaTheme2;
-  loading: boolean;
   loadingState: LoadingState;
   absoluteRange: AbsoluteTimeRange;
   timeZone: TimeZone;
@@ -369,7 +368,6 @@ class UnthemedLogs extends PureComponent<Props, State> {
       logsVolumeEnabled,
       logsVolumeData,
       loadLogsVolumeData,
-      loading = false,
       onClickFilterLabel,
       onClickFilterOutLabel,
       timeZone,
@@ -387,6 +385,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
       getRowContext,
       getLogRowContextUi,
       getRowContextQuery,
+      loadingState,
     } = this.props;
 
     const {
@@ -444,7 +443,12 @@ class UnthemedLogs extends PureComponent<Props, State> {
             />
           )}
         </Collapse>
-        <Collapse label="Logs" loading={loading} isOpen className={styleOverridesForStickyNavigation}>
+        <Collapse
+          label="Logs"
+          loading={loadingState === LoadingState.Loading}
+          isOpen
+          className={styleOverridesForStickyNavigation}
+        >
           <div className={styles.logOptions}>
             <InlineFieldRow>
               <InlineField label="Time" className={styles.horizontalInlineLabel} transparent>
@@ -556,7 +560,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
                 onLogRowHover={this.onLogRowHover}
                 onOpenContext={this.onOpenContext}
               />
-              {!loading && !hasData && !scanning && (
+              {loadingState === LoadingState.Done && !hasData && !scanning && (
                 <div className={styles.noData}>
                   No logs found.
                   <Button size="sm" variant="secondary" onClick={this.onClickScan}>
@@ -579,7 +583,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
               absoluteRange={absoluteRange}
               timeZone={timeZone}
               onChangeTime={onChangeTime}
-              loading={loading}
+              loading={loadingState === LoadingState.Loading}
               queries={logsQueries ?? []}
               scrollToTopLogs={this.scrollToTopLogs}
               addResultsToCache={addResultsToCache}

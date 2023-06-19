@@ -4,6 +4,7 @@ import { connect, ConnectedProps } from 'react-redux';
 
 import { applyFieldOverrides, DataFrame, SelectableValue, SplitOpen, TimeZone, ValueLinkConfig } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime/src';
+import { LoadingState } from '@grafana/schema';
 import { Collapse, RadioButtonGroup, Table, AdHocFilterItem } from '@grafana/ui';
 import { config } from 'app/core/config';
 import { PANEL_BORDER } from 'app/core/constants';
@@ -22,6 +23,7 @@ interface RawPrometheusContainerProps {
   onCellFilterAdded?: (filter: AdHocFilterItem) => void;
   showRawPrometheus?: boolean;
   splitOpenFn: SplitOpen;
+  loadingState: LoadingState;
 }
 
 interface PrometheusContainerState {
@@ -31,12 +33,11 @@ interface PrometheusContainerState {
 function mapStateToProps(state: StoreState, { exploreId }: RawPrometheusContainerProps) {
   const explore = state.explore;
   const item: ExploreItemState = explore.panes[exploreId]!;
-  const { loading: loadingInState, tableResult, rawPrometheusResult, range } = item;
+  const { tableResult, rawPrometheusResult, range } = item;
   const rawPrometheusFrame: DataFrame[] = rawPrometheusResult ? [rawPrometheusResult] : [];
   const result = (tableResult?.length ?? false) > 0 && rawPrometheusResult ? tableResult : rawPrometheusFrame;
-  const loading = result && result.length > 0 ? false : loadingInState;
 
-  return { loading, tableResult: result, range };
+  return { tableResult: result, range };
 }
 
 const connector = connect(mapStateToProps, {});
@@ -109,7 +110,7 @@ export class RawPrometheusContainer extends PureComponent<Props, PrometheusConta
   };
 
   render() {
-    const { loading, onCellFilterAdded, tableResult, width, splitOpenFn, range, ariaLabel, timeZone } = this.props;
+    const { loadingState, onCellFilterAdded, tableResult, width, splitOpenFn, range, ariaLabel, timeZone } = this.props;
     const height = this.getTableHeight();
     const tableWidth = width - config.theme.panelPadding * 2 - PANEL_BORDER;
 
@@ -152,7 +153,7 @@ export class RawPrometheusContainer extends PureComponent<Props, PrometheusConta
     const renderTable = !this.state?.resultsStyle || this.state?.resultsStyle === TABLE_RESULTS_STYLE.table;
 
     return (
-      <Collapse label={label} loading={loading} isOpen>
+      <Collapse label={label} loading={loadingState === LoadingState.Loading} isOpen>
         {mainFrame?.length && (
           <>
             {renderTable && (

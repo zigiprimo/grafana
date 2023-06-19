@@ -5,6 +5,7 @@ import { shallowEqual } from 'react-redux';
 
 import { DataSourceInstanceSettings, RawTimeRange } from '@grafana/data';
 import { config, DataSourcePicker, reportInteraction } from '@grafana/runtime';
+import { LoadingState } from '@grafana/schema';
 import { defaultIntervals, PageToolbar, RefreshPicker, SetInterval, ToolbarButton, ButtonGroup } from '@grafana/ui';
 import { AppChromeUpdate } from 'app/core/components/AppChrome/AppChromeUpdate';
 import { contextSrv } from 'app/core/core';
@@ -51,14 +52,9 @@ export function ExploreToolbar({ exploreId, topOfViewRef, onChangeTime }: Props)
   const fiscalYearStartMonth = useSelector((state: StoreState) => getFiscalYearStartMonth(state.user));
   const { refreshInterval, loading, datasourceInstance, range, isLive, isPaused, syncedTimes } = useSelector(
     (state: StoreState) => ({
-      ...pick(
-        state.explore.panes[exploreId]!,
-        'refreshInterval',
-        'loading',
-        'datasourceInstance',
-        'range',
-        'isLive',
-        'isPaused'
+      ...pick(state.explore.panes[exploreId]!, 'refreshInterval', 'datasourceInstance', 'range', 'isLive', 'isPaused'),
+      loading: [LoadingState.Loading, LoadingState.Streaming].includes(
+        state.explore.panes[exploreId]!.queryResponse.state
       ),
       syncedTimes: state.explore.syncedTimes,
     }),

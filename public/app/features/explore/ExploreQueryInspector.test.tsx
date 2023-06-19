@@ -36,7 +36,6 @@ jest.mock('@grafana/runtime', () => ({
 
 const setup = (propOverrides = {}) => {
   const props: ExploreQueryInspectorProps = {
-    loading: false,
     width: 100,
     exploreId: ExploreId.left,
     onClose: jest.fn(),

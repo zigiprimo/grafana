@@ -17,14 +17,14 @@ interface TableContainerProps {
   timeZone: TimeZone;
   onCellFilterAdded?: (filter: AdHocFilterItem) => void;
   splitOpenFn: SplitOpen;
+  loadingState: LoadingState;
 }
 
 function mapStateToProps(state: StoreState, { exploreId }: TableContainerProps) {
   const explore = state.explore;
   const item: ExploreItemState = explore.panes[exploreId]!;
-  const { loading: loadingInState, tableResult, range } = item;
-  const loading = tableResult && tableResult.length > 0 ? false : loadingInState;
-  return { loading, tableResult, range };
+  const { tableResult, range } = item;
+  return { tableResult, range };
 }
 
 const connector = connect(mapStateToProps, {});
@@ -49,7 +49,7 @@ export class TableContainer extends PureComponent<Props> {
   }
 
   render() {
-    const { loading, onCellFilterAdded, tableResult, width, splitOpenFn, range, ariaLabel, timeZone } = this.props;
+    const { loadingState, onCellFilterAdded, tableResult, width, splitOpenFn, range, ariaLabel, timeZone } = this.props;
     const height = this.getTableHeight();
 
     let dataFrames = tableResult;
@@ -87,12 +87,7 @@ export class TableContainer extends PureComponent<Props> {
     const subFrames = dataFrames?.filter((df) => df.meta?.custom?.parentRowIndex !== undefined);
 
     return (
-      <PanelChrome
-        title="Table"
-        width={width}
-        height={height}
-        loadingState={loading ? LoadingState.Loading : undefined}
-      >
+      <PanelChrome title="Table" width={width} height={height} loadingState={loadingState}>
         {(innerWidth, innerHeight) => (
           <>
             {mainFrame?.length ? (

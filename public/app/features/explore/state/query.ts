@@ -878,7 +878,10 @@ export const queryReducer = (state: ExploreItemState, action: AnyAction): Explor
 
     return {
       ...state,
-      loading: false,
+      queryResponse: {
+        ...state.queryResponse,
+        state: LoadingState.Done,
+      },
     };
   }
 
@@ -1024,7 +1027,6 @@ export const queryReducer = (state: ExploreItemState, action: AnyAction): Explor
         ...state.queryResponse,
         state: loadingState,
       },
-      loading: loadingState === LoadingState.Loading || loadingState === LoadingState.Streaming,
     };
   }
 
@@ -1140,7 +1142,6 @@ export const processQueryResponse = (
   const { response } = action.payload;
   const {
     request,
-    state: loadingState,
     series,
     error,
     graphResult,
@@ -1158,7 +1159,6 @@ export const processQueryResponse = (
       return {
         ...state,
         queryResponse: response,
-        loading: loadingState === LoadingState.Loading || loadingState === LoadingState.Streaming,
       };
     } else if (error.type === DataQueryErrorType.Cancelled) {
       return state;
@@ -1192,7 +1192,6 @@ export const processQueryResponse = (
       state.isLive && logsResult
         ? { ...logsResult, rows: filterLogRowsByIndex(state.clearedAtIndex, logsResult.rows) }
         : logsResult,
-    loading: loadingState === LoadingState.Loading || loadingState === LoadingState.Streaming,
     showLogs: !!logsResult,
     showMetrics: !!graphResult,
     showTable: !!tableResult?.length,
