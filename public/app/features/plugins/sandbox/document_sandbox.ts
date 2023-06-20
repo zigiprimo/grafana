@@ -1,3 +1,5 @@
+import { isNearMembraneProxy } from '@locker/near-membrane-shared';
+
 import { forbiddenElements } from './constants';
 
 // IMPORTANT: NEVER export this symbol from a public (e.g `@grafana/*`) package
@@ -64,10 +66,31 @@ export function markDomElementStyleAsALiveTarget(el: Element, mark: symbol) {
     // only HTMLElement's (extends Element) have a style attribute
     el instanceof HTMLElement &&
     // do not define it twice
-    //@ts-ignore - our types are out of date
     !Object.hasOwn(el.style, mark)
   ) {
     Reflect.defineProperty(el.style, mark, {});
+  }
+}
+
+/**
+ * Some specific near membrane proxies interfere with plugins
+ * an example of this is React class components state and their fast life cycles
+ * with cached objects.
+ *
+ * This function marks an object as a live target inside the sandbox
+ * as required to make them work correctly
+ */
+export function markObjectAsLiveTarget(obj: unknown, mark: symbol) {
+  if (
+    obj &&
+    // do not define it twice
+    !Object.hasOwn(obj, mark) &&
+    isNearMembraneProxy(obj) &&
+    !(obj instanceof Function) &&
+    // react class components
+    Object.hasOwn(obj, 'props')
+  ) {
+    Reflect.defineProperty(obj, mark, {});
   }
 }
 
@@ -75,7 +98,7 @@ export function markDomElementStyleAsALiveTarget(el: Element, mark: symbol) {
  * An element is considered to be inside the sandbox if:
  * - is not part of the document (detached)
  * - is inside a div[data-plugin-sandbox]
- *
+ *u
  */
 export function isDomElementInsideSandbox(el: Element, pluginId: string): boolean {
   return !document.contains(el) || el.closest(`[data-plugin-sandbox=${pluginId}]`) !== null;
