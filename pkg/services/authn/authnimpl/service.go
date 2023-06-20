@@ -72,6 +72,7 @@ func ProvideService(
 ) authn.Service {
 	s := &Service{
 		log:            log.New("authn.service"),
+		features:       features,
 		cfg:            cfg,
 		clients:        make(map[string]authn.Client),
 		clientQueue:    newQueue[authn.ContextAwareClient](),
@@ -168,7 +169,9 @@ func ProvideService(
 	s.RegisterPostAuthHook(userSyncService.FetchSyncedUserHook, 100)
 	s.RegisterPostAuthHook(sync.ProvidePermissionsSync(accessControlService).SyncPermissionsHook, 110)
 
-	s.registerAPIRoutes(routerRegister)
+	if features.IsEnabled(featuremgmt.FlagAuthsts) {
+		s.registerAPIRoutes(routerRegister)
+	}
 
 	return s
 }
@@ -180,8 +183,9 @@ type Service struct {
 	clients     map[string]authn.Client
 	clientQueue *queue[authn.ContextAwareClient]
 
-	tracer  tracing.Tracer
-	metrics *metrics
+	tracer   tracing.Tracer
+	metrics  *metrics
+	features featuremgmt.FeatureToggles
 
 	sessionService auth.UserTokenService
 
@@ -198,11 +202,11 @@ func (s *Service) registerAPIRoutes(router routing.RouteRegister) {
 func (s *Service) authRoute(reqCtx *contextmodel.ReqContext) response.Response {
 	ctx, span := s.tracer.Start(reqCtx.Req.Context(), "authn.AuthRoute")
 	defer span.End()
-
-	identity, err := s.Authenticate(ctx, &authn.Request{
+	authReq := &authn.Request{
 		OrgID:       0,
-		HTTPRequest: reqCtx.Req},
-	)
+		HTTPRequest: reqCtx.Req}
+	authReq.SetMeta("isSTS", "true")
+	identity, err := s.Authenticate(ctx, authReq)
 	if err != nil {
 		return response.Error(401, "Invalid username or password", err)
 	}
@@ -216,6 +220,14 @@ func (s *Service) Authenticate(ctx context.Context, r *authn.Request) (*authn.Id
 
 	var authErr error
 	for _, item := range s.clientQueue.items {
+		if s.features.IsEnabled(featuremgmt.FlagAuthsts) {
+			if r.GetMeta("isSTS") == "" {
+				if item.v.Name() != "sts-client" {
+					continue
+				}
+			}
+		}
+
 		if item.v.Test(ctx, r) {
 			identity, err := s.authenticate(ctx, item.v, r)
 			if err != nil {
