@@ -552,6 +552,13 @@ var (
 			Owner:        awsPluginsSquad,
 		},
 		{
+			Name:         "authsts",
+			Description:  "Adds support for STS authentication",
+			Stage:        FeatureStageExperimental,
+			FrontendOnly: false,
+			Owner:        grafanaAuthnzSquad,
+		},
+		{
 			Name:         "exploreScrollableLogsContainer",
 			Description:  "Improves the scrolling behavior of logs in Explore",
 			Stage:        FeatureStageExperimental,

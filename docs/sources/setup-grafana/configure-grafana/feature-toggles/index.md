@@ -112,6 +112,7 @@ Experimental features might be changed or removed without prior notice.
 | `lokiPredefinedOperations`         | Adds predefined query operations to Loki query editor                                                        |
 | `pluginsFrontendSandbox`           | Enables the plugins frontend sandbox                                                                         |
 | `cloudWatchLogsMonacoEditor`       | Enables the Monaco editor for CloudWatch Logs queries                                                        |
+| `authsts`                          | Adds support for STS authentication                                                                          |
 | `exploreScrollableLogsContainer`   | Improves the scrolling behavior of logs in Explore                                                           |
 | `recordedQueriesMulti`             | Enables writing multiple items from a single query within Recorded Queries                                   |
 | `alertingLokiRangeToInstant`       | Rewrites eligible loki range queries to instant queries                                                      |

@@ -331,6 +331,10 @@ const (
 	// Enables the Monaco editor for CloudWatch Logs queries
 	FlagCloudWatchLogsMonacoEditor = "cloudWatchLogsMonacoEditor"
 
+	// FlagAuthsts
+	// Adds support for STS authentication
+	FlagAuthsts = "authsts"
+
 	// FlagExploreScrollableLogsContainer
 	// Improves the scrolling behavior of logs in Explore
 	FlagExploreScrollableLogsContainer = "exploreScrollableLogsContainer"
