@@ -10,6 +10,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 
 	"github.com/grafana/grafana/pkg/tsdb/intervalv2"
+	"github.com/grafana/grafana/pkg/tsdb/loki/kinds/dataquery"
 )
 
 const (
@@ -18,6 +19,7 @@ const (
 	varRange      = "$__range"
 	varRangeS     = "$__range_s"
 	varRangeMs    = "$__range_ms"
+	varAutoRange  = "$__auto"
 )
 
 const (
@@ -28,7 +30,7 @@ const (
 	varRangeMsAlt    = "${__range_ms}"
 )
 
-func interpolateVariables(expr string, interval time.Duration, timeRange time.Duration) string {
+func interpolateVariables(expr string, interval time.Duration, timeRange time.Duration, step time.Duration, queryType dataquery.LokiQueryType) string {
 	intervalText := intervalv2.FormatDuration(interval)
 	intervalMsText := strconv.FormatInt(int64(interval/time.Millisecond), 10)
 
@@ -50,6 +52,19 @@ func interpolateVariables(expr string, interval time.Duration, timeRange time.Du
 	expr = strings.ReplaceAll(expr, varRangeMsAlt, rangeMsText)
 	expr = strings.ReplaceAll(expr, varRangeSAlt, rangeSText)
 	expr = strings.ReplaceAll(expr, varRangeAlt, rangeSText+"s")
+
+	// Interpolate $__auto range variable to step in range queries and to $__range in instant queries
+	// re := regexp.MustCompile(`\s*\[auto\]\s*\)`)
+	if queryType == dataquery.LokiQueryTypeRange {
+		//expr = re.ReplaceAllString(expr, "[" + intervalv2.FormatDuration(step)+"])")
+		expr = strings.ReplaceAll(expr, varAutoRange, intervalText)
+	}
+
+	if queryType == dataquery.LokiQueryTypeInstant {
+		//expr = re.ReplaceAllString(expr, "[" + rangeSText + "s])")
+		expr = strings.ReplaceAll(expr, varAutoRange, rangeSText+"s")
+	}
+
 	return expr
 }
 
@@ -131,8 +146,6 @@ func parseQuery(queryContext *backend.QueryDataRequest) ([]*lokiQuery, error) {
 			return nil, err
 		}
 
-		expr := interpolateVariables(model.Expr, interval, timeRange)
-
 		queryType, err := parseQueryType(model.QueryType)
 		if err != nil {
 			return nil, err
@@ -142,6 +155,8 @@ func parseQuery(queryContext *backend.QueryDataRequest) ([]*lokiQuery, error) {
 		if err != nil {
 			return nil, err
 		}
+
+		expr := interpolateVariables(model.Expr, interval, timeRange, step, queryType)
 
 		var maxLines int64
 		if model.MaxLines != nil {

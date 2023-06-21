@@ -197,7 +197,7 @@ export class LokiDatasource
           refId: `${REF_ID_STARTER_LOG_VOLUME}${normalizedQuery.refId}`,
           queryType: LokiQueryType.Range,
           supportingQueryType: SupportingQueryType.LogsVolume,
-          expr: `sum by (level) (count_over_time(${expr}[$__interval]))`,
+          expr: `sum by (level) (count_over_time(${expr}[$__auto_range]))`,
         };
 
       case SupplementaryQueryType.LogsSample:

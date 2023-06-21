@@ -51,15 +51,17 @@ const AGGREGATION_COMPLETIONS: Completion[] = AGGREGATION_OPERATORS.map((f) => (
   documentation: f.documentation,
 }));
 
-const FUNCTION_COMPLETIONS: Completion[] = RANGE_VEC_FUNCTIONS.map((f) => ({
-  type: 'FUNCTION',
-  label: f.label,
-  insertText: `${f.insertText ?? ''}({$0}[\\$__interval])`, // i don't know what to do when this is nullish. it should not be.
-  isSnippet: true,
-  triggerOnInsert: true,
-  detail: f.detail,
-  documentation: f.documentation,
-}));
+const FUNCTION_COMPLETIONS: Completion[] = RANGE_VEC_FUNCTIONS.map((f) => {
+  return {
+    type: 'FUNCTION',
+    label: f.label,
+    insertText: `${f.insertText ?? ''}({$0}[\\$__auto_range])`, // i don't know what to do when this is nullish. it should not be.
+    isSnippet: true,
+    triggerOnInsert: true,
+    detail: f.detail,
+    documentation: f.documentation,
+  };
+});
 
 const BUILT_IN_FUNCTIONS_COMPLETIONS: Completion[] = BUILT_IN_FUNCTIONS.map((f) => ({
   type: 'FUNCTION',
@@ -71,13 +73,21 @@ const BUILT_IN_FUNCTIONS_COMPLETIONS: Completion[] = BUILT_IN_FUNCTIONS.map((f) 
   documentation: f.documentation,
 }));
 
-const DURATION_COMPLETIONS: Completion[] = ['$__interval', '$__range', '1m', '5m', '10m', '30m', '1h', '1d'].map(
-  (text) => ({
-    type: 'DURATION',
-    label: text,
-    insertText: text,
-  })
-);
+const DURATION_COMPLETIONS: Completion[] = [
+  '$__auto_range',
+  '$__interval',
+  '$__range',
+  '1m',
+  '5m',
+  '10m',
+  '30m',
+  '1h',
+  '1d',
+].map((text) => ({
+  type: 'DURATION',
+  label: text,
+  insertText: text,
+}));
 
 const UNWRAP_FUNCTION_COMPLETIONS: Completion[] = [
   {

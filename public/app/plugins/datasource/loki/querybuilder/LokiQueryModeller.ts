@@ -122,7 +122,7 @@ export class LokiQueryModeller extends LokiAndPromQueryModellerBase {
           { id: LokiOperationId.LabelFilterNoErrors, params: [] },
           { id: LokiOperationId.Unwrap, params: [''] },
           { id: LokiOperationId.LabelFilterNoErrors, params: [] },
-          { id: LokiOperationId.SumOverTime, params: ['$__interval'] },
+          { id: LokiOperationId.SumOverTime, params: ['$__auto_range'] },
           { id: LokiOperationId.Sum, params: [] },
         ],
       },
@@ -132,7 +132,7 @@ export class LokiQueryModeller extends LokiAndPromQueryModellerBase {
         // sum by() (count_over_time({}[$__interval)
         operations: [
           { id: LokiOperationId.LineContains, params: [''] },
-          { id: LokiOperationId.CountOverTime, params: ['$__interval'] },
+          { id: LokiOperationId.CountOverTime, params: ['$__auto_range'] },
           { id: LokiOperationId.Sum, params: [] },
         ],
       },
@@ -144,7 +144,7 @@ export class LokiQueryModeller extends LokiAndPromQueryModellerBase {
           { id: LokiOperationId.LineContains, params: [''] },
           { id: LokiOperationId.Logfmt, params: [] },
           { id: LokiOperationId.LabelFilterNoErrors, params: [] },
-          { id: LokiOperationId.CountOverTime, params: ['$__interval'] },
+          { id: LokiOperationId.CountOverTime, params: ['$__auto_range'] },
           { id: LokiOperationId.Sum, params: [] },
         ],
       },
@@ -154,7 +154,7 @@ export class LokiQueryModeller extends LokiAndPromQueryModellerBase {
         // bytes_over_time({}[$__interval])
         operations: [
           { id: LokiOperationId.LineContains, params: [''] },
-          { id: LokiOperationId.BytesOverTime, params: ['$__interval'] },
+          { id: LokiOperationId.BytesOverTime, params: ['$__auto_range'] },
         ],
       },
       {
@@ -173,7 +173,7 @@ export class LokiQueryModeller extends LokiAndPromQueryModellerBase {
         operations: [
           { id: LokiOperationId.Logfmt, params: [] },
           { id: LokiOperationId.LabelFilterNoErrors, params: [] },
-          { id: LokiOperationId.CountOverTime, params: ['$__interval'] },
+          { id: LokiOperationId.CountOverTime, params: ['$__auto_range'] },
           { id: LokiOperationId.Sum, params: [] },
           { id: LokiOperationId.TopK, params: [10] },
         ],
@@ -187,7 +187,7 @@ export class LokiQueryModeller extends LokiAndPromQueryModellerBase {
           { id: LokiOperationId.LabelFilterNoErrors, params: [] },
           { id: LokiOperationId.Unwrap, params: ['latency'] },
           { id: LokiOperationId.LabelFilterNoErrors, params: [] },
-          { id: LokiOperationId.QuantileOverTime, params: ['$__interval', 0.5] },
+          { id: LokiOperationId.QuantileOverTime, params: ['$__auto_range', 0.5] },
           { id: LokiOperationId.Sum, params: [] },
         ],
       },
