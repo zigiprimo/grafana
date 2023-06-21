@@ -182,6 +182,12 @@ export function getParserFromQuery(query: string): string | undefined {
   return parsers.length > 0 ? query.substring(parsers[0].from, parsers[0].to).trim() : undefined;
 }
 
+export function getFirstPipelineExprFromQuery(query: string): string | undefined {
+  const nodes = getNodesFromQuery(query, [PipelineExpr]);
+  console.log('nodes', nodes);
+  return nodes.length > 0 ? query.substring(nodes[0].from, nodes[0].to).trim() : undefined;
+}
+
 export function isQueryPipelineErrorFiltering(query: string): boolean {
   const labels = getNodesFromQuery(query, [LabelFilter]);
   for (const node of labels) {

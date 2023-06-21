@@ -84,6 +84,8 @@ export function LokiContextUi(props: LokiContextUiProps) {
   const styles = useStyles2(getStyles);
 
   const [contextFilters, setContextFilters] = useState<ContextFilter[]>([]);
+  // TODO: Implement this
+  const [includePipe, setIncludePipe] = useState(true);
 
   const [initialized, setInitialized] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -247,7 +249,8 @@ export function LokiContextUi(props: LokiContextUiProps) {
                   query={logContextProvider.processContextFiltersToExpr(
                     row,
                     contextFilters.filter(({ enabled }) => enabled),
-                    origQuery
+                    origQuery,
+                    logContextProvider.includePipeOperations
                   )}
                   className={styles.rawQuery}
                 />

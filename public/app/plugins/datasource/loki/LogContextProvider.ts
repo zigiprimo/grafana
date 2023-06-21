@@ -24,7 +24,12 @@ import { LokiContextUi } from './components/LokiContextUi';
 import { LokiDatasource, makeRequest, REF_ID_STARTER_LOG_ROW_CONTEXT } from './datasource';
 import { escapeLabelValueInExactSelector } from './languageUtils';
 import { addLabelToQuery, addParserToQuery } from './modifyQuery';
-import { getParserFromQuery, getStreamSelectorsFromQuery, isQueryWithParser } from './queryUtils';
+import {
+  getFirstPipelineExprFromQuery,
+  getParserFromQuery,
+  getStreamSelectorsFromQuery,
+  isQueryWithParser,
+} from './queryUtils';
 import { sortDataFrameByTime, SortDirection } from './sortDataFrame';
 import { ContextFilter, LokiQuery, LokiQueryDirection, LokiQueryType } from './types';
 
@@ -38,10 +43,12 @@ export class LogContextProvider {
   datasource: LokiDatasource;
   appliedContextFilters: ContextFilter[];
   onContextClose: (() => void) | undefined;
+  includePipeOperations: boolean;
 
   constructor(datasource: LokiDatasource) {
     this.datasource = datasource;
     this.appliedContextFilters = [];
+    this.includePipeOperations = store.getBool('grafana.includePipeOperations', true);
   }
 
   private async getQueryAndRange(row: LogRowModel, options?: LogRowContextOptions, origQuery?: LokiQuery) {
@@ -54,7 +61,7 @@ export class LogContextProvider {
       this.appliedContextFilters = filters;
     }
 
-    return await this.prepareLogRowContextQueryTarget(row, limit, direction, origQuery);
+    return await this.prepareLogRowContextQueryTarget(row, limit, direction, origQuery, this.includePipeOperations);
   }
 
   getLogRowContextQuery = async (
@@ -107,9 +114,11 @@ export class LogContextProvider {
     row: LogRowModel,
     limit: number,
     direction: LogRowContextQueryDirection,
-    origQuery?: LokiQuery
+    origQuery?: LokiQuery,
+    includePipeOperations?: boolean
   ): Promise<{ query: LokiQuery; range: TimeRange }> {
-    const expr = this.processContextFiltersToExpr(row, this.appliedContextFilters, origQuery);
+    const expr = this.processContextFiltersToExpr(row, this.appliedContextFilters, origQuery, includePipeOperations);
+    console.log(expr);
     const contextTimeBuffer = 2 * 60 * 60 * 1000; // 2h buffer
 
     const queryDirection =
@@ -183,7 +192,12 @@ export class LogContextProvider {
     });
   }
 
-  processContextFiltersToExpr = (row: LogRowModel, contextFilters: ContextFilter[], query: LokiQuery | undefined) => {
+  processContextFiltersToExpr = (
+    row: LogRowModel,
+    contextFilters: ContextFilter[],
+    query: LokiQuery | undefined,
+    includePipeOperations: boolean | undefined
+  ) => {
     const labelFilters = contextFilters
       .map((filter) => {
         if (!filter.fromParser && filter.enabled) {
@@ -203,7 +217,14 @@ export class LogContextProvider {
     if (query && isQueryWithParser(query.expr).parserCount === 1) {
       const parser = getParserFromQuery(query.expr);
       if (parser) {
-        expr = addParserToQuery(expr, parser);
+        if (includePipeOperations) {
+          // TODO: remove label filters from pipeline expr
+          const pipelineOperations = getFirstPipelineExprFromQuery(query.expr);
+          expr = `${expr} ${pipelineOperations}`;
+        } else {
+          expr = addParserToQuery(expr, parser);
+        }
+
         const parsedLabels = contextFilters.filter((filter) => filter.fromParser && filter.enabled);
         for (const parsedLabel of parsedLabels) {
           if (parsedLabel.enabled) {
