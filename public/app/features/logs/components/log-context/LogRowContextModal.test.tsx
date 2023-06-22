@@ -4,7 +4,13 @@ import React from 'react';
 import { act } from 'react-dom/test-utils';
 import { render } from 'test/redux-rtl';
 
-import { FieldType, LogRowContextQueryDirection, LogsSortOrder, MutableDataFrame } from '@grafana/data';
+import {
+  FieldType,
+  LogRowContextQueryDirection,
+  LogsSortOrder,
+  MutableDataFrame,
+  SplitOpenOptions,
+} from '@grafana/data';
 import { dataFrameToLogsModel } from 'app/core/logsModel';
 
 import { LogRowContextModal } from './LogRowContextModal';
@@ -66,10 +72,13 @@ jest.mock('app/types', () => ({
   useDispatch: () => dispatchMock,
 }));
 
-const splitOpen = Symbol('splitOpen');
+const splitOpenSym = Symbol('splitOpen');
+const splitOpen = jest.fn().mockReturnValue(splitOpenSym);
 jest.mock('app/features/explore/state/main', () => ({
   ...jest.requireActual('app/features/explore/state/main'),
-  splitOpen: () => splitOpen,
+  splitOpen: (arg?: SplitOpenOptions) => {
+    return splitOpen(arg);
+  },
 }));
 
 const logs = dataFrameToLogsModel([dfNow]);
@@ -257,6 +266,42 @@ describe('LogRowContextModal', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it('should create correct splitOpen', async () => {
+    const queryObj = { datasource: { uid: 'test-uid' } };
+    const getRowContextQuery = jest.fn().mockResolvedValue(queryObj);
+    const onClose = jest.fn();
+
+    render(
+      <LogRowContextModal
+        row={row}
+        open={true}
+        onClose={onClose}
+        getRowContext={getRowContext}
+        getRowContextQuery={getRowContextQuery}
+        timeZone={timeZone}
+      />
+    );
+
+    const splitViewButton = await screen.findByRole('button', {
+      name: /open in split view/i,
+    });
+
+    await userEvent.click(splitViewButton);
+
+    await waitFor(() =>
+      expect(splitOpen).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queries: [queryObj],
+          panelsState: {
+            logs: {
+              id: row.uid,
+            },
+          },
+        })
+      )
+    );
+  });
+
   it('should dispatch splitOpen', async () => {
     const getRowContextQuery = jest.fn().mockResolvedValue({ datasource: { uid: 'test-uid' } });
     const onClose = jest.fn();
@@ -278,6 +323,6 @@ describe('LogRowContextModal', () => {
 
     await userEvent.click(splitViewButton);
 
-    await waitFor(() => expect(dispatchMock).toHaveBeenCalledWith(splitOpen));
+    await waitFor(() => expect(dispatchMock).toHaveBeenCalledWith(splitOpenSym));
   });
 });
