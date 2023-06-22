@@ -3,6 +3,7 @@ import { uniqueId, groupBy, upperFirst, sumBy, isArray } from 'lodash';
 import pluralize from 'pluralize';
 import React, { FC, Fragment, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import tinycolor2 from 'tinycolor2';
 
 import { GrafanaTheme2, IconName } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
@@ -599,8 +600,6 @@ const getStyles = (theme: GrafanaTheme2) => ({
     padding: ${theme.spacing(1.5)};
   `,
   metadataRow: css`
-    background: ${theme.colors.background.secondary};
-
     border-bottom-left-radius: ${theme.shape.borderRadius(1)};
     border-bottom-right-radius: ${theme.shape.borderRadius(1)};
   `,
@@ -615,7 +614,8 @@ const getStyles = (theme: GrafanaTheme2) => ({
 
     ${hasFocus &&
     css`
-      border-color: ${theme.colors.primary.border};
+      background: ${theme.colors.info.transparent};
+      border-color: ${tinycolor2(theme.colors.info.border).setAlpha(0.2).toString()};
     `}
   `,
   metadata: css`
