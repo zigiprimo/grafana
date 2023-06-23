@@ -1,7 +1,7 @@
 package entity
 
 // 😬😬😬😬 HACK HACK HACK... avoid wire circular dependency for now
-var WireCircularDependencyHack EntityStoreServer
+var WireCircularDependencyHack EntityStoreService
 
 // The admin request is a superset of write request features
 func ToAdminWriteEntityRequest(req *WriteEntityRequest) *AdminWriteEntityRequest {

@@ -6,7 +6,6 @@ import (
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/playlist"
-	"github.com/grafana/grafana/pkg/services/store/entity"
 )
 
 type Service struct {
@@ -15,7 +14,7 @@ type Service struct {
 
 var _ playlist.Service = &Service{}
 
-func ProvideService(db db.DB, toggles featuremgmt.FeatureToggles, objserver entity.EntityStoreServer) playlist.Service {
+func ProvideService(db db.DB, toggles featuremgmt.FeatureToggles) playlist.Service {
 	var sqlstore store
 
 	// 🐢🐢🐢 pick the store
@@ -28,20 +27,7 @@ func ProvideService(db db.DB, toggles featuremgmt.FeatureToggles, objserver enti
 			db: db,
 		}
 	}
-	svc := &Service{store: sqlstore}
-
-	// FlagObjectStore is only supported in development mode
-	if false && toggles.IsEnabled(featuremgmt.FlagEntityStore) {
-		impl := &entityStoreImpl{
-			sqlimpl: svc,
-			store:   objserver,
-			sess:    db.GetSqlxSession(),
-		}
-		impl.sync() // load everythign from the existing SQL setup into the new object store
-		return impl
-	}
-
-	return svc
+	return &Service{store: sqlstore}
 }
 
 func (s *Service) Create(ctx context.Context, cmd *playlist.CreatePlaylistCommand) (*playlist.Playlist, error) {

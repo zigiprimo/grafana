@@ -11,6 +11,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/k8s/apiserver"
 	"github.com/grafana/grafana/pkg/services/k8s/client"
 	"github.com/grafana/grafana/pkg/services/provisioning"
+	"github.com/grafana/grafana/pkg/services/store/entity"
 )
 
 type Registry interface{}
@@ -27,6 +28,7 @@ func ProvideRegistry(
 	httpServer *api.HTTPServer,
 	provisioning *provisioning.ProvisioningServiceImpl,
 	coreGRDRegistry *coregrd.Registry,
+	entityService entity.EntityStoreService,
 ) *registry {
 	return NewRegistry(
 		moduleManager,
@@ -36,6 +38,7 @@ func ProvideRegistry(
 		httpServer,
 		provisioning,
 		coreGRDRegistry,
+		entityService,
 	)
 }
 

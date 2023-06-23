@@ -128,6 +128,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/star/starimpl"
 	"github.com/grafana/grafana/pkg/services/stats/statsimpl"
 	"github.com/grafana/grafana/pkg/services/store"
+	"github.com/grafana/grafana/pkg/services/store/entity"
 	entityDB "github.com/grafana/grafana/pkg/services/store/entity/db"
 	"github.com/grafana/grafana/pkg/services/store/entity/httpentitystore"
 	"github.com/grafana/grafana/pkg/services/store/entity/sqlstash"
@@ -343,6 +344,8 @@ var wireBasicSet = wire.NewSet(
 	kind.ProvideService, // The registry of known kinds
 	entityDB.ProvideEntityDB,
 	sqlstash.ProvideSQLEntityServer,
+	wire.Bind(new(entity.EntityStoreServer), new(*sqlstash.EntityServer)),
+	wire.Bind(new(entity.EntityStoreService), new(*sqlstash.EntityServer)),
 	resolver.ProvideEntityReferenceResolver,
 	httpentitystore.ProvideHTTPEntityStore,
 	teamimpl.ProvideService,

@@ -30,7 +30,7 @@ type httpEntityStore struct {
 	kinds kind.KindRegistry
 }
 
-func ProvideHTTPEntityStore(store entity.EntityStoreServer, kinds kind.KindRegistry) HTTPEntityStore {
+func ProvideHTTPEntityStore(store entity.EntityStoreService, kinds kind.KindRegistry) HTTPEntityStore {
 	return &httpEntityStore{
 		store: store,
 		log:   log.New("http-entity-store"),

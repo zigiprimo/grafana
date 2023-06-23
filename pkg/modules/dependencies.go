@@ -11,6 +11,7 @@ const (
 	KubernetesRegistration string = "kubernetes-registration"
 	Kubernetes             string = "kubernetes"
 	KubernetesClientset    string = "kubernetes-clientset"
+	EntityStore            string = "entity-store"
 
 	Provisioning string = "provisioning"
 )
@@ -18,9 +19,9 @@ const (
 var DependencyMap = map[string][]string{
 	CertGenerator: {},
 
-	HTTPServer: {CertGenerator},
+	HTTPServer: {CertGenerator, EntityStore},
 
-	KubernetesAPIServer:    {CertGenerator},
+	KubernetesAPIServer:    {CertGenerator, EntityStore},
 	KubernetesRegistration: {KubernetesAPIServer},
 	KubernetesClientset:    {KubernetesRegistration},
 	Kubernetes:             {KubernetesClientset},

@@ -10,10 +10,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/grafana/dskit/services"
 	"github.com/grafana/grafana/pkg/infra/appcontext"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/slugify"
 	"github.com/grafana/grafana/pkg/kinds"
+	"github.com/grafana/grafana/pkg/modules"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/grpcserver"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
@@ -31,40 +33,63 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 )
 
-// Make sure we implement both store + admin
-var _ entity.EntityStoreServer = &sqlEntityServer{}
-var _ entity.EntityStoreAdminServer = &sqlEntityServer{}
+// Make sure we implement both store + admin service
+var _ entity.EntityStoreService = &EntityServer{}
+var _ entity.EntityStoreAdminService = &EntityServer{}
 
-func ProvideSQLEntityServer(db entityDB.EntityDB, cfg *setting.Cfg, grpcServerProvider grpcserver.Provider, kinds kind.KindRegistry, resolver resolver.EntityReferenceResolver, features featuremgmt.FeatureToggles) (entity.EntityStoreServer, error) {
-	entityServer := &sqlEntityServer{
+func ProvideSQLEntityServer(db entityDB.EntityDB, cfg *setting.Cfg, grpcServerProvider grpcserver.Provider, kinds kind.KindRegistry, resolver resolver.EntityReferenceResolver, features featuremgmt.FeatureToggles) (*EntityServer, error) {
+	entityServer := &EntityServer{
 		db:       db,
 		sess:     db.GetSession(),
 		dialect:  migrator.NewDialect(db.GetEngine().DriverName()),
 		log:      log.New("sql-entity-server"),
 		kinds:    kinds,
 		resolver: resolver,
+		features: features,
 	}
+
+	entityServer.BasicService = services.NewBasicService(entityServer.start, entityServer.running, entityServer.stop).WithName(modules.EntityStore)
 
 	entity.RegisterEntityStoreServer(grpcServerProvider.GetServer(), entityServer)
 	entity.WireCircularDependencyHack = entityServer
 
-	if err := migrations.MigrateEntityStore(db, features); err != nil {
-		return nil, err
-	}
-
 	return entityServer, nil
 }
 
-type sqlEntityServer struct {
+type EntityServer struct {
+	*services.BasicService
+
 	log      log.Logger
 	db       entityDB.EntityDB // needed to keep xorm engine in scope
 	sess     *session.SessionDB
 	dialect  migrator.Dialect
 	kinds    kind.KindRegistry
 	resolver resolver.EntityReferenceResolver
+	features featuremgmt.FeatureToggles
 }
 
-func (s *sqlEntityServer) getReadSelect(r *entity.ReadEntityRequest) string {
+func (s *EntityServer) start(ctx context.Context) error {
+	fmt.Println("🚀 Starting SQL Entity Server", s.ServiceContext().Err())
+
+	if err := migrations.MigrateEntityStore(s.db, s.features); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *EntityServer) running(ctx context.Context) error {
+	fmt.Println("🚀 Running SQL Entity Server", s.ServiceContext().Err())
+	<-ctx.Done()
+	return nil
+}
+
+func (s *EntityServer) stop(failureCase error) error {
+	fmt.Println("🚀 Stopping SQL Entity Server", failureCase, s.ServiceContext().Err())
+	return nil
+}
+
+func (s *EntityServer) getReadSelect(r *entity.ReadEntityRequest) string {
 	fields := []string{
 		"tenant_id", "kind", "uid", "folder", // GRN + folder
 		"version", "size", "etag", "errors", // errors are always returned
@@ -88,7 +113,7 @@ func (s *sqlEntityServer) getReadSelect(r *entity.ReadEntityRequest) string {
 	return "SELECT " + strings.Join(quotedFields, ",") + " FROM entity WHERE "
 }
 
-func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sqlx.Rows, r *entity.ReadEntityRequest) (*entity.Entity, error) {
+func (s *EntityServer) rowToReadEntityResponse(ctx context.Context, rows *sqlx.Rows, r *entity.ReadEntityRequest) (*entity.Entity, error) {
 	raw := &entity.Entity{
 		GRN:    &entity.GRN{},
 		Origin: &entity.EntityOriginInfo{},
@@ -137,7 +162,7 @@ func (s *sqlEntityServer) rowToReadEntityResponse(ctx context.Context, rows *sql
 	return raw, nil
 }
 
-func (s *sqlEntityServer) validateGRN(ctx context.Context, grn *entity.GRN) (*entity.GRN, error) {
+func (s *EntityServer) validateGRN(ctx context.Context, grn *entity.GRN) (*entity.GRN, error) {
 	if grn == nil {
 		return nil, fmt.Errorf("missing GRN")
 	}
@@ -167,7 +192,7 @@ func (s *sqlEntityServer) validateGRN(ctx context.Context, grn *entity.GRN) (*en
 	return grn, nil
 }
 
-func (s *sqlEntityServer) Read(ctx context.Context, r *entity.ReadEntityRequest) (*entity.Entity, error) {
+func (s *EntityServer) Read(ctx context.Context, r *entity.ReadEntityRequest) (*entity.Entity, error) {
 	if r.Version > 0 {
 		return s.readFromHistory(ctx, r)
 	}
@@ -194,7 +219,7 @@ func (s *sqlEntityServer) Read(ctx context.Context, r *entity.ReadEntityRequest)
 	return s.rowToReadEntityResponse(ctx, rows, r)
 }
 
-func (s *sqlEntityServer) readFromHistory(ctx context.Context, r *entity.ReadEntityRequest) (*entity.Entity, error) {
+func (s *EntityServer) readFromHistory(ctx context.Context, r *entity.ReadEntityRequest) (*entity.Entity, error) {
 	grn, err := s.validateGRN(ctx, r.GRN)
 	if err != nil {
 		return nil, err
@@ -240,7 +265,7 @@ func (s *sqlEntityServer) readFromHistory(ctx context.Context, r *entity.ReadEnt
 	return raw, err
 }
 
-func (s *sqlEntityServer) BatchRead(ctx context.Context, b *entity.BatchReadEntityRequest) (*entity.BatchReadEntityResponse, error) {
+func (s *EntityServer) BatchRead(ctx context.Context, b *entity.BatchReadEntityRequest) (*entity.BatchReadEntityResponse, error) {
 	if len(b.Batch) < 1 {
 		return nil, fmt.Errorf("missing querires")
 	}
@@ -287,12 +312,12 @@ func (s *sqlEntityServer) BatchRead(ctx context.Context, b *entity.BatchReadEnti
 	return rsp, nil
 }
 
-func (s *sqlEntityServer) Write(ctx context.Context, r *entity.WriteEntityRequest) (*entity.WriteEntityResponse, error) {
+func (s *EntityServer) Write(ctx context.Context, r *entity.WriteEntityRequest) (*entity.WriteEntityResponse, error) {
 	return s.AdminWrite(ctx, entity.ToAdminWriteEntityRequest(r))
 }
 
 //nolint:gocyclo
-func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEntityRequest) (*entity.WriteEntityResponse, error) {
+func (s *EntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEntityRequest) (*entity.WriteEntityResponse, error) {
 	grn, err := s.validateGRN(ctx, r.GRN)
 	if err != nil {
 		s.log.Error("error validating GRN", "msg", err.Error())
@@ -608,7 +633,7 @@ func (s *sqlEntityServer) AdminWrite(ctx context.Context, r *entity.AdminWriteEn
 	return rsp, err
 }
 
-func (s *sqlEntityServer) fillCreationInfo(ctx context.Context, tx *session.SessionTx, grn string, createdAt *int64, createdBy *string) error {
+func (s *EntityServer) fillCreationInfo(ctx context.Context, tx *session.SessionTx, grn string, createdAt *int64, createdBy *string) error {
 	if *createdAt > 1000 {
 		ignore := int64(0)
 		createdAt = &ignore
@@ -634,7 +659,7 @@ func (s *sqlEntityServer) fillCreationInfo(ctx context.Context, tx *session.Sess
 	return errClose
 }
 
-func (s *sqlEntityServer) selectForUpdate(ctx context.Context, tx *session.SessionTx, grn string) (*entity.EntityVersionInfo, string, error) {
+func (s *EntityServer) selectForUpdate(ctx context.Context, tx *session.SessionTx, grn string) (*entity.EntityVersionInfo, string, error) {
 	q := "SELECT guid,etag,version,updated_at,size FROM entity WHERE grn=?"
 	if false { // TODO, MYSQL/PosgreSQL can lock the row " FOR UPDATE"
 		q += " FOR UPDATE"
@@ -657,7 +682,7 @@ func (s *sqlEntityServer) selectForUpdate(ctx context.Context, tx *session.Sessi
 	return current, guid, errClose
 }
 
-func (s *sqlEntityServer) writeSearchInfo(
+func (s *EntityServer) writeSearchInfo(
 	ctx context.Context,
 	tx *session.SessionTx,
 	grn string,
@@ -769,7 +794,7 @@ func (s *sqlEntityServer) writeSearchInfo(
 	return nil
 }
 
-func (s *sqlEntityServer) prepare(ctx context.Context, r *entity.AdminWriteEntityRequest) (*summarySupport, []byte, error) {
+func (s *EntityServer) prepare(ctx context.Context, r *entity.AdminWriteEntityRequest) (*summarySupport, []byte, error) {
 	grn := r.GRN
 	builder := s.kinds.GetSummaryBuilder(grn.Kind)
 	if builder == nil {
@@ -798,7 +823,7 @@ func (s *sqlEntityServer) prepare(ctx context.Context, r *entity.AdminWriteEntit
 	return summaryjson, body, nil
 }
 
-func (s *sqlEntityServer) Delete(ctx context.Context, r *entity.DeleteEntityRequest) (*entity.DeleteEntityResponse, error) {
+func (s *EntityServer) Delete(ctx context.Context, r *entity.DeleteEntityRequest) (*entity.DeleteEntityResponse, error) {
 	grn, err := s.validateGRN(ctx, r.GRN)
 	if err != nil {
 		return nil, err
@@ -851,7 +876,7 @@ func doDelete(ctx context.Context, tx *session.SessionTx, grn *entity.GRN) (bool
 	return rows > 0, err
 }
 
-func (s *sqlEntityServer) History(ctx context.Context, r *entity.EntityHistoryRequest) (*entity.EntityHistoryResponse, error) {
+func (s *EntityServer) History(ctx context.Context, r *entity.EntityHistoryRequest) (*entity.EntityHistoryResponse, error) {
 	grn, err := s.validateGRN(ctx, r.GRN)
 	if err != nil {
 		return nil, err
@@ -891,7 +916,7 @@ func (s *sqlEntityServer) History(ctx context.Context, r *entity.EntityHistoryRe
 	return rsp, err
 }
 
-func (s *sqlEntityServer) Search(ctx context.Context, r *entity.EntitySearchRequest) (*entity.EntitySearchResponse, error) {
+func (s *EntityServer) Search(ctx context.Context, r *entity.EntitySearchRequest) (*entity.EntitySearchResponse, error) {
 	user, err := appcontext.User(ctx)
 	if err != nil {
 		return nil, err
@@ -1025,11 +1050,11 @@ func (s *sqlEntityServer) Search(ctx context.Context, r *entity.EntitySearchRequ
 	return rsp, err
 }
 
-func (s *sqlEntityServer) Watch(*entity.EntityWatchRequest, entity.EntityStore_WatchServer) error {
+func (s *EntityServer) Watch(*entity.EntityWatchRequest, entity.EntityStore_WatchServer) error {
 	return fmt.Errorf("unimplemented")
 }
 
-func (s *sqlEntityServer) FindReferences(ctx context.Context, r *entity.ReferenceRequest) (*entity.EntitySearchResponse, error) {
+func (s *EntityServer) FindReferences(ctx context.Context, r *entity.ReferenceRequest) (*entity.EntitySearchResponse, error) {
 	user, err := appcontext.User(ctx)
 	if err != nil {
 		return nil, err
