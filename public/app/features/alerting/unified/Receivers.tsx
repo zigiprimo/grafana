@@ -3,7 +3,7 @@ import { Disable, Enable } from 'react-enable';
 
 import { withErrorBoundary } from '@grafana/ui';
 const ContactPointsV1 = SafeDynamicImport(() => import('./components/contact-points/ContactPoints.v1'));
-const ContactPointsV2 = SafeDynamicImport(() => import('./components/contact-points/ContactPoints.v2'));
+const ContactPointsV2 = SafeDynamicImport(() => import('./components/contact-points/AlertListView.v2'));
 import { SafeDynamicImport } from 'app/core/components/DynamicImports/SafeDynamicImport';
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
 

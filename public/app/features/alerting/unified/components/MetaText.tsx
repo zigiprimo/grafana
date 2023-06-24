@@ -23,7 +23,7 @@ const MetaText = ({ children, icon, ...rest }: Props) => {
       {...rest}
     >
       <Stack direction="row" alignItems="center" gap={0.5}>
-        {icon && <Icon name={icon} />}
+        {icon && <Icon name={icon} size="sm" />}
         {children}
       </Stack>
     </div>
