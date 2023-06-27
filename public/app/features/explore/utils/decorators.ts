@@ -32,6 +32,7 @@ export const decorateWithFrameTypeMetadata = (data: PanelData): ExplorePanelData
   const rawPrometheusFrames: DataFrame[] = [];
   const logsFrames: DataFrame[] = [];
   const traceFrames: DataFrame[] = [];
+  const traceMetricFrames: DataFrame[] = [];
   const nodeGraphFrames: DataFrame[] = [];
   const flameGraphFrames: DataFrame[] = [];
 
@@ -45,6 +46,9 @@ export const decorateWithFrameTypeMetadata = (data: PanelData): ExplorePanelData
         break;
       case 'trace':
         traceFrames.push(frame);
+        break;
+      case 'traceMetrics':
+        traceMetricFrames.push(frame);
         break;
       case 'table':
         tableFrames.push(frame);
@@ -75,6 +79,7 @@ export const decorateWithFrameTypeMetadata = (data: PanelData): ExplorePanelData
     tableFrames,
     logsFrames,
     traceFrames,
+    traceMetricFrames,
     nodeGraphFrames,
     flameGraphFrames,
     rawPrometheusFrames,

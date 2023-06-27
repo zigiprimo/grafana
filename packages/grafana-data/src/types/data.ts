@@ -26,6 +26,7 @@ export const preferredVisualizationTypes = [
   'table',
   'logs',
   'trace',
+  'traceMetrics',
   'nodeGraph',
   'flamegraph',
   'rawPrometheus',

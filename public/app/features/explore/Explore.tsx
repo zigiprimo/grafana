@@ -391,6 +391,31 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
     return <FlameGraphExploreContainer dataFrames={queryResponse.flameGraphFrames} />;
   }
 
+  renderTraceMetricsPanel() {
+    const { queryResponse, exploreId } = this.props;
+    const dataFrames = queryResponse.series.filter((series) => series.meta?.preferredVisualisationType === 'traceMetrics');
+    console.log(dataFrames);
+
+    // once this can be shown together with the table results from TraceQL, then can properly format and render the correct trace metrics data
+    return (
+      <div>Tadaaa, I can also be shown above the TraceQL results!</div>
+    )
+
+    // return (
+    //   // If there is no data (like 404) we show a separate error so no need to show anything here
+    //   dataFrames.length && (
+    //     <TraceViewContainer
+    //       exploreId={exploreId}
+    //       dataFrames={dataFrames}
+    //       splitOpenFn={this.onSplitOpen('traceView')}
+    //       scrollElement={this.scrollElement}
+    //       queryResponse={queryResponse}
+    //       topOfViewRef={this.topOfViewRef}
+    //     />
+    //   )
+    // );
+  }
+
   renderTraceViewPanel() {
     const { queryResponse, exploreId } = this.props;
     const dataFrames = queryResponse.series.filter((series) => series.meta?.preferredVisualisationType === 'trace');
@@ -423,6 +448,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
       showRawPrometheus,
       showLogs,
       showTrace,
+      showTraceMetrics,
       showNodeGraph,
       showFlameGraph,
       timeZone,
@@ -444,6 +470,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
         queryResponse.tableFrames,
         queryResponse.rawPrometheusFrames,
         queryResponse.traceFrames,
+        queryResponse.traceMetricFrames,
       ].every((e) => e.length === 0);
 
     return (
@@ -488,6 +515,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
                           {showRawPrometheus && (
                             <ErrorBoundaryAlert>{this.renderRawPrometheus(width)}</ErrorBoundaryAlert>
                           )}
+                          {showTraceMetrics && <ErrorBoundaryAlert>{this.renderTraceMetricsPanel()}</ErrorBoundaryAlert>}
                           {showTable && <ErrorBoundaryAlert>{this.renderTablePanel(width)}</ErrorBoundaryAlert>}
                           {showLogs && <ErrorBoundaryAlert>{this.renderLogsPanel(width)}</ErrorBoundaryAlert>}
                           {showNodeGraph && <ErrorBoundaryAlert>{this.renderNodeGraphPanel()}</ErrorBoundaryAlert>}
@@ -546,6 +574,7 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     showMetrics,
     showTable,
     showTrace,
+    showTraceMetrics,
     absoluteRange,
     queryResponse,
     showNodeGraph,
@@ -574,6 +603,7 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     showMetrics,
     showTable,
     showTrace,
+    showTraceMetrics,
     showNodeGraph,
     showRawPrometheus,
     showFlameGraph,

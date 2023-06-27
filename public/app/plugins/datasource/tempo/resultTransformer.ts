@@ -576,7 +576,7 @@ export function createTableFrameFromMetricsQuery(data: any, instanceSettings: Da
       { name: 'spanCount', type: FieldType.string, config: { displayNameFromDS: 'Span count' } },
     ],
     meta: {
-      preferredVisualisationType: 'table',
+      preferredVisualisationType: 'traceMetrics',
     },
   });
   if (!data?.length) {
