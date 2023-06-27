@@ -464,9 +464,6 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
                         onClick={() => this.setState({ selectedFilter: slug })}
                         label={label}
                         selected={this.state.selectedFilter === slug}
-                        customClass={css`
-                          white-space: nowrap;
-                        `}
                       />
                     );
                   })}
