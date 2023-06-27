@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { EditorField, EditorRow } from '@grafana/experimental';
-import { AutoSizeInput } from '@grafana/ui';
+import { AutoSizeInput, Select } from '@grafana/ui';
 import { QueryOptionGroup } from 'app/plugins/datasource/prometheus/querybuilder/shared/QueryOptionGroup';
 
 import { DEFAULT_LIMIT } from '../datasource';
@@ -34,6 +34,25 @@ export const TempoQueryBuilderOptions = React.memo<Props>(({ onChange, query }) 
               defaultValue={query.limit || DEFAULT_LIMIT}
               onCommitChange={onLimitChange}
               value={query.limit}
+            />
+          </EditorField>
+          <EditorField label="Group by" tooltip="Select a tag to see group by metrics.">
+            <Select
+              // className={styles.dropdown}
+              options={['span.beast', 'span.status', 'status', 'span.http.status_code'].map((t) => ({
+                label: t,
+                value: t,
+              }))}
+              value={query.groupBy}
+              onChange={(v) => {
+                onChange({
+                  ...query,
+                  groupBy: v?.value,
+                });
+              }}
+              placeholder="Select group by"
+              isClearable
+              allowCustomValue={true}
             />
           </EditorField>
         </QueryOptionGroup>

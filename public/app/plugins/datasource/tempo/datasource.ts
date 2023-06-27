@@ -1,4 +1,4 @@
-import { identity, pick, pickBy, groupBy, startCase } from 'lodash';
+import { identity, pick, pickBy, groupBy, startCase, forEach } from 'lodash';
 import { EMPTY, from, lastValueFrom, merge, Observable, of, throwError } from 'rxjs';
 import { catchError, concatMap, map, mergeMap, toArray } from 'rxjs/operators';
 
@@ -57,6 +57,7 @@ import {
   transformFromOTLP as transformFromOTEL,
   createTableFrameFromSearch,
   createTableFrameFromTraceQlQuery,
+  createTableFrameFromMetricsQuery,
 } from './resultTransformer';
 import { SearchQueryParams, TempoQuery, TempoJsonData } from './types';
 
@@ -115,122 +116,78 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
   query(options: DataQueryRequest<TempoQuery>): Observable<DataQueryResponse> {
     const subQueries: Array<Observable<DataQueryResponse>> = [];
     const filteredTargets = options.targets.filter((target) => !target.hide);
-    const targets: { [type: string]: TempoQuery[] } = groupBy(filteredTargets, (t) => t.queryType || 'traceql');
-
-    if (targets.clear) {
-      return of({ data: [], state: LoadingState.Done });
-    }
-
-    const logsDatasourceUid = this.getLokiSearchDS();
-
-    // Run search queries on linked datasource
-    if (logsDatasourceUid && targets.search?.length > 0) {
-      reportInteraction('grafana_traces_loki_search_queried', {
-        datasourceType: 'tempo',
-        app: options.app ?? '',
-        grafana_version: config.buildInfo.version,
-        hasLinkedQueryExpr:
-          targets.search[0].linkedQuery?.expr && targets.search[0].linkedQuery?.expr !== '' ? true : false,
-      });
-
-      const dsSrv = getDatasourceSrv();
-      subQueries.push(
-        from(dsSrv.get(logsDatasourceUid)).pipe(
-          mergeMap((linkedDatasource: DataSourceApi) => {
-            // Wrap linked query into a data request based on original request
-            const linkedRequest: DataQueryRequest = { ...options, targets: targets.search.map((t) => t.linkedQuery!) };
-            // Find trace matchers in derived fields of the linked datasource that's identical to this datasource
-            const settings: DataSourceInstanceSettings<LokiOptions> = (linkedDatasource as any).instanceSettings;
-            const traceLinkMatcher: string[] =
-              settings.jsonData.derivedFields
-                ?.filter((field) => field.datasourceUid === this.uid && field.matcherRegex)
-                .map((field) => field.matcherRegex) || [];
-
-            if (!traceLinkMatcher || traceLinkMatcher.length === 0) {
-              return throwError(
-                () =>
-                  new Error(
-                    'No Loki datasource configured for search. Set up Derived Fields for traces in a Loki datasource settings and link it to this Tempo datasource.'
-                  )
-              );
-            } else {
-              return (linkedDatasource.query(linkedRequest) as Observable<DataQueryResponse>).pipe(
-                map((response) =>
-                  response.error ? response : transformTraceList(response, this.uid, this.name, traceLinkMatcher)
-                )
-              );
-            }
-          })
-        )
-      );
-    }
-
-    if (targets.nativeSearch?.length) {
-      try {
-        reportInteraction('grafana_traces_search_queried', {
-          datasourceType: 'tempo',
-          app: options.app ?? '',
-          grafana_version: config.buildInfo.version,
-          hasServiceName: targets.nativeSearch[0].serviceName ? true : false,
-          hasSpanName: targets.nativeSearch[0].spanName ? true : false,
-          resultLimit: targets.nativeSearch[0].limit ?? '',
-          hasSearch: targets.nativeSearch[0].search ? true : false,
-          minDuration: targets.nativeSearch[0].minDuration ?? '',
-          maxDuration: targets.nativeSearch[0].maxDuration ?? '',
-        });
-
-        const timeRange = { startTime: options.range.from.unix(), endTime: options.range.to.unix() };
-        const query = this.applyVariables(targets.nativeSearch[0], options.scopedVars);
-        const searchQuery = this.buildSearchQuery(query, timeRange);
-        subQueries.push(
-          this._request('/api/search', searchQuery).pipe(
-            map((response) => {
-              return {
-                data: [createTableFrameFromSearch(response.data.traces, this.instanceSettings)],
-              };
-            }),
-            catchError((error) => {
-              return of({ error: { message: error.data.message }, data: [] });
-            })
-          )
-        );
-      } catch (error) {
-        return of({ error: { message: error instanceof Error ? error.message : 'Unknown error occurred' }, data: [] });
+    // const targets: { [type: string]: TempoQuery[] } = groupBy(filteredTargets, (t) => t.queryType || 'traceql');
+    filteredTargets.forEach((target) => {
+      if (target.queryType === 'clear') {
+        return of({ data: [], state: LoadingState.Done });
       }
-    }
-    if (targets.traceql?.length) {
-      try {
-        const appliedQuery = this.applyVariables(targets.traceql[0], options.scopedVars);
-        const queryValue = appliedQuery?.query || '';
-        const hexOnlyRegex = /^[0-9A-Fa-f]*$/;
-        // Check whether this is a trace ID or traceQL query by checking if it only contains hex characters
-        if (queryValue.trim().match(hexOnlyRegex)) {
-          // There's only hex characters so let's assume that this is a trace ID
-          reportInteraction('grafana_traces_traceID_queried', {
+  
+      const logsDatasourceUid = this.getLokiSearchDS();
+  
+      // Run search queries on linked datasource
+      // if (logsDatasourceUid && target.queryType === 'search') {
+      //   reportInteraction('grafana_traces_loki_search_queried', {
+      //     datasourceType: 'tempo',
+      //     app: options.app ?? '',
+      //     grafana_version: config.buildInfo.version,
+      //     hasLinkedQueryExpr:
+      //       target.linkedQuery?.expr && target.linkedQuery?.expr !== '' ? true : false,
+      //   });
+  
+      //   const dsSrv = getDatasourceSrv();
+      //   subQueries.push(
+      //     from(dsSrv.get(logsDatasourceUid)).pipe(
+      //       mergeMap((linkedDatasource: DataSourceApi) => {
+      //         // Wrap linked query into a data request based on original request
+      //         const linkedRequest: DataQueryRequest = { ...options, targets: targets.search.map((t) => t.linkedQuery!) };
+      //         // Find trace matchers in derived fields of the linked datasource that's identical to this datasource
+      //         const settings: DataSourceInstanceSettings<LokiOptions> = (linkedDatasource as any).instanceSettings;
+      //         const traceLinkMatcher: string[] =
+      //           settings.jsonData.derivedFields
+      //             ?.filter((field) => field.datasourceUid === this.uid && field.matcherRegex)
+      //             .map((field) => field.matcherRegex) || [];
+  
+      //         if (!traceLinkMatcher || traceLinkMatcher.length === 0) {
+      //           return throwError(
+      //             () =>
+      //               new Error(
+      //                 'No Loki datasource configured for search. Set up Derived Fields for traces in a Loki datasource settings and link it to this Tempo datasource.'
+      //               )
+      //           );
+      //         } else {
+      //           return (linkedDatasource.query(linkedRequest) as Observable<DataQueryResponse>).pipe(
+      //             map((response) =>
+      //               response.error ? response : transformTraceList(response, this.uid, this.name, traceLinkMatcher)
+      //             )
+      //           );
+      //         }
+      //       })
+      //     )
+      //   );
+      // }
+  
+      if (target.queryType === 'nativeSearch') {
+        try {
+          reportInteraction('grafana_traces_search_queried', {
             datasourceType: 'tempo',
             app: options.app ?? '',
             grafana_version: config.buildInfo.version,
-            hasQuery: queryValue !== '' ? true : false,
+            hasServiceName: target.serviceName ? true : false,
+            hasSpanName: target.spanName ? true : false,
+            resultLimit: target.limit ?? '',
+            hasSearch: target.search ? true : false,
+            minDuration: target.minDuration ?? '',
+            maxDuration: target.maxDuration ?? '',
           });
-
-          subQueries.push(this.handleTraceIdQuery(options, targets.traceql));
-        } else {
-          reportInteraction('grafana_traces_traceql_queried', {
-            datasourceType: 'tempo',
-            app: options.app ?? '',
-            grafana_version: config.buildInfo.version,
-            query: queryValue ?? '',
-          });
+  
+          const timeRange = { startTime: options.range.from.unix(), endTime: options.range.to.unix() };
+          const query = this.applyVariables(target, options.scopedVars);
+          const searchQuery = this.buildSearchQuery(query, timeRange);
           subQueries.push(
-            this._request('/api/search', {
-              q: queryValue,
-              limit: options.targets[0].limit ?? DEFAULT_LIMIT,
-              start: options.range.from.unix(),
-              end: options.range.to.unix(),
-            }).pipe(
+            this._request('/api/search', searchQuery).pipe(
               map((response) => {
                 return {
-                  data: createTableFrameFromTraceQlQuery(response.data.traces, this.instanceSettings),
+                  data: [createTableFrameFromSearch(response.data.traces, this.instanceSettings)],
                 };
               }),
               catchError((error) => {
@@ -238,87 +195,151 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
               })
             )
           );
+        } catch (error) {
+          return of({ error: { message: error instanceof Error ? error.message : 'Unknown error occurred' }, data: [] });
         }
-      } catch (error) {
-        return of({ error: { message: error instanceof Error ? error.message : 'Unknown error occurred' }, data: [] });
       }
-    }
-    if (targets.traceqlSearch?.length) {
-      try {
-        const queryValue = generateQueryFromFilters(targets.traceqlSearch[0].filters);
-        reportInteraction('grafana_traces_traceql_search_queried', {
-          datasourceType: 'tempo',
-          app: options.app ?? '',
-          grafana_version: config.buildInfo.version,
-          query: queryValue ?? '',
-        });
-        subQueries.push(
-          this._request('/api/search', {
-            q: queryValue,
-            limit: options.targets[0].limit ?? DEFAULT_LIMIT,
-            start: options.range.from.unix(),
-            end: options.range.to.unix(),
-          }).pipe(
-            map((response) => {
-              return {
-                data: createTableFrameFromTraceQlQuery(response.data.traces, this.instanceSettings),
-              };
-            }),
-            catchError((error) => {
-              return of({ error: { message: error.data.message }, data: [] });
-            })
-          )
-        );
-      } catch (error) {
-        return of({ error: { message: error instanceof Error ? error.message : 'Unknown error occurred' }, data: [] });
+      if (target.queryType === 'traceql') {
+        try {
+          const appliedQuery = this.applyVariables(target, options.scopedVars);
+          const queryValue = appliedQuery?.query || '';
+          const hexOnlyRegex = /^[0-9A-Fa-f]*$/;
+          // Check whether this is a trace ID or traceQL query by checking if it only contains hex characters
+          if (queryValue.trim().match(hexOnlyRegex)) {
+            // There's only hex characters so let's assume that this is a trace ID
+            reportInteraction('grafana_traces_traceID_queried', {
+              datasourceType: 'tempo',
+              app: options.app ?? '',
+              grafana_version: config.buildInfo.version,
+              hasQuery: queryValue !== '' ? true : false,
+            });
+  
+            subQueries.push(this.handleTraceIdQuery(options, [target]));
+          } else {
+            reportInteraction('grafana_traces_traceql_queried', {
+              datasourceType: 'tempo',
+              app: options.app ?? '',
+              grafana_version: config.buildInfo.version,
+              query: queryValue ?? '',
+            });
+            subQueries.push(
+              this._request('/api/search', {
+                q: queryValue,
+                limit: options.targets[0].limit ?? DEFAULT_LIMIT,
+                start: options.range.from.unix(),
+                end: options.range.to.unix(),
+              }).pipe(
+                map((response) => {
+                  return {
+                    data: createTableFrameFromTraceQlQuery(response.data.traces, this.instanceSettings),
+                  };
+                }),
+                catchError((error) => {
+                  return of({ error: { message: error.data.message }, data: [] });
+                })
+              )
+            );
+          }
+        } catch (error) {
+          return of({ error: { message: error instanceof Error ? error.message : 'Unknown error occurred' }, data: [] });
+        }
       }
-    }
-
-    if (targets.upload?.length) {
-      if (this.uploadedJson) {
-        reportInteraction('grafana_traces_json_file_uploaded', {
-          datasourceType: 'tempo',
-          app: options.app ?? '',
-          grafana_version: config.buildInfo.version,
-        });
-
-        const jsonData = JSON.parse(this.uploadedJson as string);
-        const isTraceData = jsonData.batches;
-        const isServiceGraphData =
-          Array.isArray(jsonData) && jsonData.some((df) => df?.meta?.preferredVisualisationType === 'nodeGraph');
-
-        if (isTraceData) {
-          subQueries.push(of(transformFromOTEL(jsonData.batches, this.nodeGraph?.enabled)));
-        } else if (isServiceGraphData) {
-          subQueries.push(of({ data: jsonData, state: LoadingState.Done }));
+      if (target.queryType === 'traceqlSearch') {
+        try {
+          const queryValue = generateQueryFromFilters(target.filters);
+          reportInteraction('grafana_traces_traceql_search_queried', {
+            datasourceType: 'tempo',
+            app: options.app ?? '',
+            grafana_version: config.buildInfo.version,
+            query: queryValue ?? '',
+          });
+          
+          if (target.groupBy) {
+            subQueries.push(
+              this._request('/api/metrics/summary', {
+                q: queryValue,
+                groupBy: target.groupBy
+              }).pipe(
+                map((response) => {
+                  return {
+                    data: createTableFrameFromMetricsQuery(response.data.summaries, this.instanceSettings),
+                  };
+                }),
+                catchError((error) => {
+                  return of({ error: { message: error.data.message }, data: [] });
+                })
+              )
+            );
+          } else {
+            subQueries.push(
+              this._request('/api/search', {
+                q: queryValue,
+                limit: target.limit ?? DEFAULT_LIMIT,
+                start: options.range.from.unix(),
+                end: options.range.to.unix(),
+              }).pipe(
+                map((response) => {
+                  return {
+                    data: createTableFrameFromTraceQlQuery(response.data.traces, this.instanceSettings),
+                  };
+                }),
+                catchError((error) => {
+                  return of({ error: { message: error.data.message }, data: [] });
+                })
+              )
+            );
+          }
+        } catch (error) {
+          return of({ error: { message: error instanceof Error ? error.message : 'Unknown error occurred' }, data: [] });
+        }
+      }
+  
+      if (target.queryType === 'upload') {
+        if (this.uploadedJson) {
+          reportInteraction('grafana_traces_json_file_uploaded', {
+            datasourceType: 'tempo',
+            app: options.app ?? '',
+            grafana_version: config.buildInfo.version,
+          });
+  
+          const jsonData = JSON.parse(this.uploadedJson as string);
+          const isTraceData = jsonData.batches;
+          const isServiceGraphData =
+            Array.isArray(jsonData) && jsonData.some((df) => df?.meta?.preferredVisualisationType === 'nodeGraph');
+  
+          if (isTraceData) {
+            subQueries.push(of(transformFromOTEL(jsonData.batches, this.nodeGraph?.enabled)));
+          } else if (isServiceGraphData) {
+            subQueries.push(of({ data: jsonData, state: LoadingState.Done }));
+          } else {
+            subQueries.push(of({ error: { message: 'Unable to parse uploaded data.' }, data: [] }));
+          }
         } else {
-          subQueries.push(of({ error: { message: 'Unable to parse uploaded data.' }, data: [] }));
+          subQueries.push(of({ data: [], state: LoadingState.Done }));
         }
-      } else {
-        subQueries.push(of({ data: [], state: LoadingState.Done }));
       }
-    }
-
-    if (this.serviceMap?.datasourceUid && targets.serviceMap?.length > 0) {
-      reportInteraction('grafana_traces_service_graph_queried', {
-        datasourceType: 'tempo',
-        app: options.app ?? '',
-        grafana_version: config.buildInfo.version,
-        hasServiceMapQuery: targets.serviceMap[0].serviceMapQuery ? true : false,
-      });
-
-      const dsId = this.serviceMap.datasourceUid;
-      const tempoDsUid = this.uid;
-      subQueries.push(
-        serviceMapQuery(options, dsId, tempoDsUid).pipe(
-          concatMap((result) =>
-            rateQuery(options, result, dsId).pipe(
-              concatMap((result) => errorAndDurationQuery(options, result, dsId, tempoDsUid))
+  
+      if (this.serviceMap?.datasourceUid && target.queryType === 'serviceMap') {
+        reportInteraction('grafana_traces_service_graph_queried', {
+          datasourceType: 'tempo',
+          app: options.app ?? '',
+          grafana_version: config.buildInfo.version,
+          hasServiceMapQuery: target.serviceMapQuery ? true : false,
+        });
+  
+        const dsId = this.serviceMap.datasourceUid;
+        const tempoDsUid = this.uid;
+        subQueries.push(
+          serviceMapQuery(options, dsId, tempoDsUid).pipe(
+            concatMap((result) =>
+              rateQuery(options, result, dsId).pipe(
+                concatMap((result) => errorAndDurationQuery(options, result, dsId, tempoDsUid))
+              )
             )
           )
-        )
-      );
-    }
+        );
+      }
+    });
 
     return merge(...subQueries);
   }

@@ -43,6 +43,7 @@ export interface TempoQuery extends TempoBase {
   // TODO change this field to the schema type when LokiQuery exists in the schema
   linkedQuery?: LokiQuery;
   queryType: TempoQueryType;
+  groupBy?: string;
 }
 
 export interface MyDataSourceOptions extends DataSourceJsonData {}
