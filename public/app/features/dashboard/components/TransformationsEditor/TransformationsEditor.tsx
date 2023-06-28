@@ -635,7 +635,7 @@ function TransformationsGrid({ transformations, onClick }: TransformationsGridPr
           </Card.Heading>
           <Card.Description className={styles.description}>
             <>
-              {transform.description}
+              {getTransformationsRedesignDescriptions(transform.id)}
               {transform.image && (
                 <img className={styles.image} src={getImagePath(transform.image)} alt={transform.name} />
               )}
@@ -683,7 +683,7 @@ const getTransformationsGridStyles = (theme: GrafanaTheme2) => {
   };
 };
 
-const getImagePath = (image: { light: string; dark: string }) => {
+const getImagePath = (image: { light: string; dark: string }): string => {
   if (config.theme2.isDark) {
     return image.dark;
   }
@@ -692,3 +692,18 @@ const getImagePath = (image: { light: string; dark: string }) => {
 };
 
 export const TransformationsEditor = withTheme(UnThemedTransformationsEditor);
+
+const getTransformationsRedesignDescriptions = (id: string): string => {
+  const overrides: { [key: string]: string } = {};
+
+  if (overrides[id]) {
+    return overrides[id];
+  }
+
+  let transform = standardTransformersRegistry.getIfExists(id);
+  if (!transform || !transform.description) {
+    return '';
+  }
+
+  return transform.description.endsWith('.') ? transform.description : transform.description + '.';
+};
