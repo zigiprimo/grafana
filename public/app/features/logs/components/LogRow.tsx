@@ -1,6 +1,6 @@
 import { cx } from '@emotion/css';
 import { debounce } from 'lodash';
-import React, { PureComponent } from 'react';
+import React, { PureComponent, SyntheticEvent } from 'react';
 
 import { Field, LinkModel, LogRowModel, LogsSortOrder, dateTimeFormat, CoreApp, DataFrame } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime';
@@ -100,6 +100,19 @@ class UnThemedLogRow extends PureComponent<Props, State> {
     });
   };
 
+  onLogRowClick = (e: SyntheticEvent) => {
+    if (window.getSelection()?.toString()) {
+      this.showOnSelectMenu(e);
+      return;
+    }
+    this.toggleDetails();
+  };
+
+  showOnSelectMenu = (e: SyntheticEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
   renderTimeStamp(epochMs: number) {
     return dateTimeFormat(epochMs, {
       timeZone: this.props.timeZone,
@@ -195,7 +208,7 @@ class UnThemedLogRow extends PureComponent<Props, State> {
         <tr
           ref={this.logLineRef}
           className={logRowBackground}
-          onClick={this.toggleDetails}
+          onClick={this.onLogRowClick}
           onMouseEnter={this.onMouseEnter}
           onMouseLeave={this.onMouseLeave}
         >
