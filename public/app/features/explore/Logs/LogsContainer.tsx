@@ -159,7 +159,7 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
 
     return (
       <>
-        <LogsCrossFadeTransition visible={isLive}>
+        {/* <LogsCrossFadeTransition visible={isLive}>
           <Collapse label="Logs" loading={false} isOpen>
             <LiveTailControls exploreId={exploreId}>
               {(controls) => (
@@ -176,7 +176,7 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
               )}
             </LiveTailControls>
           </Collapse>
-        </LogsCrossFadeTransition>
+        </LogsCrossFadeTransition> */}
         <LogsCrossFadeTransition visible={!isLive}>
           <Logs
             exploreId={exploreId}

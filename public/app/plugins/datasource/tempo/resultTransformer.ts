@@ -570,6 +570,37 @@ function transformToTraceData(data: TraceSearchMetadata) {
   };
 }
 
+export function createTableFrameFromMetricsQuery(data: any, instanceSettings: DataSourceInstanceSettings, requestId: string) {
+  const frame = new MutableDataFrame({
+    fields: [
+      { name: 'spanCount', type: FieldType.string, config: { displayNameFromDS: 'Span count' } },
+    ],
+    meta: {
+      preferredVisualisationType: 'table',
+      custom: {
+        tableKey: requestId,
+      },
+    },
+  });
+  if (!data?.length) {
+    return frame;
+  }
+  
+  const traceData = data.map(transformToMetricsData);
+
+  for (const trace of traceData) {
+    frame.add(trace);
+  }
+
+  return [frame];
+}
+
+function transformToMetricsData(data: any) {
+  return {
+    spanCount: data.spanCount
+  };
+}
+
 export function createTableFrameFromTraceQlQuery(
   data: TraceSearchMetadata[],
   instanceSettings: DataSourceInstanceSettings,
