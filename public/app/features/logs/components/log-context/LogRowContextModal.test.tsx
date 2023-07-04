@@ -3,14 +3,9 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { render } from 'test/redux-rtl';
 
-import {
-  FieldType,
-  LogRowContextQueryDirection,
-  LogsSortOrder,
-  MutableDataFrame,
-  SplitOpenOptions,
-} from '@grafana/data';
-import { dataFrameToLogsModel } from 'app/core/logsModel';
+import { FieldType, LogRowContextQueryDirection, LogsSortOrder, MutableDataFrame } from '@grafana/data';
+
+import { dataFrameToLogsModel } from '../../logsModel';
 
 import { LogRowContextModal } from './LogRowContextModal';
 

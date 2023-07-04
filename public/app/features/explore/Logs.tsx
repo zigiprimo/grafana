@@ -39,12 +39,12 @@ import {
   Themeable2,
   Collapse,
 } from '@grafana/ui';
-import { dedupLogRows, filterLogLevels } from 'app/core/logsModel';
 import store from 'app/core/store';
 import { ExploreId } from 'app/types/explore';
 
 import { LogRows } from '../logs/components/LogRows';
 import { LogRowContextModal } from '../logs/components/log-context/LogRowContextModal';
+import { dedupLogRows, filterLogLevels } from '../logs/logsModel';
 
 import { LogsMetaRow } from './LogsMetaRow';
 import LogsNavigation from './LogsNavigation';

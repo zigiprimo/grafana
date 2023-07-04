@@ -17,12 +17,12 @@ import {
 import { config, reportInteraction } from '@grafana/runtime';
 import { DataQuery, LoadingState, TimeZone } from '@grafana/schema';
 import { Icon, Button, Modal, useTheme2 } from '@grafana/ui';
-import { dataFrameToLogsModel } from 'app/core/logsModel';
 import store from 'app/core/store';
 import { splitOpen } from 'app/features/explore/state/main';
 import { SETTINGS_KEYS } from 'app/features/explore/utils/logs';
 import { useDispatch } from 'app/types';
 
+import { dataFrameToLogsModel } from '../../logsModel';
 import { sortLogRows } from '../../utils';
 import { LogRows } from '../LogRows';
 
