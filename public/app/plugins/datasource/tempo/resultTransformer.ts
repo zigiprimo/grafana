@@ -570,16 +570,14 @@ function transformToTraceData(data: TraceSearchMetadata) {
   };
 }
 
-export function createTableFrameFromMetricsQuery(data: any, instanceSettings: DataSourceInstanceSettings, requestId: string) {
+export function createTableFrameFromMetricsQuery(data: any, instanceSettings: DataSourceInstanceSettings, refId: string) {
   const frame = new MutableDataFrame({
+    refId,
     fields: [
       { name: 'spanCount', type: FieldType.string, config: { displayNameFromDS: 'Span count' } },
     ],
     meta: {
-      preferredVisualisationType: 'table',
-      custom: {
-        tableKey: requestId,
-      },
+      preferredVisualisationType: 'table'
     },
   });
   if (!data?.length) {
@@ -604,9 +602,10 @@ function transformToMetricsData(data: any) {
 export function createTableFrameFromTraceQlQuery(
   data: TraceSearchMetadata[],
   instanceSettings: DataSourceInstanceSettings,
-  requestId: string
+  refId: string
 ): DataFrame[] {
   const frame = new MutableDataFrame({
+    refId,
     fields: [
       {
         name: 'traceID',
@@ -658,9 +657,6 @@ export function createTableFrameFromTraceQlQuery(
     ],
     meta: {
       preferredVisualisationType: 'table',
-      custom: {
-        tableKey: requestId,
-      },
     },
   });
 
@@ -675,7 +671,7 @@ export function createTableFrameFromTraceQlQuery(
     .reduce((rows: TraceTableData[], trace, currentIndex) => {
       const traceData: TraceTableData = transformToTraceData(trace);
       rows.push(traceData);
-      subDataFrames.push(traceSubFrame(trace, instanceSettings, currentIndex, requestId));
+      subDataFrames.push(traceSubFrame(trace, instanceSettings, currentIndex, refId));
       return rows;
     }, []);
 
@@ -690,7 +686,7 @@ const traceSubFrame = (
   trace: TraceSearchMetadata,
   instanceSettings: DataSourceInstanceSettings,
   currentIndex: number,
-  tableKey: string
+  refId: string,
 ): DataFrame => {
   const spanDynamicAttrs: Record<string, FieldDTO> = {};
   let hasNameAttribute = false;
@@ -707,6 +703,7 @@ const traceSubFrame = (
     });
   });
   const subFrame = new MutableDataFrame({
+    refId,
     fields: [
       {
         name: 'traceIdHidden',
@@ -775,8 +772,7 @@ const traceSubFrame = (
     meta: {
       preferredVisualisationType: 'table',
       custom: {
-        parentRowIndex: currentIndex,
-        tableKey: tableKey,
+        parentRowIndex: currentIndex
       },
     },
   });
