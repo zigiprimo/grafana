@@ -21,6 +21,7 @@ import {
   AbsoluteTimeEvent,
 } from '../../types/events';
 import { AppChromeService } from '../components/AppChrome/AppChromeService';
+import { FeatureFlagsModal } from '../components/featureflags/FeatureFlagsModal';
 import { HelpModal } from '../components/help/HelpModal';
 import { contextSrv } from '../core';
 import { RouteDescriptor } from '../navigation/types';
@@ -44,6 +45,7 @@ export class KeybindingSrv {
       this.bind('g p', this.goToProfile);
       this.bind('t a', this.makeAbsoluteTime);
       this.bind('esc', this.exit);
+      this.bind('f f', this.showFeatureFlagsModal);
       this.bindGlobalEsc();
     }
 
@@ -111,6 +113,10 @@ export class KeybindingSrv {
 
   private showHelpModal() {
     appEvents.publish(new ShowModalReactEvent({ component: HelpModal }));
+  }
+
+  private showFeatureFlagsModal() {
+    appEvents.publish(new ShowModalReactEvent({ component: FeatureFlagsModal }));
   }
 
   private exit() {

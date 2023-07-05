@@ -30,12 +30,15 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/middleware"
 	ac "github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/apikey"
 	"github.com/grafana/grafana/pkg/services/auth"
+	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/correlations"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/datasources"
@@ -418,6 +421,10 @@ func (hs *HTTPServer) registerRoutes() {
 			pluginRoute.Get("/:pluginId/dashboards/", reqOrgAdmin, routing.Wrap(hs.GetPluginDashboards))
 			pluginRoute.Post("/:pluginId/settings", authorize(ac.EvalPermission(pluginaccesscontrol.ActionWrite, pluginIDScope)), routing.Wrap(hs.UpdatePluginSetting))
 			pluginRoute.Get("/:pluginId/metrics", reqOrgAdmin, routing.Wrap(hs.CollectPluginMetrics))
+		})
+
+		apiRoute.Get("/featureflags", func(c *contextmodel.ReqContext) {
+			c.JSON(http.StatusOK, hs.Features.GetFlags())
 		})
 
 		apiRoute.Get("/frontend/settings/", hs.GetFrontendSettings)
