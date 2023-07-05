@@ -448,11 +448,11 @@ func (hs *HTTPServer) getMultiAccessControlMetadata(c *contextmodel.ReqContext,
 		return map[string]ac.Metadata{}
 	}
 
-	if c.SignedInUser.Permissions == nil {
+	if c.SignedInUser.GetPermissions() == nil {
 		return map[string]ac.Metadata{}
 	}
 
-	permissions, ok := c.SignedInUser.Permissions[orgID]
+	permissions, ok := c.SignedInUser.GetPermissions()[orgID]
 	if !ok {
 		return map[string]ac.Metadata{}
 	}

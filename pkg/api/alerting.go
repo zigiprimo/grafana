@@ -38,7 +38,7 @@ func (hs *HTTPServer) ValidateOrgAlert(c *contextmodel.ReqContext) {
 		return
 	}
 
-	if c.OrgID != res.OrgID {
+	if c.SignedInUser.GetOrgID() != res.OrgID {
 		c.JsonApiErr(403, "You are not allowed to edit/view alert", nil)
 		return
 	}
@@ -61,7 +61,7 @@ func (hs *HTTPServer) GetAlertStatesForDashboard(c *contextmodel.ReqContext) res
 	}
 
 	query := alertmodels.GetAlertStatesForDashboardQuery{
-		OrgID:       c.OrgID,
+		OrgID:       c.SignedInUser.GetOrgID(),
 		DashboardID: c.QueryInt64("dashboardId"),
 	}
 
@@ -109,7 +109,7 @@ func (hs *HTTPServer) GetAlerts(c *contextmodel.ReqContext) response.Response {
 			Tags:         dashboardTags,
 			SignedInUser: c.SignedInUser,
 			Limit:        1000,
-			OrgId:        c.OrgID,
+			OrgId:        c.SignedInUser.GetOrgID(),
 			DashboardIds: dashboardIDs,
 			Type:         string(model.DashHitDB),
 			FolderIds:    folderIDs,
@@ -134,7 +134,7 @@ func (hs *HTTPServer) GetAlerts(c *contextmodel.ReqContext) response.Response {
 	}
 
 	query := alertmodels.GetAlertsQuery{
-		OrgID:        c.OrgID,
+		OrgID:        c.SignedInUser.GetOrgID(),
 		DashboardIDs: dashboardIDs,
 		PanelID:      c.QueryInt64("panelId"),
 		Limit:        c.QueryInt64("limit"),

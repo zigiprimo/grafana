@@ -19,8 +19,8 @@ import (
 
 type ReqContext struct {
 	*web.Context
-	*user.SignedInUser
-	UserToken *usertoken.UserToken
+	SignedInUser user.UserContext
+	UserToken    *usertoken.UserToken
 
 	IsSignedIn     bool
 	IsRenderCall   bool
