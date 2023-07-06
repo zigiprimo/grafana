@@ -33,6 +33,7 @@ import (
 	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/middleware"
+	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	ac "github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/apikey"
 	"github.com/grafana/grafana/pkg/services/auth"
@@ -418,6 +419,10 @@ func (hs *HTTPServer) registerRoutes() {
 			pluginRoute.Get("/:pluginId/dashboards/", reqOrgAdmin, routing.Wrap(hs.GetPluginDashboards))
 			pluginRoute.Post("/:pluginId/settings", authorize(ac.EvalPermission(pluginaccesscontrol.ActionWrite, pluginIDScope)), routing.Wrap(hs.UpdatePluginSetting))
 			pluginRoute.Get("/:pluginId/metrics", reqOrgAdmin, routing.Wrap(hs.CollectPluginMetrics))
+		})
+
+		apiRoute.Group("/featuremgmt", func(featuremgmtRoute routing.RouteRegister) {
+			featuremgmtRoute.Get("/", authorize(ac.EvalPermission(accesscontrol.ActionFeatureManagementRead)), hs.GetFeatureToggles)
 		})
 
 		apiRoute.Get("/frontend/settings/", hs.GetFrontendSettings)

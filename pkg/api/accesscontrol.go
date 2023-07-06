@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 
+	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	ac "github.com/grafana/grafana/pkg/services/accesscontrol"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/dashboards"
@@ -421,6 +422,19 @@ func (hs *HTTPServer) declareFixedRoles() error {
 		Grants: []string{"Admin"},
 	}
 
+	featuremgmtReaderRole := ac.RoleRegistration{
+		Role: ac.RoleDTO{
+			Name:        "fixed:featuremgmt:reader",
+			DisplayName: "Feature Managment reader",
+			Description: "Read feature toggles",
+			Group:       "Feature Managment",
+			Permissions: []ac.Permission{
+				{Action: accesscontrol.ActionFeatureManagementRead},
+			},
+		},
+		Grants: []string{"Admin"},
+	}
+
 	return hs.accesscontrolService.DeclareFixedRoles(
 		provisioningWriterRole, datasourcesReaderRole, builtInDatasourceReader, datasourcesWriterRole,
 		datasourcesIdReaderRole, orgReaderRole, orgWriterRole,
@@ -428,7 +442,7 @@ func (hs *HTTPServer) declareFixedRoles() error {
 		annotationsReaderRole, dashboardAnnotationsWriterRole, annotationsWriterRole,
 		dashboardsCreatorRole, dashboardsReaderRole, dashboardsWriterRole,
 		foldersCreatorRole, foldersReaderRole, foldersWriterRole, apikeyReaderRole, apikeyWriterRole,
-		publicDashboardsWriterRole,
+		publicDashboardsWriterRole, featuremgmtReaderRole,
 	)
 }
 
