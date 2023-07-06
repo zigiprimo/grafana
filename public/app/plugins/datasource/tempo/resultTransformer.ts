@@ -570,9 +570,10 @@ function transformToTraceData(data: TraceSearchMetadata) {
   };
 }
 
-export function createTableFrameFromMetricsQuery(data: any, instanceSettings: DataSourceInstanceSettings, refId: string) {
+export function createTableFrameFromMetricsQuery(data: any, instanceSettings: DataSourceInstanceSettings, refId: string, name) {
   const frame = new MutableDataFrame({
     refId,
+    name,
     fields: [
       { name: 'spanCount', type: FieldType.string, config: { displayNameFromDS: 'Span count' } },
     ],
@@ -602,10 +603,12 @@ function transformToMetricsData(data: any) {
 export function createTableFrameFromTraceQlQuery(
   data: TraceSearchMetadata[],
   instanceSettings: DataSourceInstanceSettings,
-  refId: string
+  refId: string,
+  name: string,
 ): DataFrame[] {
   const frame = new MutableDataFrame({
     refId,
+    name,
     fields: [
       {
         name: 'traceID',

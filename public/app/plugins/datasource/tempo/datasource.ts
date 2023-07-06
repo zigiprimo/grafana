@@ -117,6 +117,11 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
   query(options: DataQueryRequest<TempoQuery>): Observable<DataQueryResponse> {
     const subQueries: Array<Observable<DataQueryResponse>> = [];
     const filteredTargets = options.targets.filter((target) => !target.hide);
+
+    if (filteredTargets.length === 0) {
+      return of({ data: [] });
+    }
+
     // const targets: { [type: string]: TempoQuery[] } = groupBy(filteredTargets, (t) => t.queryType || 'traceql');
     filteredTargets.forEach((target) => {
       if (target.queryType === 'clear') {
@@ -279,7 +284,8 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
               }).pipe(
                 map((response) => {
                   return {
-                    data: createTableFrameFromMetricsQuery(response.data.summaries, this.instanceSettings, `${target.refId}-summary`),
+                    key: `${target.refId}-summary`,
+                    data: createTableFrameFromMetricsQuery(response.data.summaries, this.instanceSettings, target.refId, 'Metrics Summary'),
                   };
                 }),
                 catchError((error) => {
@@ -296,7 +302,8 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
               }).pipe(
                 map((response) => {
                   return {
-                    data: createTableFrameFromTraceQlQuery(response.data.traces, this.instanceSettings,  `${target.refId}-results`),
+                    key: `${target.refId}-search`,
+                    data: createTableFrameFromTraceQlQuery(response.data.traces, this.instanceSettings,  target.refId, 'Search Results'),
                   };
                 }),
                 catchError((error) => {
@@ -374,7 +381,6 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
         );
       }
     });
-    console.log('tempo queries: ', subQueries.length);
     return merge(...subQueries);
   }
 
