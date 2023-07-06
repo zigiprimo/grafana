@@ -2,6 +2,7 @@ package accesscontrol
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -126,53 +127,110 @@ func SetAcceptListForTest(list map[string]struct{}) func() {
 	}
 }
 
+// UserRolesFilter returns a where clause for user roles or team roles or builtin roles
 func UserRolesFilter(orgID, userID int64, teamIDs []int64, roles []string) (string, []interface{}) {
 	var params []interface{}
 	builder := strings.Builder{}
 
 	// This is an additional security. We should never have permissions granted to userID 0.
 	// Only allow real users to get user/team permissions (anonymous/apikeys)
-	if userID > 0 {
-		builder.WriteString(`
-			SELECT ur.role_id
-			FROM user_role AS ur
-			WHERE ur.user_id = ?
-			AND (ur.org_id = ? OR ur.org_id = ?)
-		`)
-		params = []interface{}{userID, orgID, GlobalOrgID}
+	sql, args := userRolesFilter(orgID, userID)
+	if sql != "" {
+		builder.WriteString(sql)
+		params = append(params, args...)
 	}
 
-	if len(teamIDs) > 0 {
+	sql, args = teamRolesFilter(orgID, teamIDs)
+	if sql != "" {
 		if builder.Len() > 0 {
-			builder.WriteString("UNION")
+			builder.WriteString(" OR ")
 		}
-		builder.WriteString(`
-			SELECT tr.role_id FROM team_role as tr
-			WHERE tr.team_id IN(?` + strings.Repeat(", ?", len(teamIDs)-1) + `)
-			AND tr.org_id = ?
-		`)
-		for _, id := range teamIDs {
-			params = append(params, id)
-		}
-		params = append(params, orgID)
+		builder.WriteString(sql)
+		params = append(params, args...)
 	}
 
-	if len(roles) != 0 {
+	sql, args = builtinRolesFilter(orgID, roles)
+	if sql != "" {
 		if builder.Len() > 0 {
-			builder.WriteString("UNION")
+			builder.WriteString(" OR ")
 		}
-
-		builder.WriteString(`
-			SELECT br.role_id FROM builtin_role AS br
-			WHERE br.role IN (?` + strings.Repeat(", ?", len(roles)-1) + `)
-			AND (br.org_id = ? OR br.org_id = ?)
-		`)
-		for _, role := range roles {
-			params = append(params, role)
-		}
-
-		params = append(params, orgID, GlobalOrgID)
+		builder.WriteString(sql)
+		params = append(params, args...)
 	}
 
 	return "INNER JOIN (" + builder.String() + ") as all_role ON role.id = all_role.role_id", params
+}
+
+// userRolesFilter returns a where clause for user roles
+func userRolesFilter(orgID, userID int64) (string, []interface{}) {
+	sql, params := UserRolesFilterCondition(orgID, userID)
+	if sql != "" {
+		return sql, params
+	}
+
+	return fmt.Sprintf(`
+	SELECT ur.role_id
+	FROM user_role AS ur
+	WHERE %s
+	`, sql), params
+}
+
+func UserRolesFilterCondition(orgID, userID int64) (string, []interface{}) {
+	if userID == 0 {
+		return "", nil
+	}
+
+	return `ur.user_id = ? AND (ur.org_id = ? OR ur.org_id = 0)`, []interface{}{userID, orgID, GlobalOrgID}
+}
+
+// teamRolesFilter returns a where clause for team roles
+func teamRolesFilter(orgID int64, teamIDs []int64) (string, []interface{}) {
+	sql, params := TeamRolesFilderCondition(orgID, teamIDs)
+	if sql != "" {
+		return sql, params
+	}
+
+	return fmt.Sprintf(`
+	SELECT tr.role_id FROM team_role as tr
+	WHERE %s
+	`, sql), params
+}
+
+func TeamRolesFilderCondition(orgID int64, teamIDs []int64) (string, []interface{}) {
+	if len(teamIDs) == 0 {
+		return "", nil
+	}
+
+	var params []interface{}
+	for _, id := range teamIDs {
+		params = append(params, id)
+	}
+	params = append(params, orgID)
+	return `tr.team_id IN(?` + strings.Repeat(", ?", len(teamIDs)-1) + `) AND tr.org_id = ?`, params
+}
+
+// builtinRolesFilter returns a where clause for team roles
+func builtinRolesFilter(orgID int64, roles []string) (string, []interface{}) {
+	sql, params := BuiltinRolesFilterCondition(orgID, roles)
+	if sql != "" {
+		return sql, params
+	}
+
+	return fmt.Sprintf(`
+	SELECT br.role_id FROM builtin_role AS br
+	WHERE %s
+	`, sql), params
+}
+
+func BuiltinRolesFilterCondition(orgID int64, roles []string) (string, []interface{}) {
+	if len(roles) == 0 {
+		return "", nil
+	}
+
+	var params []interface{}
+	for _, role := range roles {
+		params = append(params, role)
+	}
+	params = append(params, orgID, GlobalOrgID)
+	return `br.role IN (?` + strings.Repeat(", ?", len(roles)-1) + `) AND (br.org_id = ? OR br.org_id = ?)`, params
 }

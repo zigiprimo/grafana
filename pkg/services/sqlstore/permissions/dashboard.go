@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
@@ -96,7 +97,7 @@ type accessControlDashboardPermissionFilter struct {
 	folderActions    []string
 	features         featuremgmt.FeatureToggles
 
-	where clause
+	on clause
 	// any recursive CTE queries (if supported)
 	recQueries                   []clause
 	recursiveQueriesAreSupported bool
@@ -148,91 +149,115 @@ func NewAccessControlDashboardPermissionFilter(user *user.SignedInUser, permissi
 	return &f
 }
 
-// Where returns:
-// - a where clause for filtering dashboards with expected permissions
-// - an array with the query parameters
-func (f *accessControlDashboardPermissionFilter) Where() (string, []interface{}) {
-	return f.where.string, f.where.params
+func (f *accessControlDashboardPermissionFilter) Join() (string, []interface{}) {
+	if f.user == nil || f.user.Permissions == nil || f.user.Permissions[f.user.OrgID] == nil {
+		return "", nil
+	}
+
+	/*
+		dashWildcards := accesscontrol.WildcardsFromPrefix(dashboards.ScopeDashboardsPrefix)
+		folderWildcards := accesscontrol.WildcardsFromPrefix(dashboards.ScopeFoldersPrefix)
+		actionFilterConditions := []string{}
+		actionFilterParams := []interface{}{}
+		if len(f.dashboardActions) > 0 {
+			toCheck := actionsToCheck(f.dashboardActions, f.user.Permissions[f.user.OrgID], dashWildcards, folderWildcards)
+			if len(toCheck) == 0 {
+				for _, c := range toCheck {
+					actionFilterConditions = append(actionFilterConditions, fmt.Sprintf("p1.action = ?"))
+					actionFilterParams = append(actionFilterParams, c)
+				}
+			} else {
+				actionFilterConditions = append(actionFilterConditions, fmt.Sprintf("NOT dashboard.is_folder"))
+			}
+
+		}
+		actionFilterCondition := fmt.Sprintf("( %s )", strings.Join(actionFilterConditions, " OR "))
+	*/
+	actionFilterCondition, params := f.buildClauses()
+
+	userRolesFilterCondition, params := accesscontrol.UserRolesFilterCondition(f.user.OrgID, f.user.UserID)
+	teamRolesFilterCondition, teamParams := accesscontrol.TeamRolesFilderCondition(f.user.OrgID, f.user.Teams)
+	params = append(params, teamParams...)
+	builtinRolesFilterCondition, builtinParams := accesscontrol.BuiltinRolesFilterCondition(f.user.OrgID, accesscontrol.GetOrgRoles(f.user))
+	params = append(params, builtinParams...)
+
+	sql := fmt.Sprintf(`
+		INNER JOIN permission AS p1 ON d.org_id = ? AND (d.uid = p1.scope_suffix OR f.uid = p1.scope_suffix) AND %s
+		LEFT JOIN user_role AS ur ON ur.role_id = p1.role_id AND %s
+		LEFT JOIN team_role AS tr ON tr.role_id = p1.role_id AND %s
+		LEFT JOIN builtin_role AS br ON br.role_id = p1.role_id AND %s`,
+		actionFilterCondition,
+		userRolesFilterCondition,
+		teamRolesFilterCondition,
+		builtinRolesFilterCondition)
+	return sql, append([]interface{}{f.user.OrgID}, params...)
 }
 
-func (f *accessControlDashboardPermissionFilter) buildClauses() {
+func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []interface{}) {
 	if f.user == nil || f.user.Permissions == nil || f.user.Permissions[f.user.OrgID] == nil {
-		f.where = clause{string: "(1 = 0)"}
-		return
+		return "(1 = 0)", nil
 	}
 	dashWildcards := accesscontrol.WildcardsFromPrefix(dashboards.ScopeDashboardsPrefix)
 	folderWildcards := accesscontrol.WildcardsFromPrefix(dashboards.ScopeFoldersPrefix)
 
-	filter, params := accesscontrol.UserRolesFilter(f.user.OrgID, f.user.UserID, f.user.Teams, accesscontrol.GetOrgRoles(f.user))
-	rolesFilter := " AND role_id IN(SELECT id FROM role " + filter + ") "
 	var args []interface{}
 	builder := strings.Builder{}
 	builder.WriteRune('(')
 
-	permSelector := strings.Builder{}
-	var permSelectorArgs []interface{}
+	folderPermSelector := strings.Builder{}
+	var folderPermSelectorArgs []interface{}
 
 	if len(f.dashboardActions) > 0 {
 		toCheck := actionsToCheck(f.dashboardActions, f.user.Permissions[f.user.OrgID], dashWildcards, folderWildcards)
 
 		if len(toCheck) > 0 {
-			builder.WriteString("(dashboard.uid IN (SELECT substr(scope, 16) FROM permission WHERE scope LIKE 'dashboards:uid:%'")
-			builder.WriteString(rolesFilter)
-			args = append(args, params...)
+			for i, c := range toCheck {
+				if i > 0 {
+					builder.WriteString(" OR ")
+				}
+				clause := " p1.action = ? "
+				builder.WriteString(clause)
+				args = append(args, c)
 
-			if len(toCheck) == 1 {
-				builder.WriteString(" AND action = ?")
-				args = append(args, toCheck[0])
-			} else {
-				builder.WriteString(" AND action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ") GROUP BY role_id, scope HAVING COUNT(action) = ?")
-				args = append(args, toCheck...)
-				args = append(args, len(toCheck))
+				folderPermSelector.WriteString(clause)
+				folderPermSelectorArgs = append(folderPermSelectorArgs, c)
 			}
+
+			//builder.WriteString(" AND action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ") GROUP BY role_id, scope HAVING COUNT(action) = ?")
 			builder.WriteString(") AND NOT dashboard.is_folder)")
 
 			builder.WriteString(" OR ")
-			permSelector.WriteString("(SELECT substr(scope, 13) FROM permission WHERE scope LIKE 'folders:uid:%' ")
-			permSelector.WriteString(rolesFilter)
-			permSelectorArgs = append(permSelectorArgs, params...)
-
-			if len(toCheck) == 1 {
-				permSelector.WriteString(" AND action = ?")
-				permSelectorArgs = append(permSelectorArgs, toCheck[0])
-			} else {
-				permSelector.WriteString(" AND action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ") GROUP BY role_id, scope HAVING COUNT(action) = ?")
-				permSelectorArgs = append(permSelectorArgs, toCheck...)
-				permSelectorArgs = append(permSelectorArgs, len(toCheck))
-			}
-			permSelector.WriteRune(')')
 
 			switch f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
 			case true:
 				switch f.recursiveQueriesAreSupported {
 				case true:
 					recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
-					f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
-					builder.WriteString("(folder.uid IN (SELECT uid FROM " + recQueryName)
+					f.addRecQry(recQueryName, folderPermSelector.String(), folderPermSelectorArgs)
+					builder.WriteString(fmt.Sprintf("(folder.uid IN (SELECT uid FROM %s", recQueryName))
 				default:
-					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, "folder.uid")
+					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(folderPermSelector.String(), folderPermSelectorArgs, "folder.uid")
 					builder.WriteRune('(')
 					builder.WriteString(nestedFoldersSelectors)
 					args = append(args, nestedFoldersArgs...)
 				}
 				builder.WriteString(") AND NOT dashboard.is_folder)")
 			default:
-				builder.WriteString("(folder.uid IN ")
-				builder.WriteString(permSelector.String())
-				args = append(args, permSelectorArgs...)
+				builder.WriteRune('(')
+				builder.WriteString(folderPermSelector.String())
+				builder.WriteRune(')')
+				args = append(args, folderPermSelectorArgs...)
 				builder.WriteString(" AND NOT dashboard.is_folder)")
 			}
 		} else {
 			builder.WriteString("NOT dashboard.is_folder")
 		}
 	}
+	spew.Dump(">>> 1", builder.String())
 
 	// recycle and reuse
-	permSelector.Reset()
-	permSelectorArgs = permSelectorArgs[:0]
+	folderPermSelector.Reset()
+	folderPermSelectorArgs = folderPermSelectorArgs[:0]
 
 	if len(f.folderActions) > 0 {
 		if len(f.dashboardActions) > 0 {
@@ -241,38 +266,39 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() {
 
 		toCheck := actionsToCheck(f.folderActions, f.user.Permissions[f.user.OrgID], folderWildcards)
 		if len(toCheck) > 0 {
-			permSelector.WriteString("(SELECT substr(scope, 13) FROM permission WHERE scope LIKE 'folders:uid:%'")
-			permSelector.WriteString(rolesFilter)
-			permSelectorArgs = append(permSelectorArgs, params...)
-			if len(toCheck) == 1 {
-				permSelector.WriteString(" AND action = ?")
-				permSelectorArgs = append(permSelectorArgs, toCheck[0])
-			} else {
-				permSelector.WriteString(" AND action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ") GROUP BY role_id, scope HAVING COUNT(action) = ?")
-				permSelectorArgs = append(permSelectorArgs, toCheck...)
-				permSelectorArgs = append(permSelectorArgs, len(toCheck))
+			for i, c := range toCheck {
+				if i > 0 {
+					builder.WriteString(" OR ")
+				}
+				clause := " p1.action = ? "
+				builder.WriteString(clause)
+				args = append(args, c)
+
+				folderPermSelector.WriteString(clause)
+				folderPermSelectorArgs = append(folderPermSelectorArgs, c)
 			}
-			permSelector.WriteRune(')')
+			//folderPermSelector.WriteString(" AND action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ") GROUP BY role_id, scope HAVING COUNT(action) = ?")
 
 			switch f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
 			case true:
 				switch f.recursiveQueriesAreSupported {
 				case true:
 					recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
-					f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
+					f.addRecQry(recQueryName, folderPermSelector.String(), folderPermSelectorArgs)
 					builder.WriteString("(dashboard.uid IN ")
 					builder.WriteString(fmt.Sprintf("(SELECT uid FROM %s)", recQueryName))
 				default:
-					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, "dashboard.uid")
+					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(folderPermSelector.String(), folderPermSelectorArgs, "dashboard.uid")
 					builder.WriteRune('(')
 					builder.WriteString(nestedFoldersSelectors)
 					builder.WriteRune(')')
 					args = append(args, nestedFoldersArgs...)
 				}
 			default:
-				builder.WriteString("(dashboard.uid IN ")
-				builder.WriteString(permSelector.String())
-				args = append(args, permSelectorArgs...)
+				builder.WriteRune('(')
+				builder.WriteString(folderPermSelector.String())
+				builder.WriteRune(')')
+				args = append(args, folderPermSelectorArgs...)
 			}
 			builder.WriteString(" AND dashboard.is_folder)")
 		} else {
@@ -281,7 +307,7 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() {
 	}
 	builder.WriteRune(')')
 
-	f.where = clause{string: builder.String(), params: args}
+	return builder.String(), args
 }
 
 // With returns:

@@ -2,10 +2,12 @@ package permissions_test
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
@@ -147,10 +149,11 @@ func TestIntegration_DashboardPermissionFilter(t *testing.T) {
 
 			var result int
 			err = store.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
-				q, params := filter.Where()
+				q, params := filter.Join()
 				recQry, recQryParams := filter.With()
 				params = append(recQryParams, params...)
-				_, err := sess.SQL(recQry+"\nSELECT COUNT(*) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id WHERE "+q, params...).Get(&result)
+				spew.Dump(">>>>", recQry+fmt.Sprintf("\nSELECT COUNT(*) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params)
+				_, err := sess.SQL(recQry+fmt.Sprintf("\nSELECT COUNT(*) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params...).Get(&result)
 				return err
 			})
 			require.NoError(t, err)
@@ -254,10 +257,10 @@ func TestIntegration_DashboardNestedPermissionFilter(t *testing.T) {
 			filter := permissions.NewAccessControlDashboardPermissionFilter(usr, tc.permission, tc.queryType, tc.features, recursiveQueriesAreSupported)
 			var result []string
 			err = db.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
-				q, params := filter.Where()
+				q, params := filter.Join()
 				recQry, recQryParams := filter.With()
 				params = append(recQryParams, params...)
-				err := sess.SQL(recQry+"\nSELECT dashboard.title FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id WHERE "+q, params...).Find(&result)
+				_, err := sess.SQL(recQry+fmt.Sprintf("\nSELECT COUNT(*) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params...).Get(&result)
 				return err
 			})
 			require.NoError(t, err)

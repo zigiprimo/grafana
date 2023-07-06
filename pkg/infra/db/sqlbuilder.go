@@ -69,7 +69,7 @@ func (sb *SQLBuilder) WriteDashboardPermissionFilter(user *user.SignedInUser, pe
 	)
 	if !ac.IsDisabled(sb.cfg) {
 		filterRBAC := permissions.NewAccessControlDashboardPermissionFilter(user, permission, queryType, sb.features, sb.recursiveQueriesAreSupported)
-		sql, params = filterRBAC.Where()
+		sql, params = filterRBAC.Join()
 		recQry, recQryParams = filterRBAC.With()
 	} else {
 		sql, params = permissions.DashboardPermissionFilter{
