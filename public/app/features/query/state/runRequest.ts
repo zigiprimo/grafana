@@ -17,6 +17,7 @@ import {
   LoadingState,
   PanelData,
   TimeRange,
+  AbsoluteTimeRange,
 } from '@grafana/data';
 import { toDataQueryError } from '@grafana/runtime';
 import { isExpressionReference } from '@grafana/runtime/src/utils/DataSourceWithBackend';
@@ -54,6 +55,8 @@ export function processResponsePacket(packet: DataQueryResponse, state: RunningQ
 
   const series: DataQueryResponseData[] = [];
   const annotations: DataQueryResponseData[] = [];
+  const timeRange = getRequestTimeRange(request, loadingState);
+  const tr: AbsoluteTimeRange = { from: timeRange.from.valueOf(), to: timeRange.to.valueOf() };
 
   for (const key in packets) {
     const packet = packets[key];
@@ -66,6 +69,13 @@ export function processResponsePacket(packet: DataQueryResponse, state: RunningQ
 
     if (packet.data && packet.data.length) {
       for (const dataItem of packet.data) {
+        if (!dataItem.meta?.queryTimeRange) {
+          if (!dataItem.meta) {
+            dataItem.meta = {};
+          }
+          dataItem.meta.queryTimeRange = tr;
+        }
+
         if (dataItem.meta?.dataTopic === DataTopic.Annotations) {
           annotations.push(dataItem);
           continue;
@@ -75,8 +85,6 @@ export function processResponsePacket(packet: DataQueryResponse, state: RunningQ
       }
     }
   }
-
-  const timeRange = getRequestTimeRange(request, loadingState);
 
   const panelData: PanelData = {
     state: loadingState,

@@ -2,6 +2,7 @@ import { DataFrameDTO, FieldConfig } from './dataFrame';
 import { DataFrameType } from './dataFrameTypes';
 import { ApplyFieldOverrideOptions } from './fieldOverrides';
 import { DataTopic } from './query';
+import { AbsoluteTimeRange } from './time';
 import { DataTransformerConfig } from './transformations';
 
 import { PanelPluginDataSupport } from '.';
@@ -76,6 +77,9 @@ export interface QueryResultMeta {
    * as been applied.  When metadata contains this value, it will be shown in the query inspector
    */
   executedQueryString?: string;
+
+  /** The executed query time range.  This may be used to   */
+  queryTimeRange?: AbsoluteTimeRange;
 
   /**
    * A browsable path on the datasource
