@@ -469,6 +469,14 @@ func (hs *HTTPServer) InstallPlugin(c *contextmodel.ReqContext) response.Respons
 			return response.Error(http.StatusNotFound, archError.Error(), nil)
 		}
 
+		if errors.Is(err, plugins.ErrPluginInstallFailed) {
+			for _, pErr := range hs.pluginErrorResolver.PluginErrors() {
+				if pErr.PluginID == pluginID && pErr.SignatureRelated() {
+					return response.Error(http.StatusInternalServerError, "Cannot enable plugin due to signature problem", err)
+				}
+			}
+			return response.Error(http.StatusForbidden, "Cannot install plugin", err)
+		}
 		return response.Error(http.StatusInternalServerError, "Failed to install plugin", err)
 	}
 

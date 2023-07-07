@@ -15,6 +15,7 @@ var (
 	ErrInstallCorePlugin   = errors.New("cannot install a Core plugin")
 	ErrUninstallCorePlugin = errors.New("cannot uninstall a Core plugin")
 	ErrPluginNotInstalled  = errors.New("plugin is not installed")
+	ErrPluginInstallFailed = errors.New("plugin could not be installed")
 )
 
 type NotFoundError struct {
@@ -276,6 +277,14 @@ type ErrorCode string
 type Error struct {
 	ErrorCode `json:"errorCode"`
 	PluginID  string `json:"pluginId,omitempty"`
+}
+
+func (e Error) SignatureRelated() bool {
+	switch e.ErrorCode {
+	case errorCodeSignatureMissing, errorCodeSignatureModified, errorCodeSignatureInvalid:
+		return true
+	}
+	return false
 }
 
 // Access-Control related definitions
