@@ -127,6 +127,10 @@ func (db *SQLite3) TruncateDBTables(engine *xorm.Engine) error {
 	return nil
 }
 
+func (db *SQLite3) Concat(s ...string) string {
+	return strings.Join(s, "||")
+}
+
 func (db *SQLite3) isThisError(err error, errcode int) bool {
 	var driverErr sqlite3.Error
 	if errors.As(err, &driverErr) {
