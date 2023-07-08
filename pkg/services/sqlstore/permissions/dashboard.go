@@ -164,24 +164,34 @@ func (f *accessControlDashboardPermissionFilter) Join() (string, []interface{}) 
 		return "", nil
 	}
 
-	actionFilterCondition, params := f.buildClauses()
+	builder := strings.Builder{}
+
+	actionFilterCondition, args := f.buildClauses()
+	builder.WriteString(`INNER JOIN permission AS p1 ON dashboard.org_id = ? AND `)
+	builder.WriteString(actionFilterCondition)
 
 	userRolesFilterCondition, params := accesscontrol.UserRolesFilterCondition(f.user.OrgID, f.user.UserID)
-	teamRolesFilterCondition, teamParams := accesscontrol.TeamRolesFilderCondition(f.user.OrgID, f.user.Teams)
-	params = append(params, teamParams...)
-	builtinRolesFilterCondition, builtinParams := accesscontrol.BuiltinRolesFilterCondition(f.user.OrgID, accesscontrol.GetOrgRoles(f.user))
-	params = append(params, builtinParams...)
+	if userRolesFilterCondition != "" {
+		builder.WriteString("INNER JOIN user_role AS ur ON ur.role_id = p1.role_id AND ")
+		builder.WriteString(userRolesFilterCondition)
+		args = append(args, params...)
+	}
 
-	sql := fmt.Sprintf(`
-		INNER JOIN permission AS p1 ON dashboard.org_id = ? AND %s
-		LEFT JOIN user_role AS ur ON ur.role_id = p1.role_id AND %s
-		LEFT JOIN team_role AS tr ON tr.role_id = p1.role_id AND %s
-		LEFT JOIN builtin_role AS br ON br.role_id = p1.role_id AND %s`,
-		actionFilterCondition,
-		userRolesFilterCondition,
-		teamRolesFilterCondition,
-		builtinRolesFilterCondition)
-	return sql, append([]interface{}{f.user.OrgID}, params...)
+	teamRolesFilterCondition, teamParams := accesscontrol.TeamRolesFilderCondition(f.user.OrgID, f.user.Teams)
+	if teamRolesFilterCondition != "" {
+		builder.WriteString("INNER JOIN team_role AS tr ON tr.role_id = p1.role_id AND ")
+		builder.WriteString(teamRolesFilterCondition)
+		args = append(args, teamParams...)
+	}
+
+	builtinRolesFilterCondition, builtinParams := accesscontrol.BuiltinRolesFilterCondition(f.user.OrgID, accesscontrol.GetOrgRoles(f.user))
+	if builtinRolesFilterCondition != "" {
+		builder.WriteString("INNER JOIN builtin_role AS br ON br.role_id = p1.role_id AND ")
+		builder.WriteString(builtinRolesFilterCondition)
+		args = append(args, builtinParams...)
+	}
+
+	return builder.String(), append([]interface{}{f.user.OrgID}, args...)
 }
 
 func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []interface{}) {
@@ -245,7 +255,7 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []inter
 				case true:
 					recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
 					f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
-					builder.WriteString(fmt.Sprintf("(%s IN (SELECT uid FROM %s", recQueryName, buildFolderScope("folder.uid")))
+					builder.WriteString(fmt.Sprintf("(%s IN (SELECT uid FROM %s", buildFolderScope("folder.uid"), recQueryName))
 				default:
 					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, buildFolderScope("folder.uid"))
 					builder.WriteRune('(')
@@ -254,7 +264,7 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []inter
 				}
 				builder.WriteString(") AND NOT dashboard.is_folder)")
 			default:
-				builder.WriteString(fmt.Sprintf("(%s IN ", f.dialect.Concat("'folders:uid:%'", "folder.uid")))
+				builder.WriteString(fmt.Sprintf("(%s IN ", buildFolderScope("folder.uid")))
 				builder.WriteString(permSelector.String())
 				args = append(args, permSelectorArgs...)
 				builder.WriteString(" AND NOT dashboard.is_folder)")

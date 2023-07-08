@@ -48,7 +48,7 @@ func (b *Builder) buildSelect() {
 	var recQueryParams []interface{}
 
 	b.sql.WriteString(
-		`SELECT
+		`SELECT DISTINCT
 			dashboard.id,
 			dashboard.uid,
 			dashboard.title,

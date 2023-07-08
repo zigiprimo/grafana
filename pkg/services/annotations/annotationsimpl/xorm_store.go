@@ -374,7 +374,7 @@ func (r *xormRepositoryImpl) getAccessControlFilter(user *user.SignedInUser) (ac
 				return acFilter{}, err
 			}
 
-			filterRBAC := permissions.NewAccessControlDashboardPermissionFilter(user, dashboards.PERMISSION_VIEW, searchstore.TypeDashboard, r.features, recursiveQueriesAreSupported)
+			filterRBAC := permissions.NewAccessControlDashboardPermissionFilter(user, dashboards.PERMISSION_VIEW, searchstore.TypeDashboard, r.features, recursiveQueriesAreSupported, r.db.GetDialect())
 			dashboardFilter, dashboardParams := filterRBAC.Join()
 			recQueries, recQueriesParams = filterRBAC.With()
 			filter := fmt.Sprintf("a.dashboard_id IN(SELECT dashboard.id FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s)", dashboardFilter)

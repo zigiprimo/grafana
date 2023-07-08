@@ -153,7 +153,7 @@ func TestIntegration_DashboardPermissionFilter(t *testing.T) {
 				recQry, recQryParams := filter.With()
 				params = append(recQryParams, params...)
 				spew.Dump(">>>>", recQry+fmt.Sprintf("\nSELECT COUNT(*) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params)
-				_, err := sess.SQL(recQry+fmt.Sprintf("\nSELECT COUNT(*) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params...).Get(&result)
+				_, err := sess.SQL(recQry+fmt.Sprintf("\nSELECT COUNT(DISTINCT dashboard.title) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params...).Get(&result)
 				return err
 			})
 			require.NoError(t, err)
@@ -260,7 +260,7 @@ func TestIntegration_DashboardNestedPermissionFilter(t *testing.T) {
 				q, params := filter.Join()
 				recQry, recQryParams := filter.With()
 				params = append(recQryParams, params...)
-				_, err := sess.SQL(recQry+fmt.Sprintf("\nSELECT COUNT(*) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params...).Get(&result)
+				_, err := sess.SQL(recQry+fmt.Sprintf("\nSELECT COUNT(DISTINCT dashboard.title) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params...).Get(&result)
 				return err
 			})
 			require.NoError(t, err)
