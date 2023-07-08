@@ -145,7 +145,7 @@ func TestIntegration_DashboardPermissionFilter(t *testing.T) {
 			require.NoError(t, err)
 
 			usr := &user.SignedInUser{OrgID: 1, OrgRole: org.RoleViewer, Permissions: map[int64]map[string][]string{1: accesscontrol.GroupScopesByAction(tt.permissions)}}
-			filter := permissions.NewAccessControlDashboardPermissionFilter(usr, tt.permission, tt.queryType, featuremgmt.WithFeatures(), recursiveQueriesAreSupported)
+			filter := permissions.NewAccessControlDashboardPermissionFilter(usr, tt.permission, tt.queryType, featuremgmt.WithFeatures(), recursiveQueriesAreSupported, store.GetDialect())
 
 			var result int
 			err = store.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
@@ -254,7 +254,7 @@ func TestIntegration_DashboardNestedPermissionFilter(t *testing.T) {
 			db := setupNestedTest(t, usr, tc.permissions, orgID, tc.features)
 			recursiveQueriesAreSupported, err := db.RecursiveQueriesAreSupported()
 			require.NoError(t, err)
-			filter := permissions.NewAccessControlDashboardPermissionFilter(usr, tc.permission, tc.queryType, tc.features, recursiveQueriesAreSupported)
+			filter := permissions.NewAccessControlDashboardPermissionFilter(usr, tc.permission, tc.queryType, tc.features, recursiveQueriesAreSupported, db.GetDialect())
 			var result []string
 			err = db.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
 				q, params := filter.Join()

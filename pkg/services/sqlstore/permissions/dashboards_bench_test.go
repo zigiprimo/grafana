@@ -56,10 +56,10 @@ func benchmarkDashboardPermissionFilter(b *testing.B, numUsers, numDashboards, n
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		filter := permissions.NewAccessControlDashboardPermissionFilter(&usr, dashboards.PERMISSION_VIEW, "", features, recursiveQueriesAreSupported)
+		filter := permissions.NewAccessControlDashboardPermissionFilter(&usr, dashboards.PERMISSION_VIEW, "", features, recursiveQueriesAreSupported, store.GetDialect())
 		var result int
 		err := store.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
-			q, params := filter.Where()
+			q, params := filter.Join()
 			recQry, recQryParams := filter.With()
 			params = append(recQryParams, params...)
 			_, err := sess.SQL(recQry+"SELECT COUNT(*) FROM dashboard WHERE "+q, params...).Get(&result)
