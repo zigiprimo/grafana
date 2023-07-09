@@ -194,6 +194,18 @@ func (f *accessControlDashboardPermissionFilter) Join() (string, []interface{}) 
 	return builder.String(), append([]interface{}{f.user.OrgID}, args...)
 }
 
+func (f *accessControlDashboardPermissionFilter) buildScope(prefix, col string) string {
+	return f.dialect.Concat(fmt.Sprintf("'%s'", prefix), col)
+}
+
+func (f *accessControlDashboardPermissionFilter) buildFolderScope(col string) string {
+	return f.buildScope(dashboards.ScopeFoldersPrefix, col)
+}
+
+func (f *accessControlDashboardPermissionFilter) buildDashboardScope(col string) string {
+	return f.buildScope(dashboards.ScopeDashboardsPrefix, col)
+}
+
 func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []interface{}) {
 	if f.user == nil || f.user.Permissions == nil || f.user.Permissions[f.user.OrgID] == nil {
 		return "(1 = 0)", nil
@@ -208,46 +220,31 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []inter
 	permSelector := strings.Builder{}
 	var permSelectorArgs []interface{}
 
-	buildScope := func(prefix, col string) string {
-		return f.dialect.Concat(fmt.Sprintf("'%s'", prefix), col)
-	}
-
-	buildFolderScope := func(col string) string {
-		return buildScope(dashboards.ScopeFoldersPrefix, col)
-	}
-
-	buildDashboardScope := func(col string) string {
-		return buildScope(dashboards.ScopeDashboardsPrefix, col)
-	}
-
 	if len(f.dashboardActions) > 0 {
 		toCheck := actionsToCheck(f.dashboardActions, f.user.Permissions[f.user.OrgID], dashWildcards, folderWildcards)
 
 		if len(toCheck) > 0 {
-			builder.WriteString(fmt.Sprintf("(%s IN (SELECT scope FROM permission WHERE ", buildDashboardScope("dashboard.uid")))
+			builder.WriteString(fmt.Sprintf("(%s = p1.scope AND ", f.buildDashboardScope("dashboard.uid")))
 
 			if len(toCheck) == 1 {
-				builder.WriteString(" action = ?")
+				builder.WriteString(" p1.action = ?")
 				args = append(args, toCheck[0])
 			} else {
-				builder.WriteString(" action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ") GROUP BY role_id, scope HAVING COUNT(action) = ?")
+				builder.WriteString(" p1.action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ")")
 				args = append(args, toCheck...)
-				args = append(args, len(toCheck))
 			}
-			builder.WriteString(") AND NOT dashboard.is_folder)")
+			builder.WriteString(" AND NOT dashboard.is_folder)")
 
 			builder.WriteString(" OR ")
-			permSelector.WriteString("(SELECT scope FROM permission WHERE ")
+			permSelector.WriteString("p1.scope AND ")
 
 			if len(toCheck) == 1 {
-				permSelector.WriteString(" action = ?")
+				permSelector.WriteString(" p1.action = ?")
 				permSelectorArgs = append(permSelectorArgs, toCheck[0])
 			} else {
-				permSelector.WriteString(" action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ") GROUP BY role_id, scope HAVING COUNT(action) = ?")
+				permSelector.WriteString(" p1.action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ")")
 				permSelectorArgs = append(permSelectorArgs, toCheck...)
-				permSelectorArgs = append(permSelectorArgs, len(toCheck))
 			}
-			permSelector.WriteRune(')')
 
 			switch f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
 			case true:
@@ -255,16 +252,16 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []inter
 				case true:
 					recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
 					f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
-					builder.WriteString(fmt.Sprintf("(%s IN (SELECT uid FROM %s", buildFolderScope("folder.uid"), recQueryName))
+					builder.WriteString(fmt.Sprintf("(%s IN (SELECT uid FROM %s", f.buildFolderScope("folder.uid"), recQueryName))
 				default:
-					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, buildFolderScope("folder.uid"))
+					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, f.buildFolderScope("folder.uid"))
 					builder.WriteRune('(')
 					builder.WriteString(nestedFoldersSelectors)
 					args = append(args, nestedFoldersArgs...)
 				}
 				builder.WriteString(") AND NOT dashboard.is_folder)")
 			default:
-				builder.WriteString(fmt.Sprintf("(%s IN ", buildFolderScope("folder.uid")))
+				builder.WriteString(fmt.Sprintf("(%s = ", f.buildFolderScope("folder.uid")))
 				builder.WriteString(permSelector.String())
 				args = append(args, permSelectorArgs...)
 				builder.WriteString(" AND NOT dashboard.is_folder)")
@@ -285,16 +282,14 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []inter
 
 		toCheck := actionsToCheck(f.folderActions, f.user.Permissions[f.user.OrgID], folderWildcards)
 		if len(toCheck) > 0 {
-			permSelector.WriteString("(SELECT scope FROM permission WHERE ")
+			permSelector.WriteString("p1.scope AND ")
 			if len(toCheck) == 1 {
-				permSelector.WriteString(" action = ?")
+				permSelector.WriteString(" p1.action = ?")
 				permSelectorArgs = append(permSelectorArgs, toCheck[0])
 			} else {
-				permSelector.WriteString(" action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ") GROUP BY role_id, scope HAVING COUNT(action) = ?")
+				permSelector.WriteString(" p1.action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ")")
 				permSelectorArgs = append(permSelectorArgs, toCheck...)
-				permSelectorArgs = append(permSelectorArgs, len(toCheck))
 			}
-			permSelector.WriteRune(')')
 
 			switch f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
 			case true:
@@ -302,18 +297,17 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []inter
 				case true:
 					recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
 					f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
-					builder.WriteString(fmt.Sprintf("(%s IN ", buildFolderScope("dashboard.uid")))
+					builder.WriteString(fmt.Sprintf("(%s IN ", f.buildFolderScope("dashboard.uid")))
 					builder.WriteString(fmt.Sprintf("(SELECT uid FROM %s)", recQueryName))
 				default:
-					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, buildFolderScope("dashboard.uid"))
+					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, f.buildFolderScope("dashboard.uid"))
 					builder.WriteRune('(')
 					builder.WriteString(nestedFoldersSelectors)
 					builder.WriteRune(')')
 					args = append(args, nestedFoldersArgs...)
 				}
 			default:
-				spew.Dump(">>>> 1111 ", buildFolderScope("dashboard.uid"))
-				builder.WriteString(fmt.Sprintf("(%s IN ", buildFolderScope("dashboard.uid")))
+				builder.WriteString(fmt.Sprintf("(%s = ", f.buildFolderScope("dashboard.uid")))
 				builder.WriteString(permSelector.String())
 				args = append(args, permSelectorArgs...)
 			}
