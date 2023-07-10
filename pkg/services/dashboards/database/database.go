@@ -16,6 +16,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	dashver "github.com/grafana/grafana/pkg/services/dashboardversion"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
+	"github.com/grafana/grafana/pkg/services/fts"
 	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
@@ -34,6 +35,7 @@ type dashboardStore struct {
 	log        log.Logger
 	features   featuremgmt.FeatureToggles
 	tagService tag.Service
+	fts        fts.Service
 }
 
 // SQL bean helper to save tags
@@ -46,8 +48,8 @@ type dashboardTag struct {
 // DashboardStore implements the Store interface
 var _ dashboards.Store = (*dashboardStore)(nil)
 
-func ProvideDashboardStore(sqlStore db.DB, cfg *setting.Cfg, features featuremgmt.FeatureToggles, tagService tag.Service, quotaService quota.Service) (dashboards.Store, error) {
-	s := &dashboardStore{store: sqlStore, cfg: cfg, log: log.New("dashboard-store"), features: features, tagService: tagService}
+func ProvideDashboardStore(sqlStore db.DB, cfg *setting.Cfg, features featuremgmt.FeatureToggles, tagService tag.Service, quotaService quota.Service, fts fts.Service) (dashboards.Store, error) {
+	s := &dashboardStore{store: sqlStore, cfg: cfg, log: log.New("dashboard-store"), features: features, tagService: tagService, fts: fts}
 
 	defaultLimits, err := readQuotaConfig(cfg)
 	if err != nil {
@@ -989,7 +991,8 @@ func (d *dashboardStore) FindDashboards(ctx context.Context, query *dashboards.F
 	}
 
 	if len(query.Title) > 0 {
-		filters = append(filters, searchstore.TitleFilter{Dialect: d.store.GetDialect(), Title: query.Title})
+		// filters = append(filters, searchstore.TitleFilter{Dialect: d.store.GetDialect(), Title: query.Title})
+		filters = append(filters, d.fts.TitleFilter(query.Title))
 	}
 
 	if len(query.Type) > 0 {
