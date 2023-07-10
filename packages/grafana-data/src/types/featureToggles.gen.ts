@@ -109,4 +109,5 @@ export interface FeatureToggles {
   elasticToggleableFilters?: boolean;
   vizAndWidgetSplit?: boolean;
   prometheusIncrementalQueryInstrumentation?: boolean;
+  enableFullTextSearch?: boolean;
 }

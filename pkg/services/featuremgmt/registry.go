@@ -621,5 +621,12 @@ var (
 			Stage:        FeatureStageExperimental,
 			Owner:        grafanaObservabilityMetricsSquad,
 		},
+		{
+			Name:            "enableFullTextSearch",
+			Description:     "Enable full text search",
+			Stage:           FeatureStageExperimental,
+			RequiresDevMode: true,
+			Owner:           grafanaBackendPlatformSquad,
+		},
 	}
 )

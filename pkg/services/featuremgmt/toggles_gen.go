@@ -370,4 +370,8 @@ const (
 	// FlagPrometheusIncrementalQueryInstrumentation
 	// Adds RudderStack events to incremental queries
 	FlagPrometheusIncrementalQueryInstrumentation = "prometheusIncrementalQueryInstrumentation"
+
+	// FlagEnableFullTextSearch
+	// Enable full text search
+	FlagEnableFullTextSearch = "enableFullTextSearch"
 )
