@@ -12,9 +12,39 @@ import { LineStyleEditor } from '../timeseries/LineStyleEditor';
 
 import { ScatterFieldConfig, ScatterShow } from './types';
 
+export const DEFAULT_POINT_SIZE = 5;
+
 export function getScatterFieldConfig(cfg: ScatterFieldConfig): SetFieldConfigOptionsArgs<ScatterFieldConfig> {
   return {
     standardOptions: {
+      [FieldConfigProperty.Min]: {
+        hideFromDefaults: true,
+      },
+      [FieldConfigProperty.Max]: {
+        hideFromDefaults: true,
+      },
+      [FieldConfigProperty.Unit]: {
+        hideFromDefaults: true,
+      },
+      [FieldConfigProperty.Decimals]: {
+        hideFromDefaults: true,
+      },
+      [FieldConfigProperty.NoValue]: {
+        hideFromDefaults: true,
+      },
+      [FieldConfigProperty.DisplayName]: {
+        hideFromDefaults: true,
+      },
+
+      [FieldConfigProperty.Thresholds]: {
+        hideFromDefaults: true,
+      },
+      [FieldConfigProperty.Mappings]: {
+        hideFromDefaults: true,
+      },
+
+      // TODO: this still leaves Color series by: [ Last | Min | Max ]
+      // because item.settings?.bySeriesSupport && colorMode.isByValue
       [FieldConfigProperty.Color]: {
         settings: {
           byValueSupport: true,
@@ -44,7 +74,7 @@ export function getScatterFieldConfig(cfg: ScatterFieldConfig): SetFieldConfigOp
         .addSliderInput({
           path: 'pointSize.fixed',
           name: 'Point size',
-          defaultValue: cfg.pointSize?.fixed,
+          defaultValue: cfg.pointSize?.fixed ?? DEFAULT_POINT_SIZE,
           settings: {
             min: 1,
             max: 100,
