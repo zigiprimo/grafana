@@ -97,17 +97,19 @@ export const LogRowMessage = React.memo((props: Props) => {
           </button>
         </div>
         {hover && (
-          <LogRowMenuCell
-            logText={restructuredEntry}
-            row={row}
-            showContextToggle={showContextToggle}
-            onOpenContext={onOpenContext}
-            onPermalinkClick={onPermalinkClick}
-            onPinLine={onPinLine}
-            onUnpinLine={onUnpinLine}
-            pinned={pinned}
-            styles={styles}
-          />
+          <div className="log-row-menu-cell">
+            <LogRowMenuCell
+              logText={restructuredEntry}
+              row={row}
+              showContextToggle={showContextToggle}
+              onOpenContext={onOpenContext}
+              onPermalinkClick={onPermalinkClick}
+              onPinLine={onPinLine}
+              onUnpinLine={onUnpinLine}
+              pinned={pinned}
+              styles={styles}
+            />
+          </div>
         )}
       </td>
     </>

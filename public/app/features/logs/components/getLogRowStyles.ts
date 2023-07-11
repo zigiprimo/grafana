@@ -84,6 +84,14 @@ export const getLogRowStyles = memoizeOne((theme: GrafanaTheme2) => {
       vertical-align: top;
 
       &:hover {
+        .log-row-menu {
+          visibility: visible;
+          z-index: 1;
+        }
+        .log-row-menu-visible {
+          visibility: hidden;
+        }
+
         background: ${hoverBgColor};
       }
 
