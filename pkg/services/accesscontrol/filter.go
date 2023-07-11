@@ -164,7 +164,7 @@ func UserRolesFilter(orgID, userID int64, teamIDs []int64, roles []string) (stri
 // userRolesFilter returns a where clause for user roles
 func userRolesFilter(orgID, userID int64) (string, []interface{}) {
 	sql, params := UserRolesFilterCondition(orgID, userID)
-	if sql != "" {
+	if sql == "" {
 		return sql, params
 	}
 
@@ -186,7 +186,7 @@ func UserRolesFilterCondition(orgID, userID int64) (string, []interface{}) {
 // teamRolesFilter returns a where clause for team roles
 func teamRolesFilter(orgID int64, teamIDs []int64) (string, []interface{}) {
 	sql, params := TeamRolesFilderCondition(orgID, teamIDs)
-	if sql != "" {
+	if sql == "" {
 		return sql, params
 	}
 
@@ -212,7 +212,7 @@ func TeamRolesFilderCondition(orgID int64, teamIDs []int64) (string, []interface
 // builtinRolesFilter returns a where clause for team roles
 func builtinRolesFilter(orgID int64, roles []string) (string, []interface{}) {
 	sql, params := BuiltinRolesFilterCondition(orgID, roles)
-	if sql != "" {
+	if sql == "" {
 		return sql, params
 	}
 
