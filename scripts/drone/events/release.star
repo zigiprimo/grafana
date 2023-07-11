@@ -557,9 +557,7 @@ def publish_artifacts_step(mode):
             "SECURITY_DEST_BUCKET": from_secret("security_dest_bucket"),
         },
         "commands": [
-            "./bin/build artifacts packages {}--tag $${{DRONE_TAG}} --src-bucket $${{PRERELEASE_BUCKET}}".format(
-                security,
-            ),
+            "./bin/build artifacts packages --tag $${DRONE_TAG} --src-bucket $${PRERELEASE_BUCKET}",
         ],
         "depends_on": ["compile-build-cmd"],
     }
