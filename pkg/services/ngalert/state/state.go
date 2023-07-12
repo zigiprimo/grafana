@@ -12,7 +12,6 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	prometheusModel "github.com/prometheus/common/model"
 
-	"github.com/grafana/grafana/pkg/expr"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/ngalert/eval"
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
@@ -295,18 +294,6 @@ func resultError(state *State, rule *models.AlertRule, result eval.Result, logge
 
 			if result.Error != nil {
 				state.Annotations["Error"] = result.Error.Error()
-				// If the evaluation failed because a query returned an error then add the Ref ID and
-				// Datasource UID as labels
-				var queryError expr.QueryError
-				if errors.As(state.Error, &queryError) {
-					for _, next := range rule.Data {
-						if next.RefID == queryError.RefID {
-							state.Labels["ref_id"] = next.RefID
-							state.Labels["datasource_uid"] = next.DatasourceUID
-							break
-						}
-					}
-				}
 			}
 		}
 	case models.OkErrState:

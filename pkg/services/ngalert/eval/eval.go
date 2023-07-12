@@ -178,11 +178,22 @@ type Result struct {
 }
 
 func NewResultFromError(err error, evaluatedAt time.Time, duration time.Duration) Result {
+	var lbls data.Labels
+	// If the evaluation failed because a query returned an error then add the Ref ID and
+	// Datasource UID as labels
+	var queryError expr.QueryError
+	if errors.As(err, &queryError) {
+		lbls = data.Labels{
+			"ref_id":         queryError.RefID,
+			"datasource_uid": queryError.DatasourceUID,
+		}
+	}
 	return Result{
 		State:              Error,
 		Error:              err,
 		EvaluatedAt:        evaluatedAt,
 		EvaluationDuration: duration,
+		Instance:           lbls,
 	}
 }
 
