@@ -1,6 +1,8 @@
 ---
 title: Build an app plugin
 description: Learn at how to create an app for Grafana.
+aliases:
+  - ../../../../tutorials/
 weight: 700
 draft: true
 keywords:

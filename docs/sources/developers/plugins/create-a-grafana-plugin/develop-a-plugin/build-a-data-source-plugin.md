@@ -2,7 +2,7 @@
 title: Build a data source plugin
 description: Create a plugin to add support for your own data sources.
 aliases:
-  - ../../../../../tutorials/
+  - ../../../../tutorials/
 weight: 300
 keywords:
   - grafana

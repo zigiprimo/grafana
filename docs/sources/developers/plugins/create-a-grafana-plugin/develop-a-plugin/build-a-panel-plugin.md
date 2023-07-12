@@ -2,6 +2,8 @@
 title: Build a panel plugin
 description: Learn how to create a custom visualization for your dashboards.
 weight: 100
+aliases:
+  - ../../../../tutorials/
 keywords:
   - grafana
   - plugins

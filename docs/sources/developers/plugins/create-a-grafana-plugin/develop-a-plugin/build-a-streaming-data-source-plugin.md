@@ -3,6 +3,8 @@ title: Build a streaming data source plugin
 aliases:
   - ../../../plugins/build-a-streaming-data-source-plugin/
 description: How to build a streaming data source plugin.
+aliases:
+  - ../../../../tutorials/
 keywords:
   - grafana
   - plugins

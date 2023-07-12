@@ -3,6 +3,7 @@ title: Build a logs data source plugin
 description: How to build a logs data source plugin.
 aliases:
   - ../../../plugins/build-a-logs-data-source-plugin/
+  - ../../../../tutorials/
 keywords:
   - grafana
   - plugins
