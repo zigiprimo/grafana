@@ -180,7 +180,7 @@ func UserRolesFilterCondition(orgID, userID int64) (string, []interface{}) {
 		return "", nil
 	}
 
-	return `ur.user_id = ? AND (ur.org_id = ? OR ur.org_id = 0)`, []interface{}{userID, orgID, GlobalOrgID}
+	return `ur.user_id = ? AND (ur.org_id = ? OR ur.org_id = ?)`, []interface{}{userID, orgID, GlobalOrgID}
 }
 
 // teamRolesFilter returns a where clause for team roles
