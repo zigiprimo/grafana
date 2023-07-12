@@ -1,6 +1,8 @@
 ---
 title: Build a data source backend plugin
-description: Create a backend for your data source plugin.
+description: Create a backend for your data source 
+aliases:
+  - ../../../../tutorials
 weight: 400
 keywords:
   - grafana
