@@ -1,5 +1,5 @@
 import memoizeOne from 'memoize-one';
-import React, { PureComponent } from 'react';
+import React, { ComponentProps, PureComponent } from 'react';
 
 import {
   TimeZone,
@@ -46,8 +46,12 @@ export interface Props extends Themeable2 {
   getFieldLinks?: (field: Field, rowIndex: number, dataFrame: DataFrame) => Array<LinkModel<Field>>;
   onClickShowField?: (key: string) => void;
   onClickHideField?: (key: string) => void;
+  onPinLine?: (row: LogRowModel) => void;
+  onUnpinLine?: (row: LogRowModel) => void;
   onLogRowHover?: (row?: LogRowModel) => void;
   onOpenContext?: (row: LogRowModel, onClose: () => void) => void;
+  scrollIntoView?: (element: HTMLElement) => void;
+  pinnedRowId?: string;
 }
 
 interface State {
@@ -176,6 +180,9 @@ class UnThemedLogRows extends PureComponent<Props, State> {
                 onLogRowHover={onLogRowHover}
                 app={app}
                 styles={styles}
+                onPinLine={this.props.onPinLine}
+                onUnpinLine={this.props.onUnpinLine}
+                pinned={this.props.pinnedRowId === row.uid}
               />
             ))}
           {hasData &&
@@ -207,6 +214,9 @@ class UnThemedLogRows extends PureComponent<Props, State> {
                 onLogRowHover={onLogRowHover}
                 app={app}
                 styles={styles}
+                onPinLine={this.props.onPinLine}
+                onUnpinLine={this.props.onUnpinLine}
+                pinned={this.props.pinnedRowId === row.uid}
               />
             ))}
           {hasData && !renderAll && (

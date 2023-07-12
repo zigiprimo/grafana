@@ -18,6 +18,9 @@ interface Props {
   app?: CoreApp;
   showContextToggle?: (row?: LogRowModel) => boolean;
   onOpenContext: (row: LogRowModel) => void;
+  onPinLine?: (row: LogRowModel) => void;
+  onUnpinLine?: (row: LogRowModel) => void;
+  pinned?: boolean;
   styles: LogRowStyles;
 }
 
@@ -66,7 +69,8 @@ export class LogRowMessage extends PureComponent<Props> {
   };
 
   render() {
-    const { row, wrapLogMessage, prettifyLogMessage, showContextToggle, styles } = this.props;
+    const { row, wrapLogMessage, prettifyLogMessage, showContextToggle, styles, onUnpinLine, pinned, onPinLine } =
+      this.props;
     const { hasAnsi, raw } = row;
     const restructuredEntry = restructureLog(raw, prettifyLogMessage);
     const shouldShowContextToggle = showContextToggle ? showContextToggle(row) : false;
@@ -90,7 +94,23 @@ export class LogRowMessage extends PureComponent<Props> {
           </div>
         </td>
         <td className={cx('log-row-menu-cell', styles.logRowMenuCell)}>
-          <span className={cx('log-row-menu', styles.rowMenu)} onClick={(e) => e.stopPropagation()}>
+          {pinned && (
+            <span
+              className={cx('log-row-menu', 'log-row-menu-visible', styles.rowMenu)}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <IconButton
+                className={styles.unPinButton}
+                size="md"
+                name="map-marker-minus"
+                onClick={() => onUnpinLine && onUnpinLine(row)}
+                tooltip="Unpin line"
+                tooltipPlacement="top"
+                aria-label="Unpin line"
+              />
+            </span>
+          )}
+          <span className={cx('log-row-menu', styles.rowMenu, styles.hidden)} onClick={(e) => e.stopPropagation()}>
             {shouldShowContextToggle && (
               <IconButton
                 tooltip="Show context"
@@ -103,6 +123,28 @@ export class LogRowMessage extends PureComponent<Props> {
             <Tooltip placement="top" content={'Copy'}>
               <IconButton size="md" name="copy" onClick={() => navigator.clipboard.writeText(restructuredEntry)} />
             </Tooltip>
+            {pinned && onUnpinLine && (
+              <IconButton
+                className={styles.unPinButton}
+                size="md"
+                name="map-marker-minus"
+                onClick={() => onUnpinLine && onUnpinLine(row)}
+                tooltip="Unpin line"
+                tooltipPlacement="top"
+                aria-label="Unpin line"
+              />
+            )}
+            {!pinned && onPinLine && (
+              <IconButton
+                className={styles.unPinButton}
+                size="md"
+                name="map-marker-plus"
+                onClick={() => onPinLine && onPinLine(row)}
+                tooltip="Pin line"
+                tooltipPlacement="top"
+                aria-label="Pin line"
+              />
+            )}
           </span>
         </td>
       </>

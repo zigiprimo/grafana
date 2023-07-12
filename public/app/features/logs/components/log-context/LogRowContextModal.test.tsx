@@ -92,7 +92,7 @@ const splitOpenSym = Symbol('splitOpen');
 const splitOpen = jest.fn().mockReturnValue(splitOpenSym);
 jest.mock('app/features/explore/state/main', () => ({
   ...jest.requireActual('app/features/explore/state/main'),
-  splitOpen: (arg?: SplitOpenOptions) => {
+  splitOpen: (arg: unknown) => {
     return splitOpen(arg);
   },
 }));
@@ -333,5 +333,45 @@ describe('LogRowContextModal', () => {
     await userEvent.click(splitViewButton);
 
     await waitFor(() => expect(dispatchMock).toHaveBeenCalledWith(splitOpenSym));
+  });
+
+  it('should make the center row sticky on load', async () => {
+    render(
+      <LogRowContextModal
+        row={row}
+        open={true}
+        onClose={() => {}}
+        getRowContext={getRowContext}
+        timeZone={timeZone}
+        logsSortOrder={LogsSortOrder.Descending}
+      />
+    );
+
+    await waitFor(() => {
+      const rows = screen.getByTestId('entry-row');
+      expect(rows).toHaveStyle('position: sticky');
+    });
+  });
+
+  it('should make the center row unsticky on unPinClick', async () => {
+    render(
+      <LogRowContextModal
+        row={row}
+        open={true}
+        onClose={() => {}}
+        getRowContext={getRowContext}
+        timeZone={timeZone}
+        logsSortOrder={LogsSortOrder.Descending}
+      />
+    );
+
+    await waitFor(() => {
+      const rows = screen.getByTestId('entry-row');
+      expect(rows).toHaveStyle('position: sticky');
+    });
+    const unpinButtons = screen.getAllByLabelText('Unpin line')[0];
+    await userEvent.click(unpinButtons);
+    const rows = screen.getByTestId('entry-row');
+    expect(rows).not.toHaveStyle('position: sticky');
   });
 });

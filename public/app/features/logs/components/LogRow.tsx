@@ -51,6 +51,10 @@ interface Props extends Themeable2 {
   onLogRowHover?: (row?: LogRowModel) => void;
   onOpenContext: (row: LogRowModel, onClose: () => void) => void;
   styles: LogRowStyles;
+  scrollIntoView?: (element: HTMLElement) => void;
+  onPinLine?: (row: LogRowModel) => void;
+  onUnpinLine?: (row: LogRowModel) => void;
+  pinned?: boolean;
 }
 
 interface State {
@@ -201,6 +205,9 @@ class UnThemedLogRow extends PureComponent<Props, State> {
               onOpenContext={this.onOpenContext}
               app={app}
               styles={styles}
+              onPinLine={this.props.onPinLine}
+              onUnpinLine={this.props.onUnpinLine}
+              pinned={this.props.pinned}
             />
           )}
         </tr>
