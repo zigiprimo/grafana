@@ -260,7 +260,7 @@ func TestIntegration_DashboardNestedPermissionFilter(t *testing.T) {
 				q, params := filter.Join()
 				recQry, recQryParams := filter.With()
 				params = append(recQryParams, params...)
-				_, err := sess.SQL(recQry+fmt.Sprintf("\nSELECT COUNT(DISTINCT dashboard.title) FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params...).Get(&result)
+				err := sess.SQL(recQry+fmt.Sprintf("\nSELECT DISTINCT dashboard.title FROM dashboard LEFT OUTER JOIN dashboard AS folder ON dashboard.folder_id = folder.id %s ", q), params...).Find(&result)
 				return err
 			})
 			require.NoError(t, err)
