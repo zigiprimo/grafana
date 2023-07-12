@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
@@ -167,26 +166,26 @@ func (f *accessControlDashboardPermissionFilter) Join() (string, []interface{}) 
 	builder := strings.Builder{}
 
 	actionFilterCondition, args := f.buildClauses()
-	builder.WriteString(`INNER JOIN permission AS p1 ON dashboard.org_id = ? AND `)
+	builder.WriteString(` INNER JOIN permission AS p1 ON dashboard.org_id = ? AND `)
 	builder.WriteString(actionFilterCondition)
 
 	userRolesFilterCondition, params := accesscontrol.UserRolesFilterCondition(f.user.OrgID, f.user.UserID)
 	if userRolesFilterCondition != "" {
-		builder.WriteString("INNER JOIN user_role AS ur ON ur.role_id = p1.role_id AND ")
+		builder.WriteString(" INNER JOIN user_role AS ur ON ur.role_id = p1.role_id AND ")
 		builder.WriteString(userRolesFilterCondition)
 		args = append(args, params...)
 	}
 
 	teamRolesFilterCondition, teamParams := accesscontrol.TeamRolesFilderCondition(f.user.OrgID, f.user.Teams)
 	if teamRolesFilterCondition != "" {
-		builder.WriteString("INNER JOIN team_role AS tr ON tr.role_id = p1.role_id AND ")
+		builder.WriteString(" INNER JOIN team_role AS tr ON tr.role_id = p1.role_id AND ")
 		builder.WriteString(teamRolesFilterCondition)
 		args = append(args, teamParams...)
 	}
 
 	builtinRolesFilterCondition, builtinParams := accesscontrol.BuiltinRolesFilterCondition(f.user.OrgID, accesscontrol.GetOrgRoles(f.user))
 	if builtinRolesFilterCondition != "" {
-		builder.WriteString("INNER JOIN builtin_role AS br ON br.role_id = p1.role_id AND ")
+		builder.WriteString(" INNER JOIN builtin_role AS br ON br.role_id = p1.role_id AND ")
 		builder.WriteString(builtinRolesFilterCondition)
 		args = append(args, builtinParams...)
 	}
