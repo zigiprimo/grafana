@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	// "github.com/grafana/loki/pkg/logql/syntax"
+	"github.com/grafana/loki/pkg/logql/syntax"
 
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana/pkg/tsdb/intervalv2"
 )
 
@@ -30,7 +30,7 @@ const (
 )
 
 func interpolateVariables(expr string, interval time.Duration, timeRange time.Duration) string {
-	// fmt.Println(syntax.DURATION)
+	fmt.Println(syntax.DURATION)
 	intervalText := intervalv2.FormatDuration(interval)
 	intervalMsText := strconv.FormatInt(int64(interval/time.Millisecond), 10)
 
