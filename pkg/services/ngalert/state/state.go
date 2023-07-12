@@ -293,7 +293,7 @@ func resultError(state *State, rule *models.AlertRule, result eval.Result, logge
 			state.SetError(result.Error, result.EvaluatedAt, nextEndsAt)
 
 			if result.Error != nil {
-				state.Annotations["Error"] = result.Error.Error()
+				state.Annotations[models.ErrorAnnotation] = result.Error.Error()
 			}
 		}
 	case models.OkErrState:
@@ -302,7 +302,7 @@ func resultError(state *State, rule *models.AlertRule, result eval.Result, logge
 	default:
 		err := fmt.Errorf("unsupported execution error state: %s", rule.ExecErrState)
 		state.SetError(err, state.StartsAt, nextEndsTime(rule.IntervalSeconds, result.EvaluatedAt))
-		state.Annotations["Error"] = err.Error()
+		state.Annotations[models.ErrorAnnotation] = err.Error()
 	}
 }
 
@@ -344,7 +344,7 @@ func resultNoData(state *State, rule *models.AlertRule, result eval.Result, logg
 	default:
 		err := fmt.Errorf("unsupported no data state: %s", rule.NoDataState)
 		state.SetError(err, state.StartsAt, nextEndsTime(rule.IntervalSeconds, result.EvaluatedAt))
-		state.Annotations["Error"] = err.Error()
+		state.Annotations[models.ErrorAnnotation] = err.Error()
 	}
 }
 
