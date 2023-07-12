@@ -165,6 +165,13 @@ func (f *accessControlDashboardPermissionFilter) Join() (string, []interface{}) 
 
 	builder := strings.Builder{}
 
+	if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+		builder.WriteString(` INNER JOIN folder f0 ON f0.org_id = folder.org_id AND ((f0.uid = folder.uid) OR (f0.uid = dashboard.uid))`)
+		for i := 1; i <= folder.MaxNestedFolderDepth; i++ {
+			builder.WriteString(fmt.Sprintf(` LEFT JOIN folder f%d ON f%d.org_id = f%d.org_id AND f%d.uid = f%d.parent_uid`, i, i, i-1, i, i-1))
+		}
+	}
+
 	actionFilterCondition, args := f.buildClauses()
 	builder.WriteString(` INNER JOIN permission AS p1 ON dashboard.org_id = ? AND `)
 	builder.WriteString(actionFilterCondition)
@@ -223,44 +230,58 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []inter
 		toCheck := actionsToCheck(f.dashboardActions, f.user.Permissions[f.user.OrgID], dashWildcards, folderWildcards)
 
 		if len(toCheck) > 0 {
-			builder.WriteString(fmt.Sprintf("(%s = p1.scope AND ", f.buildDashboardScope("dashboard.uid")))
+			builder.WriteString(fmt.Sprintf("(%s = p1.scope ", f.buildDashboardScope("dashboard.uid")))
 
 			if len(toCheck) == 1 {
-				builder.WriteString(" p1.action = ?")
+				s := " AND p1.action = ?"
+				builder.WriteString(s)
 				args = append(args, toCheck[0])
+
+				permSelector.WriteString(s)
+				permSelectorArgs = append(permSelectorArgs, toCheck[0])
 			} else {
-				builder.WriteString(" p1.action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ")")
+				s := " AND p1.action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ")"
+				builder.WriteString(s)
 				args = append(args, toCheck...)
+
+				permSelector.WriteString(s)
+				permSelectorArgs = append(permSelectorArgs, toCheck...)
 			}
 			builder.WriteString(" AND NOT dashboard.is_folder)")
 
 			builder.WriteString(" OR ")
-			permSelector.WriteString("p1.scope AND ")
-
-			if len(toCheck) == 1 {
-				permSelector.WriteString(" p1.action = ?")
-				permSelectorArgs = append(permSelectorArgs, toCheck[0])
-			} else {
-				permSelector.WriteString(" p1.action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ")")
-				permSelectorArgs = append(permSelectorArgs, toCheck...)
-			}
+			//permSelector.WriteString("p1.scope AND ")
 
 			switch f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
 			case true:
-				switch f.recursiveQueriesAreSupported {
-				case true:
-					recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
-					f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
-					builder.WriteString(fmt.Sprintf("(%s IN (SELECT uid FROM %s", f.buildFolderScope("folder.uid"), recQueryName))
-				default:
-					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, f.buildFolderScope("folder.uid"))
-					builder.WriteRune('(')
-					builder.WriteString(nestedFoldersSelectors)
-					args = append(args, nestedFoldersArgs...)
+				/*
+					switch f.recursiveQueriesAreSupported {
+					case true:
+						recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
+						f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
+						builder.WriteString(fmt.Sprintf("(%s IN (SELECT uid FROM %s", f.buildFolderScope("folder.uid"), recQueryName))
+					default:
+						nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, f.buildFolderScope("folder.uid"))
+						builder.WriteRune('(')
+						builder.WriteString(nestedFoldersSelectors)
+						args = append(args, nestedFoldersArgs...)
+					}
+				*/
+				builder.WriteRune('(')
+				for i := 0; i <= folder.MaxNestedFolderDepth; i++ {
+					if i > 0 {
+						builder.WriteString(" OR ")
+					} else {
+						builder.WriteRune('(')
+					}
+					builder.WriteString(fmt.Sprintf("%s = p1.scope ", f.buildFolderScope(fmt.Sprintf("f%d.uid", i))))
 				}
-				builder.WriteString(") AND NOT dashboard.is_folder)")
+				builder.WriteRune(')')
+				builder.WriteString(permSelector.String())
+				args = append(args, permSelectorArgs...)
+				builder.WriteString(" AND NOT dashboard.is_folder)")
 			default:
-				builder.WriteString(fmt.Sprintf("(%s = ", f.buildFolderScope("folder.uid")))
+				builder.WriteString(fmt.Sprintf("(%s = p1.scope ", f.buildFolderScope("folder.uid")))
 				builder.WriteString(permSelector.String())
 				args = append(args, permSelectorArgs...)
 				builder.WriteString(" AND NOT dashboard.is_folder)")
@@ -281,36 +302,48 @@ func (f *accessControlDashboardPermissionFilter) buildClauses() (string, []inter
 
 		toCheck := actionsToCheck(f.folderActions, f.user.Permissions[f.user.OrgID], folderWildcards)
 		if len(toCheck) > 0 {
-			permSelector.WriteString("p1.scope AND ")
+			//permSelector.WriteString("p1.scope AND ")
 			if len(toCheck) == 1 {
-				permSelector.WriteString(" p1.action = ?")
+				permSelector.WriteString(" AND p1.action = ?")
 				permSelectorArgs = append(permSelectorArgs, toCheck[0])
 			} else {
-				permSelector.WriteString(" p1.action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ")")
+				permSelector.WriteString(" AND p1.action IN (?" + strings.Repeat(", ?", len(toCheck)-1) + ")")
 				permSelectorArgs = append(permSelectorArgs, toCheck...)
 			}
 
 			switch f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
 			case true:
-				switch f.recursiveQueriesAreSupported {
-				case true:
-					recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
-					f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
-					builder.WriteString(fmt.Sprintf("(%s IN ", f.buildFolderScope("dashboard.uid")))
-					builder.WriteString(fmt.Sprintf("(SELECT uid FROM %s)", recQueryName))
-				default:
-					nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, f.buildFolderScope("dashboard.uid"))
-					builder.WriteRune('(')
-					builder.WriteString(nestedFoldersSelectors)
-					builder.WriteRune(')')
-					args = append(args, nestedFoldersArgs...)
+				/*
+					switch f.recursiveQueriesAreSupported {
+					case true:
+						recQueryName := fmt.Sprintf("RecQry%d", len(f.recQueries))
+						f.addRecQry(recQueryName, permSelector.String(), permSelectorArgs)
+						builder.WriteString(fmt.Sprintf("(%s IN ", f.buildFolderScope("dashboard.uid")))
+						builder.WriteString(fmt.Sprintf("(SELECT uid FROM %s)", recQueryName))
+					default:
+						nestedFoldersSelectors, nestedFoldersArgs := nestedFoldersSelectors(permSelector.String(), permSelectorArgs, f.buildFolderScope("dashboard.uid"))
+						builder.WriteRune('(')
+						builder.WriteString(nestedFoldersSelectors)
+						builder.WriteRune(')')
+						args = append(args, nestedFoldersArgs...)
+					}
+				*/
+				builder.WriteRune('(')
+				for i := 0; i <= folder.MaxNestedFolderDepth; i++ {
+					if i > 0 {
+						builder.WriteString(" OR ")
+					}
+					builder.WriteString(fmt.Sprintf("%s = p1.scope ", f.buildFolderScope(fmt.Sprintf("f%d.uid", i))))
 				}
+				builder.WriteRune(')')
+				builder.WriteString(permSelector.String())
+				args = append(args, permSelectorArgs...)
 			default:
-				builder.WriteString(fmt.Sprintf("(%s = ", f.buildFolderScope("dashboard.uid")))
+				builder.WriteString(fmt.Sprintf("(%s = p1.scope ", f.buildFolderScope("dashboard.uid")))
 				builder.WriteString(permSelector.String())
 				args = append(args, permSelectorArgs...)
 			}
-			builder.WriteString(" AND dashboard.is_folder)")
+			builder.WriteString(" AND dashboard.is_folder")
 		} else {
 			builder.WriteString("dashboard.is_folder")
 		}
