@@ -5,6 +5,7 @@ deleteDatasources:
   - name: gdev-influxdb-telegraf
   - name: gdev-influxdb2
   - name: gdev-influxdb2-influxql
+  - name: gdev-loki
   - name: gdev-loki-0.3
   - name: gdev-loki-0.4
   - name: gdev-elasticsearch-v2-metrics
@@ -237,10 +238,11 @@ datasources:
       customMetricsNamespaces: "CWAgent"
 
   - name: gdev-loki
+    uid: gdev-loki
     type: loki
     access: proxy
     url: http://localhost:3100
-    editable: false
+    editable: true
     correlations:
       - targetUID: gdev-jaeger
         label: "Jaeger traces"
@@ -256,6 +258,39 @@ datasources:
           target:
             expr: "{ job=\"test\" }"
           field: "traceID"
+      - targetUID: "a06956a2-3c94-4c34-a7d2-0883e180ff43"
+        label: "Provision test 1"
+        description: "this is a test correlation from provisioning"
+        config:
+          type: query
+          target:
+            editorMode: "code"
+            format: "table"
+            rawQuery: "true"
+            rawSql: "SELECT * FROM superhero WHERE name='$${path}' AND eyecolor='$${__data.fields.traceID}'"
+            refId: "A"
+          field: "Line"
+          transformations:
+            - type: "logfmt"
+            - type: "regex"
+              expression: 'url=http[s]?:\/\/(\S*)'
+              mapValue: "path"
+      - targetUID: "a06956a2-3c94-4c34-a7d2-0883e180ff43"
+        label: "Provision test 2"
+        description: "this is a test correlation from provisioning"
+        config:
+          type: query
+          target:
+            editorMode: "code"
+            format: "table"
+            rawQuery: "true"
+            rawSql: "SELECT * FROM superhero WHERE name='$${path}'"
+            refId: "A"
+          field: "Line"
+          transformations:
+            - type: "regex"
+              expression: 'url=http[s]?:\/\/(\S*)'
+              mapValue: "path"
     jsonData:
       manageAlerts: false
       derivedFields:

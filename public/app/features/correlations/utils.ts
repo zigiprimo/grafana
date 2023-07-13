@@ -1,6 +1,6 @@
 import { lastValueFrom } from 'rxjs';
 
-import { DataFrame, DataLinkConfigOrigin } from '@grafana/data';
+import { DataFrame, DataLinkConfigOrigin, getDefaultTimeRange } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
 
 import { formatValueName } from '../explore/PrometheusListView/ItemLabels';
@@ -58,6 +58,7 @@ const decorateDataFrameWithInternalDataLinks = (dataFrame: DataFrame, correlatio
             datasourceUid: correlation.target.uid,
             datasourceName: correlation.target.name,
             transformations: correlation.config?.transformations,
+            range: getDefaultTimeRange() // TODO change to match source range
           },
           url: '',
           title: correlation.label || correlation.target.name,

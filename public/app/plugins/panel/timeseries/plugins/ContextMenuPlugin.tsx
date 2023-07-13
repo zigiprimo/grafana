@@ -258,7 +258,7 @@ export const ContextMenuView = ({
                 return {
                   label: link.title,
                   ariaLabel: link.title,
-                  url: link.href,
+                  url: link.onClick ? undefined : link.href,
                   target: link.target,
                   icon: link.target === '_self' ? 'link' : 'external-link-alt',
                   onClick: link.onClick,

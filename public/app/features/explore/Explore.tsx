@@ -252,6 +252,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
 
   onSplitOpen = (panelType: string) => {
     return async (options?: SplitOpenOptions) => {
+      console.log('split', JSON.stringify(options))
       this.props.splitOpen(options);
       if (options && this.props.datasourceInstance) {
         const target = (await getDataSourceSrv().get(options.datasourceUid)).type;

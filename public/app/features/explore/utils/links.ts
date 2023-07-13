@@ -68,6 +68,7 @@ export const getFieldLinksForExplore = (options: {
   dataFrame?: DataFrame;
 }): ExploreFieldLinkModel[] => {
   const { field, vars, splitOpenFn, range, rowIndex, dataFrame } = options;
+  //console.log('getFieldLinksForExplore', options);
   const scopedVars: ScopedVars = { ...(vars || {}) };
   scopedVars['__value'] = {
     value: {

@@ -30,6 +30,7 @@ import {
   NumericRange,
   PanelData,
   ScopedVars,
+  SplitOpen,
   TimeZone,
   ValueLinkConfig,
 } from '../types';
@@ -77,6 +78,7 @@ export function findNumericFieldMinMax(data: DataFrame[]): NumericRange {
  * Return a copy of the DataFrame with all rules applied
  */
 export function applyFieldOverrides(options: ApplyFieldOverrideOptions): DataFrame[] {
+  console.log('applyFieldOVerrides')
   if (!options.data) {
     return [];
   }
@@ -203,7 +205,8 @@ export function applyFieldOverrides(options: ApplyFieldOverrideOptions): DataFra
         field,
         field.state!.scopedVars,
         context.replaceVariables,
-        options.timeZone
+        options.timeZone,
+        options.splitOverride
       );
     }
 
@@ -364,7 +367,8 @@ export const getLinksSupplier =
     field: Field,
     fieldScopedVars: ScopedVars,
     replaceVariables: InterpolateFunction,
-    timeZone?: TimeZone
+    timeZone?: TimeZone,
+    splitOverride?: SplitOpen
   ) =>
   (config: ValueLinkConfig): Array<LinkModel<Field>> => {
     if (!field.config.links || field.config.links.length === 0) {
@@ -372,6 +376,7 @@ export const getLinksSupplier =
     }
 
     return field.config.links.map((link: DataLink) => {
+      console.log('linkSupplier', link);
       const dataContext: DataContextScopedVar = getFieldDataContextClone(frame, field, fieldScopedVars);
       const dataLinkScopedVars = {
         ...fieldScopedVars,
@@ -386,6 +391,20 @@ export const getLinksSupplier =
         dataContext.value.rowIndex = config.valueRowIndex;
       } else {
         dataContext.value.calculatedValue = config.calculatedValue;
+      }
+
+      if (link.internal) {
+        console.log('fieldOverride internal', link.internal)
+        // For internal links at the moment only destination is Explore.
+        return mapInternalLinkToExplore({
+          link,
+          internalLink: link.internal,
+          scopedVars: dataLinkScopedVars,
+          field,
+          range: link.internal.range ?? ({} as any),
+          replaceVariables,
+          onClickFn: splitOverride
+        });
       }
 
       if (link.onClick) {
@@ -404,17 +423,6 @@ export const getLinksSupplier =
         };
       }
 
-      if (link.internal) {
-        // For internal links at the moment only destination is Explore.
-        return mapInternalLinkToExplore({
-          link,
-          internalLink: link.internal,
-          scopedVars: dataLinkScopedVars,
-          field,
-          range: link.internal.range ?? ({} as any),
-          replaceVariables,
-        });
-      }
       let href = link.onBuildUrl
         ? link.onBuildUrl({
             origin: field,

@@ -41,6 +41,7 @@ export type LinkToExploreOptions = {
 };
 
 export function mapInternalLinkToExplore(options: LinkToExploreOptions): LinkModel<Field> {
+  //console.log('mapInternalLinkToExplore', options);
   const { onClickFn, replaceVariables, link, scopedVars, range, field, internalLink } = options;
 
   const interpolatedQuery = interpolateObject(link.internal?.query, scopedVars, replaceVariables);

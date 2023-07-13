@@ -19,7 +19,7 @@ import {
   DashboardCursorSync,
   EventBus,
 } from '@grafana/data';
-import { PanelRenderer } from '@grafana/runtime';
+import { getTemplateSrv, PanelRenderer } from '@grafana/runtime';
 import {
   GraphDrawStyle,
   LegendDisplayMode,
@@ -127,15 +127,18 @@ export function ExploreGraph({
   }, [fieldConfig, graphStyle, yAxisMaximum, thresholdsConfig, thresholdsStyle]);
 
   const dataWithConfig = useMemo(() => {
+    console.log('dataWithConfig')
+
     return applyFieldOverrides({
       fieldConfig: styledFieldConfig,
       data: showAllTimeSeries ? data : data.slice(0, MAX_NUMBER_OF_TIME_SERIES),
       timeZone,
-      replaceVariables: (value) => value, // We don't need proper replace here as it is only used in getLinks and we use getFieldLinks
+      replaceVariables: getTemplateSrv().replace.bind(getTemplateSrv()),
       theme,
       fieldConfigRegistry,
+      splitOverride: splitOpenFn
     });
-  }, [fieldConfigRegistry, data, timeZone, theme, styledFieldConfig, showAllTimeSeries]);
+  }, [fieldConfigRegistry, data, timeZone, theme, styledFieldConfig, showAllTimeSeries, splitOpenFn]);
 
   const structureRev = useStructureRev(dataWithConfig);
 

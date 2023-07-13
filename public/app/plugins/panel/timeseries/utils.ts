@@ -8,6 +8,7 @@ import {
   InterpolateFunction,
   isBooleanUnit,
   SortedVector,
+  SplitOpen,
   TimeRange,
 } from '@grafana/data';
 import { convertFieldType } from '@grafana/data/src/transformations/transformers/convertFieldType';
@@ -183,8 +184,10 @@ export function regenerateLinksSupplier(
   alignedDataFrame: DataFrame,
   frames: DataFrame[],
   replaceVariables: InterpolateFunction,
-  timeZone: string
+  timeZone: string,
+  splitOverride?: SplitOpen
 ): DataFrame {
+  console.log('regen links supplier');
   alignedDataFrame.fields.forEach((field) => {
     if (field.state?.origin?.frameIndex === undefined || frames[field.state?.origin?.frameIndex] === undefined) {
       return;
@@ -212,7 +215,7 @@ export function regenerateLinksSupplier(
       length: alignedDataFrame.fields.length + tempFields.length,
     };
 
-    field.getLinks = getLinksSupplier(tempFrame, field, field.state!.scopedVars!, replaceVariables, timeZone);
+    field.getLinks = getLinksSupplier(tempFrame, field, field.state!.scopedVars!, replaceVariables, timeZone, splitOverride);
   });
 
   return alignedDataFrame;

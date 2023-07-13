@@ -224,6 +224,8 @@ export class TemplateSrv implements BaseTemplateSrv {
     format?: string | Function | undefined,
     interpolations?: VariableInterpolation[]
   ): string {
+    console.log('replace', scopedVars);
+
     if (scopedVars && scopedVars.__sceneObject) {
       return sceneGraph.interpolate(
         scopedVars.__sceneObject.value,
