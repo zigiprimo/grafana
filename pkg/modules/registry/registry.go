@@ -48,7 +48,7 @@ func newRegistry(logger log.Logger, moduleManager modules.Manager, svcs ...servi
 	}
 
 	logger.Debug("Registering module", "name", modules.All)
-	r.moduleManager.RegisterModule(modules.All, nil)
+	r.moduleManager.RegisterModule(modules.All.Name, nil)
 
 	return r
 }

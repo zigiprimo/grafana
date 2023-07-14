@@ -24,7 +24,7 @@ type BackgroundServiceRunner struct {
 
 func ProvideBackgroundServiceRunner(registry registry.BackgroundServiceRegistry) *BackgroundServiceRunner {
 	r := &BackgroundServiceRunner{registry: registry, log: log.New("background-services-runner")}
-	r.BasicService = services.NewBasicService(nil, r.run, nil).WithName(modules.BackgroundServices)
+	r.BasicService = services.NewBasicService(nil, r.run, nil).WithName(modules.BackgroundServices.Name)
 	return r
 }
 

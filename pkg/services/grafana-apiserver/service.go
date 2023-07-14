@@ -69,7 +69,7 @@ func ProvideService(cfg *setting.Cfg, rr routing.RouteRegister) (*service, error
 		stopCh:   make(chan struct{}),
 	}
 
-	s.BasicService = services.NewBasicService(s.start, s.running, nil).WithName(modules.GrafanaAPIServer)
+	s.BasicService = services.NewBasicService(s.start, s.running, nil).WithName(modules.GrafanaAPIServer.Name)
 
 	s.rr.Group("/k8s", func(k8sRoute routing.RouteRegister) {
 		handler := func(c *contextmodel.ReqContext) {

@@ -1,22 +1,47 @@
 package modules
 
-const (
-	// All includes all modules necessary for Grafana to run as a standalone application.
-	All string = "all"
-	// BackgroundServices includes all Grafana services that run in the background
-	BackgroundServices string = "background-services"
-	// CertGenerator generates certificates for grafana-apiserver
-	CertGenerator string = "cert-generator"
-	// GrafanaAPIServer is the Kubertenes API server for Grafana Resources
-	GrafanaAPIServer string = "grafana-apiserver"
-)
+import "github.com/grafana/grafana/pkg/services/featuremgmt"
 
-// dependencyMap defines Module Targets => Dependencies
-var dependencyMap = map[string][]string{
-	BackgroundServices: {},
+type TargetInfo struct {
+	// The target name specified in config
+	Name string
 
-	CertGenerator:    {},
-	GrafanaAPIServer: {CertGenerator},
+	// The target description
+	Description string
 
-	All: {BackgroundServices},
+	// Targets that need to be started first
+	Dependencies []*TargetInfo
+
+	// The target requries a feature flag to run.
+	// The target will not start if it is specified from the "all" target,
+	// however if it is explicitly specified as a target, it will fail to start
+	// if the required feature flag is not enabled
+	RequiresFeatureFlag string
+}
+
+var All = &TargetInfo{
+	Name:        "all",
+	Description: "Will resolve all services",
+	Dependencies: []*TargetInfo{
+		BackgroundServices,
+		GrafanaAPIServer, // requires a feature flag
+	},
+}
+
+var BackgroundServices = &TargetInfo{
+	Name:         "background-services",
+	Description:  "all Grafana services that run in the background",
+	Dependencies: []*TargetInfo{CertGenerator},
+}
+
+var GrafanaAPIServer = &TargetInfo{
+	Name:                "grafana-apiserver",
+	Description:         "Kubernetes style api-server",
+	RequiresFeatureFlag: featuremgmt.FlagGrafanaAPIServer,
+}
+
+var CertGenerator = &TargetInfo{
+	Name:                "cert-generator",
+	Description:         "generates certificates for grafana-apiserver",
+	RequiresFeatureFlag: featuremgmt.FlagGrafanaAPIServer,
 }

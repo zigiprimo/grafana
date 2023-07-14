@@ -10,5 +10,5 @@ import (
 )
 
 func ProvideService(cfg *setting.Cfg) (*certgenerator.Service, error) {
-	return certgenerator.CreateService(modules.CertGenerator, filepath.Join(cfg.DataPath, "k8s"))
+	return certgenerator.CreateService(modules.CertGenerator.Name, filepath.Join(cfg.DataPath, "k8s"))
 }

@@ -30,5 +30,5 @@ func TestNewRegistry(t *testing.T) {
 	r := newRegistry(log.New("modules.registry"), moduleManager, mockSvc)
 	require.NotNil(t, r)
 	require.Equal(t, []string{mockSvcName}, registeredInvisibleModules)
-	require.Equal(t, []string{modules.All}, registeredModules)
+	require.Equal(t, []string{modules.All.Name}, registeredModules)
 }
