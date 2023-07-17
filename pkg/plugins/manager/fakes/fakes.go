@@ -14,7 +14,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/oauth"
 	"github.com/grafana/grafana/pkg/plugins/plugindef"
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	"github.com/grafana/grafana/pkg/plugins/repo"
 	"github.com/grafana/grafana/pkg/plugins/storage"
 )
@@ -41,7 +40,7 @@ func (i *FakePluginInstaller) Remove(ctx context.Context, pluginID string) error
 
 type FakeLoader struct {
 	LoadFunc   func(_ context.Context, _ plugins.PluginSource) ([]*plugins.Plugin, error)
-	UnloadFunc func(_ context.Context, _ pluginuid.UID) error
+	UnloadFunc func(_ context.Context, _ plugins.UID) error
 }
 
 func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
@@ -51,7 +50,7 @@ func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSource) ([]*plu
 	return nil, nil
 }
 
-func (l *FakeLoader) Unload(ctx context.Context, pluginUID pluginuid.UID) error {
+func (l *FakeLoader) Unload(ctx context.Context, pluginUID plugins.UID) error {
 	if l.UnloadFunc != nil {
 		return l.UnloadFunc(ctx, pluginUID)
 	}
@@ -168,16 +167,16 @@ func (pc *FakePluginClient) RunStream(_ context.Context, _ *backend.RunStreamReq
 }
 
 type FakePluginRegistry struct {
-	Store map[pluginuid.UID]*plugins.Plugin
+	Store map[plugins.UID]*plugins.Plugin
 }
 
 func NewFakePluginRegistry() *FakePluginRegistry {
 	return &FakePluginRegistry{
-		Store: make(map[pluginuid.UID]*plugins.Plugin),
+		Store: make(map[plugins.UID]*plugins.Plugin),
 	}
 }
 
-func (f *FakePluginRegistry) Plugin(_ context.Context, uid pluginuid.UID) (*plugins.Plugin, bool) {
+func (f *FakePluginRegistry) Plugin(_ context.Context, uid plugins.UID) (*plugins.Plugin, bool) {
 	p, exists := f.Store[uid]
 	return p, exists
 }
@@ -196,7 +195,7 @@ func (f *FakePluginRegistry) Add(_ context.Context, p *plugins.Plugin) error {
 	return nil
 }
 
-func (f *FakePluginRegistry) Remove(_ context.Context, uid pluginuid.UID) error {
+func (f *FakePluginRegistry) Remove(_ context.Context, uid plugins.UID) error {
 	delete(f.Store, uid)
 	return nil
 }
@@ -249,20 +248,20 @@ func (s *FakePluginStorage) Extract(ctx context.Context, pluginID string, dirNam
 }
 
 type FakeProcessManager struct {
-	StartFunc func(_ context.Context, pluginID pluginuid.UID) error
-	StopFunc  func(_ context.Context, pluginID pluginuid.UID) error
-	Started   map[pluginuid.UID]int
-	Stopped   map[pluginuid.UID]int
+	StartFunc func(_ context.Context, pluginID plugins.UID) error
+	StopFunc  func(_ context.Context, pluginID plugins.UID) error
+	Started   map[plugins.UID]int
+	Stopped   map[plugins.UID]int
 }
 
 func NewFakeProcessManager() *FakeProcessManager {
 	return &FakeProcessManager{
-		Started: make(map[pluginuid.UID]int),
-		Stopped: make(map[pluginuid.UID]int),
+		Started: make(map[plugins.UID]int),
+		Stopped: make(map[plugins.UID]int),
 	}
 }
 
-func (m *FakeProcessManager) Start(ctx context.Context, pluginUID pluginuid.UID) error {
+func (m *FakeProcessManager) Start(ctx context.Context, pluginUID plugins.UID) error {
 	m.Started[pluginUID]++
 	if m.StartFunc != nil {
 		return m.StartFunc(ctx, pluginUID)
@@ -270,7 +269,7 @@ func (m *FakeProcessManager) Start(ctx context.Context, pluginUID pluginuid.UID)
 	return nil
 }
 
-func (m *FakeProcessManager) Stop(ctx context.Context, pluginUID pluginuid.UID) error {
+func (m *FakeProcessManager) Stop(ctx context.Context, pluginUID plugins.UID) error {
 	m.Stopped[pluginUID]++
 	if m.StopFunc != nil {
 		return m.StopFunc(ctx, pluginUID)

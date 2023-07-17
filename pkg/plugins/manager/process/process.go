@@ -10,7 +10,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 )
 
 var _ Service = (*Manager)(nil)
@@ -39,7 +38,7 @@ func (m *Manager) Run(ctx context.Context) error {
 	return ctx.Err()
 }
 
-func (m *Manager) Start(ctx context.Context, pluginUID pluginuid.UID) error {
+func (m *Manager) Start(ctx context.Context, pluginUID plugins.UID) error {
 	p, exists := m.pluginRegistry.Plugin(ctx, pluginUID)
 	if !exists {
 		return backendplugin.ErrPluginNotRegistered
@@ -60,7 +59,7 @@ func (m *Manager) Start(ctx context.Context, pluginUID pluginuid.UID) error {
 	return nil
 }
 
-func (m *Manager) Stop(ctx context.Context, pluginUID pluginuid.UID) error {
+func (m *Manager) Stop(ctx context.Context, pluginUID plugins.UID) error {
 	p, exists := m.pluginRegistry.Plugin(ctx, pluginUID)
 	if !exists {
 		return backendplugin.ErrPluginNotRegistered

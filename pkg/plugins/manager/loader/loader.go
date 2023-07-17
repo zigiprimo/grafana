@@ -21,8 +21,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/signature"
 	"github.com/grafana/grafana/pkg/plugins/oauth"
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
-	"github.com/grafana/grafana/pkg/plugins/uidgen"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/util"
 )
@@ -42,21 +40,20 @@ type Loader struct {
 	log                     log.Logger
 	cfg                     *config.Cfg
 
-	uidGen uidgen.Generator
+	uidGen plugins.UIDFunc
 
 	angularInspector angularinspector.Inspector
 
-	errs map[pluginuid.UID]*plugins.SignatureError
+	errs map[plugins.UID]*plugins.SignatureError
 }
 
 func ProvideService(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLoaderAuthorizer,
 	pluginRegistry registry.Service, backendProvider plugins.BackendFactoryProvider, pluginFinder finder.Finder,
 	roleRegistry plugins.RoleRegistry, assetPath *assetpath.Service, signatureCalculator plugins.SignatureCalculator,
-	angularInspector angularinspector.Inspector, externalServiceRegistry oauth.ExternalServiceRegistry,
-	uidGenerator uidgen.Generator) *Loader {
+	angularInspector angularinspector.Inspector, externalServiceRegistry oauth.ExternalServiceRegistry) *Loader {
 	return New(cfg, license, authorizer, pluginRegistry, backendProvider, process.NewManager(pluginRegistry),
 		roleRegistry, assetPath, pluginFinder, signatureCalculator, angularInspector, externalServiceRegistry,
-		uidGenerator)
+		plugins.DefaultUIDFunc)
 }
 
 func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLoaderAuthorizer,
@@ -64,7 +61,7 @@ func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLo
 	processManager process.Service, roleRegistry plugins.RoleRegistry,
 	assetPath *assetpath.Service, pluginFinder finder.Finder, signatureCalculator plugins.SignatureCalculator,
 	angularInspector angularinspector.Inspector, externalServiceRegistry oauth.ExternalServiceRegistry,
-	uidGenerator uidgen.Generator) *Loader {
+	uidGenerator plugins.UIDFunc) *Loader {
 	return &Loader{
 		pluginFinder:            pluginFinder,
 		pluginRegistry:          pluginRegistry,
@@ -72,7 +69,7 @@ func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLo
 		signatureValidator:      signature.NewValidator(authorizer),
 		signatureCalculator:     signatureCalculator,
 		processManager:          processManager,
-		errs:                    make(map[pluginuid.UID]*plugins.SignatureError),
+		errs:                    make(map[plugins.UID]*plugins.SignatureError),
 		log:                     log.New("plugin.loader"),
 		roleRegistry:            roleRegistry,
 		cfg:                     cfg,
@@ -97,7 +94,7 @@ func (l *Loader) loadPlugins(ctx context.Context, src plugins.PluginSource, foun
 	loadedPlugins := make([]*plugins.Plugin, 0, len(found))
 
 	for _, p := range found {
-		pUID := l.uidGen.UID(p.Primary.JSONData)
+		pUID := l.uidGen(p.Primary.JSONData.ID, p.Primary.JSONData.Info.Version)
 		if _, exists := l.pluginRegistry.Plugin(ctx, pUID); exists {
 			l.log.Warn("Skipping plugin loading as it's a duplicate", "pluginUID", pUID)
 			continue
@@ -121,7 +118,7 @@ func (l *Loader) loadPlugins(ctx context.Context, src plugins.PluginSource, foun
 		loadedPlugins = append(loadedPlugins, plugin)
 
 		for _, c := range p.Children {
-			cUID := l.uidGen.UID(c.JSONData)
+			cUID := l.uidGen(c.JSONData.ID, c.JSONData.Info.Version)
 			if _, exists := l.pluginRegistry.Plugin(ctx, cUID); exists {
 				l.log.Warn("Skipping plugin loading as it's a duplicate", "pluginUID", cUID)
 				continue
@@ -250,7 +247,7 @@ func (l *Loader) loadPlugins(ctx context.Context, src plugins.PluginSource, foun
 	return initializedPlugins, nil
 }
 
-func (l *Loader) Unload(ctx context.Context, pluginUID pluginuid.UID) error {
+func (l *Loader) Unload(ctx context.Context, pluginUID plugins.UID) error {
 	plugin, exists := l.pluginRegistry.Plugin(ctx, pluginUID)
 	if !exists {
 		return plugins.ErrPluginNotInstalled
@@ -309,7 +306,7 @@ func (l *Loader) createPluginBase(pluginJSON plugins.JSONData, class plugins.Cla
 		return nil, fmt.Errorf("module url: %w", err)
 	}
 	plugin := &plugins.Plugin{
-		UID:      l.uidGen.UID(pluginJSON),
+		UID:      l.uidGen(pluginJSON.ID, pluginJSON.Info.Version),
 		JSONData: pluginJSON,
 		FS:       files,
 		BaseURL:  baseURL,

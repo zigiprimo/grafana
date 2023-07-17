@@ -110,7 +110,7 @@ func (hs *HTTPServer) GetPluginList(c *contextmodel.ReqContext) response.Respons
 		}
 
 		// filter out disabled plugins
-		if pluginSetting, exists := pluginSettingsMap[pluginDef.UID]; exists {
+		if pluginSetting, exists := pluginSettingsMap[pluginDef.ID]; exists {
 			if enabledFilter == "1" && !pluginSetting.Enabled {
 				continue
 			}
@@ -149,7 +149,7 @@ func (hs *HTTPServer) GetPluginList(c *contextmodel.ReqContext) response.Respons
 			listItem.HasUpdate = true
 		}
 
-		if pluginSetting, exists := pluginSettingsMap[pluginDef.UID]; exists {
+		if pluginSetting, exists := pluginSettingsMap[pluginDef.ID]; exists {
 			listItem.Enabled = pluginSetting.Enabled
 			listItem.Pinned = pluginSetting.Pinned
 		}

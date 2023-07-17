@@ -28,14 +28,13 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/store"
 	"github.com/grafana/grafana/pkg/plugins/pluginscdn"
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	ac "github.com/grafana/grafana/pkg/services/accesscontrol"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/org/orgtest"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginaccesscontrol"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginsettings"
-	pluginuid2 "github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
+	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 	"github.com/grafana/grafana/pkg/services/updatechecker"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/web/webtest"
@@ -108,7 +107,7 @@ func Test_GetPluginAssetCDNRedirect(t *testing.T) {
 			JSONData: plugins.JSONData{ID: nonCDNPluginID, Info: plugins.Info{Version: "2.0.0"}},
 		}
 		registry := &fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				cdnPluginID:    cdnPlugin,
 				nonCDNPluginID: nonCdnPlugin,
 			},
@@ -212,7 +211,7 @@ func Test_GetPluginAssets(t *testing.T) {
 	t.Run("Given a request for an existing plugin file", func(t *testing.T) {
 		p := createPlugin(plugins.JSONData{ID: pluginID}, plugins.ClassExternal, plugins.NewLocalFS(filepath.Dir(requestedFile)))
 		pluginRegistry := &fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p.UID: p,
 			},
 		}
@@ -230,7 +229,7 @@ func Test_GetPluginAssets(t *testing.T) {
 	t.Run("Given a request for a relative path", func(t *testing.T) {
 		p := createPlugin(plugins.JSONData{ID: pluginID}, plugins.ClassExternal, plugins.NewFakeFS())
 		pluginRegistry := &fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p.UID: p,
 			},
 		}
@@ -247,7 +246,7 @@ func Test_GetPluginAssets(t *testing.T) {
 	t.Run("Given a request for an existing plugin file that is not listed as a signature covered file", func(t *testing.T) {
 		p := createPlugin(plugins.JSONData{ID: pluginID}, plugins.ClassCore, plugins.NewLocalFS(filepath.Dir(requestedFile)))
 		pluginRegistry := &fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p.UID: p,
 			},
 		}
@@ -265,7 +264,7 @@ func Test_GetPluginAssets(t *testing.T) {
 	t.Run("Given a request for an non-existing plugin file", func(t *testing.T) {
 		p := createPlugin(plugins.JSONData{ID: pluginID}, plugins.ClassExternal, plugins.NewFakeFS())
 		service := &fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p.UID: p,
 			},
 		}
@@ -565,7 +564,7 @@ func Test_PluginsList_AccessControl(t *testing.T) {
 			}}, plugins.ClassCore, plugins.NewFakeFS())
 
 	pluginRegistry := &fakes.FakePluginRegistry{
-		Store: map[pluginuid.UID]*plugins.Plugin{
+		Store: map[plugins.UID]*plugins.Plugin{
 			p1.UID: p1,
 			p2.UID: p2,
 		},
@@ -625,7 +624,7 @@ func Test_PluginsList_AccessControl(t *testing.T) {
 
 func createPlugin(jd plugins.JSONData, class plugins.Class, files plugins.FS) *plugins.Plugin {
 	return &plugins.Plugin{
-		UID:      pluginuid2.FromPluginID(jd.ID),
+		UID:      pluginuid.FromPluginID(jd.ID),
 		JSONData: jd,
 		Class:    class,
 		FS:       files,

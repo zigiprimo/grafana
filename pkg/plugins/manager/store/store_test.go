@@ -9,7 +9,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/manager/fakes"
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 )
 
 func TestStore_ProvideService(t *testing.T) {
@@ -56,7 +55,7 @@ func TestStore_Plugin(t *testing.T) {
 		p2 := &plugins.Plugin{UID: "test-panel", JSONData: plugins.JSONData{ID: "test-panel"}}
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p1.UID: p1,
 				p2.UID: p2,
 			},
@@ -82,7 +81,7 @@ func TestStore_Plugins(t *testing.T) {
 		p5.RegisterClient(&DecommissionedPlugin{})
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p1.UID: p1,
 				p2.UID: p2,
 				p3.UID: p3,
@@ -119,7 +118,7 @@ func TestStore_Routes(t *testing.T) {
 		p6.RegisterClient(&DecommissionedPlugin{})
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p1.UID: p1,
 				p2.UID: p2,
 				p3.UID: p3,
@@ -145,7 +144,7 @@ func TestStore_Renderer(t *testing.T) {
 		p3 := &plugins.Plugin{UID: "test-app", JSONData: plugins.JSONData{ID: "test-app", Type: plugins.TypeApp}}
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p1.UID: p1,
 				p2.UID: p2,
 				p3.UID: p3,
@@ -165,7 +164,7 @@ func TestStore_SecretsManager(t *testing.T) {
 		p4 := &plugins.Plugin{UID: "test-datasource", JSONData: plugins.JSONData{ID: "test-datasource", Type: plugins.TypeDataSource}}
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p1.UID: p1,
 				p2.UID: p2,
 				p3.UID: p3,
@@ -185,7 +184,7 @@ func TestStore_availablePlugins(t *testing.T) {
 		p2 := &plugins.Plugin{UID: "test-app", JSONData: plugins.JSONData{ID: "test-app"}}
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[pluginuid.UID]*plugins.Plugin{
+			Store: map[plugins.UID]*plugins.Plugin{
 				p1.UID: p1,
 				p2.UID: p2,
 			},

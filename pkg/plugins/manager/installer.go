@@ -11,10 +11,9 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/loader"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/sources"
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	"github.com/grafana/grafana/pkg/plugins/repo"
 	"github.com/grafana/grafana/pkg/plugins/storage"
-	pluginuid2 "github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
+	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 )
 
 var _ plugins.Installer = (*PluginInstaller)(nil)
@@ -23,7 +22,7 @@ type PluginInstaller struct {
 	pluginRepo           repo.Service
 	pluginStorage        storage.ZipExtractor
 	pluginStorageDirFunc storage.DirNameGeneratorFunc
-	pluginUIDFunc        pluginuid.FromPluginIDAndVersionFunc
+	pluginUIDFunc        plugins.UIDFunc
 	pluginRegistry       registry.Service
 	pluginLoader         loader.Service
 	log                  log.Logger
@@ -33,12 +32,12 @@ func ProvideInstaller(cfg *config.Cfg, pluginRegistry registry.Service, pluginLo
 	pluginRepo repo.Service) *PluginInstaller {
 	return New(pluginRegistry, pluginLoader, pluginRepo,
 		storage.FileSystem(log.NewPrettyLogger("installer.fs"), cfg.PluginsPath),
-		pluginuid.SimpleFromPluginIDAndVersionFunc,
+		plugins.DefaultUIDFunc,
 		storage.SimpleDirNameGeneratorFunc)
 }
 
 func New(pluginRegistry registry.Service, pluginLoader loader.Service, pluginRepo repo.Service,
-	pluginStorage storage.ZipExtractor, pluginUIDFunc pluginuid.FromPluginIDAndVersionFunc, pluginStorageDirFunc storage.DirNameGeneratorFunc) *PluginInstaller {
+	pluginStorage storage.ZipExtractor, pluginUIDFunc plugins.UIDFunc, pluginStorageDirFunc storage.DirNameGeneratorFunc) *PluginInstaller {
 	return &PluginInstaller{
 		pluginLoader:         pluginLoader,
 		pluginRegistry:       pluginRegistry,
@@ -142,8 +141,8 @@ func (m *PluginInstaller) Add(ctx context.Context, pluginID, version string, opt
 }
 
 func (m *PluginInstaller) Remove(ctx context.Context, pluginID string) error {
-	pluginUID := pluginuid2.FromPluginID(pluginID)
-	plugin, exists := m.plugin(ctx, pluginuid2.FromPluginID(pluginID))
+	pluginUID := pluginuid.FromPluginID(pluginID)
+	plugin, exists := m.plugin(ctx, pluginuid.FromPluginID(pluginID))
 	if !exists {
 		return plugins.ErrPluginNotInstalled
 	}
@@ -159,7 +158,7 @@ func (m *PluginInstaller) Remove(ctx context.Context, pluginID string) error {
 }
 
 // plugin finds a plugin with `pluginID` from the store
-func (m *PluginInstaller) plugin(ctx context.Context, pluginUID pluginuid.UID) (*plugins.Plugin, bool) {
+func (m *PluginInstaller) plugin(ctx context.Context, pluginUID plugins.UID) (*plugins.Plugin, bool) {
 	p, exists := m.pluginRegistry.Plugin(ctx, pluginUID)
 	if !exists {
 		return nil, false

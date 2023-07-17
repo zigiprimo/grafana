@@ -248,7 +248,7 @@ func (s *Service) RunStream(ctx context.Context, req *backend.RunStreamRequest, 
 
 // plugin finds a plugin with `pluginID` from the registry that is not decommissioned
 func (s *Service) plugin(ctx context.Context, pCtx backend.PluginContext) (*plugins.Plugin, bool) {
-	pluginUID := pluginuid.FromPluginContext(pCtx)
+	pluginUID := pluginuid.FromPluginID(pCtx.PluginID)
 	p, exists := s.pluginRegistry.Plugin(ctx, pluginUID)
 	if !exists {
 		return nil, false

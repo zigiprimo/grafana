@@ -9,12 +9,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/plugins"
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 )
 
 const (
-	dsUID    = pluginuid.UID("test-ds")
-	panelUID = pluginuid.UID("test-panel")
+	dsUID    = plugins.UID("test-ds")
+	panelUID = plugins.UID("test-panel")
 )
 
 func TestInMemory(t *testing.T) {
@@ -47,7 +46,7 @@ func TestInMemory(t *testing.T) {
 
 func TestInMemory_Add(t *testing.T) {
 	type mocks struct {
-		store map[pluginuid.UID]*plugins.Plugin
+		store map[plugins.UID]*plugins.Plugin
 	}
 	type args struct {
 		p *plugins.Plugin
@@ -61,7 +60,7 @@ func TestInMemory_Add(t *testing.T) {
 		{
 			name: "Can add a new plugin to the registry",
 			mocks: mocks{
-				store: map[pluginuid.UID]*plugins.Plugin{},
+				store: map[plugins.UID]*plugins.Plugin{},
 			},
 			args: args{
 				p: &plugins.Plugin{
@@ -72,7 +71,7 @@ func TestInMemory_Add(t *testing.T) {
 		{
 			name: "Cannot add a plugin to the registry if it already exists",
 			mocks: mocks{
-				store: map[pluginuid.UID]*plugins.Plugin{
+				store: map[plugins.UID]*plugins.Plugin{
 					dsUID: {
 						UID: dsUID,
 					},
@@ -99,10 +98,10 @@ func TestInMemory_Add(t *testing.T) {
 
 func TestInMemory_Plugin(t *testing.T) {
 	type mocks struct {
-		store map[pluginuid.UID]*plugins.Plugin
+		store map[plugins.UID]*plugins.Plugin
 	}
 	type args struct {
-		pluginUID pluginuid.UID
+		pluginUID plugins.UID
 	}
 	tests := []struct {
 		name     string
@@ -114,7 +113,7 @@ func TestInMemory_Plugin(t *testing.T) {
 		{
 			name: "Can retrieve a plugin",
 			mocks: mocks{
-				store: map[pluginuid.UID]*plugins.Plugin{
+				store: map[plugins.UID]*plugins.Plugin{
 					dsUID: {
 						UID: dsUID,
 					},
@@ -131,7 +130,7 @@ func TestInMemory_Plugin(t *testing.T) {
 		{
 			name: "Non-existing plugin",
 			mocks: mocks{
-				store: map[pluginuid.UID]*plugins.Plugin{},
+				store: map[plugins.UID]*plugins.Plugin{},
 			},
 			args: args{
 				pluginUID: dsUID,
@@ -156,7 +155,7 @@ func TestInMemory_Plugin(t *testing.T) {
 
 func TestInMemory_Plugins(t *testing.T) {
 	type mocks struct {
-		store map[pluginuid.UID]*plugins.Plugin
+		store map[plugins.UID]*plugins.Plugin
 	}
 	tests := []struct {
 		name     string
@@ -166,7 +165,7 @@ func TestInMemory_Plugins(t *testing.T) {
 		{
 			name: "Can retrieve a list of plugins",
 			mocks: mocks{
-				store: map[pluginuid.UID]*plugins.Plugin{
+				store: map[plugins.UID]*plugins.Plugin{
 					dsUID: {
 						UID: dsUID,
 					},
@@ -187,7 +186,7 @@ func TestInMemory_Plugins(t *testing.T) {
 		{
 			name: "No existing plugins",
 			mocks: mocks{
-				store: map[pluginuid.UID]*plugins.Plugin{},
+				store: map[plugins.UID]*plugins.Plugin{},
 			},
 			expected: []*plugins.Plugin{},
 		},
@@ -211,10 +210,10 @@ func TestInMemory_Plugins(t *testing.T) {
 
 func TestInMemory_Remove(t *testing.T) {
 	type mocks struct {
-		store map[pluginuid.UID]*plugins.Plugin
+		store map[plugins.UID]*plugins.Plugin
 	}
 	type args struct {
-		pluginID pluginuid.UID
+		pluginID plugins.UID
 	}
 	tests := []struct {
 		name  string
@@ -225,7 +224,7 @@ func TestInMemory_Remove(t *testing.T) {
 		{
 			name: "Can remove a plugin",
 			mocks: mocks{
-				store: map[pluginuid.UID]*plugins.Plugin{
+				store: map[plugins.UID]*plugins.Plugin{
 					dsUID: {
 						UID: dsUID,
 					},
@@ -237,7 +236,7 @@ func TestInMemory_Remove(t *testing.T) {
 		}, {
 			name: "Cannot remove a plugin from the registry if it doesn't exist",
 			mocks: mocks{
-				store: map[pluginuid.UID]*plugins.Plugin{},
+				store: map[plugins.UID]*plugins.Plugin{},
 			},
 			args: args{
 				pluginID: dsUID,
@@ -261,8 +260,8 @@ func TestAliasSupport(t *testing.T) {
 		i := NewInMemory()
 		ctx := context.Background()
 
-		pluginUidNew := pluginuid.UID("plugin-new")
-		pluginUidOld := pluginuid.UID("plugin-old")
+		pluginUidNew := plugins.UID("plugin-new")
+		pluginUidOld := plugins.UID("plugin-old")
 
 		p, exists := i.Plugin(ctx, pluginUidNew)
 		require.False(t, exists)

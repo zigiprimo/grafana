@@ -1,25 +1,9 @@
 package pluginuid
 
 import (
-	"github.com/grafana/grafana-plugin-sdk-go/backend"
-
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
-	"github.com/grafana/grafana/pkg/services/datasources"
-	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginsettings"
+	"github.com/grafana/grafana/pkg/plugins"
 )
 
-func FromPluginContext(pCtx backend.PluginContext) pluginuid.UID {
-	return pluginuid.UID(pCtx.PluginID)
-}
-
-func FromDataSource(ds *datasources.DataSource) pluginuid.UID {
-	return pluginuid.UID(ds.Type)
-}
-
-func FromPluginID(pluginID string) pluginuid.UID {
-	return pluginuid.UID(pluginID)
-}
-
-func FromPluginSettingInfo(ps *pluginsettings.InfoDTO) pluginuid.UID {
-	return pluginuid.UID(ps.PluginID)
+func FromPluginID(pluginID string) plugins.UID {
+	return plugins.UID(pluginID)
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/log"
-	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	"github.com/grafana/grafana/pkg/tsdb/azuremonitor"
 	cloudmonitoring "github.com/grafana/grafana/pkg/tsdb/cloud-monitoring"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch"
@@ -56,10 +55,10 @@ func init() {
 }
 
 type Registry struct {
-	store map[pluginuid.UID]backendplugin.PluginFactoryFunc
+	store map[string]backendplugin.PluginFactoryFunc
 }
 
-func NewRegistry(store map[pluginuid.UID]backendplugin.PluginFactoryFunc) *Registry {
+func NewRegistry(store map[string]backendplugin.PluginFactoryFunc) *Registry {
 	return &Registry{
 		store: store,
 	}
@@ -69,7 +68,7 @@ func ProvideCoreRegistry(am *azuremonitor.Service, cw *cloudwatch.CloudWatchServ
 	es *elasticsearch.Service, grap *graphite.Service, idb *influxdb.Service, lk *loki.Service, otsdb *opentsdb.Service,
 	pr *prometheus.Service, t *tempo.Service, td *testdatasource.Service, pg *postgres.Service, my *mysql.Service,
 	ms *mssql.Service, graf *grafanads.Service, pyroscope *pyroscope.Service, parca *parca.Service) *Registry {
-	return NewRegistry(map[pluginuid.UID]backendplugin.PluginFactoryFunc{
+	return NewRegistry(map[string]backendplugin.PluginFactoryFunc{
 		CloudWatch:      asBackendPlugin(cw.Executor),
 		CloudMonitoring: asBackendPlugin(cm),
 		AzureMonitor:    asBackendPlugin(am),
@@ -90,7 +89,7 @@ func ProvideCoreRegistry(am *azuremonitor.Service, cw *cloudwatch.CloudWatchServ
 	})
 }
 
-func (cr *Registry) Get(pluginUID pluginuid.UID) backendplugin.PluginFactoryFunc {
+func (cr *Registry) Get(pluginUID string) backendplugin.PluginFactoryFunc {
 	return cr.store[pluginUID]
 }
 
@@ -100,7 +99,7 @@ func (cr *Registry) BackendFactoryProvider() func(_ context.Context, p *plugins.
 			return nil
 		}
 
-		return cr.Get(p.UID)
+		return cr.Get(p.ID)
 	}
 }
 
