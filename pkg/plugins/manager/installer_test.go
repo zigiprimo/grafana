@@ -14,7 +14,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/fakes"
 	"github.com/grafana/grafana/pkg/plugins/repo"
 	"github.com/grafana/grafana/pkg/plugins/storage"
-	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 )
 
 const testPluginID = "test-plugin"
@@ -188,7 +187,7 @@ func createPlugin(t *testing.T, pluginID string, class plugins.Class, managed, b
 	t.Helper()
 
 	p := &plugins.Plugin{
-		UID:   pluginuid.FromPluginID(pluginID),
+		UID:   plugins.UID(pluginID),
 		Class: class,
 		JSONData: plugins.JSONData{
 			ID:      pluginID,

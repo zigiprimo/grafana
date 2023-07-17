@@ -11,7 +11,6 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/manager/fakes"
-	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 )
 
 func TestProcessManager_Start(t *testing.T) {
@@ -94,7 +93,7 @@ func TestProcessManager_Stop(t *testing.T) {
 
 	t.Run("Can stop a running plugin", func(t *testing.T) {
 		pluginID := "test-datasource"
-		pluginUID := pluginuid.FromPluginID(pluginID)
+		pluginUID := plugins.UID(pluginID)
 
 		bp := newFakeBackendPlugin(true)
 		p := createPlugin(t, bp, func(plugin *plugins.Plugin) {

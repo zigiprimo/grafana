@@ -23,7 +23,6 @@ import (
 	"github.com/grafana/grafana/pkg/server"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/org"
-	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/tests/testinfra"
 )
@@ -670,7 +669,7 @@ func (tsCtx *testScenarioContext) runCallResourceTest(t *testing.T, callback fun
 
 func createTestPlugin(id string) (*plugins.Plugin, *testPlugin) {
 	p := &plugins.Plugin{
-		UID: pluginuid.FromPluginID(id),
+		UID: plugins.UID(id),
 		JSONData: plugins.JSONData{
 			ID: id,
 		},
