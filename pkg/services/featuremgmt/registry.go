@@ -654,5 +654,12 @@ var (
 			FrontendOnly: false,
 			Owner:        grafanaAlertingSquad,
 		},
+		{
+			Name:         "newPermissionFilter",
+			Description:  "Enable support for alternative permission filter",
+			Stage:        FeatureStageExperimental,
+			FrontendOnly: false,
+			Owner:        grafanaAuthnzSquad,
+		},
 	}
 )

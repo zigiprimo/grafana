@@ -390,4 +390,8 @@ const (
 	// FlagMlExpressions
 	// Enable support for Machine Learning in server-side expressions
 	FlagMlExpressions = "mlExpressions"
+
+	// FlagNewPermissionFilter
+	// Enable support for alternative permission filter
+	FlagNewPermissionFilter = "newPermissionFilter"
 )
