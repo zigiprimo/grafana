@@ -32,7 +32,7 @@ func (s Service) ListPluginDashboards(ctx context.Context, req *plugindashboards
 	}
 
 	listArgs := &pluginDashboardsManager.ListPluginDashboardFilesArgs{
-		PluginUID: req.PluginUID,
+		PluginID: req.PluginUID,
 	}
 	listResp, err := s.pluginDashboardStore.ListPluginDashboardFiles(ctx, listArgs)
 	if err != nil {

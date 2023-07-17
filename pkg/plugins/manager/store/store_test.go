@@ -9,6 +9,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/manager/fakes"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 )
 
 func TestStore_ProvideService(t *testing.T) {
@@ -50,14 +51,14 @@ func TestStore_ProvideService(t *testing.T) {
 
 func TestStore_Plugin(t *testing.T) {
 	t.Run("Plugin returns all non-decommissioned plugins", func(t *testing.T) {
-		p1 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-datasource"}}
+		p1 := &plugins.Plugin{UID: "test-datasource", JSONData: plugins.JSONData{ID: "test-datasource"}}
 		p1.RegisterClient(&DecommissionedPlugin{})
-		p2 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-panel"}}
+		p2 := &plugins.Plugin{UID: "test-panel", JSONData: plugins.JSONData{ID: "test-panel"}}
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[string]*plugins.Plugin{
-				p1.ID: p1,
-				p2.ID: p2,
+			Store: map[pluginuid.UID]*plugins.Plugin{
+				p1.UID: p1,
+				p2.UID: p2,
 			},
 		})
 
@@ -73,20 +74,20 @@ func TestStore_Plugin(t *testing.T) {
 
 func TestStore_Plugins(t *testing.T) {
 	t.Run("Plugin returns all non-decommissioned plugins by type", func(t *testing.T) {
-		p1 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "a-test-datasource", Type: plugins.TypeDataSource}}
-		p2 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "b-test-panel", Type: plugins.TypePanel}}
-		p3 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "c-test-panel", Type: plugins.TypePanel}}
-		p4 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "d-test-app", Type: plugins.TypeApp}}
-		p5 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "e-test-panel", Type: plugins.TypePanel}}
+		p1 := &plugins.Plugin{UID: "a-test-datasource", JSONData: plugins.JSONData{ID: "a-test-datasource", Type: plugins.TypeDataSource}}
+		p2 := &plugins.Plugin{UID: "b-test-panel", JSONData: plugins.JSONData{ID: "b-test-panel", Type: plugins.TypePanel}}
+		p3 := &plugins.Plugin{UID: "c-test-panel", JSONData: plugins.JSONData{ID: "c-test-panel", Type: plugins.TypePanel}}
+		p4 := &plugins.Plugin{UID: "d-test-app", JSONData: plugins.JSONData{ID: "d-test-app", Type: plugins.TypeApp}}
+		p5 := &plugins.Plugin{UID: "e-test-panel", JSONData: plugins.JSONData{ID: "e-test-panel", Type: plugins.TypePanel}}
 		p5.RegisterClient(&DecommissionedPlugin{})
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[string]*plugins.Plugin{
-				p1.ID: p1,
-				p2.ID: p2,
-				p3.ID: p3,
-				p4.ID: p4,
-				p5.ID: p5,
+			Store: map[pluginuid.UID]*plugins.Plugin{
+				p1.UID: p1,
+				p2.UID: p2,
+				p3.UID: p3,
+				p4.UID: p4,
+				p5.UID: p5,
 			},
 		})
 
@@ -109,22 +110,22 @@ func TestStore_Plugins(t *testing.T) {
 
 func TestStore_Routes(t *testing.T) {
 	t.Run("Routes returns all static routes for non-decommissioned plugins", func(t *testing.T) {
-		p1 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "a-test-renderer", Type: plugins.TypeRenderer}, FS: fakes.NewFakePluginFiles("/some/dir")}
-		p2 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "b-test-panel", Type: plugins.TypePanel}, FS: fakes.NewFakePluginFiles("/grafana/")}
-		p3 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "c-test-secrets", Type: plugins.TypeSecretsManager}, FS: fakes.NewFakePluginFiles("./secrets"), Class: plugins.ClassCore}
-		p4 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "d-test-datasource", Type: plugins.TypeDataSource}, FS: fakes.NewFakePluginFiles("../test")}
-		p5 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "e-test-app", Type: plugins.TypeApp}, FS: fakes.NewFakePluginFiles("any/path")}
-		p6 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "f-test-app", Type: plugins.TypeApp}}
+		p1 := &plugins.Plugin{UID: "a-test-renderer", JSONData: plugins.JSONData{ID: "a-test-renderer", Type: plugins.TypeRenderer}, FS: fakes.NewFakePluginFiles("/some/dir")}
+		p2 := &plugins.Plugin{UID: "b-test-panel", JSONData: plugins.JSONData{ID: "b-test-panel", Type: plugins.TypePanel}, FS: fakes.NewFakePluginFiles("/grafana/")}
+		p3 := &plugins.Plugin{UID: "c-test-secrets", JSONData: plugins.JSONData{ID: "c-test-secrets", Type: plugins.TypeSecretsManager}, FS: fakes.NewFakePluginFiles("./secrets"), Class: plugins.ClassCore}
+		p4 := &plugins.Plugin{UID: "d-test-datasource", JSONData: plugins.JSONData{ID: "d-test-datasource", Type: plugins.TypeDataSource}, FS: fakes.NewFakePluginFiles("../test")}
+		p5 := &plugins.Plugin{UID: "e-test-app", JSONData: plugins.JSONData{ID: "e-test-app", Type: plugins.TypeApp}, FS: fakes.NewFakePluginFiles("any/path")}
+		p6 := &plugins.Plugin{UID: "f-test-app", JSONData: plugins.JSONData{ID: "f-test-app", Type: plugins.TypeApp}}
 		p6.RegisterClient(&DecommissionedPlugin{})
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[string]*plugins.Plugin{
-				p1.ID: p1,
-				p2.ID: p2,
-				p3.ID: p3,
-				p4.ID: p4,
-				p5.ID: p5,
-				p6.ID: p6,
+			Store: map[pluginuid.UID]*plugins.Plugin{
+				p1.UID: p1,
+				p2.UID: p2,
+				p3.UID: p3,
+				p4.UID: p4,
+				p5.UID: p5,
+				p6.UID: p6,
 			},
 		})
 
@@ -139,15 +140,15 @@ func TestStore_Routes(t *testing.T) {
 
 func TestStore_Renderer(t *testing.T) {
 	t.Run("Renderer returns a single (non-decommissioned) renderer plugin", func(t *testing.T) {
-		p1 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-renderer", Type: plugins.TypeRenderer}}
-		p2 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-panel", Type: plugins.TypePanel}}
-		p3 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-app", Type: plugins.TypeApp}}
+		p1 := &plugins.Plugin{UID: "test-renderer", JSONData: plugins.JSONData{ID: "test-renderer", Type: plugins.TypeRenderer}}
+		p2 := &plugins.Plugin{UID: "test-panel", JSONData: plugins.JSONData{ID: "test-panel", Type: plugins.TypePanel}}
+		p3 := &plugins.Plugin{UID: "test-app", JSONData: plugins.JSONData{ID: "test-app", Type: plugins.TypeApp}}
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[string]*plugins.Plugin{
-				p1.ID: p1,
-				p2.ID: p2,
-				p3.ID: p3,
+			Store: map[pluginuid.UID]*plugins.Plugin{
+				p1.UID: p1,
+				p2.UID: p2,
+				p3.UID: p3,
 			},
 		})
 
@@ -158,17 +159,17 @@ func TestStore_Renderer(t *testing.T) {
 
 func TestStore_SecretsManager(t *testing.T) {
 	t.Run("Renderer returns a single (non-decommissioned) secrets manager plugin", func(t *testing.T) {
-		p1 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-renderer", Type: plugins.TypeRenderer}}
-		p2 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-panel", Type: plugins.TypePanel}}
-		p3 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-secrets", Type: plugins.TypeSecretsManager}}
-		p4 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-datasource", Type: plugins.TypeDataSource}}
+		p1 := &plugins.Plugin{UID: "test-renderer", JSONData: plugins.JSONData{ID: "test-renderer", Type: plugins.TypeRenderer}}
+		p2 := &plugins.Plugin{UID: "test-panel", JSONData: plugins.JSONData{ID: "test-panel", Type: plugins.TypePanel}}
+		p3 := &plugins.Plugin{UID: "test-secrets", JSONData: plugins.JSONData{ID: "test-secrets", Type: plugins.TypeSecretsManager}}
+		p4 := &plugins.Plugin{UID: "test-datasource", JSONData: plugins.JSONData{ID: "test-datasource", Type: plugins.TypeDataSource}}
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[string]*plugins.Plugin{
-				p1.ID: p1,
-				p2.ID: p2,
-				p3.ID: p3,
-				p4.ID: p4,
+			Store: map[pluginuid.UID]*plugins.Plugin{
+				p1.UID: p1,
+				p2.UID: p2,
+				p3.UID: p3,
+				p4.UID: p4,
 			},
 		})
 
@@ -179,14 +180,14 @@ func TestStore_SecretsManager(t *testing.T) {
 
 func TestStore_availablePlugins(t *testing.T) {
 	t.Run("Decommissioned plugins are excluded from availablePlugins", func(t *testing.T) {
-		p1 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-datasource"}}
+		p1 := &plugins.Plugin{UID: "test-datasource", JSONData: plugins.JSONData{ID: "test-datasource"}}
 		p1.RegisterClient(&DecommissionedPlugin{})
-		p2 := &plugins.Plugin{JSONData: plugins.JSONData{ID: "test-app"}}
+		p2 := &plugins.Plugin{UID: "test-app", JSONData: plugins.JSONData{ID: "test-app"}}
 
 		ps := New(&fakes.FakePluginRegistry{
-			Store: map[string]*plugins.Plugin{
-				p1.ID: p1,
-				p2.ID: p2,
+			Store: map[pluginuid.UID]*plugins.Plugin{
+				p1.UID: p1,
+				p2.UID: p2,
 			},
 		})
 

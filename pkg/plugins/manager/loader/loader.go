@@ -21,6 +21,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/signature"
 	"github.com/grafana/grafana/pkg/plugins/oauth"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	"github.com/grafana/grafana/pkg/plugins/uidgen"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/util"
@@ -45,7 +46,7 @@ type Loader struct {
 
 	angularInspector angularinspector.Inspector
 
-	errs map[string]*plugins.SignatureError
+	errs map[pluginuid.UID]*plugins.SignatureError
 }
 
 func ProvideService(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLoaderAuthorizer,
@@ -71,7 +72,7 @@ func New(cfg *config.Cfg, license plugins.Licensing, authorizer plugins.PluginLo
 		signatureValidator:      signature.NewValidator(authorizer),
 		signatureCalculator:     signatureCalculator,
 		processManager:          processManager,
-		errs:                    make(map[string]*plugins.SignatureError),
+		errs:                    make(map[pluginuid.UID]*plugins.SignatureError),
 		log:                     log.New("plugin.loader"),
 		roleRegistry:            roleRegistry,
 		cfg:                     cfg,
@@ -216,7 +217,7 @@ func (l *Loader) loadPlugins(ctx context.Context, src plugins.PluginSource, foun
 		}
 
 		if p.ExternalServiceRegistration != nil && l.cfg.Features.IsEnabled(featuremgmt.FlagExternalServiceAuth) {
-			s, err := l.externalServiceRegistry.RegisterExternalService(ctx, p.UID, p.ExternalServiceRegistration)
+			s, err := l.externalServiceRegistry.RegisterExternalService(ctx, p.UID.String(), p.ExternalServiceRegistration)
 			if err != nil {
 				l.log.Error("Could not register an external service. Initialization skipped", "pluginUID", p.UID, "err", err)
 				continue
@@ -229,7 +230,7 @@ func (l *Loader) loadPlugins(ctx context.Context, src plugins.PluginSource, foun
 			l.log.Error("Could not initialize plugin", "pluginUID", p.UID, "err", err)
 			continue
 		}
-		if errDeclareRoles := l.roleRegistry.DeclarePluginRoles(ctx, p.UID, p.Name, p.Roles); errDeclareRoles != nil {
+		if errDeclareRoles := l.roleRegistry.DeclarePluginRoles(ctx, p.UID.String(), p.Name, p.Roles); errDeclareRoles != nil {
 			l.log.Warn("Declare plugin roles failed.", "pluginUID", p.UID, "err", errDeclareRoles)
 		}
 
@@ -242,14 +243,14 @@ func (l *Loader) loadPlugins(ctx context.Context, src plugins.PluginSource, foun
 		}
 
 		if !p.IsCorePlugin() && !p.IsBundledPlugin() {
-			metrics.SetPluginBuildInformation(p.UID, string(p.Type), p.Info.Version, string(p.Signature))
+			metrics.SetPluginBuildInformation(p.UID.String(), string(p.Type), p.Info.Version, string(p.Signature))
 		}
 	}
 
 	return initializedPlugins, nil
 }
 
-func (l *Loader) Unload(ctx context.Context, pluginUID string) error {
+func (l *Loader) Unload(ctx context.Context, pluginUID pluginuid.UID) error {
 	plugin, exists := l.pluginRegistry.Plugin(ctx, pluginUID)
 	if !exists {
 		return plugins.ErrPluginNotInstalled
@@ -354,7 +355,7 @@ func setDefaultNavURL(p *plugins.Plugin) {
 		}
 
 		if include.Type == "page" {
-			p.DefaultNavURL = path.Join("/plugins/", p.UID, "/page/", include.Slug)
+			p.DefaultNavURL = path.Join("/plugins/", p.UID.String(), "/page/", include.Slug)
 		}
 		if include.Type == "dashboard" {
 			dboardURL := include.DashboardURLPath()

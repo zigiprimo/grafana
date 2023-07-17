@@ -648,8 +648,8 @@ func SetEnvironmentInformation(labels map[string]string) error {
 	return nil
 }
 
-func SetPluginBuildInformation(pluginID, pluginType, version, signatureStatus string) {
-	grafanaPluginBuildInfoDesc.WithLabelValues(pluginID, pluginType, version, signatureStatus).Set(1)
+func SetPluginBuildInformation(pluginUID, pluginType, version, signatureStatus string) {
+	grafanaPluginBuildInfoDesc.WithLabelValues(pluginUID, pluginType, version, signatureStatus).Set(1)
 }
 
 func initMetricVars() {

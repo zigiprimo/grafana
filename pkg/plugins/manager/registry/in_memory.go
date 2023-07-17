@@ -6,10 +6,11 @@ import (
 	"sync"
 
 	"github.com/grafana/grafana/pkg/plugins"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 )
 
 type InMemory struct {
-	store map[string]*plugins.Plugin
+	store map[pluginuid.UID]*plugins.Plugin
 	alias map[string]*plugins.Plugin
 	mu    sync.RWMutex
 }
@@ -20,12 +21,12 @@ func ProvideService() *InMemory {
 
 func NewInMemory() *InMemory {
 	return &InMemory{
-		store: make(map[string]*plugins.Plugin),
+		store: make(map[pluginuid.UID]*plugins.Plugin),
 		alias: make(map[string]*plugins.Plugin),
 	}
 }
 
-func (i *InMemory) Plugin(_ context.Context, pluginUID string) (*plugins.Plugin, bool) {
+func (i *InMemory) Plugin(_ context.Context, pluginUID pluginuid.UID) (*plugins.Plugin, bool) {
 	return i.plugin(pluginUID)
 }
 
@@ -56,7 +57,7 @@ func (i *InMemory) Add(_ context.Context, p *plugins.Plugin) error {
 	return nil
 }
 
-func (i *InMemory) Remove(_ context.Context, pluginUID string) error {
+func (i *InMemory) Remove(_ context.Context, pluginUID pluginuid.UID) error {
 	p, ok := i.plugin(pluginUID)
 	if !ok {
 		return fmt.Errorf("plugin %s is not registered", pluginUID)
@@ -72,13 +73,13 @@ func (i *InMemory) Remove(_ context.Context, pluginUID string) error {
 	return nil
 }
 
-func (i *InMemory) plugin(pluginUID string) (*plugins.Plugin, bool) {
+func (i *InMemory) plugin(pluginUID pluginuid.UID) (*plugins.Plugin, bool) {
 	i.mu.RLock()
 	defer i.mu.RUnlock()
 	p, exists := i.store[pluginUID]
 
 	if !exists {
-		p, exists = i.alias[pluginUID]
+		p, exists = i.alias[pluginUID.String()]
 		if !exists {
 			return nil, false
 		}
@@ -87,7 +88,7 @@ func (i *InMemory) plugin(pluginUID string) (*plugins.Plugin, bool) {
 	return p, true
 }
 
-func (i *InMemory) isRegistered(pluginUID string) bool {
+func (i *InMemory) isRegistered(pluginUID pluginuid.UID) bool {
 	p, exists := i.plugin(pluginUID)
 
 	// This may have matched based on an alias

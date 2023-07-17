@@ -9,11 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/plugins"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 )
 
 const (
-	dsUID    = "test-ds"
-	panelUID = "test-panel"
+	dsUID    = pluginuid.UID("test-ds")
+	panelUID = pluginuid.UID("test-panel")
 )
 
 func TestInMemory(t *testing.T) {
@@ -46,7 +47,7 @@ func TestInMemory(t *testing.T) {
 
 func TestInMemory_Add(t *testing.T) {
 	type mocks struct {
-		store map[string]*plugins.Plugin
+		store map[pluginuid.UID]*plugins.Plugin
 	}
 	type args struct {
 		p *plugins.Plugin
@@ -60,7 +61,7 @@ func TestInMemory_Add(t *testing.T) {
 		{
 			name: "Can add a new plugin to the registry",
 			mocks: mocks{
-				store: map[string]*plugins.Plugin{},
+				store: map[pluginuid.UID]*plugins.Plugin{},
 			},
 			args: args{
 				p: &plugins.Plugin{
@@ -71,7 +72,7 @@ func TestInMemory_Add(t *testing.T) {
 		{
 			name: "Cannot add a plugin to the registry if it already exists",
 			mocks: mocks{
-				store: map[string]*plugins.Plugin{
+				store: map[pluginuid.UID]*plugins.Plugin{
 					dsUID: {
 						UID: dsUID,
 					},
@@ -98,10 +99,10 @@ func TestInMemory_Add(t *testing.T) {
 
 func TestInMemory_Plugin(t *testing.T) {
 	type mocks struct {
-		store map[string]*plugins.Plugin
+		store map[pluginuid.UID]*plugins.Plugin
 	}
 	type args struct {
-		pluginUID string
+		pluginUID pluginuid.UID
 	}
 	tests := []struct {
 		name     string
@@ -113,7 +114,7 @@ func TestInMemory_Plugin(t *testing.T) {
 		{
 			name: "Can retrieve a plugin",
 			mocks: mocks{
-				store: map[string]*plugins.Plugin{
+				store: map[pluginuid.UID]*plugins.Plugin{
 					dsUID: {
 						UID: dsUID,
 					},
@@ -130,7 +131,7 @@ func TestInMemory_Plugin(t *testing.T) {
 		{
 			name: "Non-existing plugin",
 			mocks: mocks{
-				store: map[string]*plugins.Plugin{},
+				store: map[pluginuid.UID]*plugins.Plugin{},
 			},
 			args: args{
 				pluginUID: dsUID,
@@ -155,7 +156,7 @@ func TestInMemory_Plugin(t *testing.T) {
 
 func TestInMemory_Plugins(t *testing.T) {
 	type mocks struct {
-		store map[string]*plugins.Plugin
+		store map[pluginuid.UID]*plugins.Plugin
 	}
 	tests := []struct {
 		name     string
@@ -165,7 +166,7 @@ func TestInMemory_Plugins(t *testing.T) {
 		{
 			name: "Can retrieve a list of plugins",
 			mocks: mocks{
-				store: map[string]*plugins.Plugin{
+				store: map[pluginuid.UID]*plugins.Plugin{
 					dsUID: {
 						UID: dsUID,
 					},
@@ -186,7 +187,7 @@ func TestInMemory_Plugins(t *testing.T) {
 		{
 			name: "No existing plugins",
 			mocks: mocks{
-				store: map[string]*plugins.Plugin{},
+				store: map[pluginuid.UID]*plugins.Plugin{},
 			},
 			expected: []*plugins.Plugin{},
 		},
@@ -210,10 +211,10 @@ func TestInMemory_Plugins(t *testing.T) {
 
 func TestInMemory_Remove(t *testing.T) {
 	type mocks struct {
-		store map[string]*plugins.Plugin
+		store map[pluginuid.UID]*plugins.Plugin
 	}
 	type args struct {
-		pluginID string
+		pluginID pluginuid.UID
 	}
 	tests := []struct {
 		name  string
@@ -224,7 +225,7 @@ func TestInMemory_Remove(t *testing.T) {
 		{
 			name: "Can remove a plugin",
 			mocks: mocks{
-				store: map[string]*plugins.Plugin{
+				store: map[pluginuid.UID]*plugins.Plugin{
 					dsUID: {
 						UID: dsUID,
 					},
@@ -236,7 +237,7 @@ func TestInMemory_Remove(t *testing.T) {
 		}, {
 			name: "Cannot remove a plugin from the registry if it doesn't exist",
 			mocks: mocks{
-				store: map[string]*plugins.Plugin{},
+				store: map[pluginuid.UID]*plugins.Plugin{},
 			},
 			args: args{
 				pluginID: dsUID,
@@ -260,8 +261,8 @@ func TestAliasSupport(t *testing.T) {
 		i := NewInMemory()
 		ctx := context.Background()
 
-		pluginUidNew := "plugin-new"
-		pluginUidOld := "plugin-old"
+		pluginUidNew := pluginuid.UID("plugin-new")
+		pluginUidOld := pluginuid.UID("plugin-old")
 
 		p, exists := i.Plugin(ctx, pluginUidNew)
 		require.False(t, exists)
@@ -269,7 +270,7 @@ func TestAliasSupport(t *testing.T) {
 
 		pluginNew := &plugins.Plugin{
 			UID:   pluginUidNew,
-			Alias: pluginUidOld, // TODO: move to JSONData
+			Alias: pluginUidOld.String(), // TODO: move to JSONData
 		}
 		err := i.Add(ctx, pluginNew)
 		require.NoError(t, err)

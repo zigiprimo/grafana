@@ -19,6 +19,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/oauth"
 	"github.com/grafana/grafana/pkg/plugins/plugindef"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/util"
 )
@@ -33,7 +34,7 @@ var (
 type Plugin struct {
 	JSONData
 
-	UID   string
+	UID   pluginuid.UID
 	FS    FS
 	Class Class
 
@@ -74,7 +75,7 @@ type PluginDTO struct {
 	logger            log.Logger
 	supportsStreaming bool
 
-	UID   string
+	UID   pluginuid.UID
 	Class Class
 
 	// App fields
@@ -112,6 +113,13 @@ func (p PluginDTO) IsApp() bool {
 
 func (p PluginDTO) IsCorePlugin() bool {
 	return p.Class == ClassCore
+}
+
+func (p PluginDTO) AppParentUID() (pluginuid.UID, bool) {
+	if p.IncludedInAppID != "" {
+		return pluginuid.UID(p.IncludedInAppID), true
+	}
+	return "", false
 }
 
 // JSONData represents the plugin's plugin.json

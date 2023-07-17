@@ -170,7 +170,7 @@ type pluginDashboardStoreMock struct {
 }
 
 func (m pluginDashboardStoreMock) ListPluginDashboardFiles(ctx context.Context, args *dashboards.ListPluginDashboardFilesArgs) (*dashboards.ListPluginDashboardFilesResult, error) {
-	if dashboardFiles, exists := m.pluginDashboardFiles[args.PluginUID]; exists {
+	if dashboardFiles, exists := m.pluginDashboardFiles[args.PluginID]; exists {
 		references := []string{}
 
 		for ref := range dashboardFiles {
@@ -184,7 +184,7 @@ func (m pluginDashboardStoreMock) ListPluginDashboardFiles(ctx context.Context, 
 		}, nil
 	}
 
-	return nil, plugins.NotFoundError{PluginUID: args.PluginUID}
+	return nil, plugins.NotFoundError{PluginID: args.PluginID}
 }
 
 func (m pluginDashboardStoreMock) GetPluginDashboardFileContents(ctx context.Context, args *dashboards.GetPluginDashboardFileContentsArgs) (*dashboards.GetPluginDashboardFileContentsResult, error) {
@@ -195,7 +195,7 @@ func (m pluginDashboardStoreMock) GetPluginDashboardFileContents(ctx context.Con
 			}, nil
 		}
 	} else if !exists {
-		return nil, plugins.NotFoundError{PluginUID: args.PluginID}
+		return nil, plugins.NotFoundError{PluginID: args.PluginID}
 	}
 
 	return nil, fmt.Errorf("plugin dashboard file not found")

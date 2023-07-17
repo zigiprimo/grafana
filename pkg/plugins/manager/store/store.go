@@ -8,6 +8,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/loader"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/sources"
+	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 )
 
 var _ plugins.Store = (*Service)(nil)
@@ -82,7 +83,7 @@ func (s *Service) SecretsManager(ctx context.Context) *plugins.Plugin {
 
 // plugin finds a plugin with `pluginID` from the registry that is not decommissioned
 func (s *Service) plugin(ctx context.Context, pluginID string) (*plugins.Plugin, bool) {
-	p, exists := s.pluginRegistry.Plugin(ctx, pluginID)
+	p, exists := s.pluginRegistry.Plugin(ctx, pluginuid.FromPluginID(pluginID))
 	if !exists {
 		return nil, false
 	}

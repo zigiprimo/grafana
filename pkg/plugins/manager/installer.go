@@ -11,8 +11,10 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/loader"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/manager/sources"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	"github.com/grafana/grafana/pkg/plugins/repo"
 	"github.com/grafana/grafana/pkg/plugins/storage"
+	pluginuid2 "github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 )
 
 var _ plugins.Installer = (*PluginInstaller)(nil)
@@ -21,6 +23,7 @@ type PluginInstaller struct {
 	pluginRepo           repo.Service
 	pluginStorage        storage.ZipExtractor
 	pluginStorageDirFunc storage.DirNameGeneratorFunc
+	pluginUIDFunc        pluginuid.FromPluginIDAndVersionFunc
 	pluginRegistry       registry.Service
 	pluginLoader         loader.Service
 	log                  log.Logger
@@ -29,16 +32,19 @@ type PluginInstaller struct {
 func ProvideInstaller(cfg *config.Cfg, pluginRegistry registry.Service, pluginLoader loader.Service,
 	pluginRepo repo.Service) *PluginInstaller {
 	return New(pluginRegistry, pluginLoader, pluginRepo,
-		storage.FileSystem(log.NewPrettyLogger("installer.fs"), cfg.PluginsPath), storage.SimpleDirNameGeneratorFunc)
+		storage.FileSystem(log.NewPrettyLogger("installer.fs"), cfg.PluginsPath),
+		pluginuid.SimpleFromPluginIDAndVersionFunc,
+		storage.SimpleDirNameGeneratorFunc)
 }
 
 func New(pluginRegistry registry.Service, pluginLoader loader.Service, pluginRepo repo.Service,
-	pluginStorage storage.ZipExtractor, pluginStorageDirFunc storage.DirNameGeneratorFunc) *PluginInstaller {
+	pluginStorage storage.ZipExtractor, pluginUIDFunc pluginuid.FromPluginIDAndVersionFunc, pluginStorageDirFunc storage.DirNameGeneratorFunc) *PluginInstaller {
 	return &PluginInstaller{
 		pluginLoader:         pluginLoader,
 		pluginRegistry:       pluginRegistry,
 		pluginRepo:           pluginRepo,
 		pluginStorage:        pluginStorage,
+		pluginUIDFunc:        pluginUIDFunc,
 		pluginStorageDirFunc: pluginStorageDirFunc,
 		log:                  log.New("plugin.installer"),
 	}
@@ -51,14 +57,14 @@ func (m *PluginInstaller) Add(ctx context.Context, pluginID, version string, opt
 	}
 
 	var pluginArchive *repo.PluginArchive
-	if plugin, exists := m.plugin(ctx, pluginID); exists {
+	if plugin, exists := m.plugin(ctx, m.pluginUIDFunc(pluginID, version)); exists {
 		if plugin.IsCorePlugin() || plugin.IsBundledPlugin() {
 			return plugins.ErrInstallCorePlugin
 		}
 
 		if plugin.Info.Version == version {
 			return plugins.DuplicateError{
-				PluginUID: plugin.UID,
+				PluginID: plugin.ID,
 			}
 		}
 
@@ -71,7 +77,7 @@ func (m *PluginInstaller) Add(ctx context.Context, pluginID, version string, opt
 		// if existing plugin version is the same as the target update version
 		if pluginArchiveInfo.Version == plugin.Info.Version {
 			return plugins.DuplicateError{
-				PluginUID: plugin.UID,
+				PluginID: plugin.ID,
 			}
 		}
 
@@ -80,7 +86,7 @@ func (m *PluginInstaller) Add(ctx context.Context, pluginID, version string, opt
 		}
 
 		// remove existing installation of plugin
-		err = m.Remove(ctx, plugin.UID)
+		err = m.Remove(ctx, plugin.ID)
 		if err != nil {
 			return err
 		}
@@ -135,8 +141,9 @@ func (m *PluginInstaller) Add(ctx context.Context, pluginID, version string, opt
 	return nil
 }
 
-func (m *PluginInstaller) Remove(ctx context.Context, pluginUID string) error {
-	plugin, exists := m.plugin(ctx, pluginUID)
+func (m *PluginInstaller) Remove(ctx context.Context, pluginID string) error {
+	pluginUID := pluginuid2.FromPluginID(pluginID)
+	plugin, exists := m.plugin(ctx, pluginuid2.FromPluginID(pluginID))
 	if !exists {
 		return plugins.ErrPluginNotInstalled
 	}
@@ -152,7 +159,7 @@ func (m *PluginInstaller) Remove(ctx context.Context, pluginUID string) error {
 }
 
 // plugin finds a plugin with `pluginID` from the store
-func (m *PluginInstaller) plugin(ctx context.Context, pluginUID string) (*plugins.Plugin, bool) {
+func (m *PluginInstaller) plugin(ctx context.Context, pluginUID pluginuid.UID) (*plugins.Plugin, bool) {
 	p, exists := m.pluginRegistry.Plugin(ctx, pluginUID)
 	if !exists {
 		return nil, false

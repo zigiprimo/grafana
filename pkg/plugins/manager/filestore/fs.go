@@ -7,6 +7,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
+	pluginuid2 "github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 )
 
 type Service struct {
@@ -21,8 +22,8 @@ func ProvideService(pluginRegistry registry.Service) *Service {
 	}
 }
 
-func (s *Service) File(ctx context.Context, pluginUID, filename string) (*plugins.File, error) {
-	if p, exists := s.pluginRegistry.Plugin(ctx, pluginUID); exists {
+func (s *Service) File(ctx context.Context, pluginID string, filename string) (*plugins.File, error) {
+	if p, exists := s.pluginRegistry.Plugin(ctx, pluginuid2.FromPluginID(pluginID)); exists {
 		f, err := p.File(filename)
 		if err != nil {
 			return nil, err

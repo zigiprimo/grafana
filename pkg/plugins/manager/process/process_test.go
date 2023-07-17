@@ -11,6 +11,8 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/backendplugin"
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/manager/fakes"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
+	pluginuid2 "github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 )
 
 func TestProcessManager_Start(t *testing.T) {
@@ -65,12 +67,12 @@ func TestProcessManager_Start(t *testing.T) {
 				})
 
 				m := NewManager(&fakes.FakePluginRegistry{
-					Store: map[string]*plugins.Plugin{
-						p.ID: p,
+					Store: map[pluginuid.UID]*plugins.Plugin{
+						p.UID: p,
 					}},
 				)
 
-				err := m.Start(context.Background(), p.ID)
+				err := m.Start(context.Background(), p.UID)
 				require.NoError(t, err)
 				require.Equal(t, tc.expectedStartCount, bp.startCount)
 
@@ -93,19 +95,21 @@ func TestProcessManager_Stop(t *testing.T) {
 
 	t.Run("Can stop a running plugin", func(t *testing.T) {
 		pluginID := "test-datasource"
+		pluginUID := pluginuid2.FromPluginID(pluginID)
 
 		bp := newFakeBackendPlugin(true)
 		p := createPlugin(t, bp, func(plugin *plugins.Plugin) {
+			plugin.UID = pluginUID
 			plugin.ID = pluginID
 			plugin.Backend = true
 		})
 
 		m := NewManager(&fakes.FakePluginRegistry{
-			Store: map[string]*plugins.Plugin{
-				pluginID: p,
+			Store: map[pluginuid.UID]*plugins.Plugin{
+				pluginUID: p,
 			}},
 		)
-		err := m.Stop(context.Background(), pluginID)
+		err := m.Stop(context.Background(), pluginUID)
 		require.NoError(t, err)
 
 		require.True(t, p.IsDecommissioned())
@@ -122,12 +126,12 @@ func TestProcessManager_ManagedBackendPluginLifecycle(t *testing.T) {
 	})
 
 	m := NewManager(&fakes.FakePluginRegistry{
-		Store: map[string]*plugins.Plugin{
-			p.ID: p,
+		Store: map[pluginuid.UID]*plugins.Plugin{
+			p.UID: p,
 		}},
 	)
 
-	err := m.Start(context.Background(), p.ID)
+	err := m.Start(context.Background(), p.UID)
 	require.NoError(t, err)
 	require.Equal(t, 1, bp.startCount)
 

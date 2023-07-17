@@ -1061,8 +1061,8 @@ func TestLoader_Load_SkipUninitializedPlugins(t *testing.T) {
 		procPrvdr := fakes.NewFakeBackendProcessProvider()
 		// Cause an initialization error
 		procPrvdr.BackendFactoryFunc = func(ctx context.Context, p *plugins.Plugin) backendplugin.PluginFactoryFunc {
-			return func(pluginID string, _ log.Logger, _ []string) (backendplugin.Plugin, error) {
-				if pluginID == "test-datasource" {
+			return func(_ log.Logger, _ []string) (backendplugin.Plugin, error) {
+				if p.ID == "test-datasource" {
 					return nil, errors.New("failed to initialize")
 				}
 				return &fakes.FakePluginClient{}, nil
@@ -1528,8 +1528,8 @@ func verifyState(t *testing.T, ps []*plugins.Plugin, reg *fakes.FakePluginRegist
 	t.Helper()
 
 	for _, p := range ps {
-		if !cmp.Equal(p, reg.Store[p.ID], compareOpts...) {
-			t.Fatalf("Result mismatch (-want +got):\n%s", cmp.Diff(p, reg.Store[p.ID], compareOpts...))
+		if !cmp.Equal(p, reg.Store[p.UID], compareOpts...) {
+			t.Fatalf("Result mismatch (-want +got):\n%s", cmp.Diff(p, reg.Store[p.UID], compareOpts...))
 		}
 
 		if p.Backend {
@@ -1540,8 +1540,8 @@ func verifyState(t *testing.T, ps []*plugins.Plugin, reg *fakes.FakePluginRegist
 			require.Zero(t, procPrvdr.Invoked[p.ID])
 		}
 
-		require.Equal(t, 1, procMngr.Started[p.ID])
-		require.Zero(t, procMngr.Stopped[p.ID])
+		require.Equal(t, 1, procMngr.Started[p.UID])
+		require.Zero(t, procMngr.Stopped[p.UID])
 	}
 }
 

@@ -12,8 +12,10 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/manager/fakes"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	"github.com/grafana/grafana/pkg/plugins/repo"
 	"github.com/grafana/grafana/pkg/plugins/storage"
+	pluginuid2 "github.com/grafana/grafana/pkg/services/pluginsintegration/pluginuid"
 )
 
 const testPluginID = "test-plugin"
@@ -62,20 +64,20 @@ func TestPluginManager_Add_Remove(t *testing.T) {
 			},
 		}
 
-		inst := New(fakes.NewFakePluginRegistry(), loader, pluginRepo, fs, storage.SimpleDirNameGeneratorFunc)
+		inst := New(fakes.NewFakePluginRegistry(), loader, pluginRepo, fs, pluginuid.SimpleFromPluginIDAndVersionFunc, storage.SimpleDirNameGeneratorFunc)
 		err := inst.Add(context.Background(), pluginID, v1, testCompatOpts())
 		require.NoError(t, err)
 
 		t.Run("Won't add if already exists", func(t *testing.T) {
 			inst.pluginRegistry = &fakes.FakePluginRegistry{
-				Store: map[string]*plugins.Plugin{
+				Store: map[pluginuid.UID]*plugins.Plugin{
 					pluginID: pluginV1,
 				},
 			}
 
 			err = inst.Add(context.Background(), pluginID, v1, testCompatOpts())
 			require.Equal(t, plugins.DuplicateError{
-				PluginUID: pluginV1.ID,
+				PluginID: pluginV1.ID,
 			}, err)
 		})
 
@@ -122,15 +124,15 @@ func TestPluginManager_Add_Remove(t *testing.T) {
 
 		t.Run("Removing an existing plugin", func(t *testing.T) {
 			inst.pluginRegistry = &fakes.FakePluginRegistry{
-				Store: map[string]*plugins.Plugin{
+				Store: map[pluginuid.UID]*plugins.Plugin{
 					pluginID: pluginV1,
 				},
 			}
 
-			var unloadedPlugins []string
+			var unloadedPlugins []pluginuid.UID
 			inst.pluginLoader = &fakes.FakeLoader{
-				UnloadFunc: func(_ context.Context, id string) error {
-					unloadedPlugins = append(unloadedPlugins, id)
+				UnloadFunc: func(_ context.Context, uid pluginuid.UID) error {
+					unloadedPlugins = append(unloadedPlugins, uid)
 					return nil
 				},
 			}
@@ -138,7 +140,7 @@ func TestPluginManager_Add_Remove(t *testing.T) {
 			err = inst.Remove(context.Background(), pluginID)
 			require.NoError(t, err)
 
-			require.Equal(t, []string{pluginID}, unloadedPlugins)
+			require.Equal(t, []pluginuid.UID{pluginID}, unloadedPlugins)
 
 			t.Run("Won't remove if not exists", func(t *testing.T) {
 				inst.pluginRegistry = fakes.NewFakePluginRegistry()
@@ -163,12 +165,12 @@ func TestPluginManager_Add_Remove(t *testing.T) {
 			})
 
 			reg := &fakes.FakePluginRegistry{
-				Store: map[string]*plugins.Plugin{
+				Store: map[pluginuid.UID]*plugins.Plugin{
 					testPluginID: p,
 				},
 			}
 
-			pm := New(reg, &fakes.FakeLoader{}, &fakes.FakePluginRepo{}, &fakes.FakePluginStorage{}, storage.SimpleDirNameGeneratorFunc)
+			pm := New(reg, &fakes.FakeLoader{}, &fakes.FakePluginRepo{}, &fakes.FakePluginStorage{}, pluginuid.SimpleFromPluginIDAndVersionFunc, storage.SimpleDirNameGeneratorFunc)
 			err := pm.Add(context.Background(), p.ID, "3.2.0", testCompatOpts())
 			require.ErrorIs(t, err, plugins.ErrInstallCorePlugin)
 
@@ -187,7 +189,7 @@ func createPlugin(t *testing.T, pluginID string, class plugins.Class, managed, b
 	t.Helper()
 
 	p := &plugins.Plugin{
-		UID:   pluginID,
+		UID:   pluginuid2.FromPluginID(pluginID),
 		Class: class,
 		JSONData: plugins.JSONData{
 			ID:      pluginID,

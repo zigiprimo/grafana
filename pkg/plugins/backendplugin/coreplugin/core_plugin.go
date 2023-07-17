@@ -11,8 +11,7 @@ import (
 
 // corePlugin represents a plugin that's part of Grafana core.
 type corePlugin struct {
-	pluginID string
-	logger   log.Logger
+	logger log.Logger
 	backend.CheckHealthHandler
 	backend.CallResourceHandler
 	backend.QueryDataHandler
@@ -21,9 +20,8 @@ type corePlugin struct {
 
 // New returns a new backendplugin.PluginFactoryFunc for creating a core (built-in) backendplugin.Plugin.
 func New(opts backend.ServeOpts) backendplugin.PluginFactoryFunc {
-	return func(pluginID string, logger log.Logger, env []string) (backendplugin.Plugin, error) {
+	return func(logger log.Logger, env []string) (backendplugin.Plugin, error) {
 		return &corePlugin{
-			pluginID:            pluginID,
 			logger:              logger,
 			CheckHealthHandler:  opts.CheckHealthHandler,
 			CallResourceHandler: opts.CallResourceHandler,
@@ -31,10 +29,6 @@ func New(opts backend.ServeOpts) backendplugin.PluginFactoryFunc {
 			StreamHandler:       opts.StreamHandler,
 		}, nil
 	}
-}
-
-func (cp *corePlugin) PluginID() string {
-	return cp.pluginID
 }
 
 func (cp *corePlugin) Logger() log.Logger {

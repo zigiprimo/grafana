@@ -33,7 +33,7 @@ type grpcPlugin struct {
 
 // newPlugin allocates and returns a new gRPC (external) backendplugin.Plugin.
 func newPlugin(descriptor PluginDescriptor) backendplugin.PluginFactoryFunc {
-	return func(pluginID string, logger log.Logger, env []string) (backendplugin.Plugin, error) {
+	return func(logger log.Logger, env []string) (backendplugin.Plugin, error) {
 		return &grpcPlugin{
 			descriptor: descriptor,
 			logger:     logger,

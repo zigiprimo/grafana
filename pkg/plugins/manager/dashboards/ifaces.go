@@ -14,7 +14,7 @@ type FileStore interface {
 
 // ListPluginDashboardFilesArgs list plugin dashboard files argument model.
 type ListPluginDashboardFilesArgs struct {
-	PluginUID string
+	PluginID string
 }
 
 // ListPluginDashboardFilesResult list plugin dashboard files result model.

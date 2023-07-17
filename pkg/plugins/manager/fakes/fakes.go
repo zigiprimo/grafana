@@ -14,6 +14,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/log"
 	"github.com/grafana/grafana/pkg/plugins/oauth"
 	"github.com/grafana/grafana/pkg/plugins/plugindef"
+	"github.com/grafana/grafana/pkg/plugins/pluginuid"
 	"github.com/grafana/grafana/pkg/plugins/repo"
 	"github.com/grafana/grafana/pkg/plugins/storage"
 )
@@ -40,7 +41,7 @@ func (i *FakePluginInstaller) Remove(ctx context.Context, pluginID string) error
 
 type FakeLoader struct {
 	LoadFunc   func(_ context.Context, _ plugins.PluginSource) ([]*plugins.Plugin, error)
-	UnloadFunc func(_ context.Context, _ string) error
+	UnloadFunc func(_ context.Context, _ pluginuid.UID) error
 }
 
 func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
@@ -50,9 +51,9 @@ func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSource) ([]*plu
 	return nil, nil
 }
 
-func (l *FakeLoader) Unload(ctx context.Context, pluginID string) error {
+func (l *FakeLoader) Unload(ctx context.Context, pluginUID pluginuid.UID) error {
 	if l.UnloadFunc != nil {
-		return l.UnloadFunc(ctx, pluginID)
+		return l.UnloadFunc(ctx, pluginUID)
 	}
 	return nil
 }
@@ -167,16 +168,16 @@ func (pc *FakePluginClient) RunStream(_ context.Context, _ *backend.RunStreamReq
 }
 
 type FakePluginRegistry struct {
-	Store map[string]*plugins.Plugin
+	Store map[pluginuid.UID]*plugins.Plugin
 }
 
 func NewFakePluginRegistry() *FakePluginRegistry {
 	return &FakePluginRegistry{
-		Store: make(map[string]*plugins.Plugin),
+		Store: make(map[pluginuid.UID]*plugins.Plugin),
 	}
 }
 
-func (f *FakePluginRegistry) Plugin(_ context.Context, uid string) (*plugins.Plugin, bool) {
+func (f *FakePluginRegistry) Plugin(_ context.Context, uid pluginuid.UID) (*plugins.Plugin, bool) {
 	p, exists := f.Store[uid]
 	return p, exists
 }
@@ -195,7 +196,7 @@ func (f *FakePluginRegistry) Add(_ context.Context, p *plugins.Plugin) error {
 	return nil
 }
 
-func (f *FakePluginRegistry) Remove(_ context.Context, uid string) error {
+func (f *FakePluginRegistry) Remove(_ context.Context, uid pluginuid.UID) error {
 	delete(f.Store, uid)
 	return nil
 }
@@ -248,31 +249,31 @@ func (s *FakePluginStorage) Extract(ctx context.Context, pluginID string, dirNam
 }
 
 type FakeProcessManager struct {
-	StartFunc func(_ context.Context, pluginID string) error
-	StopFunc  func(_ context.Context, pluginID string) error
-	Started   map[string]int
-	Stopped   map[string]int
+	StartFunc func(_ context.Context, pluginID pluginuid.UID) error
+	StopFunc  func(_ context.Context, pluginID pluginuid.UID) error
+	Started   map[pluginuid.UID]int
+	Stopped   map[pluginuid.UID]int
 }
 
 func NewFakeProcessManager() *FakeProcessManager {
 	return &FakeProcessManager{
-		Started: make(map[string]int),
-		Stopped: make(map[string]int),
+		Started: make(map[pluginuid.UID]int),
+		Stopped: make(map[pluginuid.UID]int),
 	}
 }
 
-func (m *FakeProcessManager) Start(ctx context.Context, pluginID string) error {
-	m.Started[pluginID]++
+func (m *FakeProcessManager) Start(ctx context.Context, pluginUID pluginuid.UID) error {
+	m.Started[pluginUID]++
 	if m.StartFunc != nil {
-		return m.StartFunc(ctx, pluginID)
+		return m.StartFunc(ctx, pluginUID)
 	}
 	return nil
 }
 
-func (m *FakeProcessManager) Stop(ctx context.Context, pluginID string) error {
-	m.Stopped[pluginID]++
+func (m *FakeProcessManager) Stop(ctx context.Context, pluginUID pluginuid.UID) error {
+	m.Stopped[pluginUID]++
 	if m.StopFunc != nil {
-		return m.StopFunc(ctx, pluginID)
+		return m.StopFunc(ctx, pluginUID)
 	}
 	return nil
 }
@@ -289,9 +290,9 @@ func NewFakeBackendProcessProvider() *FakeBackendProcessProvider {
 		Invoked:   make(map[string]int),
 	}
 	f.BackendFactoryFunc = func(ctx context.Context, p *plugins.Plugin) backendplugin.PluginFactoryFunc {
-		f.Requested[p.UID]++
-		return func(pluginID string, _ log.Logger, _ []string) (backendplugin.Plugin, error) {
-			f.Invoked[pluginID]++
+		f.Requested[p.UID.String()]++
+		return func(_ log.Logger, _ []string) (backendplugin.Plugin, error) {
+			f.Invoked[p.UID.String()]++
 			return &FakePluginClient{}, nil
 		}
 	}
