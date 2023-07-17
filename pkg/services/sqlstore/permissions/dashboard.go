@@ -108,14 +108,31 @@ func (f *DashboardFilter) buildClauses(folderAction, dashboardAction string) {
 
 	query := strings.Builder{}
 
-	if !useSelfContained {
-		// build join clause
-		query.WriteString("permission p ON (dashboard.uid = p.identifier OR folder.uid = p.identifier)")
+	if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+		query.WriteString(" folder f0 ON f0.org_id = folder.org_id AND f0.uid = folder.uid OR f0.uid = dashboard.uid ")
+		for i := 1; i < folder.MaxNestedFolderDepth; i++ {
+			query.WriteString(fmt.Sprintf("LEFT JOIN folder f%d ON f%d.org_id = f%d.org_id AND f%d.uid = f%d.parent_uid ", i, i, i-1, i, i-1))
+		}
 		f.join = clause{string: query.String()}
-
-		// recycle and reuse
-		query.Reset()
 	}
+
+	if !useSelfContained {
+		joinPermissionOn := strings.Builder{}
+		if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+			joinPermissionOn.WriteString(" OR f0.uid = p.identifier")
+			for i := 1; i < folder.MaxNestedFolderDepth; i++ {
+				joinPermissionOn.WriteString(fmt.Sprintf(" OR f%d.uid = p.identifier", i))
+			}
+			query.WriteString("LEFT JOIN ")
+			f.join = clause{string: query.String()}
+		}
+		// build join clause
+		query.WriteString(fmt.Sprintf("permission p ON (dashboard.uid = p.identifier OR folder.uid = p.identifier%s)", joinPermissionOn.String()))
+		f.join = clause{string: query.String()}
+	}
+
+	// recycle and reuse
+	query.Reset()
 
 	params := []interface{}{}
 	query.WriteByte('(')
@@ -161,8 +178,21 @@ func (f *DashboardFilter) buildClauses(folderAction, dashboardAction string) {
 
 				// Only add the IN clause if we have any folders to check
 				if len(args) > 0 {
+					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+						query.WriteRune('(')
+					}
 					query.WriteString("(folder.uid IN (?" + strings.Repeat(", ?", len(args)-1))
-					query.WriteString(") AND NOT dashboard.is_folder)")
+					query.WriteRune(')')
+					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+						for i := 0; i < folder.MaxNestedFolderDepth; i++ {
+							query.WriteString(fmt.Sprintf(" OR f%d.uid IN (?"+strings.Repeat(", ?", len(args)-1)+")", i))
+							params = append(params, args...)
+						}
+					}
+					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+						query.WriteRune(')')
+					}
+					query.WriteString(" AND NOT dashboard.is_folder)")
 					params = append(params, args...)
 				} else {
 					query.WriteString("(1 = 0 AND NOT dashboard.is_folder)")
@@ -194,8 +224,21 @@ func (f *DashboardFilter) buildClauses(folderAction, dashboardAction string) {
 				args := getAllowedUIDs([]string{folderAction}, f.usr, dashboards.ScopeFoldersPrefix)
 
 				if len(args) > 0 {
+					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+						query.WriteRune('(')
+					}
 					query.WriteString("(dashboard.uid IN(?" + strings.Repeat(", ?", len(args)-1))
-					query.WriteString(") AND dashboard.is_folder)")
+					query.WriteRune(')')
+					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+						for i := 0; i < folder.MaxNestedFolderDepth; i++ {
+							query.WriteString(fmt.Sprintf(" OR f%d.uid IN (?"+strings.Repeat(", ?", len(args)-1)+")", i))
+							params = append(params, args...)
+						}
+					}
+					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+						query.WriteRune(')')
+					}
+					query.WriteString(" AND dashboard.is_folder)")
 					params = append(params, args...)
 				} else {
 					query.WriteString("(1 = 0 AND dashboard.is_folder)")

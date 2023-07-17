@@ -972,7 +972,7 @@ func (d *dashboardStore) FindDashboards(ctx context.Context, query *dashboards.F
 	}
 
 	if !ac.IsDisabled(d.cfg) {
-		if d.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+		if !d.features.IsEnabled(featuremgmt.FlagNewPermissionFilter) {
 			recursiveQueriesAreSupported, err := d.store.RecursiveQueriesAreSupported()
 			if err != nil {
 				return nil, err

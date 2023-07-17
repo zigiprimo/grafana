@@ -60,7 +60,7 @@ func (sb *SQLBuilder) AddParams(params ...interface{}) {
 }
 
 func (sb *SQLBuilder) WriteDashboardPermissionFilter(user *user.SignedInUser, permission dashboards.PermissionType, queryType string) {
-	if sb.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+	if !sb.features.IsEnabled(featuremgmt.FlagNewPermissionFilter) {
 		var (
 			sql          string
 			params       []interface{}
