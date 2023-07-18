@@ -15,7 +15,7 @@ import {
   DataTopic,
   dateMath,
   LoadingState,
-  PanelData,
+  PanelData, ScopedVars,
   TimeRange,
 } from '@grafana/data';
 import { toDataQueryError } from '@grafana/runtime';
@@ -181,7 +181,7 @@ export function runRequest(
 export function callQueryMethod(
   datasource: DataSourceApi,
   request: DataQueryRequest,
-  queryFunction?: typeof datasource.query
+  queryFunction?: typeof datasource.query,
 ) {
   // If the datasource has defined a default query, make sure it's applied
   request.targets = request.targets.map((t) =>
@@ -192,6 +192,10 @@ export function callQueryMethod(
         }
       : t
   );
+
+  if (datasource.interpolateVariablesInQueries && request.scopedVars) {
+    request.targets = datasource.interpolateVariablesInQueries(request.targets, request.scopedVars)
+  }
 
   // If its a public datasource, just return the result. Expressions will be handled on the backend.
   if (datasource.type === 'public-ds') {

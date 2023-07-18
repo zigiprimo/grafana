@@ -6,7 +6,7 @@ import { mergeMap, throttleTime } from 'rxjs/operators';
 
 import {
   AbsoluteTimeRange,
-  DataFrame,
+  DataFrame, DataLinkTransformationConfig,
   DataQueryErrorType,
   DataQueryResponse,
   DataSourceApi,
@@ -35,7 +35,7 @@ import {
 } from 'app/core/utils/explore';
 import { getShiftedTimeRange } from 'app/core/utils/timePicker';
 import { CorrelationData } from 'app/features/correlations/useCorrelations';
-import { getCorrelationsBySourceUIDs } from 'app/features/correlations/utils';
+import {createCorrelation, getCorrelationsBySourceUIDs} from 'app/features/correlations/utils';
 import { getTimeZone } from 'app/features/profile/state/selectors';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 import { store } from 'app/store/store';
@@ -52,6 +52,7 @@ import { ExploreState, QueryOptions, SupplementaryQueries } from 'app/types/expl
 
 import { notifyApp } from '../../../core/actions';
 import { createErrorNotification } from '../../../core/copy/appNotification';
+import {Correlation, CorrelationConfig} from "../../correlations/types";
 import { runRequest } from '../../query/state/runRequest';
 import { decorateData } from '../utils/decorators';
 import {
@@ -62,6 +63,7 @@ import {
 
 import { saveCorrelationsAction } from './explorePane';
 import { addHistoryItem, historyUpdatedAction, loadRichHistory } from './history';
+import {splitClose} from "./main";
 import { updateTime } from './time';
 import { createCacheKey, filterLogRowsByIndex, getDatasourceUIDs, getResultsFromCache } from './utils';
 
@@ -316,6 +318,14 @@ const getImportableQueries = async (
   return addDatasourceToQueries(targetDataSource, queriesOut);
 };
 
+export function reloadCorrelations(exploreId: string): ThunkResult<void> {
+  return async(dispatch, getState) => {
+    const pane = getState().explore!.panes[exploreId]!;
+    const correlations = await getCorrelationsBySourceUIDs([pane.datasourceInstance.uid]);
+    dispatch(saveCorrelationsAction({ exploreId, correlations: correlations.correlations || [] }));
+  }
+}
+
 export const changeQueries = createAsyncThunk<void, ChangeQueriesPayload>(
   'explore/changeQueries',
   async ({ queries, exploreId }, { getState, dispatch }) => {
@@ -514,6 +524,7 @@ export const runQueries = createAsyncThunk<void, RunQueriesOptions>(
       absoluteRange,
       cache,
       supplementaryQueries,
+      panelsState,
     } = exploreItemState;
     let newQuerySource: Observable<ExplorePanelData>;
     let newQuerySubscription: SubscriptionLike;
@@ -566,7 +577,13 @@ export const runQueries = createAsyncThunk<void, RunQueriesOptions>(
       };
 
       const timeZone = getTimeZone(getState().user);
-      const transaction = buildQueryTransaction(exploreId, queries, queryOptions, range, scanning, timeZone);
+
+      let scopedVars = {};
+      if (panelsState?.mode === 'CorrelationsEditor') {
+        scopedVars = {...panelsState.vars}
+      }
+
+      const transaction = buildQueryTransaction(exploreId, queries, queryOptions, range, scanning, timeZone, scopedVars);
 
       dispatch(changeLoadingStateAction({ exploreId, loadingState: LoadingState.Loading }));
 
@@ -793,6 +810,32 @@ export function setQueries(exploreId: string, rawQueries: DataQuery[]): ThunkRes
     dispatch(setQueriesAction({ exploreId, queries: nextQueries }));
     dispatch(runQueries({ exploreId }));
   };
+}
+
+export function saveCurrentCorrelation(): ThunkResult<void> {
+  return async (dispatch, getState) => {
+
+    const keys = Object.keys(getState().explore!.panes);
+    const sourcePane = getState().explore!.panes[keys[0]]!;
+    const targetPane = getState().explore!.panes[keys[1]]!;
+
+    const correlation: Correlation = {
+      sourceUID: sourcePane.datasourceInstance.uid,
+      targetUID: targetPane.datasourceInstance.uid,
+      label: `${sourcePane.datasourceInstance.name} to ${targetPane.datasourceInstance.name}`,
+      config: {
+        field: targetPane.panelsState.resultsField,
+        target: targetPane.queries[0],
+        type: 'query',
+      }
+    }
+
+    global.correlationsEditor = false;
+    await createCorrelation(sourcePane.datasourceInstance.uid, correlation);
+    await dispatch(splitClose(keys[1]));
+    await dispatch(reloadCorrelations(keys[0]));
+    dispatch(runQueries({ exploreId: keys[0] }));
+  }
 }
 
 /**

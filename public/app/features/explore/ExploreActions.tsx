@@ -66,6 +66,14 @@ export const ExploreActions = () => {
       }
     } else {
       actionsArr.push({
+        id: 'correlations-editor',
+        name: 'Correlations editor',
+        perform: () => {
+          global.correlationsEditor = true
+          dispatch(runQueries({ exploreId: keys[0] }));
+        }
+      }),
+      actionsArr.push({
         id: 'explore/run-query',
         name: 'Run query',
         keywords: 'query',

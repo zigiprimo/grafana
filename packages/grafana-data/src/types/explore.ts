@@ -16,6 +16,11 @@ export interface ExploreUrlState<T extends DataQuery = AnyQuery> {
 export interface ExplorePanelsState extends Partial<Record<PreferredVisualisationType, {}>> {
   trace?: ExploreTracePanelState;
   logs?: ExploreLogsPanelState;
+  correlations?: ExploreCorrelationsPanelState;
+}
+
+export interface ExploreCorrelationsPanelState {
+  vars: Record<string, string>;
 }
 
 export interface ExploreTracePanelState {

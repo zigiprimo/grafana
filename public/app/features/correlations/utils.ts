@@ -5,6 +5,7 @@ import { getBackendSrv } from '@grafana/runtime';
 
 import { formatValueName } from '../explore/PrometheusListView/ItemLabels';
 
+import {Correlation, CreateCorrelationResponse} from "./types";
 import {
   CorrelationData,
   CorrelationsData,
@@ -81,4 +82,9 @@ export const getCorrelationsBySourceUIDs = async (sourceUIDs: string[]): Promise
   )
     .then(getData)
     .then(toEnrichedCorrelationsData);
+};
+
+
+export const createCorrelation = async (sourceUID: string, correlation: Correlation): Promise<CreateCorrelationResponse> => {
+  return getBackendSrv().post<CreateCorrelationResponse>(`/api/datasources/uid/${sourceUID}/correlations`, correlation)
 };

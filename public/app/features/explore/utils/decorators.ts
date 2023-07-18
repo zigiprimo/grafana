@@ -9,7 +9,7 @@ import {
   getDisplayProcessor,
   PanelData,
   standardTransformers,
-  preProcessPanelData,
+  preProcessPanelData, DataLinkConfigOrigin,
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
@@ -100,6 +100,35 @@ export const decorateWithCorrelations = ({
   correlations: CorrelationData[] | undefined;
 }) => {
   return (data: PanelData): PanelData => {
+
+    if (global.correlationsEditor) {
+      for (const frame of data.series) {
+        for (const field of frame.fields) {
+          field.config.links = field.config.links?.filter((link) => link.origin !== DataLinkConfigOrigin.ExploreCorrelationsEditor) || [];
+
+          const availableVars: Record<string, string> = {}
+          frame.fields.map((field) => {
+            availableVars[`${field.name}`] = { value: "${__data.fields.['" +  `${field.name}` + `']}` };
+          });
+          field.config.links.push({
+            url: "",
+            origin: DataLinkConfigOrigin.ExploreCorrelationsEditor,
+            title: `Correlate with ${field.name}`,
+            internal: {
+              datasourceUid: 'default',
+              datasourceName: 'default',
+              query: {},
+              panelsState: {
+                mode: 'CorrelationsEditor',
+                resultsField: field.name,
+                vars: availableVars,
+              }
+            }
+          })
+        }
+      }
+    }
+
     if (queries?.length && correlations?.length) {
       const queryRefIdToDataSourceUid = mapValues(groupBy(queries, 'refId'), '0.datasource.uid');
       attachCorrelationsToDataFrames(data.series, correlations, queryRefIdToDataSourceUid);

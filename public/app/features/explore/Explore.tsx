@@ -14,7 +14,7 @@ import {
   RawTimeRange,
   EventBus,
   SplitOpenOptions,
-  SupplementaryQueryType,
+  SupplementaryQueryType, ExploreCorrelationsPanelState,
 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { config, getDataSourceSrv, reportInteraction } from '@grafana/runtime';
@@ -25,7 +25,7 @@ import {
   Themeable2,
   withTheme2,
   PanelContainer,
-  AdHocFilterItem,
+  AdHocFilterItem, InfoBox, Button,
 } from '@grafana/ui';
 import { FILTER_FOR_OPERATOR, FILTER_OUT_OPERATOR } from '@grafana/ui/src/components/Table/types';
 import appEvents from 'app/core/app_events';
@@ -59,6 +59,7 @@ import { splitOpen } from './state/main';
 import {
   addQueryRow,
   modifyQueries,
+  saveCurrentCorrelation,
   scanStart,
   scanStopAction,
   selectIsWaitingForData,
@@ -450,6 +451,8 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
       showFlameGraph,
       timeZone,
       showLogsSample,
+      panelsState,
+      saveCurrentCorrelation,
     } = this.props;
     const { openDrawer } = this.state;
     const styles = getStyles(theme);
@@ -470,6 +473,23 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
         queryResponse.customFrames,
       ].every((e) => e.length === 0);
 
+    let correlationsBox = undefined;
+    if (panelsState && panelsState.mode === 'CorrelationsEditor') {
+      const correlationsEditorState: ExploreCorrelationsPanelState = panelsState as ExploreCorrelationsPanelState;
+      const vars = Object.entries(correlationsEditorState.vars);
+      correlationsBox = <InfoBox>
+        You can use following variables to set up your correlations:
+        <pre>
+        {
+          vars.map((entry, index) => {
+            return `\$\{${entry[0]}\} = ${entry[1].value}\n`
+          })
+        }
+        </pre>
+        Once you're happy with your setup click <Button onClick={saveCurrentCorrelation}>Save</Button>
+      </InfoBox>
+    }
+
     return (
       <CustomScrollbar
         testId={selectors.pages.Explore.General.scrollView}
@@ -480,6 +500,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
         {datasourceInstance ? (
           <div className={styles.exploreContainer}>
             <PanelContainer className={styles.queryContainer}>
+              { correlationsBox }
               <QueryRows exploreId={exploreId} />
               <SecondaryActions
                 addQueryRowButtonDisabled={isLive}
@@ -578,6 +599,7 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     showFlameGraph,
     showRawPrometheus,
     supplementaryQueries,
+    panelsState,
   } = item;
 
   const loading = selectIsWaitingForData(exploreId)(state);
@@ -608,6 +630,7 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     loading,
     logsSample,
     showLogsSample,
+    panelsState
   };
 }
 
@@ -622,6 +645,7 @@ const mapDispatchToProps = {
   addQueryRow,
   splitOpen,
   setSupplementaryQueryEnabled,
+  saveCurrentCorrelation,
 };
 
 const connector = connect(mapStateToProps, mapDispatchToProps);
