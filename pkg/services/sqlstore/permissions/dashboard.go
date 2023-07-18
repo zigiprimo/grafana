@@ -71,11 +71,13 @@ func NewDashboardFilter(
 }
 
 type DashboardFilter struct {
-	usr   *user.SignedInUser
-	join  clause
-	where clause
+	usr     *user.SignedInUser
+	join    clause
+	where   clause
+	groupBy clause
 
 	reqQrySupported bool
+	recQuery        clause
 	features        featuremgmt.FeatureToggles
 
 	needToCheckFolderAction    bool
@@ -88,6 +90,14 @@ func (f *DashboardFilter) LeftJoin() string {
 
 func (f *DashboardFilter) Where() (string, []interface{}) {
 	return f.where.string, f.where.params
+}
+
+func (f *DashboardFilter) With() (string, []interface{}) {
+	return f.recQuery.string, f.recQuery.params
+}
+
+func (f *DashboardFilter) GroupBy() (string, []interface{}) {
+	return f.groupBy.string, f.groupBy.params
 }
 
 func (f *DashboardFilter) buildClauses(folderAction, dashboardAction string) {
@@ -109,19 +119,48 @@ func (f *DashboardFilter) buildClauses(folderAction, dashboardAction string) {
 	query := strings.Builder{}
 
 	if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
-		query.WriteString(" folder f0 ON f0.org_id = folder.org_id AND f0.uid = folder.uid OR f0.uid = dashboard.uid ")
-		for i := 1; i < folder.MaxNestedFolderDepth; i++ {
-			query.WriteString(fmt.Sprintf("LEFT JOIN folder f%d ON f%d.org_id = f%d.org_id AND f%d.uid = f%d.parent_uid ", i, i, i-1, i, i-1))
+		if !f.reqQrySupported {
+			query.WriteString(" folder f0 ON f0.org_id = folder.org_id AND f0.uid = folder.uid OR f0.uid = dashboard.uid ")
+			for i := 1; i < folder.MaxNestedFolderDepth; i++ {
+				query.WriteString(fmt.Sprintf("LEFT JOIN folder f%d ON f%d.org_id = f%d.org_id AND f%d.uid = f%d.parent_uid ", i, i, i-1, i, i-1))
+			}
+			f.join = clause{string: query.String()}
+		} else {
+			f.recQuery = clause{
+				string: `WITH RECURSIVE RecQry(uid, parent_uid, org_id, depth, ancestors) AS (
+					SELECT UID,
+					       parent_uid,
+					       org_id,
+					       1,
+					       UID AS ancestors
+					FROM folder WHERE org_id = ? 
+					UNION ALL SELECT f.uid,
+							 f.parent_uid,
+							 f.org_id,
+							 r.depth + 1,
+							 r.ancestors || ' ' || f.uid
+					FROM folder f
+					INNER JOIN RecQry r ON f.parent_uid = r.uid
+					  AND f.org_id = r.org_id
+				      )`,
+				params: []interface{}{f.usr.OrgID},
+			}
+			query.WriteString(" RecQry ON RecQry.uid = folder.uid OR RecQry.uid = dashboard.uid ")
+			f.join = clause{string: query.String()}
+			f.groupBy = clause{string: "dashboard.uid, dashboard.parent_uid, dashboard.org_id HAVING RecQry.depth = max(RecQry.depth);"}
 		}
-		f.join = clause{string: query.String()}
 	}
 
 	if !useSelfContained {
 		joinPermissionOn := strings.Builder{}
 		if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
-			joinPermissionOn.WriteString(" OR f0.uid = p.identifier")
-			for i := 1; i < folder.MaxNestedFolderDepth; i++ {
-				joinPermissionOn.WriteString(fmt.Sprintf(" OR f%d.uid = p.identifier", i))
+			if !f.reqQrySupported {
+				joinPermissionOn.WriteString(" OR f0.uid = p.identifier")
+				for i := 1; i < folder.MaxNestedFolderDepth; i++ {
+					joinPermissionOn.WriteString(fmt.Sprintf(" OR f%d.uid = p.identifier", i))
+				}
+			} else {
+				joinPermissionOn.WriteString(" OR RecQry.ancestors LIKE '%' || p.identifier || '%'")
 			}
 			query.WriteString("LEFT JOIN ")
 			f.join = clause{string: query.String()}
@@ -178,18 +217,33 @@ func (f *DashboardFilter) buildClauses(folderAction, dashboardAction string) {
 
 				// Only add the IN clause if we have any folders to check
 				if len(args) > 0 {
-					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+					switch {
+					case f.features.IsEnabled(featuremgmt.FlagNestedFolders) && f.reqQrySupported:
 						query.WriteRune('(')
-					}
-					query.WriteString("(folder.uid IN (?" + strings.Repeat(", ?", len(args)-1))
-					query.WriteRune(')')
-					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
-						for i := 0; i < folder.MaxNestedFolderDepth; i++ {
-							query.WriteString(fmt.Sprintf(" OR f%d.uid IN (?"+strings.Repeat(", ?", len(args)-1)+")", i))
-							params = append(params, args...)
+						for i, arg := range args {
+							if i > 0 {
+								query.WriteString(" OR ")
+							}
+							query.WriteString("RecQry.ancestors LIKE '%' || ? || '%'")
+							params = append(params, arg)
 						}
-					}
-					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+					case f.features.IsEnabled(featuremgmt.FlagNestedFolders):
+						query.WriteRune('(')
+						for i := 0; i < folder.MaxNestedFolderDepth; i++ {
+							if i > 0 {
+								query.WriteString(" OR ")
+							}
+							for j, arg := range args {
+								if j > 0 {
+									query.WriteString(" OR ")
+								}
+								query.WriteString("f%d.uid LIKE '%' || ? || '%'")
+								params = append(params, arg)
+							}
+						}
+						query.WriteRune(')')
+					default:
+						query.WriteString("(folder.uid IN (?" + strings.Repeat(", ?", len(args)-1))
 						query.WriteRune(')')
 					}
 					query.WriteString(" AND NOT dashboard.is_folder)")
@@ -224,20 +278,28 @@ func (f *DashboardFilter) buildClauses(folderAction, dashboardAction string) {
 				args := getAllowedUIDs([]string{folderAction}, f.usr, dashboards.ScopeFoldersPrefix)
 
 				if len(args) > 0 {
-					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+					switch {
+					case f.features.IsEnabled(featuremgmt.FlagNestedFolders) && f.reqQrySupported:
 						query.WriteRune('(')
-					}
-					query.WriteString("(dashboard.uid IN(?" + strings.Repeat(", ?", len(args)-1))
-					query.WriteRune(')')
-					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+						for i, arg := range args {
+							if i > 0 {
+								query.WriteString(" OR ")
+							}
+							query.WriteString(" RecQry.ancestors LIKE '%' || ? || '%'")
+							params = append(params, arg)
+						}
+					case f.features.IsEnabled(featuremgmt.FlagNestedFolders):
+						query.WriteRune('(')
 						for i := 0; i < folder.MaxNestedFolderDepth; i++ {
 							query.WriteString(fmt.Sprintf(" OR f%d.uid IN (?"+strings.Repeat(", ?", len(args)-1)+")", i))
 							params = append(params, args...)
 						}
-					}
-					if f.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+						query.WriteRune(')')
+					default:
+						query.WriteString("(dashboard.uid IN(?" + strings.Repeat(", ?", len(args)-1))
 						query.WriteRune(')')
 					}
+
 					query.WriteString(" AND dashboard.is_folder)")
 					params = append(params, args...)
 				} else {
