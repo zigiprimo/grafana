@@ -70,6 +70,14 @@ func NewDashboardFilter(
 	return f
 }
 
+type PermissionFilter interface {
+	LeftJoin() string
+
+	Where() (string, []interface{})
+	With() (string, []interface{})
+	GroupBy() (string, []interface{})
+}
+
 type DashboardFilter struct {
 	usr     *user.SignedInUser
 	join    clause
@@ -147,7 +155,7 @@ func (f *DashboardFilter) buildClauses(folderAction, dashboardAction string) {
 			}
 			query.WriteString(" RecQry ON RecQry.uid = folder.uid OR RecQry.uid = dashboard.uid ")
 			f.join = clause{string: query.String()}
-			f.groupBy = clause{string: "dashboard.uid, dashboard.parent_uid, dashboard.org_id HAVING RecQry.depth = max(RecQry.depth);"}
+			f.groupBy = clause{string: "dashboard.uid, dashboard.org_id HAVING RecQry.depth = max(RecQry.depth)"}
 		}
 	}
 
@@ -455,6 +463,14 @@ func NewAccessControlDashboardPermissionFilter(user *user.SignedInUser, permissi
 	f.buildClauses()
 
 	return &f
+}
+
+func (f *accessControlDashboardPermissionFilter) LeftJoin() string {
+	return ""
+}
+
+func (f *accessControlDashboardPermissionFilter) GroupBy() (string, []interface{}) {
+	return "", nil
 }
 
 // Where returns:
