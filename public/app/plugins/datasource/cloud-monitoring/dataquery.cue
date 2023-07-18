@@ -16,10 +16,10 @@ package grafanaplugin
 
 import (
 	"github.com/grafana/grafana/packages/grafana-schema/src/common"
-	"github.com/grafana/grafana/pkg/plugins/pfs"
+	"github.com/grafana/kindsys"
 )
 
-pfs.GrafanaPlugin
+kindsys.GrafanaPlugin
 
 composableKinds: DataQuery: {
 	maturity: "merged"

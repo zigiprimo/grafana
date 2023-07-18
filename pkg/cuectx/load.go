@@ -232,8 +232,5 @@ func LoadCoreKindDef(defpath string, ctx *cue.Context, overlay fs.FS) (kindsys.D
 		return kindsys.Def[kindsys.CoreProperties]{}, err
 	}
 
-	return kindsys.Def[kindsys.CoreProperties]{
-		V:          vk,
-		Properties: props,
-	}, nil
+	return props, nil
 }

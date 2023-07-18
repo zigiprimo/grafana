@@ -3,10 +3,7 @@ package pfs
 import (
 	"fmt"
 	"io/fs"
-	"path/filepath"
-	"sort"
 	"strings"
-	"sync"
 	"testing/fstest"
 
 	"cuelang.org/go/cue"
@@ -27,29 +24,7 @@ import (
 
 // PackageName is the name of the CUE package that Grafana will load when
 // looking for a Grafana plugin's kind declarations.
-const PackageName = "grafanaplugin"
-
-var onceGP sync.Once
-var defaultGP cue.Value
-
-func doLoadGP(ctx *cue.Context) cue.Value {
-	v, err := cuectx.BuildGrafanaInstance(ctx, filepath.Join("pkg", "plugins", "pfs"), "pfs", nil)
-	if err != nil {
-		// should be unreachable
-		panic(err)
-	}
-	return v.LookupPath(cue.MakePath(cue.Str("GrafanaPlugin")))
-}
-
-func loadGP(ctx *cue.Context) cue.Value {
-	if ctx == nil || ctx == cuectx.GrafanaCUEContext() {
-		onceGP.Do(func() {
-			defaultGP = doLoadGP(ctx)
-		})
-		return defaultGP
-	}
-	return doLoadGP(ctx)
-}
+const PackageName = "github.com/grafana/kindsys"
 
 // PermittedCUEImports returns the list of import paths that may be used in a
 // plugin's grafanaplugin cue package.
@@ -66,22 +41,12 @@ func importAllowed(path string) bool {
 
 var allowedImportsStr string
 
-var allsi []kindsys.SchemaInterface
-
 func init() {
 	all := make([]string, 0, len(PermittedCUEImports()))
 	for _, im := range PermittedCUEImports() {
 		all = append(all, fmt.Sprintf("\t%s", im))
 	}
 	allowedImportsStr = strings.Join(all, "\n")
-
-	for _, s := range kindsys.SchemaInterfaces(nil) {
-		allsi = append(allsi, s)
-	}
-
-	sort.Slice(allsi, func(i, j int) bool {
-		return allsi[i].Name() < allsi[j].Name()
-	})
 }
 
 // ParsePluginFS takes a virtual filesystem and checks that it contains a valid
@@ -146,8 +111,6 @@ func ParsePluginFS(fsys fs.FS, rt *thema.Runtime) (ParsedPlugin, error) {
 		return pp, nil
 	}
 
-	gpv := loadGP(rt.Context())
-
 	fsys, err = ensureCueMod(fsys, pp.Properties)
 	if err != nil {
 		return ParsedPlugin{}, fmt.Errorf("%s has invalid cue.mod: %w", pp.Properties.Id, err)
@@ -197,35 +160,10 @@ func ParsePluginFS(fsys fs.FS, rt *thema.Runtime) (ParsedPlugin, error) {
 	bi.Files = append(bi.Files, f)
 
 	gpi := ctx.BuildInstance(bi)
-	// Temporary hack while we figure out what in the elasticsearch lineage turns
-	// this into an endless loop in thema, and why unifying twice is anything other
-	// than a total no-op.
-	if pp.Properties.Id != "elasticsearch" {
-		gpi = gpi.Unify(gpv)
-	}
-	if gpi.Err() != nil {
-		return ParsedPlugin{}, errors.Wrap(errors.Promote(ErrInvalidGrafanaPluginInstance, pp.Properties.Id), gpi.Err())
-	}
-
-	for _, si := range allsi {
-		iv := gpi.LookupPath(cue.MakePath(cue.Str("composableKinds"), cue.Str(si.Name())))
-		if !iv.Exists() {
-			continue
-		}
-
-		props, err := kindsys.ToKindProps[kindsys.ComposableProperties](iv)
-		if err != nil {
-			return ParsedPlugin{}, err
-		}
-
-		compo, err := kindsys.BindComposable(rt, kindsys.Def[kindsys.ComposableProperties]{
-			Properties: props,
-			V:          iv,
-		})
-		if err != nil {
-			return ParsedPlugin{}, err
-		}
-		pp.ComposableKinds[si.Name()] = compo
+	fmt.Println(gpi)
+	compos, err := kindsys.ToGrafanaPluginComposable(rt, gpi, pp.Properties.Id == "elasticsearch")
+	for _, c := range compos {
+		pp.ComposableKinds[c.Def().Properties.SchemaInterface] = c
 	}
 
 	// TODO custom kinds
@@ -264,15 +202,7 @@ func LoadComposableKindDef(fsys fs.FS, rt *thema.Runtime, defpath string) (kinds
 		return kindsys.Def[kindsys.ComposableProperties]{}, fmt.Errorf("%s not a valid CUE instance: %w", defpath, v.Err())
 	}
 
-	props, err := kindsys.ToKindProps[kindsys.ComposableProperties](v)
-	if err != nil {
-		return kindsys.Def[kindsys.ComposableProperties]{}, err
-	}
-
-	return kindsys.Def[kindsys.ComposableProperties]{
-		V:          v,
-		Properties: props,
-	}, nil
+	return kindsys.ToKindProps[kindsys.ComposableProperties](v)
 }
 
 func ensureCueMod(fsys fs.FS, pdef plugindef.PluginDef) (fs.FS, error) {
