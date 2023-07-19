@@ -9,7 +9,6 @@ import {
   CoreApp,
   DashboardCursorSync,
   DataFrame,
-  EventFilterOptions,
   FieldConfigSource,
   ScopedEventBus,
   getDataSourceRef,
@@ -22,7 +21,6 @@ import {
   TimeRange,
   toDataFrameDTO,
   toUtc,
-  EventFilter,
 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { config, locationService, RefreshEvent } from '@grafana/runtime';
@@ -88,20 +86,20 @@ export interface State {
 export class PanelStateWrapper extends PureComponent<Props, State> {
   private readonly timeSrv: TimeSrv = getTimeSrv();
   private subs = new Subscription();
-  private eventFilter: EventFilterOptions = { filter: EventFilter.NoLocal };
 
   constructor(props: Props) {
     super(props);
 
     // Can this eventBus be on PanelModel?  when we have more complex event filtering, that may be a better option
-    const eventBus = new ScopedEventBus(props.dashboard.events);
+    const eventsScope = this.getEventsScope();
+    const eventBus = new ScopedEventBus(props.dashboard.events, eventsScope);
 
     this.state = {
       isFirstLoad: true,
       renderCounter: 0,
       refreshWhenInView: false,
       context: {
-        eventsScope: '__global_',
+        eventsScope,
         eventBus,
         app: this.getPanelContextApp(),
         sync: this.getSync,
@@ -120,6 +118,14 @@ export class PanelStateWrapper extends PureComponent<Props, State> {
       },
       data: this.getInitialPanelDataState(),
     };
+  }
+
+  getEventsScope() {
+    if (this.props.dashboard.graphTooltip === DashboardCursorSync.Off) {
+      return `global.panel.${this.props.panel.id}`;
+    }
+
+    return `global`;
   }
 
   // Due to a mutable panel model we get the sync settings via function that proactively reads from the model

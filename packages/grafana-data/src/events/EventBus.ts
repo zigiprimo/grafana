@@ -109,28 +109,22 @@ export class EventBusSrv implements EventBus, LegacyEmitter {
 export class ScopedEventBus implements EventBusWithFiltering {
   constructor(
     private eventBus: EventBus,
-    private _filterConfig: EventFilterOptions = { filter: EventFilter.NoLocal }
+    private scope: string
   ) {}
 
   publish<T extends BusEvent>(event: T): void {
-    if (!event.origin) {
-      // @ts-ignore
-      event.origin = this;
-    }
+    // @ts-ignore
+    event.origin = this;
+    // @ts-ignore
+    event.scope = this.scope;
     this.eventBus.publish(event);
   }
 
   filter = (event: BusEvent) => {
-    if (this._filterConfig.filter === EventFilter.All) {
-      return true;
-    }
-    if (this._filterConfig.filter === EventFilter.OnlyLocal) {
-      return (event as any).origin === this;
+    if (event.scope && event.scope !== this.scope) {
+      return false;
     }
 
-    if (this._filterConfig.filter === EventFilter.NoLocal) {
-      return (event as any).origin !== this;
-    }
     return true;
   };
 
@@ -147,12 +141,7 @@ export class ScopedEventBus implements EventBusWithFiltering {
     this.eventBus.removeAllListeners();
   }
 
-  setFilterConfig(config: Partial<EventFilterOptions>): void {
-    this._filterConfig = { ...this._filterConfig, ...config };
-  }
-
-  // getter for filterConfig
-  get filterConfig(): EventFilterOptions {
-    return this._filterConfig;
+  setScope(scope: string): void {
+    this.scope = scope;
   }
 }

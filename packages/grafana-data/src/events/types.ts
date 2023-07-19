@@ -8,6 +8,7 @@ export interface BusEvent<T = EventBus> {
   readonly type: string;
   readonly payload?: any;
   readonly origin?: T;
+  readonly scope?: string;
 }
 
 /**
@@ -96,8 +97,8 @@ export interface EventBus {
 }
 
 export interface EventBusWithFiltering<T extends EventFilterOptions = EventFilterOptions> extends EventBus {
-  readonly filterConfig: T;
-  setFilterConfig(config: Partial<T>): void;
+  readonly scope: string;
+  setScope(scope: string): void;
 }
 
 /**
