@@ -201,6 +201,8 @@ export class GrafanaBootConfig implements GrafanaConfig {
 
     overrideFeatureTogglesFromLocalStorage(this);
 
+    dependantFeatureFlags(this);
+
     if (this.featureToggles.disableAngular) {
       this.angularSupportEnabled = false;
     }
@@ -247,6 +249,13 @@ function overrideFeatureTogglesFromUrl(config: GrafanaBootConfig) {
       }
     }
   });
+}
+
+function dependantFeatureFlags(config: GrafanaBootConfig) {
+  // Disable nestedFolderPicker if nestedFolders is not enabled
+  if (config.featureToggles.nestedFolderPicker && !config.featureToggles.nestedFolders) {
+    config.featureToggles.nestedFolderPicker = false;
+  }
 }
 
 const bootData = (window as any).grafanaBootData || {
