@@ -1,4 +1,5 @@
 import React from 'react';
+import { useLocation } from 'react-router-dom';
 
 import { GrafanaTheme2, PageLayoutType } from '@grafana/data';
 import { SceneComponentProps, SceneObjectBase, SceneObjectState, VizPanel } from '@grafana/scenes';
@@ -16,9 +17,14 @@ export class ScenePanelEditor extends SceneObjectBase<ScenePanelEditorState> {
 }
 
 export function ScenePanelEditorRenderer({ model }: SceneComponentProps<ScenePanelEditor>) {
-  const { scene, panel } = model.useState();
+  const { dashboard, panel } = model.useState();
+  const location = useLocation();
 
-  return <Page navId="scenes" pageNav={pageNav} layout={PageLayoutType.Custom}></Page>;
+  return (
+    <Page navId="scenes" pageNav={dashboard.getPageNav(location)} layout={PageLayoutType.Custom}>
+      Panel edit
+    </Page>
+  );
 }
 
 function getStyles(theme: GrafanaTheme2) {
