@@ -2771,7 +2771,7 @@ steps:
   - build-frontend-packages
   environment:
     GCP_KEY:
-      from_secret: gcp_key
+      from_secret: gcp_upload_artifacts_key
     PRERELEASE_BUCKET:
       from_secret: prerelease_bucket
   image: grafana/build-container:1.7.5
@@ -5001,6 +5001,6 @@ kind: secret
 name: delivery-bot-app-private-key
 ---
 kind: signature
-hmac: 10c93c162d673898b7de97d732f3e795ac6607fbd960ff2f893f976dd2a76682
+hmac: 4362dcd68b657a56e78f84efc4cf766e8485793968648efa921fb130e9458c8a
 
 ...
