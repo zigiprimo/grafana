@@ -1722,11 +1722,8 @@ func TestProcessEvalResults(t *testing.T) {
 				},
 				{
 					eval.Result{
-						Instance: data.Labels{"instance_label": "test"},
-						Error: expr.QueryError{
-							RefID: "A",
-							Err:   errors.New("this is an error"),
-						},
+						Instance:           data.Labels{"datasource_uid": "datasource_uid_1", "ref_id": "A"},
+						Error:              errors.New("test-error"),
 						State:              eval.Error,
 						EvaluatedAt:        evaluationTime.Add(10 * time.Second),
 						EvaluationDuration: evaluationDuration,
@@ -1745,21 +1742,39 @@ func TestProcessEvalResults(t *testing.T) {
 						"alertname":                    "test_title",
 						"label":                        "test",
 						"instance_label":               "test",
-						"datasource_uid":               "datasource_uid_1",
-						"ref_id":                       "A",
 					},
 					Values: make(map[string]float64),
-					State:  eval.Error,
-					Error: expr.QueryError{
-						RefID: "A",
-						Err:   errors.New("this is an error"),
-					},
+					State:  eval.Normal,
+					Error:  nil,
 					Results: []state.Evaluation{
 						{
 							EvaluationTime:  evaluationTime,
 							EvaluationState: eval.Normal,
 							Values:          make(map[string]*float64),
 						},
+					},
+					StartsAt:           evaluationTime,
+					EndsAt:             evaluationTime,
+					LastEvaluationTime: evaluationTime,
+					EvaluationDuration: evaluationDuration,
+					Annotations:        map[string]string{"annotation": "test"},
+				},
+				`[["__alert_rule_namespace_uid__","test_namespace_uid"],["__alert_rule_uid__","test_alert_rule_uid_2"],["alertname","test_title"],["datasource_uid","datasource_uid_1"],["label","test"],["ref_id","A"]]`: {
+					AlertRuleUID: "test_alert_rule_uid_2",
+					OrgID:        1,
+					CacheID:      `[["__alert_rule_namespace_uid__","test_namespace_uid"],["__alert_rule_uid__","test_alert_rule_uid_2"],["alertname","test_title"],["datasource_uid","datasource_uid_1"],["label","test"],["ref_id","A"]]`,
+					Labels: data.Labels{
+						"__alert_rule_namespace_uid__": "test_namespace_uid",
+						"__alert_rule_uid__":           "test_alert_rule_uid_2",
+						"alertname":                    "test_title",
+						"label":                        "test",
+						"datasource_uid":               "datasource_uid_1",
+						"ref_id":                       "A",
+					},
+					Values: make(map[string]float64),
+					State:  eval.Error,
+					Error:  errors.New("test-error"),
+					Results: []state.Evaluation{
 						{
 							EvaluationTime:  evaluationTime.Add(10 * time.Second),
 							EvaluationState: eval.Error,
@@ -1770,7 +1785,7 @@ func TestProcessEvalResults(t *testing.T) {
 					EndsAt:             evaluationTime.Add(10 * time.Second).Add(state.ResendDelay * 3),
 					LastEvaluationTime: evaluationTime.Add(10 * time.Second),
 					EvaluationDuration: evaluationDuration,
-					Annotations:        map[string]string{"annotation": "test", "Error": "failed to execute query A: this is an error"},
+					Annotations:        map[string]string{"annotation": "test", "Error": "test-error"},
 				},
 			},
 		},
@@ -2281,9 +2296,10 @@ func TestProcessEvalResults(t *testing.T) {
 			states := st.GetStatesForRuleUID(tc.alertRule.OrgID, tc.alertRule.UID)
 			assert.Len(t, states, len(tc.expectedStates))
 
-			for _, s := range tc.expectedStates {
-				cachedState := st.Get(s.OrgID, s.AlertRuleUID, s.CacheID)
-				assert.Equal(t, s, cachedState)
+			for _, s := range states {
+				ex, ok := tc.expectedStates[s.CacheID]
+				require.Truef(t, ok, "State with cacheID %s is not expected %#v", s.CacheID, s)
+				assert.Equal(t, ex, s)
 			}
 
 			require.Eventuallyf(t, func() bool {
