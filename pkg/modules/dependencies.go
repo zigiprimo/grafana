@@ -15,11 +15,13 @@ const (
 	Provisioning string = "provisioning"
 	// SecretMigrator handles legacy secrets migrations
 	SecretMigrator string = "secret-migrator"
+	// SQLStore is the not-yet-legacy SQL store for Grafana
+	SQLStore string = "sqlstore"
 )
 
 // dependencyMap defines Module Targets => Dependencies
 var dependencyMap = map[string][]string{
-	BackgroundServices: {Provisioning, HTTPServer},
+	BackgroundServices: {SQLStore, Provisioning, HTTPServer},
 	CertGenerator:      {},
 	GrafanaAPIServer:   {CertGenerator},
 	Provisioning:       {SecretMigrator},

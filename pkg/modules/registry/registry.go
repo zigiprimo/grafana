@@ -11,6 +11,7 @@ import (
 	grafanaapiserver "github.com/grafana/grafana/pkg/services/grafana-apiserver"
 	"github.com/grafana/grafana/pkg/services/provisioning"
 	"github.com/grafana/grafana/pkg/services/secrets/kvstore/migrations"
+	"github.com/grafana/grafana/pkg/services/sqlstore"
 )
 
 type Registry interface{}
@@ -28,6 +29,7 @@ func ProvideRegistry(
 	httpServer *api.HTTPServer,
 	provisioningService *provisioning.ProvisioningServiceImpl,
 	secretsMigrator *migrations.SecretMigrationProviderImpl,
+	sqlStore *sqlstore.SQLStore,
 ) *registry {
 	return newRegistry(
 		log.New("modules.registry"),
@@ -38,6 +40,7 @@ func ProvideRegistry(
 		httpServer,
 		provisioningService,
 		secretsMigrator,
+		sqlStore,
 	)
 }
 

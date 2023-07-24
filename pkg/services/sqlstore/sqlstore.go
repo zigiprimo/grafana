@@ -15,6 +15,7 @@ import (
 	"github.com/VividCortex/mysqlerr"
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/go-sql-driver/mysql"
+	"github.com/grafana/dskit/services"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
@@ -26,6 +27,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/localcache"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/tracing"
+	"github.com/grafana/grafana/pkg/modules"
 	"github.com/grafana/grafana/pkg/registry"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrations"
@@ -42,6 +44,7 @@ import (
 type ContextSessionKey struct{}
 
 type SQLStore struct {
+	services.NamedService
 	Cfg          *setting.Cfg
 	sqlxsession  *session.SessionDB
 	CacheService *localcache.CacheService
@@ -84,7 +87,16 @@ func ProvideService(cfg *setting.Cfg, cacheService *localcache.CacheService, mig
 	// TODO: deprecate/remove these metrics
 	prometheus.MustRegister(newSQLStoreMetrics(db))
 
+	s.NamedService = services.NewIdleService(s.start, s.stop).WithName(modules.SQLStore)
 	return s, nil
+}
+
+func (s *SQLStore) start(_ context.Context) error {
+	return nil
+}
+
+func (s *SQLStore) stop(error) error {
+	return s.engine.Close()
 }
 
 func ProvideServiceForTests(cfg *setting.Cfg, migrations registry.DatabaseMigrator) (*SQLStore, error) {
