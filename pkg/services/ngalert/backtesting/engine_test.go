@@ -158,10 +158,10 @@ func TestNewBacktestingEvaluator(t *testing.T) {
 
 func TestEvaluatorTest(t *testing.T) {
 	states := []eval.State{eval.Normal, eval.Alerting, eval.Pending}
-	generateState := func(prefix string) *state.State {
+	generateState := func(prefix int64) *state.State {
 		return &state.State{
-			CacheID: "state-" + prefix,
-			Labels:  models.GenerateAlertLabels(rand.Intn(5)+1, prefix+"-"),
+			CacheID: 1,
+			Labels:  models.GenerateAlertLabels(rand.Intn(5)+1, fmt.Sprintf("%d-", prefix)),
 			State:   states[rand.Intn(len(states))],
 		}
 	}
@@ -201,7 +201,7 @@ func TestEvaluatorTest(t *testing.T) {
 		for _, s := range allStates {
 			states = append(states, state.StateTransition{
 				State: &state.State{
-					CacheID:     "state-" + s.String(),
+					CacheID:     1,
 					Labels:      models.GenerateAlertLabels(rand.Intn(5)+1, s.String()+"-"),
 					State:       s,
 					StateReason: util.GenerateShortUID(),
@@ -224,7 +224,7 @@ func TestEvaluatorTest(t *testing.T) {
 			require.Equal(t, data.FieldTypeTime, timestampField.Type())
 		})
 
-		fieldByState := make(map[string]*data.Field, len(states))
+		fieldByState := make(map[state.StateKey]*data.Field, len(states))
 
 		t.Run("should contain a field per state", func(t *testing.T) {
 			for _, s := range states {
@@ -270,7 +270,7 @@ func TestEvaluatorTest(t *testing.T) {
 		states := []state.StateTransition{
 			{
 				State: &state.State{
-					CacheID:     "state-1",
+					CacheID:     1,
 					Labels:      models.GenerateAlertLabels(rand.Intn(5)+1, "test-"),
 					State:       eval.Normal,
 					StateReason: util.GenerateShortUID(),
@@ -297,13 +297,13 @@ func TestEvaluatorTest(t *testing.T) {
 		from := time.Unix(0, 0)
 
 		state1 := state.StateTransition{
-			State: generateState("1"),
+			State: generateState(1),
 		}
 		state2 := state.StateTransition{
-			State: generateState("2"),
+			State: generateState(2),
 		}
 		state3 := state.StateTransition{
-			State: generateState("3"),
+			State: generateState(3),
 		}
 		stateByTime := map[time.Time][]state.StateTransition{
 			from:                       {state1, state2},
