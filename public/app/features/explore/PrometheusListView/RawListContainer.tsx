@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useWindowSize } from 'react-use';
 import { VariableSizeList as List } from 'react-window';
 
-import { DataFrame, Field as DataFrameField } from '@grafana/data/';
+import { DataFrame, Field as DataFrameField, FieldType } from '@grafana/data/';
 import { reportInteraction } from '@grafana/runtime/src';
 import { Field, Switch } from '@grafana/ui/';
 
@@ -65,7 +65,7 @@ const RawListContainer = (props: RawListContainerProps) => {
   const dataFrame = cloneDeep(tableResult);
   const listRef = useRef<List | null>(null);
 
-  const valueLabels = dataFrame.fields.filter((field) => field.name.includes('Value'));
+  const valueLabels = dataFrame.fields.filter((field) => field.type === FieldType.number);
   const items = getRawPrometheusListItemsFromDataFrame(dataFrame);
   const { width } = useWindowSize();
   const [isExpandedView, setIsExpandedView] = useState(
