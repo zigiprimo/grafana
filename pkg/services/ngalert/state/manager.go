@@ -139,7 +139,7 @@ func (st *Manager) Warm(ctx context.Context, rulesReader RuleReader) {
 
 			rulesStates, ok := orgStates[entry.RuleUID]
 			if !ok {
-				rulesStates = &ruleStates{states: make(map[string]*State)}
+				rulesStates = &ruleStates{states: make(map[StateKey]*State)}
 				orgStates[entry.RuleUID] = rulesStates
 			}
 
@@ -168,7 +168,7 @@ func (st *Manager) Warm(ctx context.Context, rulesReader RuleReader) {
 	st.log.Info("State cache has been initialized", "states", statesCount, "duration", time.Since(startTime))
 }
 
-func (st *Manager) Get(orgID int64, alertRuleUID, stateId string) *State {
+func (st *Manager) Get(orgID int64, alertRuleUID string, stateId StateKey) *State {
 	return st.cache.get(orgID, alertRuleUID, stateId)
 }
 

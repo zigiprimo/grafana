@@ -82,7 +82,7 @@ func (e *Engine) Test(ctx context.Context, user *user.SignedInUser, rule *models
 	start := time.Now()
 
 	tsField := data.NewField("Time", nil, make([]time.Time, length))
-	valueFields := make(map[string]*data.Field)
+	valueFields := make(map[state.StateKey]*data.Field)
 
 	err = evaluator.Eval(ruleCtx, from, time.Duration(rule.IntervalSeconds)*time.Second, length, func(idx int, currentTime time.Time, results eval.Results) error {
 		if idx >= length {
