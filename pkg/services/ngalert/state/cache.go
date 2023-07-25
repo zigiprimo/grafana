@@ -18,7 +18,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/ngalert/state/template"
 )
 
-type StateKey string
+type StateKey data.Fingerprint
 
 type ruleStates struct {
 	states map[StateKey]*State
@@ -135,11 +135,7 @@ func calculateState(ctx context.Context, log log.Logger, alertRule *ngModels.Ale
 		log.Warn("Evaluation result contains either reserved labels or labels declared in the rules. Those labels from the result will be ignored", "labels", dupes)
 	}
 
-	il := ngModels.InstanceLabels(lbs)
-	id, err := il.StringKey()
-	if err != nil {
-		log.Error("Error getting cacheId for entry", "error", err)
-	}
+	id := lbs.Fingerprint()
 
 	// For new states, we set StartsAt & EndsAt to EvaluatedAt as this is the
 	// expected value for a Normal state during state transition.

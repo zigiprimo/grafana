@@ -77,12 +77,7 @@ func (a *State) GetRuleKey() models.AlertRuleKey {
 }
 
 func (a *State) GetAlertInstanceKey() (models.AlertInstanceKey, error) {
-	instanceLabels := models.InstanceLabels(a.Labels)
-	_, labelsHash, err := instanceLabels.StringAndHash()
-	if err != nil {
-		return models.AlertInstanceKey{}, err
-	}
-	return models.AlertInstanceKey{RuleOrgID: a.OrgID, RuleUID: a.AlertRuleUID, LabelsHash: labelsHash}, nil
+	return models.AlertInstanceKey{RuleOrgID: a.OrgID, RuleUID: a.AlertRuleUID, LabelsHash: a.Labels.Fingerprint().String()}, nil
 }
 
 // SetAlerting sets the state to Alerting. It changes both the start and end time.

@@ -143,11 +143,9 @@ func (st *Manager) Warm(ctx context.Context, rulesReader RuleReader) {
 				orgStates[entry.RuleUID] = rulesStates
 			}
 
-			lbs := map[string]string(entry.Labels)
-			cacheID, err := entry.Labels.StringKey()
-			if err != nil {
-				st.log.Error("Error getting cacheId for entry", "error", err)
-			}
+			lbs := data.Labels(entry.Labels)
+			cacheID := StateKey(lbs.Fingerprint())
+
 			rulesStates.states[cacheID] = &State{
 				AlertRuleUID:         entry.RuleUID,
 				OrgID:                entry.RuleOrgID,
