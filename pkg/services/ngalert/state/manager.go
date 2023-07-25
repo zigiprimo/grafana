@@ -360,13 +360,8 @@ func (st *Manager) saveAlertStates(ctx context.Context, logger log.Logger, state
 			return nil
 		}
 
-		key, err := s.GetAlertInstanceKey()
-		if err != nil {
-			logger.Error("Failed to create a key for alert state to save it to database. The state will be ignored ", "cacheID", s.CacheID, "error", err, "labels", s.Labels.String())
-			return nil
-		}
 		instance := ngModels.AlertInstance{
-			AlertInstanceKey:  key,
+			AlertInstanceKey:  s.GetAlertInstanceKey(),
 			Labels:            ngModels.InstanceLabels(s.Labels),
 			CurrentState:      ngModels.InstanceStateType(s.State.State.String()),
 			CurrentReason:     s.StateReason,
@@ -375,7 +370,7 @@ func (st *Manager) saveAlertStates(ctx context.Context, logger log.Logger, state
 			CurrentStateEnd:   s.EndsAt,
 		}
 
-		err = st.instanceStore.SaveAlertInstance(ctx, instance)
+		err := st.instanceStore.SaveAlertInstance(ctx, instance)
 		if err != nil {
 			logger.Error("Failed to save alert state", "labels", s.Labels.String(), "state", s.State, "error", err)
 			return nil
@@ -398,12 +393,7 @@ func (st *Manager) deleteAlertStates(ctx context.Context, logger log.Logger, sta
 	toDelete := make([]ngModels.AlertInstanceKey, 0, len(states))
 
 	for _, s := range states {
-		key, err := s.GetAlertInstanceKey()
-		if err != nil {
-			logger.Error("Failed to delete alert instance with invalid labels", "cacheID", s.CacheID, "error", err)
-			continue
-		}
-		toDelete = append(toDelete, key)
+		toDelete = append(toDelete, s.GetAlertInstanceKey())
 	}
 
 	err := st.instanceStore.DeleteAlertInstances(ctx, toDelete...)
