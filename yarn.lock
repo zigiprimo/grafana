@@ -11826,6 +11826,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@xstate/react@npm:^3.2.2":
+  version: 3.2.2
+  resolution: "@xstate/react@npm:3.2.2"
+  dependencies:
+    use-isomorphic-layout-effect: ^1.1.2
+    use-sync-external-store: ^1.0.0
+  peerDependencies:
+    "@xstate/fsm": ^2.0.0
+    react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    xstate: ^4.37.2
+  peerDependenciesMeta:
+    "@xstate/fsm":
+      optional: true
+    xstate:
+      optional: true
+  checksum: b5dbc10bf8f0b131417c792631430156480a75190d144a9a7fdf007cd14ee9fd7d89a5cfecd4ff1e1431e9e1cf7cc10db0c73977c8e06a26285db2f75cdfd1c7
+  languageName: node
+  linkType: hard
+
 "@xtuc/ieee754@npm:^1.2.0":
   version: 1.2.0
   resolution: "@xtuc/ieee754@npm:1.2.0"
@@ -19393,6 +19412,7 @@ __metadata:
     "@visx/shape": 3.3.0
     "@visx/tooltip": 3.3.0
     "@welldone-software/why-did-you-render": 7.0.1
+    "@xstate/react": ^3.2.2
     angular: 1.8.3
     angular-bindonce: 0.3.1
     angular-route: 1.8.3
@@ -19593,6 +19613,7 @@ __metadata:
     webpack-merge: 5.9.0
     whatwg-fetch: 3.6.2
     xlsx: "https://cdn.sheetjs.com/xlsx-0.19.1/xlsx-0.19.1.tgz"
+    xstate: ^4.38.1
     yargs: ^17.5.1
   dependenciesMeta:
     prettier@3.0.0:
@@ -33585,6 +33606,13 @@ __metadata:
   version: 4.37.0
   resolution: "xstate@npm:4.37.0"
   checksum: 8eba107721c91ba08934b68a2881f01dd9ab6f23cc2ebcdd91145ce5999db8f690b38cf1570b928c058755150fc5024bed1cafe731ff7e6750d4e64752a7ab5b
+  languageName: node
+  linkType: hard
+
+"xstate@npm:^4.38.1":
+  version: 4.38.1
+  resolution: "xstate@npm:4.38.1"
+  checksum: 9dc40ebd22730f58750ad112c03d592c959425a5c5a83ccd7cdea7f6b49d745b95d45d614902888bf592980a90812ab099568867d25bab82dc2c75ebdab99a52
   languageName: node
   linkType: hard
 

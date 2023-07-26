@@ -114,6 +114,18 @@ func (s *ServiceImpl) GetNavTree(c *contextmodel.ReqContext, prefs *pref.Prefere
 		treeRoot.AddSection(dashboardLink)
 	}
 
+	if c.IsSignedIn {
+		treeRoot.AddSection(&navtree.NavLink{
+			Text:       "IRM",
+			Id:         navtree.NavIDIrm,
+			SubTitle:   "Detect, Respond, Learn",
+			Icon:       "bell",
+			SortWeight: navtree.WeightAlertsAndIncidents,
+			Children:   s.buildIrmNavLinks(c),
+			Url:        s.cfg.AppSubURL + "/irm",
+		})
+	}
+
 	if setting.ExploreEnabled && hasAccess(ac.EvalPermission(ac.ActionDatasourcesExplore)) {
 		treeRoot.AddSection(&navtree.NavLink{
 			Text:       "Explore",
@@ -318,6 +330,99 @@ func (s *ServiceImpl) buildStarredItemsNavLinks(c *contextmodel.ReqContext) ([]*
 	}
 
 	return starredItemsChildNavs, nil
+}
+
+func (s *ServiceImpl) buildIrmNavLinks(c *contextmodel.ReqContext) []*navtree.NavLink {
+	irmChildNavs := []*navtree.NavLink{}
+	irmSettingsChildren := []*navtree.NavLink{}
+	incidentChildren := []*navtree.NavLink{}
+	learnChildren := []*navtree.NavLink{}
+
+	incidentChildren = append(incidentChildren, &navtree.NavLink{
+		Text:     "Detections",
+		Id:       "irm/respond/detections",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/respond/detections",
+	})
+	incidentChildren = append(incidentChildren, &navtree.NavLink{
+		Text:     "Incidents",
+		Id:       "irm/respond/incidents",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/respond/incidents",
+	})
+	incidentChildren = append(incidentChildren, &navtree.NavLink{
+		Text:     "Schedules",
+		Id:       "irm/respond/schedules",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/respond/schedules",
+	})
+
+	learnChildren = append(learnChildren, &navtree.NavLink{
+		Text:     "Debriefs",
+		Id:       "irm/learn/debrief",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/learn/debrief",
+	})
+	learnChildren = append(learnChildren, &navtree.NavLink{
+		Text:     "Insights",
+		Id:       "irm/learn/insights",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/learn/insights",
+	})
+
+	irmSettingsChildren = append(irmSettingsChildren, &navtree.NavLink{
+		Text:     "Workflows",
+		Id:       "irm/settings/workflows",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/settings/workflows",
+	})
+	irmSettingsChildren = append(irmSettingsChildren, &navtree.NavLink{
+		Text:     "Connections",
+		Id:       "irm/settings/connections",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/settings/connections",
+	})
+	irmSettingsChildren = append(irmSettingsChildren, &navtree.NavLink{
+		Text:     "Labels",
+		Id:       "irm/settings/labels",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/settings/labels",
+	})
+	irmSettingsChildren = append(irmSettingsChildren, &navtree.NavLink{
+		Text:     "Teams and Access",
+		Id:       "irm/settings/teams",
+		SubTitle: "",
+		Url:      s.cfg.AppSubURL + "/irm/settings/teams",
+	})
+
+	irmChildNavs = append(irmChildNavs, &navtree.NavLink{
+		Text:      "Respond",
+		SubTitle:  "Respond to incidents",
+		Id:        "irm/respond",
+		Url:       s.cfg.AppSubURL + "/irm/respond",
+		IsSection: true,
+		Children:  incidentChildren,
+	})
+
+	irmChildNavs = append(irmChildNavs, &navtree.NavLink{
+		Text:      "Learn",
+		SubTitle:  "Learn from incidents",
+		Id:        "irm/learn",
+		Url:       s.cfg.AppSubURL + "/irm/learn",
+		IsSection: true,
+		Children:  learnChildren,
+	})
+
+	irmChildNavs = append(irmChildNavs, &navtree.NavLink{
+		Text:      "IRM Settings",
+		SubTitle:  "Settings for Grafana IRM",
+		Id:        "irm/settings",
+		Url:       s.cfg.AppSubURL + "/irm/settings",
+		IsSection: true,
+		Children:  irmSettingsChildren,
+	})
+
+	return irmChildNavs
 }
 
 func (s *ServiceImpl) buildDashboardNavLinks(c *contextmodel.ReqContext) []*navtree.NavLink {

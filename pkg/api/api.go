@@ -176,6 +176,8 @@ func (hs *HTTPServer) registerRoutes() {
 	r.Get("/monitoring/*", reqSignedIn, hs.Index)
 	r.Get("/alerts-and-incidents", reqSignedIn, hs.Index)
 	r.Get("/alerts-and-incidents/*", reqSignedIn, hs.Index)
+	r.Get("/irm", reqSignedIn, hs.Index)
+	r.Get("/irm/*", reqSignedIn, hs.Index)
 
 	// sign up
 	r.Get("/verify", hs.Index)
