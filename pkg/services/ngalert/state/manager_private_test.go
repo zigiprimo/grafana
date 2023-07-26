@@ -105,9 +105,7 @@ func TestManager_saveAlertStates(t *testing.T) {
 				PreviousState:       fromState.State,
 				PreviousStateReason: fromState.Reason,
 			}
-			key, err := tr.GetAlertInstanceKey()
-			require.NoError(t, err)
-			transitionToKey[key] = tr
+			transitionToKey[tr.GetAlertInstanceKey()] = tr
 			transitions = append(transitions, tr)
 		}
 	}
