@@ -3,7 +3,7 @@ import React, { ReactElement, useState } from 'react';
 import { Route, Switch, useRouteMatch } from 'react-router-dom';
 
 import { GrafanaTheme2 } from '@grafana/data';
-import { Card, FilterInput, InlineField, Spinner, Tab, TabsBar, Tag, useStyles2 } from '@grafana/ui';
+import { Button, Card, FilterInput, InlineField, Select, Spinner, Tab, TabsBar, Tag, useStyles2 } from '@grafana/ui';
 import EmptyListCTA from 'app/core/components/EmptyListCTA/EmptyListCTA';
 import { Page } from 'app/core/components/Page/Page';
 
@@ -12,7 +12,21 @@ import { useIncidents } from '../mock-db';
 function IncidentWrapper({ children, isLoading }: { isLoading: boolean; children: ReactElement }) {
   const { path } = useRouteMatch();
   return (
-    <Page navId={'irm/respond/incidents'}>
+    <Page
+      navId={'irm/respond/incidents'}
+      actions={
+        <Select
+          options={[
+            { label: 'All Teams', value: 'all' },
+            { label: 'My Team', value: 'mine' },
+          ]}
+          value="mine"
+          onChange={() => {
+            /*todo*/
+          }}
+        />
+      }
+    >
       <Page.Contents>
         <div className={css({ marginBottom: '16px' })}>
           <TabsBar>
@@ -35,12 +49,6 @@ function IncidentWrapper({ children, isLoading }: { isLoading: boolean; children
 }
 
 function IncidentList() {
-  // return (
-  //   <Page navId="irm/respond/incidents">
-  //     <Page.Contents isLoading={false}>respond list</Page.Contents>
-  //   </Page>
-  // );
-  //
   const { cardsContainer } = useStyles2(getStyles);
   const [incidents, loading] = useIncidents();
   const noDetections = (incidents?.length ?? -1) === 0;
@@ -64,6 +72,7 @@ function IncidentList() {
             <InlineField grow>
               <FilterInput placeholder="Search incidents" value={query} onChange={changeQuery} />
             </InlineField>
+            <Button icon="fire">Declare Incident</Button>
           </div>
           <div className={cardsContainer}>
             {incidents.map((x) => (
@@ -86,7 +95,7 @@ function IncidentList() {
 
 function Incident() {
   return (
-    <Page navId="irm/respond/incidents/view/:id">
+    <Page>
       <Page.Contents isLoading={false}>Incident</Page.Contents>
     </Page>
   );
