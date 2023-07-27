@@ -35,6 +35,21 @@
       "mode": "test",
       "program": "${workspaceFolder}/${relativeFileDirname}",
       "showLog": true
+    },
+    {
+      "name": "Current TS File",
+      "type": "node",
+      "request": "launch",
+      "args": ["${relativeFile}"],
+      "runtimeExecutable": "yarn",
+      "env": {
+        "TS_NODE_TRANSPILE_ONLY": "true",
+        "TS_NODE_PROJECT": "./scripts/cli/tsconfig.json"
+      },
+      "runtimeArgs": ["node", "-r", "ts-node/register"],
+      "sourceMaps": true,
+      "cwd": "${workspaceRoot}",
+      "protocol": "inspector"
     }
   ]
 }
