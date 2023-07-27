@@ -615,7 +615,6 @@ func TestLoginPostRunLokingHook(t *testing.T) {
 	})
 
 	testHook := loginHookTest{}
-	hookService.AddLoginHook(testHook.LoginHook)
 
 	testUser := &user.User{
 		ID:    42,

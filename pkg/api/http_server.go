@@ -642,10 +642,6 @@ func (hs *HTTPServer) addMiddlewaresAndStaticRoutes() {
 	m.UseMiddleware(hs.ContextHandler.Middleware)
 	m.Use(middleware.OrgRedirect(hs.Cfg, hs.userService))
 
-	if !hs.Cfg.AuthBrokerEnabled {
-		m.Use(accesscontrol.LoadPermissionsMiddleware(hs.accesscontrolService))
-	}
-
 	// needs to be after context handler
 	if hs.Cfg.EnforceDomain {
 		m.Use(middleware.ValidateHostHeader(hs.Cfg))

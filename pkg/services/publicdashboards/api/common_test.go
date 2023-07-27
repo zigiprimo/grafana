@@ -7,9 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
-	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -19,7 +20,6 @@ import (
 	pluginFakes "github.com/grafana/grafana/pkg/plugins/manager/fakes"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/accesscontrol/acimpl"
-	"github.com/grafana/grafana/pkg/services/accesscontrol/actest"
 	"github.com/grafana/grafana/pkg/services/contexthandler/ctxkey"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
 	"github.com/grafana/grafana/pkg/services/datasources"
@@ -59,7 +59,6 @@ func setupTestServer(
 		}
 	}
 
-	acService := actest.FakeService{ExpectedPermissions: permissions, ExpectedDisabled: !cfg.RBACEnabled}
 	ac := acimpl.ProvideAccessControl(cfg)
 
 	// build mux
@@ -67,7 +66,6 @@ func setupTestServer(
 
 	// set initial context
 	m.Use(contextProvider(&testContext{user}))
-	m.Use(accesscontrol.LoadPermissionsMiddleware(acService))
 
 	// build api, this will mount the routes at the same time if
 	// featuremgmt.FlagPublicDashboard is enabled
