@@ -107,15 +107,15 @@ describe('RuleEditor grafana managed rules', () => {
     mocks.searchFolders.mockResolvedValue([
       {
         title: 'Folder A',
-        id: 1,
+        uid: 'abc-124',
       },
       {
         title: 'Folder B',
-        id: 2,
+        uid: 'def-456',
       },
       {
         title: 'Folder / with slash',
-        id: 2,
+        uid: 'hij-789',
       },
     ] as DashboardSearchHit[]);
 

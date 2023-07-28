@@ -17,11 +17,9 @@ export enum DashboardSearchItemType {
  * extraneous properties
  */
 export interface DashboardSearchHit extends WithAccessControlMetadata {
-  folderId?: number;
   folderTitle?: string;
   folderUid?: string;
   folderUrl?: string;
-  id?: number;
   tags: string[];
   title: string;
   type: DashboardSearchItemType;
@@ -29,6 +27,12 @@ export interface DashboardSearchHit extends WithAccessControlMetadata {
   url: string;
   sortMeta?: number;
   sortMetaName?: string;
+
+  /**
+   * Used only by DashboardPickerByID, which is used only by Reporting
+   * @deprecated
+   */
+  id?: number;
 }
 
 /**

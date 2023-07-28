@@ -187,14 +187,12 @@ export class SQLSearcher implements GrafanaSearcher {
           kind: 'folder',
           name: hit.folderTitle,
           url: hit.folderUrl!,
-          folderId: hit.folderId,
         };
       } else if (k === 'folder') {
         this.locationInfo[hit.uid] = {
           kind: k,
           name: hit.title!,
           url: hit.url,
-          folderId: hit.id,
         };
       }
     }
