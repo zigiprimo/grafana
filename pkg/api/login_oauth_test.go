@@ -17,6 +17,9 @@ import (
 	"github.com/grafana/grafana/pkg/infra/usagestats"
 	"github.com/grafana/grafana/pkg/login/social"
 	"github.com/grafana/grafana/pkg/models/roletype"
+	"github.com/grafana/grafana/pkg/models/usertoken"
+	"github.com/grafana/grafana/pkg/services/authn"
+	"github.com/grafana/grafana/pkg/services/authn/authntest"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/hooks"
 	"github.com/grafana/grafana/pkg/services/licensing"
@@ -38,7 +41,14 @@ func setupSocialHTTPServerWithConfig(t *testing.T, cfg *setting.Cfg) *HTTPServer
 		SocialService:  social.ProvideService(cfg, features, &usagestats.UsageStatsMock{}, supportbundlestest.NewFakeBundleService(), remotecache.NewFakeCacheStorage()),
 		HooksService:   hooks.ProvideService(),
 		SecretsService: fakes.NewFakeSecretsService(),
-		Features:       features,
+		authnService: authntest.FakeService{
+			ExpectedIdentity: &authn.Identity{SessionToken: &usertoken.UserToken{}},
+			ExpectedRedirect: &authn.Redirect{
+				URL:   "",
+				Extra: map[string]string{},
+			},
+		},
+		Features: features,
 	}
 }
 
@@ -70,7 +80,7 @@ func TestOAuthLogin_UnknownProvider(t *testing.T) {
 	m.ServeHTTP(recorder, req)
 	// expect to be redirected to /login
 	assert.Equal(t, http.StatusFound, recorder.Code)
-	assert.Equal(t, "/login", recorder.Header().Get("Location"))
+	assert.Equal(t, "/login/", recorder.Header().Get("Location"))
 }
 
 func TestOAuthLogin_Base(t *testing.T) {

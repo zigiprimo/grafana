@@ -27,6 +27,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/anonymous/anontest"
 	"github.com/grafana/grafana/pkg/services/auth/authtest"
 	"github.com/grafana/grafana/pkg/services/auth/jwt"
+	"github.com/grafana/grafana/pkg/services/authn"
 	"github.com/grafana/grafana/pkg/services/authn/authntest"
 	"github.com/grafana/grafana/pkg/services/contexthandler"
 	"github.com/grafana/grafana/pkg/services/contexthandler/authproxy"
@@ -208,7 +209,9 @@ func getContextHandler(t *testing.T, cfg *setting.Cfg) *contexthandler.ContextHa
 	ctxHdlr := contexthandler.ProvideService(cfg, userAuthTokenSvc, authJWTSvc,
 		remoteCacheSvc, renderSvc, sqlStore, tracer, authProxy, loginService, nil,
 		authenticator, usertest.NewUserServiceFake(), orgtest.NewOrgServiceFake(),
-		nil, featuremgmt.WithFeatures(), &authntest.FakeService{}, &anontest.FakeAnonymousSessionService{})
+		nil, featuremgmt.WithFeatures(), &authntest.FakeService{
+			ExpectedIdentity: &authn.Identity{},
+		}, &anontest.FakeAnonymousSessionService{})
 
 	return ctxHdlr
 }
