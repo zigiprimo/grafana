@@ -21,7 +21,9 @@ import (
 )
 
 const (
-	screenshotCacheTTL = time.Minute
+	screenshotCacheTTL    = time.Minute
+	screenshotMinDuration = 5 * time.Minute
+	screenshotMaxDuration = 24 * time.Hour
 )
 
 // DeleteExpiredService is a service to delete expired images.
@@ -138,6 +140,8 @@ func (s *ScreenshotImageService) NewImage(ctx context.Context, r *models.AlertRu
 		OrgID:        r.OrgID,
 		DashboardUID: dashboardUID,
 		PanelID:      panelID,
+		From:         formatDuration(calcFromDuration(r.For)),
+		To:           "now",
 		Timeout:      s.screenshotTimeout,
 	}
 
@@ -202,4 +206,27 @@ func (s *ScreenshotImageService) NewImage(ctx context.Context, r *models.AlertRu
 	}
 
 	return &image, nil
+}
+
+// calcFromDuration attempts to make reasonable suggestions for "From" using
+// the For duration in the alert rule.
+//
+// It applies minimum (5m) and maximum duration (24h) to avoid taking screenshots
+// of time windows too small (e.g. when For is 0m) or too large (e.g. when For is 7d).
+// If For is less than 30 minutes then the duration is twice For, otherwise just For.
+func calcFromDuration(d time.Duration) time.Duration {
+	if d < screenshotMinDuration {
+		return screenshotMinDuration
+	}
+	if d > screenshotMaxDuration {
+		return screenshotMaxDuration
+	}
+	if d < 30*time.Minute {
+		d = d * 2
+	}
+	return d
+}
+
+func formatDuration(d time.Duration) string {
+	return fmt.Sprintf("now-%ds", int64(d.Seconds()))
 }
