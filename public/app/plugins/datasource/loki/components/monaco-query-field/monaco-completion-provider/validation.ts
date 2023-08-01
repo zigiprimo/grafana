@@ -39,6 +39,7 @@ export function validateQuery(
    * have different lengths. With this, we also exclude irrelevant parser errors that are produced by
    * lezer not understanding $variables and $__variables, which usually generate 2 or 3 error SyntaxNode.
    */
+  console.log('query', query);
   const interpolatedErrors: ParseError[] = parseQuery(interpolatedQuery);
   if (!interpolatedErrors.length) {
     return false;
@@ -116,6 +117,7 @@ function isErrorBoundary(boundary: ParserErrorBoundary | null): boundary is Pars
 export const placeHolderScopedVars = {
   __interval: { text: '1s', value: '1s' },
   __interval_ms: { text: '1000', value: 1000 },
+  __auto_range: { text: '1s', value: '1s' },
   __range_ms: { text: '1000', value: 1000 },
   __range_s: { text: '1', value: 1 },
   __range: { text: '1s', value: '1s' },
