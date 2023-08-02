@@ -18,6 +18,7 @@ GO_BUILD_FLAGS += $(if $(GO_BUILD_TAGS),-build-tags=$(GO_BUILD_TAGS))
 targets := $(shell echo '$(sources)' | tr "," " ")
 
 GO_INTEGRATION_TESTS := $(shell find ./pkg -type f -name '*_test.go' -exec grep -l '^func TestIntegration' '{}' '+' | grep -o '\(.*\)/' | sort -u)
+GO_DECOUPLED_CORE_PLUGIN_TESTS := $(shell find ./public/plugins -type d -name 'pkg' | sed -e 's/$$/\/.../' | sort -u)
 
 all: deps build
 
@@ -120,7 +121,12 @@ run-frontend: deps-js ## Fetch js dependencies and watch frontend for rebuild
 ##@ Testing
 
 .PHONY: test-go
-test-go: test-go-unit test-go-integration
+test-go: test-go-unit test-go-decoupled-core-plugins test-go-integration
+
+.PHONY: test-go-decoupled-core-plugins
+test-go-decoupled-core-plugins:
+	@echo "test backend decoupled core plugins"
+	$(GO) test -short -covermode=atomic -timeout=30m $(GO_DECOUPLED_CORE_PLUGIN_TESTS)
 
 .PHONY: test-go-unit
 test-go-unit: ## Run unit tests for backend with flags.
