@@ -417,6 +417,13 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
     );
   }
 
+  renderAdditionalPanel() {
+    const { additionalData } = this.props;
+    console.log('query data', additionalData);
+
+    return <>Hello panel!</>;
+  }
+
   renderLogsSamplePanel() {
     const { logsSample, timeZone, setSupplementaryQueryEnabled, exploreId, datasourceInstance, queries } = this.props;
 
@@ -494,6 +501,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
       showFlameGraph,
       timeZone,
       showLogsSample,
+      showAdditionalPanel,
     } = this.props;
     const { openDrawer } = this.state;
     const styles = getStyles(theme);
@@ -562,6 +570,9 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
                           {showFlameGraph && <ErrorBoundaryAlert>{this.renderFlameGraphPanel()}</ErrorBoundaryAlert>}
                           {showTrace && <ErrorBoundaryAlert>{this.renderTraceViewPanel()}</ErrorBoundaryAlert>}
                           {showLogsSample && <ErrorBoundaryAlert>{this.renderLogsSamplePanel()}</ErrorBoundaryAlert>}
+                          {showAdditionalPanel && (
+                            <ErrorBoundaryAlert>{this.renderAdditionalPanel()}</ErrorBoundaryAlert>
+                          )}
                           {showCustom && <ErrorBoundaryAlert>{this.renderCustom(width)}</ErrorBoundaryAlert>}
                           {showNoData && <ErrorBoundaryAlert>{this.renderNoData()}</ErrorBoundaryAlert>}
                         </>
@@ -622,10 +633,14 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     supplementaryQueries,
   } = item;
 
+  const additionalData = queryResponse;
   const loading = selectIsWaitingForData(exploreId)(state);
   const logsSample = supplementaryQueries[SupplementaryQueryType.LogsSample];
   // We want to show logs sample only if there are no log results and if there is already graph or table result
   const showLogsSample = !!(logsSample.dataProvider !== undefined && !logsResult && (graphResult || tableResult));
+
+  //@todo finish implementation
+  const showAdditionalPanel = true;
 
   return {
     datasourceInstance,
@@ -649,7 +664,9 @@ function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
     splitted: isSplit(state),
     loading,
     logsSample,
+    additionalData,
     showLogsSample,
+    showAdditionalPanel,
   };
 }
 

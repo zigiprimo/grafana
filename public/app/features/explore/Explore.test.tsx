@@ -52,6 +52,7 @@ const makeEmptyQueryResponse = (loadingState: LoadingState) => {
 const dummyProps: Props = {
   logsResult: undefined,
   changeSize: jest.fn(),
+  showAdditionalPanel: false,
   datasourceInstance: {
     meta: {
       metrics: true,
