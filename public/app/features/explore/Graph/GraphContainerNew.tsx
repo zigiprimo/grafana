@@ -34,7 +34,7 @@ interface Props extends Pick<PanelChromeProps, 'statusMessage'> {
   actionsOverride?: React.JSX.Element;
 }
 
-export const GraphContainer = ({
+export const GraphContainerNew = ({
   data,
   eventBus,
   height,
