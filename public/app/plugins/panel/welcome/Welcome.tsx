@@ -1,107 +1,72 @@
-import { css } from '@emotion/css';
-import React from 'react';
+import React, { useState } from 'react';
+import { useAsync } from 'react-use';
 
-import { GrafanaTheme2 } from '@grafana/data';
-import { useStyles2 } from '@grafana/ui';
-
-const helpOptions = [
-  { value: 0, label: 'Documentation', href: 'https://grafana.com/docs/grafana/latest' },
-  { value: 1, label: 'Tutorials', href: 'https://grafana.com/tutorials' },
-  { value: 2, label: 'Community', href: 'https://community.grafana.com' },
-  { value: 3, label: 'Public Slack', href: 'http://slack.grafana.com' },
-];
+import { llms } from '@grafana/experimental';
+import { Button, Input, Spinner } from '@grafana/ui';
 
 export const WelcomeBanner = () => {
-  const styles = useStyles2(getStyles);
+  // The current input value.
+  const [input, setInput] = React.useState('');
+  // The final message to send to the LLM, updated when the button is clicked.
+  const [message, setMessage] = React.useState('');
+  // The latest reply from the LLM.
+  const [reply, setReply] = useState('');
+
+  const { loading, error, value } = useAsync(async () => {
+    // Check if the LLM plugin is enabled and configured.
+    // If not, we won't be able to make requests, so return early.
+    const enabled = await llms.openai.enabled();
+    if (!enabled) {
+      return { enabled };
+    }
+    if (message === '') {
+      return { enabled };
+    }
+    // Stream the completions. Each element is the next stream chunk.
+    const stream = llms.openai
+      .streamChatCompletions({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          { role: 'system', content: 'You are a helpful assistant in Grafana.' },
+          { role: 'user', content: message },
+        ],
+      })
+      .pipe(
+        // Accumulate the stream content into a stream of strings, where each
+        // element contains the accumulated message so far.
+        llms.openai.accumulateContent()
+      );
+    // Subscribe to the stream and update the state for each returned value.
+    return {
+      enabled,
+      stream: stream.subscribe(setReply),
+    };
+  }, [message]);
+
+  if (error) {
+    // TODO: handle errors.
+    return null;
+  }
 
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Welcome to Grafana</h1>
-      <div className={styles.help}>
-        <h3 className={styles.helpText}>Need help?</h3>
-        <div className={styles.helpLinks}>
-          {helpOptions.map((option, index) => {
-            return (
-              <a
-                key={`${option.label}-${index}`}
-                className={styles.helpLink}
-                href={`${option.href}?utm_source=grafana_gettingstarted`}
-              >
-                {option.label}
-              </a>
-            );
-          })}
-        </div>
-      </div>
-    </div>
+    <>
+      {value?.enabled ? (
+        <>
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.currentTarget.value)}
+            placeholder="What are you trying to do today?"
+          />
+          <br />
+          <Button type="submit" onClick={() => setMessage(input)}>
+            Submit
+          </Button>
+          <br />
+          <div>{loading ? <Spinner /> : reply}</div>
+        </>
+      ) : (
+        <div>LLM plugin not enabled.</div>
+      )}
+    </>
   );
-};
-
-const getStyles = (theme: GrafanaTheme2) => {
-  return {
-    container: css`
-      display: flex;
-      /// background: url(public/img/g8_home_v2.svg) no-repeat;
-      background-size: cover;
-      height: 100%;
-      align-items: center;
-      padding: 0 16px;
-      justify-content: space-between;
-      padding: 0 ${theme.spacing(3)};
-
-      ${theme.breakpoints.down('lg')} {
-        background-position: 0px;
-        flex-direction: column;
-        align-items: flex-start;
-        justify-content: center;
-      }
-
-      ${theme.breakpoints.down('sm')} {
-        padding: 0 ${theme.spacing(1)};
-      }
-    `,
-    title: css`
-      margin-bottom: 0;
-
-      ${theme.breakpoints.down('lg')} {
-        margin-bottom: ${theme.spacing(1)};
-      }
-
-      ${theme.breakpoints.down('md')} {
-        font-size: ${theme.typography.h2.fontSize};
-      }
-      ${theme.breakpoints.down('sm')} {
-        font-size: ${theme.typography.h3.fontSize};
-      }
-    `,
-    help: css`
-      display: flex;
-      align-items: baseline;
-    `,
-    helpText: css`
-      margin-right: ${theme.spacing(2)};
-      margin-bottom: 0;
-
-      ${theme.breakpoints.down('md')} {
-        font-size: ${theme.typography.h4.fontSize};
-      }
-
-      ${theme.breakpoints.down('sm')} {
-        display: none;
-      }
-    `,
-    helpLinks: css`
-      display: flex;
-      flex-wrap: wrap;
-    `,
-    helpLink: css`
-      margin-right: ${theme.spacing(2)};
-      text-decoration: underline;
-      text-wrap: no-wrap;
-
-      ${theme.breakpoints.down('sm')} {
-        margin-right: 8px;
-      }
-    `,
-  };
 };
