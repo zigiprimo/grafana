@@ -6,26 +6,26 @@ import {
   AbsoluteTimeRange,
   applyFieldOverrides,
   createFieldConfigRegistry,
+  DashboardCursorSync,
   DataFrame,
   dateTime,
+  EventBus,
   FieldColorModeId,
   FieldConfigSource,
   getFrameDisplayName,
   GrafanaTheme2,
   LoadingState,
   SplitOpen,
-  TimeZone,
   ThresholdsConfig,
-  DashboardCursorSync,
-  EventBus,
+  TimeZone,
 } from '@grafana/data';
 import { PanelRenderer } from '@grafana/runtime';
 import {
   GraphDrawStyle,
-  LegendDisplayMode,
-  TooltipDisplayMode,
-  SortOrder,
   GraphThresholdsStyleConfig,
+  LegendDisplayMode,
+  SortOrder,
+  TooltipDisplayMode,
 } from '@grafana/schema';
 import {
   Button,
@@ -67,6 +67,7 @@ interface Props {
   thresholdsConfig?: ThresholdsConfig;
   thresholdsStyle?: GraphThresholdsStyleConfig;
   eventBus: EventBus;
+  key: string
 }
 
 export function ExploreGraphSub({
@@ -88,6 +89,7 @@ export function ExploreGraphSub({
   thresholdsStyle,
   eventBus,
 }: Props) {
+  console.log('data', data)
   const theme = useTheme2();
   const style = useStyles2(getStyles);
   const [showAllTimeSeries, setShowAllTimeSeries] = useState(false);
@@ -145,6 +147,7 @@ export function ExploreGraphSub({
   }, [fieldConfigRegistry, data, timeZone, theme, styledFieldConfig, showAllTimeSeries, dataLinkPostProcessor]);
 
   const annotationsWithConfig = useMemo(() => {
+    console.log('annotations', annotations);
     return applyFieldOverrides({
       fieldConfig: {
         defaults: {},
@@ -174,7 +177,7 @@ export function ExploreGraphSub({
   }, [dataWithConfig, onHiddenSeriesChanged]);
 
   const panelContext: PanelContext = {
-    eventsScope: 'explore',
+    eventsScope: `explore-sub`,
     eventBus,
     sync: () => DashboardCursorSync.Crosshair,
     onToggleSeriesVisibility(label: string, mode: SeriesVisibilityChangeMode) {
@@ -185,7 +188,7 @@ export function ExploreGraphSub({
 
   const panelOptions: TimeSeriesOptions = useMemo(
     () => ({
-      tooltip: { mode: tooltipDisplayMode, sort: SortOrder.None },
+      tooltip: { mode: TooltipDisplayMode.None, sort: SortOrder.None },
       legend: {
         displayMode: LegendDisplayMode.List,
         showLegend: true,

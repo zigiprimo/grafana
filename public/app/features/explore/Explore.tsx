@@ -1,5 +1,5 @@
 import { css, cx } from '@emotion/css';
-import { get, groupBy } from 'lodash';
+import {clone, cloneDeep, get, groupBy} from 'lodash';
 import memoizeOne from 'memoize-one';
 import React, { createRef } from 'react';
 import { connect, ConnectedProps } from 'react-redux';
@@ -17,7 +17,7 @@ import {
   SupplementaryQueryType,
   hasToggleableQueryFiltersSupport,
   DataFrame,
-  dateTime,
+  dateTime, FieldType, MutableDataFrame,
 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { config, getDataSourceSrv, PanelRenderer, reportInteraction } from '@grafana/runtime';
@@ -70,10 +70,10 @@ import {
 } from './state/query';
 import { isSplit } from './state/selectors';
 import { makeAbsoluteTime, updateTimeRange } from './state/time';
-import { ExploreFakeData } from './ExploreFakeData';
+import {ExploreFakeData, ExploreFakeExemplars} from './ExploreFakeData';
 import { Options as TimeSeriesOptions } from '../../plugins/panel/timeseries/panelcfg.gen';
 import { GraphContainerNew } from './Graph/GraphContainerNew';
-import {GraphSubContainer} from "./Graph/GraphSubContainer";
+import { GraphSubContainer } from './Graph/GraphSubContainer';
 
 const getStyles = (theme: GrafanaTheme2) => {
   return {
@@ -390,24 +390,23 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
     width: number,
     graphResultOverride?: DataFrame[],
     graphEventBusOverride?: EventBus,
-    actionsOverride?: React.JSX.Element
+    annotations?: DataFrame[]
   ) {
     const { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph } = this.props;
     console.log('renderGraphPanel', { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph });
 
     return (
       <GraphContainer
-        data={graphResultOverride ?? graphResult!}
+        data={graphResult! ?? graphResultOverride}
         height={showFlameGraph ? 180 : 400}
         width={width}
         absoluteRange={absoluteRange}
         timeZone={timeZone}
         onChangeTime={this.onUpdateTimeRange}
-        annotations={queryResponse.annotations}
+        annotations={annotations ?? queryResponse.annotations}
         splitOpenFn={this.onSplitOpen('graph')}
         loadingState={queryResponse.state}
         eventBus={graphEventBusOverride ?? this.graphEventBus}
-        actionsOverride={actionsOverride}
       />
     );
   }
@@ -415,83 +414,25 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
   renderGraphSubPanel(
     width: number,
     graphResultOverride: DataFrame[],
-    graphEventBusOverride?: EventBus,
-    actionsOverride?: React.JSX.Element
+    graphEventBusOverride: EventBus,
+    actionsOverride: React.JSX.Element,
+    annotations: DataFrame[]
   ) {
     const { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph } = this.props;
-    console.log('renderGraphPanel', { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph });
-    console.log('props', this.props);
-    const traceFrame = this.props.additionalData.series?.find((s) => s.name === 'Traces');
-    const traceIdField = traceFrame?.fields.find((field) => field.name === 'traceID');
-    console.log('traceIds', traceIdField?.values);
-   
+
     return (
       <GraphSubContainer
-        data={graphResultOverride ?? graphResult!}
+        data={graphResult! ?? graphResultOverride}
         height={showFlameGraph ? 180 : 400}
         width={width}
         absoluteRange={absoluteRange}
         timeZone={timeZone}
         onChangeTime={this.onUpdateTimeRange}
-        annotations={queryResponse.annotations}
+        annotations={annotations}
         splitOpenFn={this.onSplitOpen('graph')}
         loadingState={queryResponse.state}
         eventBus={graphEventBusOverride ?? this.graphEventBus}
         actionsOverride={actionsOverride}
-      />
-    );
-  }
-
-
-  renderGraphSubPanelOld(
-    width: number,
-    graphResultOverride: DataFrame[],
-    graphEventBusOverride?: EventBus,
-    actionsOverride?: React.JSX.Element
-  ) {
-    const { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph } = this.props;
-    console.log('renderGraphPanel', { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph });
-    console.log('props', this.props);
-    const traceFrame = this.props.additionalData.series?.find((s) => s.name === 'Traces');
-    const traceIdField = traceFrame?.fields.find((field) => field.name === 'traceID');
-    console.log('traceIds', traceIdField?.values);
-
-    const timeRange = {
-      from: dateTime(absoluteRange.from),
-      to: dateTime(absoluteRange.to),
-      raw: {
-        from: dateTime(absoluteRange.from),
-        to: dateTime(absoluteRange.to),
-      },
-    };
-
-    const panelOptions: TimeSeriesOptions = {
-      tooltip: { mode: TooltipDisplayMode.None, sort: SortOrder.None },
-      legend: {
-        displayMode: LegendDisplayMode.List,
-        showLegend: true,
-        placement: 'bottom',
-        calcs: [],
-      },
-    };
-
-    return (
-      <PanelRenderer
-        data={{
-          series: graphResultOverride,
-          timeRange: timeRange,
-          state: this.props.queryResponse.state,
-          traceIds: traceIdField?.values,
-        }}
-        pluginId="timeseries"
-        title="BarePanel"
-        width={width}
-        height={300}
-        timeZone={timeZone}
-        options={panelOptions}
-        onChangeTimeRange={(timeRange) => {
-          console.log('timeRange', timeRange);
-        }}
       />
     );
   }
@@ -547,29 +488,83 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
   }
 
   renderAdditionalPanel(width: number) {
-    const { additionalData, showMetrics, theme } = this.props;
+    const { additionalData, showMetrics, theme, queryResponse } = this.props;
     console.log('query data', additionalData, showMetrics);
     const styles = getStyles(theme);
 
-    const graphEventBus = this.props.eventBus.newScopedBus('graph', { onlyLocal: false });
-    const actionsOverride = <></>;
+    // const graphEventBus = this.props.eventBus.newScopedBus('graph', { onlyLocal: false });
+    const actionsOverride = <>custom ui</>;
+
+    const traceFrame = cloneDeep(this.props.additionalData.series?.find((s) => s.name === 'Traces'));
+    const newAnnotationField = new MutableDataFrame();
+    // Hacky cloney
+    if (traceFrame) {
+      newAnnotationField.name = 'exemplar';
+      traceFrame.fields.forEach(field => {
+        if(field.name === 'startTime'){
+          field.name = 'Time';
+          field.type = FieldType.time;
+          field.values = field.values.map((value) => {
+            return dateTime(value).valueOf()
+          })
+        }
+
+        if(field.name === 'traceDuration'){
+          field.name = 'Value';
+          field.type = FieldType.number;
+        }
+
+        newAnnotationField.addField(field);
+      })
+
+    }
+
+    const exemplarFake = ExploreFakeExemplars;
+    console.log('traceFrame', newAnnotationField);
+    console.log('exemplarFake', exemplarFake);
+
+    // const traceIdField = traceFrame?.fields.find((field) => field.name === 'traceID');
+
+    //@todo find out how to add fake exemplars
+
 
     return (
       <div className={styles.tempoGraphContainer}>
         <div className={styles.tempoMainGraphWrapper}>
           <ErrorBoundaryAlert>
-            {this.renderMainGraphPanelTempo(width, ExploreFakeData.series1, graphEventBus)}
+            {this.renderMainGraphPanelTempo(
+              width,
+              [...ExploreFakeData.series1, ...ExploreFakeData.series2, ...ExploreFakeData.series3],
+              this.graphEventBus,
+              newAnnotationField ? [newAnnotationField] : []
+            )}
           </ErrorBoundaryAlert>
         </div>
         <div className={styles.tempoSubGraphWrapper}>
           {
-            <ErrorBoundaryAlert>
-              {Object.keys(ExploreFakeData).map((data) =>(
+            <>
+              {Object.keys(ExploreFakeData).map((data) => (
                 <ErrorBoundaryAlert key={data}>
-                  {this.renderGraphSubPanel(width / Object.keys(ExploreFakeData).length, ExploreFakeData[data], graphEventBus, actionsOverride)}
+                  {this.renderGraphSubPanel(
+                    width / Object.keys(ExploreFakeData).length,
+                    ExploreFakeData[data],
+                    this.graphEventBus,
+                    actionsOverride,
+                    queryResponse.annotations ?? []
+                  )}
                 </ErrorBoundaryAlert>
               ))}
-            </ErrorBoundaryAlert>
+              <ErrorBoundaryAlert>
+                {newAnnotationField && this.renderGraphSubPanel(
+                  width / Object.keys(ExploreFakeData).length,
+                  newAnnotationField ? [newAnnotationField] : [],
+                  this.graphEventBus,
+                  actionsOverride,
+                  []
+                )}
+              </ErrorBoundaryAlert>
+            </>
+
           }
         </div>
       </div>
