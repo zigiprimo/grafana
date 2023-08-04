@@ -16,11 +16,12 @@ import {
   SplitOpenOptions,
   SupplementaryQueryType,
   hasToggleableQueryFiltersSupport,
-  DataFrame, dateTime,
+  DataFrame,
+  dateTime,
 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
-import {config, getDataSourceSrv, PanelRenderer, reportInteraction} from '@grafana/runtime';
-import {DataQuery, LegendDisplayMode, SortOrder, TooltipDisplayMode} from '@grafana/schema';
+import { config, getDataSourceSrv, PanelRenderer, reportInteraction } from '@grafana/runtime';
+import { DataQuery, LegendDisplayMode, SortOrder, TooltipDisplayMode } from '@grafana/schema';
 import {
   CustomScrollbar,
   ErrorBoundaryAlert,
@@ -69,9 +70,10 @@ import {
 } from './state/query';
 import { isSplit } from './state/selectors';
 import { makeAbsoluteTime, updateTimeRange } from './state/time';
-import {ExploreFakeData} from "./ExploreFakeData";
-import {Options as TimeSeriesOptions} from "../../plugins/panel/timeseries/panelcfg.gen";
-import {GraphContainerNew} from "./Graph/GraphContainerNew";
+import { ExploreFakeData } from './ExploreFakeData';
+import { Options as TimeSeriesOptions } from '../../plugins/panel/timeseries/panelcfg.gen';
+import { GraphContainerNew } from './Graph/GraphContainerNew';
+import {GraphSubContainer} from "./Graph/GraphSubContainer";
 
 const getStyles = (theme: GrafanaTheme2) => {
   return {
@@ -99,7 +101,9 @@ const getStyles = (theme: GrafanaTheme2) => {
       padding: ${theme.spacing(2)};
       padding-top: 0;
     `,
-    graphContainer: css`
+    tempoGraphContainer: css``,
+    tempoMainGraphWrapper: css``,
+    tempoSubGraphWrapper: css`
       display: flex;
       flex-wrap: nowrap;
     `,
@@ -356,7 +360,12 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
     });
   }
 
-  renderGraphPanel(width: number, graphResultOverride?: DataFrame[], graphEventBusOverride?: EventBus, actionsOverride?: React.JSX.Element) {
+  renderGraphPanel(
+    width: number,
+    graphResultOverride?: DataFrame[],
+    graphEventBusOverride?: EventBus,
+    actionsOverride?: React.JSX.Element
+  ) {
     const { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph } = this.props;
     console.log('renderGraphPanel', { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph });
 
@@ -376,16 +385,78 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
       />
     );
   }
-  renderGraphPanelNew(width: number, graphResultOverride: DataFrame[], graphEventBusOverride?: EventBus, actionsOverride?: React.JSX.Element) {
+
+  renderMainGraphPanelTempo(
+    width: number,
+    graphResultOverride?: DataFrame[],
+    graphEventBusOverride?: EventBus,
+    actionsOverride?: React.JSX.Element
+  ) {
+    const { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph } = this.props;
+    console.log('renderGraphPanel', { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph });
+
+    return (
+      <GraphContainer
+        data={graphResultOverride ?? graphResult!}
+        height={showFlameGraph ? 180 : 400}
+        width={width}
+        absoluteRange={absoluteRange}
+        timeZone={timeZone}
+        onChangeTime={this.onUpdateTimeRange}
+        annotations={queryResponse.annotations}
+        splitOpenFn={this.onSplitOpen('graph')}
+        loadingState={queryResponse.state}
+        eventBus={graphEventBusOverride ?? this.graphEventBus}
+        actionsOverride={actionsOverride}
+      />
+    );
+  }
+
+  renderGraphSubPanel(
+    width: number,
+    graphResultOverride: DataFrame[],
+    graphEventBusOverride?: EventBus,
+    actionsOverride?: React.JSX.Element
+  ) {
     const { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph } = this.props;
     console.log('renderGraphPanel', { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph });
     console.log('props', this.props);
-    const traceFrame = this.props.additionalData.series?.find(s => s.name === 'Traces');
-    const traceIdField = traceFrame?.fields.find(field => field.name === 'traceID')
-    console.log('traceIds', traceIdField?.values)
+    const traceFrame = this.props.additionalData.series?.find((s) => s.name === 'Traces');
+    const traceIdField = traceFrame?.fields.find((field) => field.name === 'traceID');
+    console.log('traceIds', traceIdField?.values);
+   
+    return (
+      <GraphSubContainer
+        data={graphResultOverride ?? graphResult!}
+        height={showFlameGraph ? 180 : 400}
+        width={width}
+        absoluteRange={absoluteRange}
+        timeZone={timeZone}
+        onChangeTime={this.onUpdateTimeRange}
+        annotations={queryResponse.annotations}
+        splitOpenFn={this.onSplitOpen('graph')}
+        loadingState={queryResponse.state}
+        eventBus={graphEventBusOverride ?? this.graphEventBus}
+        actionsOverride={actionsOverride}
+      />
+    );
+  }
+
+
+  renderGraphSubPanelOld(
+    width: number,
+    graphResultOverride: DataFrame[],
+    graphEventBusOverride?: EventBus,
+    actionsOverride?: React.JSX.Element
+  ) {
+    const { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph } = this.props;
+    console.log('renderGraphPanel', { graphResult, absoluteRange, timeZone, queryResponse, showFlameGraph });
+    console.log('props', this.props);
+    const traceFrame = this.props.additionalData.series?.find((s) => s.name === 'Traces');
+    const traceIdField = traceFrame?.fields.find((field) => field.name === 'traceID');
+    console.log('traceIds', traceIdField?.values);
 
     const timeRange = {
-
       from: dateTime(absoluteRange.from),
       to: dateTime(absoluteRange.to),
       raw: {
@@ -402,22 +473,25 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
         placement: 'bottom',
         calcs: [],
       },
-    }
+    };
 
     return (
       <PanelRenderer
         data={{
           series: graphResultOverride,
           timeRange: timeRange,
-          state: LoadingState.Done,
+          state: this.props.queryResponse.state,
           traceIds: traceIdField?.values,
         }}
         pluginId="timeseries"
-        title=""
+        title="BarePanel"
         width={width}
         height={300}
         timeZone={timeZone}
         options={panelOptions}
+        onChangeTimeRange={(timeRange) => {
+          console.log('timeRange', timeRange);
+        }}
       />
     );
   }
@@ -478,17 +552,26 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
     const styles = getStyles(theme);
 
     const graphEventBus = this.props.eventBus.newScopedBus('graph', { onlyLocal: false });
-    const actionsOverride = <></>
+    const actionsOverride = <></>;
 
     return (
-      <div className={styles.graphContainer}>
-        {(
+      <div className={styles.tempoGraphContainer}>
+        <div className={styles.tempoMainGraphWrapper}>
           <ErrorBoundaryAlert>
-            {this.renderGraphPanel(width / 3, ExploreFakeData.series1, graphEventBus, actionsOverride)}
-            {this.renderGraphPanelNew(width / 3, ExploreFakeData.series1, graphEventBus, actionsOverride)}
-            {this.renderGraphPanelNew(width / 3, ExploreFakeData.series1, graphEventBus, actionsOverride)}
+            {this.renderMainGraphPanelTempo(width, ExploreFakeData.series1, graphEventBus)}
           </ErrorBoundaryAlert>
-        )}
+        </div>
+        <div className={styles.tempoSubGraphWrapper}>
+          {
+            <ErrorBoundaryAlert>
+              {Object.keys(ExploreFakeData).map((data) =>(
+                <ErrorBoundaryAlert key={data}>
+                  {this.renderGraphSubPanel(width / Object.keys(ExploreFakeData).length, ExploreFakeData[data], graphEventBus, actionsOverride)}
+                </ErrorBoundaryAlert>
+              ))}
+            </ErrorBoundaryAlert>
+          }
+        </div>
       </div>
     );
   }

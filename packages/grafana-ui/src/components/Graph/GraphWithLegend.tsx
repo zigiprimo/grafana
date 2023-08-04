@@ -30,7 +30,7 @@ const getGraphWithLegendStyles = stylesFactory(({ placement }: GraphWithLegendPr
     display: 'flex',
     flexDirection: placement === 'bottom' ? 'column' : 'row',
   }),
-  graphContainer: css({
+  tempoGraphContainer: css({
     minHeight: '65%',
     flexGrow: 1,
   }),
