@@ -67,7 +67,6 @@ interface Props {
   thresholdsConfig?: ThresholdsConfig;
   thresholdsStyle?: GraphThresholdsStyleConfig;
   eventBus: EventBus;
-  key: string
 }
 
 export function ExploreGraphSub({

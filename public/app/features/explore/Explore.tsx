@@ -497,7 +497,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
 
     const traceFrame = cloneDeep(this.props.additionalData.series?.find((s) => s.name === 'Traces'));
     const newAnnotationField = new MutableDataFrame();
-    // Hacky cloney
+    // Hacky cloney, convert traces frame from tempo search to exemplars
     if (traceFrame) {
       newAnnotationField.name = 'exemplar';
       traceFrame.fields.forEach(field => {
@@ -530,13 +530,22 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
 
     return (
       <div className={styles.tempoGraphContainer}>
+
         <div className={styles.tempoMainGraphWrapper}>
+          {/*<ErrorBoundaryAlert>*/}
+          {/*  {this.renderMainGraphPanelTempo(*/}
+          {/*    width,*/}
+          {/*    [...ExploreFakeData.series1, ...ExploreFakeData.series2, ...ExploreFakeData.series3],*/}
+          {/*    this.graphEventBus,*/}
+          {/*    queryResponse.annotations*/}
+          {/*  )}*/}
+          {/*</ErrorBoundaryAlert>*/}
           <ErrorBoundaryAlert>
-            {this.renderMainGraphPanelTempo(
+            {newAnnotationField && this.renderMainGraphPanelTempo(
               width,
-              [...ExploreFakeData.series1, ...ExploreFakeData.series2, ...ExploreFakeData.series3],
+              newAnnotationField ? [newAnnotationField] : [],
               this.graphEventBus,
-              newAnnotationField ? [newAnnotationField] : []
+              queryResponse.annotations
             )}
           </ErrorBoundaryAlert>
         </div>
@@ -550,19 +559,11 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
                     ExploreFakeData[data],
                     this.graphEventBus,
                     actionsOverride,
-                    queryResponse.annotations ?? []
+                    newAnnotationField ? [newAnnotationField] : []
                   )}
                 </ErrorBoundaryAlert>
               ))}
-              <ErrorBoundaryAlert>
-                {newAnnotationField && this.renderGraphSubPanel(
-                  width / Object.keys(ExploreFakeData).length,
-                  newAnnotationField ? [newAnnotationField] : [],
-                  this.graphEventBus,
-                  actionsOverride,
-                  []
-                )}
-              </ErrorBoundaryAlert>
+
             </>
 
           }
