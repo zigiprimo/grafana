@@ -1,6 +1,8 @@
 import { createSelector } from '@reduxjs/toolkit';
 
-import { ExploreItemState, StoreState } from 'app/types';
+import { StoreState } from 'app/types';
+
+import { ExploreItemState } from '../types';
 
 export const selectPanes = (state: Pick<StoreState, 'explore'>) => state.explore.panes;
 

@@ -16,12 +16,13 @@ import {
   SupplementaryQueryType,
 } from '@grafana/data';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
-import { createAsyncThunk, ExploreItemState, StoreState, ThunkDispatch } from 'app/types';
+import { createAsyncThunk, StoreState, ThunkDispatch } from 'app/types';
 
 import { reducerTester } from '../../../../test/core/redux/reducerTester';
 import { configureStore } from '../../../store/configureStore';
 import { setTimeSrv, TimeSrv } from '../../dashboard/services/TimeSrv';
 import { makeLogs } from '../__mocks__/makeLogs';
+import { ExploreItemState } from '../types';
 import { supplementaryQueryTypes } from '../utils/supplementaryQueries';
 
 import { saveCorrelationsAction } from './explorePane';

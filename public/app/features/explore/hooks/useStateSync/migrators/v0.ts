@@ -1,6 +1,6 @@
 import { ExploreUrlState } from '@grafana/data';
-import { safeParseJson } from 'app/core/utils/explore';
 import { DEFAULT_RANGE } from 'app/features/explore/state/utils';
+import { safeParseJson } from 'app/features/explore/utils';
 
 import { BaseExploreURL, MigrationHandler } from './types';
 

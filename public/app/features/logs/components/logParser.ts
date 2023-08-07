@@ -2,9 +2,9 @@ import { partition } from 'lodash';
 import memoizeOne from 'memoize-one';
 
 import { DataFrame, Field, FieldWithIndex, LinkModel, LogRowModel } from '@grafana/data';
-import { safeStringifyValue } from 'app/core/utils/explore';
 import { ExploreFieldLinkModel } from 'app/features/explore/utils/links';
 
+import { safeStringifyValue } from '../../../core/utils/misc';
 import { parseLogsFrame } from '../logsFrame';
 
 export type FieldDef = {

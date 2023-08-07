@@ -2,7 +2,8 @@ import React from 'react';
 
 import { SelectableValue } from '@grafana/data';
 import { RadioButtonGroup } from '@grafana/ui';
-import { EXPLORE_GRAPH_STYLES, ExploreGraphStyle } from 'app/types';
+
+import { EXPLORE_GRAPH_STYLES, ExploreGraphStyle } from '../types';
 
 const ALL_GRAPH_STYLE_OPTIONS: Array<SelectableValue<ExploreGraphStyle>> = EXPLORE_GRAPH_STYLES.map((style) => ({
   value: style,

@@ -5,9 +5,10 @@ import { getPluginLinkExtensions } from '@grafana/runtime';
 import { DataQuery, TimeZone } from '@grafana/schema';
 import { Dropdown, ToolbarButton } from '@grafana/ui';
 import { contextSrv } from 'app/core/services/context_srv';
-import { AccessControlAction, ExplorePanelData, useSelector } from 'app/types';
+import { AccessControlAction, useSelector } from 'app/types';
 
 import { getExploreItemSelector } from '../state/selectors';
+import { ExplorePanelData } from '../types';
 
 import { ConfirmNavigationModal } from './ConfirmNavigationModal';
 import { ToolbarExtensionPointMenu } from './ToolbarExtensionPointMenu';

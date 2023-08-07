@@ -36,13 +36,13 @@ import {
   toDataQueryResponse,
 } from '@grafana/runtime';
 import { Badge, BadgeColor, Tooltip } from '@grafana/ui';
-import { safeStringifyValue } from 'app/core/utils/explore';
 import { discoverDataSourceFeatures } from 'app/features/alerting/unified/api/buildInfo';
 import { getTimeSrv, TimeSrv } from 'app/features/dashboard/services/TimeSrv';
 import { getTemplateSrv, TemplateSrv } from 'app/features/templating/template_srv';
 import { PromApiFeatures, PromApplication } from 'app/types/unified-alerting-dto';
 
 import config from '../../../core/config';
+import { safeStringifyValue } from '../../../core/utils/misc';
 
 import { addLabelToQuery } from './add_label_to_query';
 import { AnnotationQueryEditor } from './components/AnnotationQueryEditor';

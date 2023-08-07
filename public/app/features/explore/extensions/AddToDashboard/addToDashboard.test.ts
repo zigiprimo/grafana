@@ -2,9 +2,9 @@ import { MutableDataFrame } from '@grafana/data';
 import { DataQuery, defaultDashboard } from '@grafana/schema';
 import { backendSrv } from 'app/core/services/backend_srv';
 import * as api from 'app/features/dashboard/state/initDashboard';
-import { ExplorePanelData } from 'app/types';
 
 import { createEmptyQueryResponse } from '../../state/utils';
+import { ExplorePanelData } from '../../types';
 
 import { setDashboardInLocalStorage } from './addToDashboard';
 

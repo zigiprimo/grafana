@@ -1,5 +1,6 @@
 import { DataTransformerConfig } from '@grafana/schema';
 
+import { ScopedVars } from './ScopedVars';
 import { FieldConfigSource } from './fieldOverrides';
 import { DataQuery, DataSourceRef } from './query';
 
@@ -45,4 +46,6 @@ export interface PanelModel<TOptions = any, TCustomFieldConfig = any> {
 
   /** alerting v1 object */
   alert?: any;
+
+  scopedVars?: ScopedVars;
 }

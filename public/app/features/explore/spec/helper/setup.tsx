@@ -27,15 +27,15 @@ import { DataSourceRef } from '@grafana/schema';
 import { GrafanaContext } from 'app/core/context/GrafanaContext';
 import { GrafanaRoute } from 'app/core/navigation/GrafanaRoute';
 import { Echo } from 'app/core/services/echo/Echo';
-import { setLastUsedDatasourceUID } from 'app/core/utils/explore';
+import { setLastUsedDatasourceUID } from 'app/features/explore/utils';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 import { configureStore } from 'app/store/configureStore';
 
 import { LokiDatasource } from '../../../../plugins/datasource/loki/datasource';
 import { LokiQuery } from '../../../../plugins/datasource/loki/types';
-import { ExploreQueryParams } from '../../../../types';
 import { initialUserState } from '../../../profile/state/reducers';
 import ExplorePage from '../../ExplorePage';
+import { ExploreQueryParams } from '../../types';
 
 type DatasourceSetup = { settings: DataSourceInstanceSettings; api: DataSourceApi };
 

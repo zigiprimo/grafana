@@ -21,8 +21,8 @@ import { DataQuery } from '@grafana/schema';
 
 import { MockDataSourceApi } from '../../../../test/mocks/datasource_srv';
 import { MockDataQueryRequest, MockQuery } from '../../../../test/mocks/query';
-import { ExplorePanelData } from '../../../types';
 import { mockExplorePanelData } from '../__mocks__/data';
+import { ExplorePanelData } from '../types';
 
 import { getSupplementaryQueryProvider } from './supplementaryQueries';
 

@@ -1,6 +1,7 @@
 import { DataSourceApi } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
-import { ExploreItemState } from 'app/types';
+
+import { ExploreItemState } from '../types';
 
 import { updateDatasourceInstanceAction, datasourceReducer } from './datasource';
 import { createEmptyQueryResponse } from './utils';

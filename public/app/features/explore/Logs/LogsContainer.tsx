@@ -20,8 +20,8 @@ import {
 } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 import { Collapse } from '@grafana/ui';
+import { ExploreItemState } from 'app/features/explore/types';
 import { StoreState } from 'app/types';
-import { ExploreItemState } from 'app/types/explore';
 
 import { getTimeZone } from '../../profile/state/selectors';
 import {

@@ -5,9 +5,10 @@ import { DataSourceApi, HistoryItem } from '@grafana/data';
 import { reportInteraction, getCorrelationsSrv } from '@grafana/runtime';
 import { DataSourceRef } from '@grafana/schema';
 import { RefreshPicker } from '@grafana/ui';
-import { stopQueryState } from 'app/core/utils/explore';
-import { ExploreItemState, ThunkResult } from 'app/types';
+import { stopQueryState } from 'app/features/explore/utils';
+import { ThunkResult } from 'app/types';
 
+import { ExploreItemState } from '../types';
 import { loadSupplementaryQueries } from '../utils/supplementaryQueries';
 
 import { saveCorrelationsAction } from './explorePane';

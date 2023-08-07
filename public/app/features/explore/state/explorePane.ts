@@ -12,10 +12,10 @@ import {
 } from '@grafana/data';
 import { getCorrelationsSrv } from '@grafana/runtime';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
-import { getQueryKeys } from 'app/core/utils/explore';
+import { ExploreItemState } from 'app/features/explore/types';
+import { getQueryKeys } from 'app/features/explore/utils';
 import { getTimeZone } from 'app/features/profile/state/selectors';
 import { createAsyncThunk, ThunkResult } from 'app/types';
-import { ExploreItemState } from 'app/types/explore';
 
 import { datasourceReducer } from './datasource';
 import { historyReducer } from './history';

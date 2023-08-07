@@ -5,7 +5,7 @@ import { connect, ConnectedProps } from 'react-redux';
 import { config, reportInteraction } from '@grafana/runtime';
 import { useTheme2 } from '@grafana/ui';
 // Types
-import { ExploreItemState, StoreState } from 'app/types';
+import { StoreState } from 'app/types';
 
 // Components, enums
 import { ExploreDrawer } from '../ExploreDrawer';
@@ -18,6 +18,7 @@ import {
   updateHistorySettings,
   updateHistorySearchFilters,
 } from '../state/history';
+import { ExploreItemState } from '../types';
 
 import { RichHistory, Tabs } from './RichHistory';
 

@@ -1,13 +1,14 @@
 import { css } from '@emotion/css';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
+import { Provider } from 'react-redux';
 
 import { ErrorBoundaryAlert } from '@grafana/ui';
 import { SplitPaneWrapper } from 'app/core/components/SplitPaneWrapper/SplitPaneWrapper';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 import { useNavModel } from 'app/core/hooks/useNavModel';
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
+import { ExploreQueryParams } from 'app/features/explore/types';
 import { useSelector } from 'app/types';
-import { ExploreQueryParams } from 'app/types/explore';
 
 import { ExploreActions } from './ExploreActions';
 import { ExplorePaneContainer } from './ExplorePaneContainer';
@@ -16,6 +17,7 @@ import { useSplitSizeUpdater } from './hooks/useSplitSizeUpdater';
 import { useStateSync } from './hooks/useStateSync';
 import { useTimeSrvFix } from './hooks/useTimeSrvFix';
 import { isSplit, selectPanesEntries } from './state/selectors';
+import { configureExploreStore } from './state/store';
 
 const MIN_PANE_WIDTH = 200;
 
@@ -55,28 +57,34 @@ export default function ExplorePage(props: GrafanaRouteComponentProps<{}, Explor
     keybindings.setupTimeRangeBindings(false);
   }, [keybindings]);
 
-  return (
-    <div className={styles.pageScrollbarWrapper}>
-      <ExploreActions />
+  const store = useMemo(() => {
+    return configureExploreStore();
+  }, []);
 
-      <SplitPaneWrapper
-        splitOrientation="vertical"
-        paneSize={widthCalc}
-        minSize={MIN_PANE_WIDTH}
-        maxSize={MIN_PANE_WIDTH * -1}
-        primary="second"
-        splitVisible={hasSplit}
-        paneStyle={{ overflow: 'auto', display: 'flex', flexDirection: 'column' }}
-        onDragFinished={(size) => size && updateSplitSize(size)}
-      >
-        {panes.map(([exploreId]) => {
-          return (
-            <ErrorBoundaryAlert key={exploreId} style="page">
-              <ExplorePaneContainer exploreId={exploreId} />
-            </ErrorBoundaryAlert>
-          );
-        })}
-      </SplitPaneWrapper>
-    </div>
+  return (
+    <Provider store={store}>
+      <div className={styles.pageScrollbarWrapper}>
+        <ExploreActions />
+
+        <SplitPaneWrapper
+          splitOrientation="vertical"
+          paneSize={widthCalc}
+          minSize={MIN_PANE_WIDTH}
+          maxSize={MIN_PANE_WIDTH * -1}
+          primary="second"
+          splitVisible={hasSplit}
+          paneStyle={{ overflow: 'auto', display: 'flex', flexDirection: 'column' }}
+          onDragFinished={(size) => size && updateSplitSize(size)}
+        >
+          {panes.map(([exploreId]) => {
+            return (
+              <ErrorBoundaryAlert key={exploreId} style="page">
+                <ExplorePaneContainer exploreId={exploreId} />
+              </ErrorBoundaryAlert>
+            );
+          })}
+        </SplitPaneWrapper>
+      </div>
+    </Provider>
   );
 }

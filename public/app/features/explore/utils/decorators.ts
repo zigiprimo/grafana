@@ -15,12 +15,12 @@ import {
 import { config } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 
-import { refreshIntervalToSortOrder } from '../../../core/utils/explore';
-import { ExplorePanelData } from '../../../types';
 import { attachCorrelationsToDataFrames } from '../../correlations/utils';
 import { dataFrameToLogsModel } from '../../logs/logsModel';
 import { sortLogsResult } from '../../logs/utils';
 import { hasPanelPlugin } from '../../plugins/importPanelPlugin';
+import { ExplorePanelData } from '../types';
+import { refreshIntervalToSortOrder } from '../utils';
 
 /**
  * When processing response first we try to determine what kind of dataframes we got as one query can return multiple

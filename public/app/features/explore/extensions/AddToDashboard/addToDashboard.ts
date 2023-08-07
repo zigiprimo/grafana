@@ -5,7 +5,9 @@ import {
   getNewDashboardModelData,
   setDashboardToFetchFromLocalStorage,
 } from 'app/features/dashboard/state/initDashboard';
-import { DashboardDTO, ExplorePanelData } from 'app/types';
+import { DashboardDTO } from 'app/types';
+
+import { ExplorePanelData } from '../../types';
 
 export enum AddToDashboardError {
   FETCH_DASHBOARD = 'fetch-dashboard',

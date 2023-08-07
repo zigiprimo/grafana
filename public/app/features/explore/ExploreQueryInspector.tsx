@@ -10,9 +10,10 @@ import { InspectErrorTab } from 'app/features/inspector/InspectErrorTab';
 import { InspectJSONTab } from 'app/features/inspector/InspectJSONTab';
 import { InspectStatsTab } from 'app/features/inspector/InspectStatsTab';
 import { QueryInspector } from 'app/features/inspector/QueryInspector';
-import { StoreState, ExploreItemState } from 'app/types';
+import { StoreState } from 'app/types';
 
 import { runQueries, selectIsWaitingForData } from './state/query';
+import { ExploreItemState } from './types';
 
 interface DispatchProps {
   width: number;

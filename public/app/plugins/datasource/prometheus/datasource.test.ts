@@ -18,7 +18,6 @@ import {
 import { config } from '@grafana/runtime';
 import { TimeSrv } from 'app/features/dashboard/services/TimeSrv';
 import { TemplateSrv } from 'app/features/templating/template_srv';
-import { QueryOptions } from 'app/types';
 
 import { VariableHide } from '../../../features/variables/types';
 
@@ -2052,6 +2051,12 @@ describe('PrometheusDatasource for POST', () => {
     });
   });
 });
+
+type QueryOptions = {
+  minInterval?: string;
+  maxDataPoints?: number;
+  liveStreaming?: boolean;
+};
 
 function getPrepareTargetsContext({
   targets,

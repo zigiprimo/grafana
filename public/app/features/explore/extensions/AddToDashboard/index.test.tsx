@@ -11,9 +11,9 @@ import { Echo } from 'app/core/services/echo/Echo';
 import * as initDashboard from 'app/features/dashboard/state/initDashboard';
 import { DashboardSearchItemType } from 'app/features/search/types';
 import { configureStore } from 'app/store/configureStore';
-import { ExploreState } from 'app/types';
 
 import { createEmptyQueryResponse } from '../../state/utils';
+import { ExploreState } from '../../types';
 
 import * as api from './addToDashboard';
 

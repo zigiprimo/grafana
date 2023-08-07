@@ -10,9 +10,9 @@ import {
   ThresholdsConfig,
 } from '@grafana/data';
 import { GraphThresholdsStyleConfig, PanelChrome, PanelChromeProps } from '@grafana/ui';
-import { ExploreGraphStyle } from 'app/types';
 
 import { storeGraphStyle } from '../state/utils';
+import { ExploreGraphStyle } from '../types';
 
 import { ExploreGraph } from './ExploreGraph';
 import { ExploreGraphLabel } from './ExploreGraphLabel';

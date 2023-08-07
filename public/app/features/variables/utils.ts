@@ -2,8 +2,8 @@ import { isArray, isEqual } from 'lodash';
 
 import { UrlQueryMap, UrlQueryValue, VariableType } from '@grafana/data';
 import { getTemplateSrv } from '@grafana/runtime';
-import { safeStringifyValue } from 'app/core/utils/explore';
 
+import { safeStringifyValue } from '../../core/utils/misc';
 import { getState } from '../../store/store';
 import { StoreState } from '../../types';
 import { getTimeSrv } from '../dashboard/services/TimeSrv';

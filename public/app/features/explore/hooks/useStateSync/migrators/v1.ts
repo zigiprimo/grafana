@@ -1,6 +1,7 @@
 import { ExploreUrlState } from '@grafana/data';
-import { generateExploreId, safeParseJson } from 'app/core/utils/explore';
+import { generateExploreId } from '@grafana/runtime';
 import { DEFAULT_RANGE } from 'app/features/explore/state/utils';
+import { safeParseJson } from 'app/features/explore/utils';
 
 import { hasKey } from '../../utils';
 

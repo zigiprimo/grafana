@@ -3,13 +3,14 @@ import { AnyAction, createAction } from '@reduxjs/toolkit';
 import { AbsoluteTimeRange, dateTimeForTimeZone, LoadingState, RawTimeRange, TimeRange } from '@grafana/data';
 import { getTemplateSrv } from '@grafana/runtime';
 import { RefreshPicker } from '@grafana/ui';
-import { getTimeRange, refreshIntervalToSortOrder, stopQueryState } from 'app/core/utils/explore';
+import { getTimeRange, refreshIntervalToSortOrder, stopQueryState } from 'app/features/explore/utils';
 import { sortLogsResult } from 'app/features/logs/utils';
 import { getFiscalYearStartMonth, getTimeZone } from 'app/features/profile/state/selectors';
-import { ExploreItemState, ThunkResult } from 'app/types';
+import { ThunkResult } from 'app/types';
 
 import { getTimeSrv } from '../../dashboard/services/TimeSrv';
 import { TimeModel } from '../../dashboard/state/TimeModel';
+import { ExploreItemState } from '../types';
 
 import { syncTimesAction } from './main';
 import { runQueries } from './query';

@@ -4,10 +4,10 @@ import { useEffect, useRef } from 'react';
 import { CoreApp, ExploreUrlState, RawTimeRange, DataSourceApi } from '@grafana/data';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
 import { useGrafana } from 'app/core/context/GrafanaContext';
-import { clearQueryKeys, getLastUsedDatasourceUID } from 'app/core/utils/explore';
+import { clearQueryKeys, getLastUsedDatasourceUID } from 'app/features/explore/utils';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
-import { addListener, ExploreItemState, ExploreQueryParams, useDispatch, useSelector } from 'app/types';
+import { addListener, useDispatch, useSelector } from 'app/types';
 
 import { changeDatasource } from '../../state/datasource';
 import { initializeExplore } from '../../state/explorePane';
@@ -16,6 +16,7 @@ import { runQueries, setQueriesAction } from '../../state/query';
 import { selectPanes } from '../../state/selectors';
 import { changeRangeAction, updateTime } from '../../state/time';
 import { DEFAULT_RANGE, fromURLRange, toURLTimeRange } from '../../state/utils';
+import { ExploreItemState, ExploreQueryParams } from '../../types';
 import { withUniqueRefIds } from '../../utils/queries';
 import { isFulfilled } from '../utils';
 

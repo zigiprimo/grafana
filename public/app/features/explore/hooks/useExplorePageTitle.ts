@@ -3,9 +3,10 @@ import { useEffect, useRef } from 'react';
 import { NavModel } from '@grafana/data';
 import { Branding } from 'app/core/components/Branding/Branding';
 import { useNavModel } from 'app/core/hooks/useNavModel';
-import { safeParseJson } from 'app/core/utils/explore';
+import { safeParseJson } from 'app/features/explore/utils';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
-import { ExploreQueryParams } from 'app/types';
+
+import { ExploreQueryParams } from '../types';
 
 import { isFulfilled, hasKey } from './utils';
 

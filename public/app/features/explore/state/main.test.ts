@@ -8,7 +8,8 @@ import { PanelModel } from 'app/features/dashboard/state';
 import { reducerTester } from '../../../../test/core/redux/reducerTester';
 import { MockDataSourceApi } from '../../../../test/mocks/datasource_srv';
 import { configureStore } from '../../../store/configureStore';
-import { ExploreItemState, ExploreState, StoreState, ThunkDispatch } from '../../../types';
+import { StoreState, ThunkDispatch } from '../../../types';
+import { ExploreItemState, ExploreState } from '../types';
 
 import { exploreReducer, navigateToExplore, splitClose, splitOpen } from './main';
 

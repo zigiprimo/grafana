@@ -8,7 +8,7 @@ import { getGrafanaContextMock } from 'test/mocks/getGrafanaContextMock';
 
 import { DataSourceApi, UrlQueryMap } from '@grafana/data';
 import { HistoryWrapper, setDataSourceSrv, DataSourceSrv } from '@grafana/runtime';
-import { setLastUsedDatasourceUID } from 'app/core/utils/explore';
+import { setLastUsedDatasourceUID } from 'app/features/explore/utils';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 import { configureStore } from 'app/store/configureStore';
 

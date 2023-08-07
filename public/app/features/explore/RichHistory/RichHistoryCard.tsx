@@ -4,13 +4,18 @@ import { connect, ConnectedProps } from 'react-redux';
 import { useAsync } from 'react-use';
 
 import { GrafanaTheme2, DataSourceApi, RichHistoryQuery } from '@grafana/data';
-import { config, getDataSourceSrv, getQueryHistorySrv, reportInteraction } from '@grafana/runtime';
+import {
+  config,
+  getDataSourceSrv,
+  getQueryHistorySrv,
+  reportInteraction,
+  copyStringToClipboard,
+} from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 import { TextArea, Button, IconButton, useStyles2, LoadingPlaceholder } from '@grafana/ui';
 import { notifyApp } from 'app/core/actions';
 import appEvents from 'app/core/app_events';
 import { createSuccessNotification } from 'app/core/copy/appNotification';
-import { copyStringToClipboard } from 'app/core/utils/explore';
 import { createAndCopyShortLink } from 'app/core/utils/shortLinks';
 import { changeDatasource } from 'app/features/explore/state/datasource';
 import { starHistoryItem, commentHistoryItem, deleteHistoryItem } from 'app/features/explore/state/history';

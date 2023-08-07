@@ -3,7 +3,9 @@ import { AnyAction, createAction } from '@reduxjs/toolkit';
 import { HistoryItem, RichHistoryQuery, RichHistorySearchFilters, RichHistorySettings } from '@grafana/data';
 import { getQueryHistorySrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
-import { ExploreItemState, ExploreState, ThunkResult } from 'app/types';
+import { ThunkResult } from 'app/types';
+
+import { ExploreItemState, ExploreState } from '../types';
 
 import {
   richHistoryLimitExceededAction,

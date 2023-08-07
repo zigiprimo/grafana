@@ -1,11 +1,9 @@
 import memoizeOne from 'memoize-one';
 
-import { getBackendSrv, config } from '@grafana/runtime';
+import { getBackendSrv, config, copyStringToClipboard } from '@grafana/runtime';
 import { notifyApp } from 'app/core/actions';
 import { createErrorNotification, createSuccessNotification } from 'app/core/copy/appNotification';
 import { dispatch } from 'app/store/store';
-
-import { copyStringToClipboard } from './explore';
 
 function buildHostUrl() {
   return `${window.location.protocol}//${window.location.host}${config.appSubUrl}`;

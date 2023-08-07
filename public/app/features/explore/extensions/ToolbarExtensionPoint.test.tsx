@@ -8,9 +8,9 @@ import { getPluginLinkExtensions } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 import { contextSrv } from 'app/core/services/context_srv';
 import { configureStore } from 'app/store/configureStore';
-import { ExplorePanelData, ExploreState } from 'app/types';
 
 import { createEmptyQueryResponse } from '../state/utils';
+import { ExplorePanelData, ExploreState } from '../types';
 
 import { ToolbarExtensionPoint } from './ToolbarExtensionPoint';
 

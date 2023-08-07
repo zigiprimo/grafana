@@ -18,13 +18,12 @@ import {
   toUtc,
 } from '@grafana/data';
 import { DataQuery, DataSourceRef, TimeZone } from '@grafana/schema';
+import { ExploreItemState, ExplorePanelData } from 'app/features/explore/types';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
-import { ExplorePanelData } from 'app/types';
-import { ExploreItemState } from 'app/types/explore';
 
 import store from '../../../core/store';
-import { setLastUsedDatasourceUID } from '../../../core/utils/explore';
 import { getDatasourceSrv } from '../../plugins/datasource_srv';
+import { setLastUsedDatasourceUID } from '../utils';
 import { loadSupplementaryQueries } from '../utils/supplementaryQueries';
 
 export const DEFAULT_RANGE = {

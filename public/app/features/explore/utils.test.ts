@@ -4,6 +4,7 @@ import { RefreshPicker } from '@grafana/ui';
 import store from 'app/core/store';
 import { DEFAULT_RANGE } from 'app/features/explore/state/utils';
 
+import { getExploreUrl, GetExploreUrlArguments } from '../../../../packages/grafana-runtime';
 import { DatasourceSrvMock, MockDataSourceApi } from '../../../test/mocks/datasource_srv';
 
 import {
@@ -11,11 +12,9 @@ import {
   hasNonEmptyQuery,
   refreshIntervalToSortOrder,
   updateHistory,
-  getExploreUrl,
-  GetExploreUrlArguments,
   getTimeRange,
   generateEmptyQuery,
-} from './explore';
+} from './utils';
 
 const DEFAULT_EXPLORE_STATE: ExploreUrlState = {
   datasource: '',

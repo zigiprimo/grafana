@@ -3,7 +3,7 @@ import { Graph } from 'app/core/utils/dag';
 import { mapSet } from 'app/core/utils/set';
 import { stringifyPanelModel } from 'app/features/dashboard/state/PanelModel';
 
-import { safeStringifyValue } from '../../../core/utils/explore';
+import { safeStringifyValue } from '../../../core/utils/misc';
 import { DashboardModel, PanelModel } from '../../dashboard/state';
 import { variableAdapters } from '../adapters';
 import { isAdHoc } from '../guard';

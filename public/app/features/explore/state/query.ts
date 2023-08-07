@@ -24,6 +24,15 @@ import {
 } from '@grafana/data';
 import { config, getDataSourceSrv, reportInteraction, getCorrelationsSrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
+import { getShiftedTimeRange } from 'app/core/utils/timePicker';
+import {
+  ExploreItemState,
+  ExplorePanelData,
+  ExploreState,
+  QueryOptions,
+  QueryTransaction,
+  SupplementaryQueries,
+} from 'app/features/explore/types';
 import {
   buildQueryTransaction,
   ensureQueries,
@@ -33,21 +42,11 @@ import {
   hasNonEmptyQuery,
   stopQueryState,
   updateHistory,
-} from 'app/core/utils/explore';
-import { getShiftedTimeRange } from 'app/core/utils/timePicker';
+} from 'app/features/explore/utils';
 import { getTimeZone } from 'app/features/profile/state/selectors';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 import { store } from 'app/store/store';
-import {
-  createAsyncThunk,
-  ExploreItemState,
-  ExplorePanelData,
-  QueryTransaction,
-  StoreState,
-  ThunkDispatch,
-  ThunkResult,
-} from 'app/types';
-import { ExploreState, QueryOptions, SupplementaryQueries } from 'app/types/explore';
+import { createAsyncThunk, StoreState, ThunkDispatch, ThunkResult } from 'app/types';
 
 import { notifyApp } from '../../../core/actions';
 import { createErrorNotification } from '../../../core/copy/appNotification';

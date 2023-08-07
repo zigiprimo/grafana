@@ -10,12 +10,12 @@ import {
   locationService,
   reportInteraction,
   getPluginLinkExtensions,
+  getExploreUrl,
 } from '@grafana/runtime';
 import { PanelCtrl } from 'app/angular/panel/panel_ctrl';
 import config from 'app/core/config';
 import { t } from 'app/core/internationalization';
 import { contextSrv } from 'app/core/services/context_srv';
-import { getExploreUrl } from 'app/core/utils/explore';
 import { DashboardModel } from 'app/features/dashboard/state/DashboardModel';
 import { PanelModel } from 'app/features/dashboard/state/PanelModel';
 import {

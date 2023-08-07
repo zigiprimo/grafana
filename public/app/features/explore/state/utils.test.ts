@@ -1,5 +1,5 @@
 import { dateTime } from '@grafana/data';
-import * as exploreUtils from 'app/core/utils/explore';
+import * as exploreUtils from 'app/features/explore/utils';
 
 const dataSourceMock = {
   get: jest.fn(),

@@ -1,5 +1,3 @@
-import { nanoid } from '@reduxjs/toolkit';
-import { omit } from 'lodash';
 import { Unsubscribable } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -10,7 +8,6 @@ import {
   DataSourceApi,
   DataSourceRef,
   DefaultTimeZone,
-  ExploreUrlState,
   HistoryItem,
   IntervalValues,
   LogsDedupStrategy,
@@ -19,19 +16,13 @@ import {
   RawTimeRange,
   TimeRange,
   TimeZone,
-  urlUtil,
 } from '@grafana/data';
-import { DataSourceSrv, getDataSourceSrv } from '@grafana/runtime';
+import { getDataSourceSrv } from '@grafana/runtime';
 import { RefreshPicker } from '@grafana/ui';
 import store from 'app/core/store';
-import { TimeSrv } from 'app/features/dashboard/services/TimeSrv';
-import { PanelModel } from 'app/features/dashboard/state';
-import { ExpressionDatasourceUID } from 'app/features/expressions/types';
-import { QueryOptions, QueryTransaction } from 'app/types/explore';
+import { QueryOptions, QueryTransaction } from 'app/features/explore/types';
 
-import { config } from '../config';
-
-import { getNextRefIdChar } from './query';
+import { getNextRefIdChar } from '../../core/utils/query';
 
 export const DEFAULT_UI_STATE = {
   dedupStrategy: LogsDedupStrategy.none,
@@ -45,60 +36,6 @@ export const getLastUsedDatasourceUID = (orgId: number) =>
   store.getObject<string>(lastUsedDatasourceKeyForOrgId(orgId));
 export const setLastUsedDatasourceUID = (orgId: number, datasourceUID: string) =>
   store.setObject(lastUsedDatasourceKeyForOrgId(orgId), datasourceUID);
-
-export interface GetExploreUrlArguments {
-  panel: PanelModel;
-  /** Datasource service to query other datasources in case the panel datasource is mixed */
-  datasourceSrv: DataSourceSrv;
-  /** Time service to get the current dashboard range from */
-  timeSrv: TimeSrv;
-}
-
-export function generateExploreId() {
-  return nanoid(3);
-}
-
-/**
- * Returns an Explore-URL that contains a panel's queries and the dashboard time range.
- */
-export async function getExploreUrl(args: GetExploreUrlArguments): Promise<string | undefined> {
-  const { panel, datasourceSrv, timeSrv } = args;
-  let exploreDatasource = await datasourceSrv.get(panel.datasource);
-
-  /** In Explore, we don't have legend formatter and we don't want to keep
-   * legend formatting as we can't change it
-   *
-   * We also don't have expressions, so filter those out
-   */
-  let exploreTargets: DataQuery[] = panel.targets
-    .map((t) => omit(t, 'legendFormat'))
-    .filter((t) => t.datasource?.uid !== ExpressionDatasourceUID);
-  let url: string | undefined;
-
-  if (exploreDatasource) {
-    const range = timeSrv.timeRangeForUrl();
-    let state: Partial<ExploreUrlState> = { range };
-    if (exploreDatasource.interpolateVariablesInQueries) {
-      const scopedVars = panel.scopedVars || {};
-      state = {
-        ...state,
-        datasource: exploreDatasource.uid,
-        queries: exploreDatasource.interpolateVariablesInQueries(exploreTargets, scopedVars),
-      };
-    } else {
-      state = {
-        ...state,
-        datasource: exploreDatasource.uid,
-        queries: exploreTargets,
-      };
-    }
-
-    const exploreState = JSON.stringify({ [generateExploreId()]: state });
-    url = urlUtil.renderUrl('/explore', { panes: exploreState, schemaVersion: 1 });
-  }
-
-  return url;
-}
 
 export function buildQueryTransaction(
   exploreId: string,
@@ -164,20 +101,6 @@ export const safeParseJson = (text?: string): any | undefined => {
   } catch (error) {
     console.error(error);
   }
-};
-
-export const safeStringifyValue = (value: unknown, space?: number) => {
-  if (value === undefined || value === null) {
-    return '';
-  }
-
-  try {
-    return JSON.stringify(value, null, space);
-  } catch (error) {
-    console.error(error);
-  }
-
-  return '';
 };
 
 export function generateKey(index = 0): string {
@@ -345,15 +268,6 @@ export const getTimeRange = (timeZone: TimeZone, rawRange: RawTimeRange, fiscalY
 export const refreshIntervalToSortOrder = (refreshInterval?: string) =>
   RefreshPicker.isLive(refreshInterval) ? LogsSortOrder.Ascending : LogsSortOrder.Descending;
 
-export const convertToWebSocketUrl = (url: string) => {
-  const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-  let backend = `${protocol}${window.location.host}${config.appSubUrl}`;
-  if (backend.endsWith('/')) {
-    backend = backend.slice(0, -1);
-  }
-  return `${backend}${url}`;
-};
-
 export const stopQueryState = (querySubscription: Unsubscribable | undefined) => {
   if (querySubscription) {
     querySubscription.unsubscribe();
@@ -367,12 +281,3 @@ export function getIntervals(range: TimeRange, lowLimit?: string, resolution?: n
 
   return rangeUtil.calculateInterval(range, resolution, lowLimit);
 }
-
-export const copyStringToClipboard = (string: string) => {
-  const el = document.createElement('textarea');
-  el.value = string;
-  document.body.appendChild(el);
-  el.select();
-  document.execCommand('copy');
-  document.body.removeChild(el);
-};

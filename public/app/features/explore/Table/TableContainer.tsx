@@ -4,8 +4,8 @@ import { connect, ConnectedProps } from 'react-redux';
 import { applyFieldOverrides, TimeZone, SplitOpen, DataFrame, LoadingState } from '@grafana/data';
 import { Table, AdHocFilterItem, PanelChrome } from '@grafana/ui';
 import { config } from 'app/core/config';
+import { ExploreItemState } from 'app/features/explore/types';
 import { StoreState } from 'app/types';
-import { ExploreItemState } from 'app/types/explore';
 
 import { MetaInfoText } from '../MetaInfoText';
 import { selectIsWaitingForData } from '../state/query';

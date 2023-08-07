@@ -2,7 +2,8 @@ import { lastValueFrom } from 'rxjs';
 
 import { DataFrame, FieldType, LoadingState, PanelData, getDefaultTimeRange, toDataFrame } from '@grafana/data';
 import TableModel from 'app/core/TableModel';
-import { ExplorePanelData } from 'app/types';
+
+import { ExplorePanelData } from '../types';
 
 import {
   decorateWithFrameTypeMetadata,

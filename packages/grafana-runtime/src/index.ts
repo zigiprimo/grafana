@@ -34,6 +34,7 @@ export {
 export { PanelRenderer, type PanelRendererProps } from './components/PanelRenderer';
 export { PanelDataErrorView, type PanelDataErrorViewProps } from './components/PanelDataErrorView';
 export { toDataQueryError } from './utils/toDataQueryError';
+export * from './utils/misc';
 export {
   setQueryRunnerFactory,
   createQueryRunner,

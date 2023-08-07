@@ -2,10 +2,9 @@ import { createAction } from '@reduxjs/toolkit';
 import { AnyAction } from 'redux';
 
 import { SplitOpenOptions, RichHistorySearchFilters, RichHistorySettings, RichHistoryResults } from '@grafana/data';
-import { DataSourceSrv, locationService } from '@grafana/runtime';
-import { generateExploreId, GetExploreUrlArguments } from 'app/core/utils/explore';
+import { DataSourceSrv, generateExploreId, GetExploreUrlArguments, locationService } from '@grafana/runtime';
 import { PanelModel } from 'app/features/dashboard/state';
-import { ExploreItemState, ExploreState } from 'app/types/explore';
+import { ExploreItemState, ExploreState } from 'app/features/explore/types';
 
 import { createAsyncThunk, ThunkResult } from '../../../types';
 import { TimeSrv } from '../../dashboard/services/TimeSrv';

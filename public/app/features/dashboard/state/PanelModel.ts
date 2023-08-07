@@ -23,7 +23,7 @@ import {
 import { getTemplateSrv, RefreshEvent } from '@grafana/runtime';
 import { LibraryPanel, LibraryPanelRef } from '@grafana/schema';
 import config from 'app/core/config';
-import { safeStringifyValue } from 'app/core/utils/explore';
+import { safeStringifyValue } from 'app/core/utils/misc';
 import { getNextRefIdChar } from 'app/core/utils/query';
 import { QueryGroupOptions } from 'app/types';
 import {

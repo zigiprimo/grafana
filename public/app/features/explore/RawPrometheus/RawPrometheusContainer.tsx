@@ -7,8 +7,13 @@ import { reportInteraction } from '@grafana/runtime/src';
 import { Collapse, RadioButtonGroup, Table, AdHocFilterItem } from '@grafana/ui';
 import { config } from 'app/core/config';
 import { PANEL_BORDER } from 'app/core/constants';
-import { StoreState, TABLE_RESULTS_STYLE } from 'app/types';
-import { ExploreItemState, TABLE_RESULTS_STYLES, TableResultsStyle } from 'app/types/explore';
+import {
+  ExploreItemState,
+  TABLE_RESULTS_STYLES,
+  TableResultsStyle,
+  TABLE_RESULTS_STYLE,
+} from 'app/features/explore/types';
+import { StoreState } from 'app/types';
 
 import { MetaInfoText } from '../MetaInfoText';
 import RawListContainer from '../PrometheusListView/RawListContainer';
