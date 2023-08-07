@@ -28,6 +28,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/signature"
 	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 	"github.com/grafana/grafana/pkg/plugins/pluginscdn"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pipeline"
 	"github.com/grafana/grafana/pkg/setting"
@@ -235,7 +236,8 @@ func TestLoader_Load(t *testing.T) {
 			name:  "Load an unsigned plugin (development)",
 			class: plugins.ClassExternal,
 			cfg: &config.Cfg{
-				DevMode: true,
+				Features: featuremgmt.WithFeatures(),
+				DevMode:  true,
 			},
 			pluginPaths: []string{filepath.Join(testDataDir(t), "unsigned-datasource")},
 			want: []*plugins.Plugin{
@@ -1315,6 +1317,9 @@ func TestLoader_Load_NestedPlugins(t *testing.T) {
 
 func newLoader(t *testing.T, cfg *config.Cfg, reg registry.Service, proc process.Service,
 	backendFactory plugins.BackendFactoryProvider) *Loader {
+	if cfg.Features == nil {
+		cfg.Features = featuremgmt.WithFeatures()
+	}
 	assets := assetpath.ProvideService(pluginscdn.ProvideService(cfg))
 	lic := fakes.NewFakeLicensingService()
 	angularInspector, err := angularinspector.NewStaticInspector()

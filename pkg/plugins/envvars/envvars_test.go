@@ -329,12 +329,13 @@ func TestInitializer_oauthEnvVars(t *testing.T) {
 		envVars, err := envVarsProvider.Get(context.Background(), p)
 
 		require.NoError(t, err)
-		assert.Len(t, envVars, 5)
+		assert.Len(t, envVars, 6)
 		assert.Equal(t, "GF_VERSION=", envVars[0])
 		assert.Equal(t, "GF_APP_URL=https://myorg.com/", envVars[1])
 		assert.Equal(t, "GF_PLUGIN_APP_CLIENT_ID=clientID", envVars[2])
 		assert.Equal(t, "GF_PLUGIN_APP_CLIENT_SECRET=clientSecret", envVars[3])
 		assert.Equal(t, "GF_PLUGIN_APP_PRIVATE_KEY=privatePem", envVars[4])
+		assert.Equal(t, "GF_INSTANCE_FEATURE_TOGGLES_ENABLE=externalServiceAuth", envVars[5])
 	})
 }
 
@@ -360,7 +361,7 @@ func TestInitializer_featureTogglesEnvVars(t *testing.T) {
 		envVars, err := envVarsProvider.Get(context.Background(), &plugins.Plugin{})
 		require.NoError(t, err)
 		flags, found := getFeatureFlags(envVars)
-		require.True(t, found)
+		require.False(t, found)
 		require.Empty(t, flags)
 	})
 

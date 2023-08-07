@@ -145,7 +145,14 @@ func (ps pluginSettings) asEnvVar(prefix string, hostEnv []string) []string {
 }
 
 func (s *Service) featureTogglesEnvVars(ctx context.Context) []string {
+	if s.cfg.Features == nil {
+		return nil
+	}
 	flags := s.cfg.Features.GetEnabled(ctx)
+	if len(flags) == 0 {
+		return nil
+	}
+
 	var b strings.Builder
 	var i int
 	for flag := range flags {
