@@ -2,23 +2,24 @@ import { Observable, SubscriptionLike, Unsubscribable } from 'rxjs';
 
 import {
   AbsoluteTimeRange,
+  CorrelationData,
   DataFrame,
   DataQuery,
   DataQueryRequest,
+  DataQueryResponse,
   DataSourceApi,
+  EventBusExtended,
+  ExplorePanelsState,
   HistoryItem,
   LogsModel,
   PanelData,
   RawTimeRange,
-  TimeRange,
-  EventBusExtended,
-  DataQueryResponse,
-  ExplorePanelsState,
-  SupplementaryQueryType,
-  UrlQueryMap,
-  CorrelationData,
+  RichHistoryQuery,
   RichHistorySearchFilters,
   RichHistorySettings,
+  SupplementaryQueryType,
+  TimeRange,
+  UrlQueryMap,
 } from '@grafana/data';
 
 export type ExploreQueryParams = UrlQueryMap;
@@ -215,16 +216,6 @@ export interface QueryTransaction {
   queries: DataQuery[];
   scanning?: boolean;
 }
-
-export type RichHistoryQuery<T extends DataQuery = DataQuery> = {
-  id: string;
-  createdAt: number;
-  datasourceUid: string;
-  datasourceName: string;
-  starred: boolean;
-  comment: string;
-  queries: T[];
-};
 
 export interface ExplorePanelData extends PanelData {
   graphFrames: DataFrame[];

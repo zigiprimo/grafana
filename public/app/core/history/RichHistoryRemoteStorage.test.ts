@@ -1,10 +1,9 @@
 import { of } from 'rxjs';
 
-import { SortOrder } from '@grafana/data';
+import { RichHistoryQuery, SortOrder } from '@grafana/data';
 import { Preferences as UserPreferencesDTO } from '@grafana/schema/src/raw/preferences/x/preferences_types.gen';
 
 import { DatasourceSrv } from '../../features/plugins/datasource_srv';
-import { RichHistoryQuery } from '../../types';
 
 import RichHistoryRemoteStorage, { RichHistoryRemoteStorageDTO } from './RichHistoryRemoteStorage';
 

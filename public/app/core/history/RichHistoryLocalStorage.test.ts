@@ -1,8 +1,7 @@
-import { DataQuery, RichHistorySearchFilters, RichHistorySettings, SortOrder } from '@grafana/data';
+import { DataQuery, RichHistoryQuery, RichHistorySearchFilters, RichHistorySettings, SortOrder } from '@grafana/data';
 import store from 'app/core/store';
 
 import { DatasourceSrv } from '../../features/plugins/datasource_srv';
-import { RichHistoryQuery } from '../../types';
 import { backendSrv } from '../services/backend_srv';
 
 import RichHistoryLocalStorage, { MAX_HISTORY_ITEMS } from './RichHistoryLocalStorage';

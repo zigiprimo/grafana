@@ -1,6 +1,5 @@
+import { RichHistoryQuery, RichHistoryResults } from '@grafana/data';
 import { RichHistorySearchFilters, RichHistorySettings } from 'app/core/utils/richHistory';
-
-import { RichHistoryQuery } from '../../types';
 
 /**
  * Errors are used when the operation on Rich History was not successful.
@@ -27,8 +26,6 @@ export type RichHistoryStorageWarningDetails = {
   type: RichHistoryStorageWarning;
   message: string;
 };
-
-export type RichHistoryResults = { richHistory: RichHistoryQuery[]; total?: number };
 
 /**
  * @internal

@@ -1,6 +1,6 @@
+import { RichHistoryQuery } from '@grafana/data';
 import { DatasourceSrv } from 'app/features/plugins/datasource_srv';
 
-import { RichHistoryQuery } from '../../types';
 import { backendSrv } from '../services/backend_srv';
 
 import { RichHistoryLocalStorageDTO } from './RichHistoryLocalStorage';

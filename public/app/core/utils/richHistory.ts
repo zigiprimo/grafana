@@ -9,16 +9,16 @@ import {
   RichHistorySearchFilters,
   RichHistorySettings,
   SortOrder,
+  RichHistoryQuery,
+  RichHistoryResults,
 } from '@grafana/data';
 import { serializeStateToUrlParam } from '@grafana/data/src/utils/url';
 import { getDataSourceSrv } from '@grafana/runtime';
 import { notifyApp } from 'app/core/actions';
 import { createErrorNotification, createWarningNotification } from 'app/core/copy/appNotification';
 import { dispatch } from 'app/store/store';
-import { RichHistoryQuery } from 'app/types/explore';
 
 import {
-  RichHistoryResults,
   RichHistoryServiceError,
   RichHistoryStorageWarning,
   RichHistoryStorageWarningDetails,

@@ -1,3 +1,5 @@
+import { DataQuery } from './query';
+
 export enum SortOrder {
   Descending = 'Descending',
   Ascending = 'Ascending',
@@ -28,3 +30,15 @@ export type RichHistorySearchFilters = {
   starred: boolean;
   page?: number;
 };
+
+export type RichHistoryQuery<T extends DataQuery = DataQuery> = {
+  id: string;
+  createdAt: number;
+  datasourceUid: string;
+  datasourceName: string;
+  starred: boolean;
+  comment: string;
+  queries: T[];
+};
+
+export type RichHistoryResults = { richHistory: RichHistoryQuery[]; total?: number };

@@ -1,8 +1,6 @@
 import { omit } from 'lodash';
 
-import { SortOrder } from '@grafana/data';
-
-import { RichHistoryQuery } from '../../types';
+import { RichHistoryQuery, SortOrder } from '@grafana/data';
 
 /**
  * Temporary place for local storage specific items that are still in use in richHistory.ts

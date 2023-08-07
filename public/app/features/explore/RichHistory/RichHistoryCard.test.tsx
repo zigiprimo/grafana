@@ -2,11 +2,10 @@ import { fireEvent, render, screen, getByText, waitFor } from '@testing-library/
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 
-import { DataSourceApi, DataSourceInstanceSettings, DataSourcePluginMeta } from '@grafana/data';
+import { DataSourceApi, DataSourceInstanceSettings, DataSourcePluginMeta, RichHistoryQuery } from '@grafana/data';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
 import appEvents from 'app/core/app_events';
 import { MixedDatasource } from 'app/plugins/datasource/mixed/MixedDataSource';
-import { RichHistoryQuery } from 'app/types';
 import { ShowConfirmModalEvent } from 'app/types/events';
 
 import { RichHistoryCard, Props } from './RichHistoryCard';
