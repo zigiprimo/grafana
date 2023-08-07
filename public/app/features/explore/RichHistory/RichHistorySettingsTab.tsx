@@ -7,7 +7,6 @@ import { useStyles2, Select, Button, Field, InlineField, InlineSwitch, Alert } f
 import { notifyApp } from 'app/core/actions';
 import appEvents from 'app/core/app_events';
 import { createSuccessNotification } from 'app/core/copy/appNotification';
-import { MAX_HISTORY_ITEMS } from 'app/core/history/RichHistoryLocalStorage';
 import { dispatch } from 'app/store/store';
 
 import { ShowConfirmModalEvent } from '../../../types/events';
@@ -82,7 +81,7 @@ export function RichHistorySettingsTab(props: RichHistorySettingsProps) {
       {getQueryHistorySrv().supportedFeatures().changeRetention ? (
         <Field
           label="History time span"
-          description={`Select the period of time for which Grafana will save your query history. Up to ${MAX_HISTORY_ITEMS} entries will be stored.`}
+          description={`Select the period of time for which Grafana will save your query history. Up to ${getQueryHistorySrv().getMaxHistoryItems()} entries will be stored.`}
         >
           <div className={styles.input}>
             <Select value={selectedOption} options={retentionPeriodOptions} onChange={onChangeRetentionPeriod}></Select>

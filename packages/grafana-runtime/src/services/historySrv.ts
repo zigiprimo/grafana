@@ -35,6 +35,7 @@ export interface QueryHistorySrv {
   createDatasourcesList(): Array<{ name: string; uid: string }>;
   mapQueriesToHeadings(query: RichHistoryQuery[], sortOrder: SortOrder): Record<string, RichHistoryQuery[]>;
   supportedFeatures(): RichHistorySupportedFeatures;
+  getMaxHistoryItems(): number;
 }
 
 let singletonInstance: QueryHistorySrv;

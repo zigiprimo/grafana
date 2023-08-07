@@ -27,6 +27,7 @@ import {
   updateStarredInRichHistory as _updateStarredInRichHistory,
 } from '../utils/richHistory';
 
+import { MAX_HISTORY_ITEMS } from './RichHistoryLocalStorage';
 import { supportedFeatures as _supportedFeatures } from './richHistoryStorageProvider';
 
 export class QueryHistoryService implements QueryHistorySrv {
@@ -104,6 +105,10 @@ export class QueryHistoryService implements QueryHistorySrv {
 
   supportedFeatures(): RichHistorySupportedFeatures {
     return _supportedFeatures();
+  }
+
+  getMaxHistoryItems(): number {
+    return MAX_HISTORY_ITEMS;
   }
 }
 
