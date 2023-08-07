@@ -60,6 +60,7 @@ func (s *Service) Get(ctx context.Context, p *plugins.Plugin) ([]string, error) 
 	hostEnv = append(hostEnv, s.secureSocksProxyEnvVars()...)
 	hostEnv = append(hostEnv, azsettings.WriteToEnvStr(s.cfg.Azure)...)
 	hostEnv = append(hostEnv, s.tracingEnvVars(p)...)
+	hostEnv = append(hostEnv, s.featureTogglesEnvVars(ctx)...)
 
 	ev := getPluginSettings(p.ID, s.cfg).asEnvVar("GF_PLUGIN", hostEnv)
 	return ev, nil
@@ -141,4 +142,18 @@ func (ps pluginSettings) asEnvVar(prefix string, hostEnv []string) []string {
 	env = append(env, hostEnv...)
 
 	return env
+}
+
+func (s *Service) featureTogglesEnvVars(ctx context.Context) []string {
+	flags := s.cfg.Features.GetEnabled(ctx)
+	var b strings.Builder
+	var i int
+	for flag := range flags {
+		if i > 0 {
+			b.WriteRune(' ')
+		}
+		b.WriteString(flag)
+		i++
+	}
+	return []string{"GF_INSTANCE_FEATURE_TOGGLES_ENABLE=" + b.String()}
 }
