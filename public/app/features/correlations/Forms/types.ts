@@ -1,6 +1,4 @@
-import { SupportedTransformationType } from '@grafana/data';
-
-import { CorrelationConfig } from '../types';
+import { CorrelationConfig, SupportedTransformationType } from '@grafana/data';
 
 export interface FormDTO {
   sourceUID: string;

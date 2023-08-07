@@ -8,7 +8,7 @@ import { TestProvider } from 'test/helpers/TestProvider';
 import { MockDataSourceApi } from 'test/mocks/datasource_srv';
 import { getGrafanaContextMock } from 'test/mocks/getGrafanaContextMock';
 
-import { DataSourcePluginMeta, SupportedTransformationType } from '@grafana/data';
+import { Correlation, DataSourcePluginMeta, SupportedTransformationType } from '@grafana/data';
 import { BackendSrv, setDataSourceSrv, BackendSrvRequest, reportInteraction } from '@grafana/runtime';
 import { contextSrv } from 'app/core/services/context_srv';
 import { configureStore } from 'app/store/configureStore';
@@ -23,7 +23,7 @@ import {
   createRemoveCorrelationResponse,
   createUpdateCorrelationResponse,
 } from './__mocks__/useCorrelations.mocks';
-import { Correlation, CreateCorrelationParams } from './types';
+import { CreateCorrelationParams } from './types';
 
 const renderWithContext = async (
   datasources: ConstructorParameters<typeof MockDataSourceSrv>[0] = {},

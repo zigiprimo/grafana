@@ -1,17 +1,11 @@
 import { lastValueFrom } from 'rxjs';
 
-import { DataFrame, DataLinkConfigOrigin } from '@grafana/data';
+import { CorrelationData, CorrelationsData, DataFrame, DataLinkConfigOrigin } from '@grafana/data';
 import { getBackendSrv } from '@grafana/runtime';
 
 import { formatValueName } from '../explore/PrometheusListView/ItemLabels';
 
-import {
-  CorrelationData,
-  CorrelationsData,
-  CorrelationsResponse,
-  getData,
-  toEnrichedCorrelationsData,
-} from './useCorrelations';
+import { CorrelationsResponse, getData, toEnrichedCorrelationsData } from './useCorrelations';
 
 type DataFrameRefIdToDataSourceUid = Record<string, string>;
 

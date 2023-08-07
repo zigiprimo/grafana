@@ -1,12 +1,11 @@
 import { useAsyncFn } from 'react-use';
 import { lastValueFrom } from 'rxjs';
 
-import { DataSourceInstanceSettings } from '@grafana/data';
-import { getDataSourceSrv, FetchResponse } from '@grafana/runtime';
+import { Correlation, CorrelationData, CorrelationsData } from '@grafana/data';
+import { FetchResponse, getDataSourceSrv } from '@grafana/runtime';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 
 import {
-  Correlation,
   CreateCorrelationParams,
   CreateCorrelationResponse,
   GetCorrelationsParams,
@@ -18,18 +17,6 @@ import {
 
 export interface CorrelationsResponse {
   correlations: Correlation[];
-  page: number;
-  limit: number;
-  totalCount: number;
-}
-
-export interface CorrelationData extends Omit<Correlation, 'sourceUID' | 'targetUID'> {
-  source: DataSourceInstanceSettings;
-  target: DataSourceInstanceSettings;
-}
-
-export interface CorrelationsData {
-  correlations: CorrelationData[];
   page: number;
   limit: number;
   totalCount: number;

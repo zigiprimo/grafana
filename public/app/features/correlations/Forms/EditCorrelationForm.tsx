@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 
+import { Correlation } from '@grafana/data';
+
 import { Wizard } from '../components/Wizard';
-import { Correlation } from '../types';
 import { useCorrelations } from '../useCorrelations';
 
 import { ConfigureCorrelationBasicInfoForm } from './ConfigureCorrelationBasicInfoForm';

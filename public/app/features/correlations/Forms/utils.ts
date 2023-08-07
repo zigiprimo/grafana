@@ -1,4 +1,4 @@
-import { Correlation } from '../types';
+import { Correlation } from '@grafana/data';
 
 type CorrelationBaseData = Pick<Correlation, 'uid' | 'sourceUID' | 'targetUID'>;
 

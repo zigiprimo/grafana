@@ -1,9 +1,10 @@
 import { merge } from 'lodash';
 import { DeepPartial } from 'react-hook-form';
 
+import { Correlation } from '@grafana/data';
 import { FetchError, FetchResponse } from '@grafana/runtime';
 
-import { Correlation, CreateCorrelationResponse, RemoveCorrelationResponse, UpdateCorrelationResponse } from '../types';
+import { CreateCorrelationResponse, RemoveCorrelationResponse, UpdateCorrelationResponse } from '../types';
 
 export function createFetchCorrelationsResponse<T>(overrides?: DeepPartial<FetchResponse>): FetchResponse<T> {
   return merge(

@@ -16,10 +16,9 @@ import {
   ExplorePanelsState,
   SupplementaryQueryType,
   UrlQueryMap,
+  CorrelationData,
 } from '@grafana/data';
 import { RichHistorySearchFilters, RichHistorySettings } from 'app/core/utils/richHistoryTypes';
-
-import { CorrelationData } from '../features/correlations/useCorrelations';
 
 export type ExploreQueryParams = UrlQueryMap;
 /**

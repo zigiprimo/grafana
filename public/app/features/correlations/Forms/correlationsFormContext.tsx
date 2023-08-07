@@ -1,6 +1,6 @@
 import React, { createContext, PropsWithChildren, useContext } from 'react';
 
-import { Correlation } from '../types';
+import { Correlation } from '@grafana/data';
 
 export type CorrelationsFormContextData = {
   loading: boolean;

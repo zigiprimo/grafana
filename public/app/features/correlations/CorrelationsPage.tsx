@@ -2,7 +2,7 @@ import { css } from '@emotion/css';
 import { negate } from 'lodash';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { GrafanaTheme2 } from '@grafana/data';
+import { CorrelationData, GrafanaTheme2 } from '@grafana/data';
 import { isFetchError, reportInteraction } from '@grafana/runtime';
 import {
   Badge,
@@ -27,7 +27,7 @@ import { AddCorrelationForm } from './Forms/AddCorrelationForm';
 import { EditCorrelationForm } from './Forms/EditCorrelationForm';
 import { EmptyCorrelationsCTA } from './components/EmptyCorrelationsCTA';
 import type { RemoveCorrelationParams } from './types';
-import { CorrelationData, useCorrelations } from './useCorrelations';
+import { useCorrelations } from './useCorrelations';
 
 const sortDatasource: SortByFn<CorrelationData> = (a, b, column) =>
   a.values[column].name.localeCompare(b.values[column].name);
