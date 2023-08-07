@@ -34,6 +34,7 @@ import {
   setPluginImportUtils,
   setPluginExtensionGetter,
   setAppEvents,
+  setCorrelationsSrv,
   type GetPluginExtensions,
 } from '@grafana/runtime';
 import { setPanelDataErrorView } from '@grafana/runtime/src/components/PanelDataErrorView';
@@ -68,6 +69,7 @@ import { GrafanaJavascriptAgentBackend } from './core/services/echo/backends/gra
 import { KeybindingSrv } from './core/services/keybindingSrv';
 import { startMeasure, stopMeasure } from './core/utils/metrics';
 import { initDevFeatures } from './dev';
+import { correlationsService } from './features/correlations/service';
 import { getTimeSrv } from './features/dashboard/services/TimeSrv';
 import { initGrafanaLive } from './features/live';
 import { PanelDataErrorView } from './features/panel/components/PanelDataErrorView';
@@ -130,6 +132,7 @@ export class GrafanaApp {
       setPanelDataErrorView(PanelDataErrorView);
       setLocationSrv(locationService);
       setTimeZoneResolver(() => config.bootData.user.timezone);
+      setCorrelationsSrv(correlationsService);
       initGrafanaLive();
 
       // Expose the app-wide eventbus

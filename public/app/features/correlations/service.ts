@@ -20,3 +20,5 @@ export class CorrelationsService implements CorrelationsSrv {
     return _getTransformationVars(transformation, fieldValue, fieldName);
   }
 }
+
+export const correlationsService = new CorrelationsService();
