@@ -1,15 +1,16 @@
 import { css } from '@emotion/css';
 import React, { useEffect } from 'react';
 
-import { GrafanaTheme2, RichHistoryQuery, SelectableValue } from '@grafana/data';
-import { config } from '@grafana/runtime';
-import { useStyles2, Select, MultiSelect, FilterInput, Button } from '@grafana/ui';
 import {
-  createDatasourcesList,
-  SortOrder,
+  GrafanaTheme2,
+  RichHistoryQuery,
   RichHistorySearchFilters,
   RichHistorySettings,
-} from 'app/core/utils/richHistory';
+  SelectableValue,
+  SortOrder,
+} from '@grafana/data';
+import { config, getQueryHistorySrv } from '@grafana/runtime';
+import { useStyles2, Select, MultiSelect, FilterInput, Button } from '@grafana/ui';
 
 import { getSortOrderOptions } from './RichHistory';
 import RichHistoryCard from './RichHistoryCard';
@@ -81,7 +82,7 @@ export function RichHistoryStarredTab(props: RichHistoryStarredTabProps) {
 
   const styles = useStyles2(getStyles);
 
-  const listOfDatasources = createDatasourcesList();
+  const listOfDatasources = getQueryHistorySrv().createDatasourcesList();
 
   useEffect(() => {
     const datasourceFilters =

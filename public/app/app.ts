@@ -35,6 +35,7 @@ import {
   setPluginExtensionGetter,
   setAppEvents,
   setCorrelationsSrv,
+  setQueryHistorySrv,
   type GetPluginExtensions,
 } from '@grafana/runtime';
 import { setPanelDataErrorView } from '@grafana/runtime/src/components/PanelDataErrorView';
@@ -53,6 +54,7 @@ import { AppChromeService } from './core/components/AppChrome/AppChromeService';
 import { getAllOptionEditors, getAllStandardFieldConfigs } from './core/components/OptionsUI/registry';
 import { PluginPage } from './core/components/Page/PluginPage';
 import { GrafanaContextType } from './core/context/GrafanaContext';
+import { queryHistoryService } from './core/history/service';
 import { initializeI18n } from './core/internationalization';
 import { interceptLinkClicks } from './core/navigation/patch/interceptLinkClicks';
 import { ModalManager } from './core/services/ModalManager';
@@ -133,6 +135,7 @@ export class GrafanaApp {
       setLocationSrv(locationService);
       setTimeZoneResolver(() => config.bootData.user.timezone);
       setCorrelationsSrv(correlationsService);
+      setQueryHistorySrv(queryHistoryService);
       initGrafanaLive();
 
       // Expose the app-wide eventbus

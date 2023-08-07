@@ -1,17 +1,16 @@
 import { css } from '@emotion/css';
 import React, { useEffect, useCallback } from 'react';
 
-import { GrafanaTheme2, RichHistoryQuery, SelectableValue } from '@grafana/data';
-import { config } from '@grafana/runtime';
-import { Button, FilterInput, MultiSelect, RangeSlider, Select, useStyles2 } from '@grafana/ui';
 import {
-  createDatasourcesList,
-  mapNumbertoTimeInSlider,
-  mapQueriesToHeadings,
-  SortOrder,
+  GrafanaTheme2,
+  RichHistoryQuery,
   RichHistorySearchFilters,
   RichHistorySettings,
-} from 'app/core/utils/richHistory';
+  SelectableValue,
+  SortOrder,
+} from '@grafana/data';
+import { config, getQueryHistorySrv } from '@grafana/runtime';
+import { Button, FilterInput, MultiSelect, RangeSlider, Select, useStyles2 } from '@grafana/ui';
 
 import { getSortOrderOptions } from './RichHistory';
 import RichHistoryCard from './RichHistoryCard';
@@ -127,7 +126,7 @@ export function RichHistoryQueriesTab(props: RichHistoryQueriesTabProps) {
 
   const styles = useStyles2(useCallback((theme: GrafanaTheme2) => getStyles(theme, height), [height]));
 
-  const listOfDatasources = createDatasourcesList();
+  const listOfDatasources = getQueryHistorySrv().createDatasourcesList();
 
   useEffect(() => {
     const datasourceFilters =
@@ -157,7 +156,10 @@ export function RichHistoryQueriesTab(props: RichHistoryQueriesTabProps) {
   /* mappedQueriesToHeadings is an object where query headings (stringified dates/data sources)
    * are keys and arrays with queries that belong to that headings are values.
    */
-  const mappedQueriesToHeadings = mapQueriesToHeadings(queries, richHistorySearchFilters.sortOrder);
+  const mappedQueriesToHeadings = getQueryHistorySrv().mapQueriesToHeadings(
+    queries,
+    richHistorySearchFilters.sortOrder
+  );
   const sortOrderOptions = getSortOrderOptions();
   const partialResults = queries.length && queries.length !== totalQueries;
 
@@ -166,7 +168,9 @@ export function RichHistoryQueriesTab(props: RichHistoryQueriesTabProps) {
       <div className={styles.containerSlider}>
         <div className={styles.fixedSlider}>
           <div className={styles.labelSlider}>Filter history</div>
-          <div className={styles.labelSlider}>{mapNumbertoTimeInSlider(richHistorySearchFilters.from)}</div>
+          <div className={styles.labelSlider}>
+            {getQueryHistorySrv().mapNumbertoTimeInSlider(richHistorySearchFilters.from)}
+          </div>
           <div className={styles.slider}>
             <RangeSlider
               tooltipAlwaysVisible={false}
@@ -174,14 +178,16 @@ export function RichHistoryQueriesTab(props: RichHistoryQueriesTabProps) {
               max={richHistorySettings.retentionPeriod}
               value={[richHistorySearchFilters.from, richHistorySearchFilters.to]}
               orientation="vertical"
-              formatTooltipResult={mapNumbertoTimeInSlider}
+              formatTooltipResult={getQueryHistorySrv().mapNumbertoTimeInSlider}
               reverse={true}
               onAfterChange={(value) => {
                 updateFilters({ from: value![0], to: value![1] });
               }}
             />
           </div>
-          <div className={styles.labelSlider}>{mapNumbertoTimeInSlider(richHistorySearchFilters.to)}</div>
+          <div className={styles.labelSlider}>
+            {getQueryHistorySrv().mapNumbertoTimeInSlider(richHistorySearchFilters.to)}
+          </div>
         </div>
       </div>
 

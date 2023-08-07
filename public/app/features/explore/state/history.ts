@@ -1,22 +1,9 @@
 import { AnyAction, createAction } from '@reduxjs/toolkit';
 
-import { HistoryItem, RichHistoryQuery } from '@grafana/data';
+import { HistoryItem, RichHistoryQuery, RichHistorySearchFilters, RichHistorySettings } from '@grafana/data';
+import { getQueryHistorySrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
-import {
-  addToRichHistory,
-  deleteAllFromRichHistory,
-  deleteQueryInRichHistory,
-  getRichHistory,
-  getRichHistorySettings,
-  RichHistorySearchFilters,
-  RichHistorySettings,
-  updateCommentInRichHistory,
-  updateRichHistorySettings,
-  updateStarredInRichHistory,
-} from 'app/core/utils/richHistory';
 import { ExploreItemState, ExploreState, ThunkResult } from 'app/types';
-
-import { supportedFeatures } from '../../../core/history/richHistoryStorageProvider';
 
 import {
   richHistoryLimitExceededAction,
@@ -80,7 +67,7 @@ export const addHistoryItem = (
   queries: DataQuery[]
 ): ThunkResult<void> => {
   return async (dispatch, getState) => {
-    const { richHistoryStorageFull, limitExceeded } = await addToRichHistory(
+    const { richHistoryStorageFull, limitExceeded } = await getQueryHistorySrv().addToRichHistory(
       datasourceUid,
       datasourceName,
       queries,
@@ -99,29 +86,29 @@ export const addHistoryItem = (
 };
 
 export const starHistoryItem = (id: string, starred: boolean): ThunkResult<void> => {
-  return async (dispatch, getState) => {
-    const updatedQuery = await updateStarredInRichHistory(id, starred);
+  return async (dispatch) => {
+    const updatedQuery = await getQueryHistorySrv().updateStarredInRichHistory(id, starred);
     dispatch(updateRichHistoryState({ updatedQuery }));
   };
 };
 
 export const commentHistoryItem = (id: string, comment?: string): ThunkResult<void> => {
   return async (dispatch) => {
-    const updatedQuery = await updateCommentInRichHistory(id, comment);
+    const updatedQuery = await getQueryHistorySrv().updateCommentInRichHistory(id, comment);
     dispatch(updateRichHistoryState({ updatedQuery }));
   };
 };
 
 export const deleteHistoryItem = (id: string): ThunkResult<void> => {
   return async (dispatch) => {
-    const deletedId = await deleteQueryInRichHistory(id);
+    const deletedId = await getQueryHistorySrv().deleteQueryInRichHistory(id);
     dispatch(updateRichHistoryState({ deletedId }));
   };
 };
 
 export const deleteRichHistory = (): ThunkResult<void> => {
   return async (dispatch, getState) => {
-    await deleteAllFromRichHistory();
+    await getQueryHistorySrv().deleteAllFromRichHistory();
     selectPanesEntries(getState()).forEach(([exploreId]) => {
       dispatch(richHistoryUpdatedAction({ richHistoryResults: { richHistory: [], total: 0 }, exploreId }));
       dispatch(richHistoryUpdatedAction({ richHistoryResults: { richHistory: [], total: 0 }, exploreId }));
@@ -133,7 +120,7 @@ export const loadRichHistory = (exploreId: string): ThunkResult<void> => {
   return async (dispatch, getState) => {
     const filters = getState().explore.panes[exploreId]!.richHistorySearchFilters;
     if (filters) {
-      const richHistoryResults = await getRichHistory(filters);
+      const richHistoryResults = await getQueryHistorySrv().getRichHistory(filters);
       dispatch(richHistoryUpdatedAction({ richHistoryResults, exploreId }));
     }
   };
@@ -145,7 +132,7 @@ export const loadMoreRichHistory = (exploreId: string): ThunkResult<void> => {
     const currentRichHistory = getState().explore.panes[exploreId]?.richHistory;
     if (currentFilters && currentRichHistory) {
       const nextFilters = { ...currentFilters, page: (currentFilters?.page || 1) + 1 };
-      const moreRichHistory = await getRichHistory(nextFilters);
+      const moreRichHistory = await getQueryHistorySrv().getRichHistory(nextFilters);
       const richHistory = [...currentRichHistory, ...moreRichHistory.richHistory];
       dispatch(richHistorySearchFiltersUpdatedAction({ filters: nextFilters, exploreId }));
       dispatch(
@@ -170,7 +157,7 @@ export const initRichHistory = (): ThunkResult<void> => {
   return async (dispatch, getState) => {
     let settings = getState().explore.richHistorySettings;
     if (!settings) {
-      settings = await getRichHistorySettings();
+      settings = await getQueryHistorySrv().getRichHistorySettings();
       dispatch(richHistorySettingsUpdatedAction(settings));
     }
   };
@@ -179,7 +166,7 @@ export const initRichHistory = (): ThunkResult<void> => {
 export const updateHistorySettings = (settings: RichHistorySettings): ThunkResult<void> => {
   return async (dispatch) => {
     dispatch(richHistorySettingsUpdatedAction(settings));
-    await updateRichHistorySettings(settings);
+    await getQueryHistorySrv().updateRichHistorySettings(settings);
   };
 };
 
@@ -190,7 +177,7 @@ export const updateHistorySearchFilters = (exploreId: string, filters: RichHisto
   return async (dispatch, getState) => {
     await dispatch(richHistorySearchFiltersUpdatedAction({ exploreId, filters: { ...filters } }));
     const currentSettings = getState().explore.richHistorySettings!;
-    if (supportedFeatures().lastUsedDataSourcesAvailable) {
+    if (getQueryHistorySrv().supportedFeatures().lastUsedDataSourcesAvailable) {
       await dispatch(
         updateHistorySettings({
           ...currentSettings,

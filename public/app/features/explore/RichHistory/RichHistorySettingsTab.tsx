@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 import React from 'react';
 
 import { GrafanaTheme2, SelectableValue } from '@grafana/data';
+import { getQueryHistorySrv } from '@grafana/runtime';
 import { useStyles2, Select, Button, Field, InlineField, InlineSwitch, Alert } from '@grafana/ui';
 import { notifyApp } from 'app/core/actions';
 import appEvents from 'app/core/app_events';
@@ -9,7 +10,6 @@ import { createSuccessNotification } from 'app/core/copy/appNotification';
 import { MAX_HISTORY_ITEMS } from 'app/core/history/RichHistoryLocalStorage';
 import { dispatch } from 'app/store/store';
 
-import { supportedFeatures } from '../../../core/history/richHistoryStorageProvider';
 import { ShowConfirmModalEvent } from '../../../types/events';
 
 export interface RichHistorySettingsProps {
@@ -79,7 +79,7 @@ export function RichHistorySettingsTab(props: RichHistorySettingsProps) {
 
   return (
     <div className={styles.container}>
-      {supportedFeatures().changeRetention ? (
+      {getQueryHistorySrv().supportedFeatures().changeRetention ? (
         <Field
           label="History time span"
           description={`Select the period of time for which Grafana will save your query history. Up to ${MAX_HISTORY_ITEMS} entries will be stored.`}
@@ -103,7 +103,7 @@ export function RichHistorySettingsTab(props: RichHistorySettingsProps) {
           onChange={toggleStarredTabAsFirstTab}
         />
       </InlineField>
-      {supportedFeatures().onlyActiveDataSource && (
+      {getQueryHistorySrv().supportedFeatures().onlyActiveDataSource && (
         <InlineField
           label="Only show queries for data source currently active in Explore"
           className={styles.spaceBetween}
@@ -115,7 +115,7 @@ export function RichHistorySettingsTab(props: RichHistorySettingsProps) {
           />
         </InlineField>
       )}
-      {supportedFeatures().clearHistory && (
+      {getQueryHistorySrv().supportedFeatures().clearHistory && (
         <div>
           <div className={styles.bold}>Clear query history</div>
           <div className={styles.bottomMargin}>Delete all of your query history, permanently.</div>

@@ -1,11 +1,15 @@
 import { debounce } from 'lodash';
 import React, { PureComponent } from 'react';
 
-import { RichHistoryQuery, SelectableValue } from '@grafana/data';
+import {
+  RichHistoryQuery,
+  RichHistorySearchFilters,
+  RichHistorySettings,
+  SelectableValue,
+  SortOrder,
+} from '@grafana/data';
+import { getQueryHistorySrv } from '@grafana/runtime';
 import { Themeable2, TabbedContainer, TabConfig, withTheme2 } from '@grafana/ui';
-import { SortOrder, RichHistorySearchFilters, RichHistorySettings } from 'app/core/utils/richHistory';
-
-import { supportedFeatures } from '../../../core/history/richHistoryStorageProvider';
 
 import { RichHistoryQueriesTab } from './RichHistoryQueriesTab';
 import { RichHistorySettingsTab } from './RichHistorySettingsTab';
@@ -23,7 +27,7 @@ export const getSortOrderOptions = () =>
     { label: 'Oldest first', value: SortOrder.Ascending },
     { label: 'Data source A-Z', value: SortOrder.DatasourceAZ },
     { label: 'Data source Z-A', value: SortOrder.DatasourceZA },
-  ].filter((option) => supportedFeatures().availableFilters.includes(option.value));
+  ].filter((option) => getQueryHistorySrv().supportedFeatures().availableFilters.includes(option.value));
 
 export interface RichHistoryProps extends Themeable2 {
   richHistory: RichHistoryQuery[];

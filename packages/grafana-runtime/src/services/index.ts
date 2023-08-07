@@ -1,5 +1,6 @@
 export * from './backendSrv';
 export * from './correlationsSrv';
+export * from './historySrv';
 export * from './AngularLoader';
 export * from './dataSourceSrv';
 export * from './LocationSrv';
