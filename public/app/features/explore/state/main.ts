@@ -1,14 +1,13 @@
 import { createAction } from '@reduxjs/toolkit';
 import { AnyAction } from 'redux';
 
-import { SplitOpenOptions } from '@grafana/data';
+import { SplitOpenOptions, RichHistorySearchFilters, RichHistorySettings } from '@grafana/data';
 import { DataSourceSrv, locationService } from '@grafana/runtime';
 import { generateExploreId, GetExploreUrlArguments } from 'app/core/utils/explore';
 import { PanelModel } from 'app/features/dashboard/state';
 import { ExploreItemState, ExploreState } from 'app/types/explore';
 
 import { RichHistoryResults } from '../../../core/history/RichHistoryStorage';
-import { RichHistorySearchFilters, RichHistorySettings } from '../../../core/utils/richHistoryTypes';
 import { createAsyncThunk, ThunkResult } from '../../../types';
 import { TimeSrv } from '../../dashboard/services/TimeSrv';
 import { withUniqueRefIds } from '../utils/queries';

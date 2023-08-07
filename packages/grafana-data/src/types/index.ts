@@ -23,6 +23,7 @@ export * from './app';
 export * from './datasource';
 export * from './panel';
 export * from './plugin';
+export * from './richHistory';
 export * from './thresholds';
 export * from './templateVars';
 export * from './fieldColor';

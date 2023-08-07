@@ -1,11 +1,10 @@
 import { lastValueFrom } from 'rxjs';
 
-import { DataQuery } from '@grafana/data';
+import { DataQuery, RichHistorySearchFilters, RichHistorySettings, SortOrder } from '@grafana/data';
 import { getBackendSrv, getDataSourceSrv } from '@grafana/runtime';
 import { RichHistoryQuery } from 'app/types/explore';
 
 import { PreferencesService } from '../services/PreferencesService';
-import { RichHistorySearchFilters, RichHistorySettings, SortOrder } from '../utils/richHistoryTypes';
 
 import RichHistoryStorage, { RichHistoryStorageWarningDetails } from './RichHistoryStorage';
 import { fromDTO } from './remoteStorageConverter';

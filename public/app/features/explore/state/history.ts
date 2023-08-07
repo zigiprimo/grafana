@@ -8,6 +8,8 @@ import {
   deleteQueryInRichHistory,
   getRichHistory,
   getRichHistorySettings,
+  RichHistorySearchFilters,
+  RichHistorySettings,
   updateCommentInRichHistory,
   updateRichHistorySettings,
   updateStarredInRichHistory,
@@ -15,7 +17,6 @@ import {
 import { ExploreItemState, ExploreState, RichHistoryQuery, ThunkResult } from 'app/types';
 
 import { supportedFeatures } from '../../../core/history/richHistoryStorageProvider';
-import { RichHistorySearchFilters, RichHistorySettings } from '../../../core/utils/richHistoryTypes';
 
 import {
   richHistoryLimitExceededAction,

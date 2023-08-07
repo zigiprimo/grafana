@@ -1,6 +1,15 @@
 import { omit } from 'lodash';
 
-import { DataQuery, DataSourceApi, dateTimeFormat, ExploreUrlState, urlUtil } from '@grafana/data';
+import {
+  DataQuery,
+  DataSourceApi,
+  dateTimeFormat,
+  ExploreUrlState,
+  urlUtil,
+  RichHistorySearchFilters,
+  RichHistorySettings,
+  SortOrder,
+} from '@grafana/data';
 import { serializeStateToUrlParam } from '@grafana/data/src/utils/url';
 import { getDataSourceSrv } from '@grafana/runtime';
 import { notifyApp } from 'app/core/actions';
@@ -15,8 +24,6 @@ import {
   RichHistoryStorageWarningDetails,
 } from '../history/RichHistoryStorage';
 import { getRichHistoryStorage } from '../history/richHistoryStorageProvider';
-
-import { RichHistorySearchFilters, RichHistorySettings, SortOrder } from './richHistoryTypes';
 
 export { RichHistorySearchFilters, RichHistorySettings, SortOrder };
 

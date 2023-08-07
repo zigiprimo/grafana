@@ -1,7 +1,6 @@
+import { SortOrder } from '@grafana/data';
 import { config } from '@grafana/runtime';
 import { contextSrv } from 'app/core/core';
-
-import { SortOrder } from '../utils/richHistoryTypes';
 
 import RichHistoryLocalStorage from './RichHistoryLocalStorage';
 import RichHistoryRemoteStorage from './RichHistoryRemoteStorage';

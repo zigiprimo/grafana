@@ -1,8 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import React from 'react';
 
+import { SortOrder } from '@grafana/data';
 import { DataSourceSrv, setDataSourceSrv } from '@grafana/runtime';
-import { SortOrder } from 'app/core/utils/richHistoryTypes';
 
 import { RichHistoryQueriesTab, RichHistoryQueriesTabProps } from './RichHistoryQueriesTab';
 

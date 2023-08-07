@@ -17,8 +17,9 @@ import {
   SupplementaryQueryType,
   UrlQueryMap,
   CorrelationData,
+  RichHistorySearchFilters,
+  RichHistorySettings,
 } from '@grafana/data';
-import { RichHistorySearchFilters, RichHistorySettings } from 'app/core/utils/richHistoryTypes';
 
 export type ExploreQueryParams = UrlQueryMap;
 /**
