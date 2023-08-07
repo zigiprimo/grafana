@@ -351,3 +351,61 @@ func TestInitalizer_awsEnvVars(t *testing.T) {
 		assert.ElementsMatch(t, []string{"GF_VERSION=", "AWS_AUTH_AssumeRoleEnabled=true", "AWS_AUTH_AllowedAuthProviders=grafana_assume_role,keys", "AWS_AUTH_EXTERNAL_ID=mock_external_id"}, envVars)
 	})
 }
+
+func TestInitializer_featureTogglesEnvVars(t *testing.T) {
+	t.Run("no feature flags", func(t *testing.T) {
+		envVarsProvider := NewProvider(&config.Cfg{
+			Features: featuremgmt.WithFeatures(),
+		}, nil)
+		envVars, err := envVarsProvider.Get(context.Background(), &plugins.Plugin{})
+		require.NoError(t, err)
+		flags, found := getFeatureFlags(envVars)
+		require.True(t, found)
+		require.Empty(t, flags)
+	})
+
+	t.Run("one feature flag", func(t *testing.T) {
+		const flag = "exampleFeatureFlag"
+		envVarsProvider := NewProvider(&config.Cfg{
+			Features: featuremgmt.WithFeatures(flag),
+		}, nil)
+		envVars, err := envVarsProvider.Get(context.Background(), &plugins.Plugin{})
+		require.NoError(t, err)
+		flags, found := getFeatureFlags(envVars)
+		require.True(t, found)
+		require.Equal(t, map[string]struct{}{flag: {}}, flags)
+	})
+
+	t.Run("multiple feature flags", func(t *testing.T) {
+		const flag = "exampleFeatureFlag"
+		envVarsProvider := NewProvider(&config.Cfg{
+			Features: featuremgmt.WithFeatures(flag+"1", flag+"2"),
+		}, nil)
+		envVars, err := envVarsProvider.Get(context.Background(), &plugins.Plugin{})
+		require.NoError(t, err)
+		flags, found := getFeatureFlags(envVars)
+		require.True(t, found)
+		require.Equal(t, map[string]struct{}{flag + "1": {}, flag + "2": {}}, flags)
+	})
+}
+
+func getFeatureFlags(envVars []string) (map[string]struct{}, bool) {
+	const envVarFeatureToggles = "GF_INSTANCE_FEATURE_TOGGLES_ENABLE"
+	for _, e := range envVars {
+		if !strings.HasPrefix(e, envVarFeatureToggles) {
+			continue
+		}
+
+		parts := strings.SplitN(e, "=", 2)
+		if len(parts) < 2 || parts[1] == "" {
+			return map[string]struct{}{}, true
+		}
+		flags := strings.Split(parts[1], " ")
+		r := make(map[string]struct{}, len(flags))
+		for _, flag := range flags {
+			r[flag] = struct{}{}
+		}
+		return r, true
+	}
+	return map[string]struct{}{}, false
+}
