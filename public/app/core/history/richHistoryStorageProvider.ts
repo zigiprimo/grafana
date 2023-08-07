@@ -1,4 +1,4 @@
-import { SortOrder } from '@grafana/data';
+import { RichHistorySupportedFeatures, SortOrder } from '@grafana/data';
 import { config } from '@grafana/runtime';
 import { contextSrv } from 'app/core/core';
 
@@ -12,15 +12,6 @@ const richHistoryRemoteStorage = new RichHistoryRemoteStorage();
 export const getRichHistoryStorage = (): RichHistoryStorage => {
   return config.queryHistoryEnabled ? richHistoryRemoteStorage : richHistoryLocalStorage;
 };
-
-interface RichHistorySupportedFeatures {
-  availableFilters: SortOrder[];
-  lastUsedDataSourcesAvailable: boolean;
-  clearHistory: boolean;
-  onlyActiveDataSource: boolean;
-  changeRetention: boolean;
-  queryHistoryAvailable: boolean;
-}
 
 export const supportedFeatures = (): RichHistorySupportedFeatures => {
   return config.queryHistoryEnabled

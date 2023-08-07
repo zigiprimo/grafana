@@ -42,3 +42,12 @@ export type RichHistoryQuery<T extends DataQuery = DataQuery> = {
 };
 
 export type RichHistoryResults = { richHistory: RichHistoryQuery[]; total?: number };
+
+export interface RichHistorySupportedFeatures {
+  availableFilters: SortOrder[];
+  lastUsedDataSourcesAvailable: boolean;
+  clearHistory: boolean;
+  onlyActiveDataSource: boolean;
+  changeRetention: boolean;
+  queryHistoryAvailable: boolean;
+}
