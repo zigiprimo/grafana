@@ -18,10 +18,9 @@ import {
   SplitOpenOptions,
   DataLinkPostProcessor,
 } from '@grafana/data';
-import { getTemplateSrv, reportInteraction, VariableInterpolation } from '@grafana/runtime';
+import { getTemplateSrv, reportInteraction, VariableInterpolation, getCorrelationsSrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 import { contextSrv } from 'app/core/services/context_srv';
-import { getTransformationVars } from 'app/features/correlations/transformations';
 
 import { getLinkSrv } from '../../panel/panellinks/link_srv';
 
@@ -178,7 +177,7 @@ export const getFieldLinksForExplore = (options: {
 
             internalLinkSpecificVars = {
               ...internalLinkSpecificVars,
-              ...getTransformationVars(transformation, fieldValue, field.name),
+              ...getCorrelationsSrv().getTransformationVars(transformation, fieldValue, field.name),
             };
           });
         }

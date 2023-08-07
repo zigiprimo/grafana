@@ -2,11 +2,10 @@
 import { AnyAction, createAction } from '@reduxjs/toolkit';
 
 import { DataSourceApi, HistoryItem } from '@grafana/data';
-import { reportInteraction } from '@grafana/runtime';
+import { reportInteraction, getCorrelationsSrv } from '@grafana/runtime';
 import { DataSourceRef } from '@grafana/schema';
 import { RefreshPicker } from '@grafana/ui';
 import { stopQueryState } from 'app/core/utils/explore';
-import { getCorrelationsBySourceUIDs } from 'app/features/correlations/utils';
 import { ExploreItemState, ThunkResult } from 'app/types';
 
 import { loadSupplementaryQueries } from '../utils/supplementaryQueries';
@@ -65,7 +64,7 @@ export function changeDatasource(
     const queries = getState().explore.panes[exploreId]!.queries;
 
     const datasourceUIDs = getDatasourceUIDs(instance.uid, queries);
-    const correlations = await getCorrelationsBySourceUIDs(datasourceUIDs);
+    const correlations = await getCorrelationsSrv().getCorrelationsBySourceUIDs(datasourceUIDs);
     dispatch(saveCorrelationsAction({ exploreId: exploreId, correlations: correlations.correlations || [] }));
 
     if (options?.importQueries) {

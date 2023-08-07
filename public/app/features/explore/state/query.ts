@@ -22,7 +22,7 @@ import {
   SupplementaryQueryType,
   toLegacyResponseData,
 } from '@grafana/data';
-import { config, getDataSourceSrv, reportInteraction } from '@grafana/runtime';
+import { config, getDataSourceSrv, reportInteraction, getCorrelationsSrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 import {
   buildQueryTransaction,
@@ -35,7 +35,6 @@ import {
   updateHistory,
 } from 'app/core/utils/explore';
 import { getShiftedTimeRange } from 'app/core/utils/timePicker';
-import { getCorrelationsBySourceUIDs } from 'app/features/correlations/utils';
 import { getTimeZone } from 'app/features/profile/state/selectors';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 import { store } from 'app/store/store';
@@ -336,7 +335,7 @@ export const changeQueries = createAsyncThunk<void, ChangeQueriesPayload>(
           newQuery.datasource?.uid !== oldQuery.datasource?.uid
         ) {
           const datasourceUIDs = getDatasourceUIDs(MIXED_DATASOURCE_NAME, queries);
-          const correlations = await getCorrelationsBySourceUIDs(datasourceUIDs);
+          const correlations = await getCorrelationsSrv().getCorrelationsBySourceUIDs(datasourceUIDs);
           dispatch(saveCorrelationsAction({ exploreId: exploreId, correlations: correlations.correlations || [] }));
         }
       }
