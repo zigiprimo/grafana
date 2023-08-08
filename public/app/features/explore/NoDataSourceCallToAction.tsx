@@ -1,16 +1,13 @@
 import { css } from '@emotion/css';
 import React from 'react';
 
+import { getMiscSrv } from '@grafana/runtime';
 import { LinkButton, CallToActionCard, Icon, useTheme2 } from '@grafana/ui';
-import { contextSrv } from 'app/core/core';
-import { AccessControlAction } from 'app/types';
 
 export const NoDataSourceCallToAction = () => {
   const theme = useTheme2();
 
-  const canCreateDataSource =
-    contextSrv.hasPermission(AccessControlAction.DataSourcesCreate) &&
-    contextSrv.hasPermission(AccessControlAction.DataSourcesWrite);
+  const canCreateDataSource = getMiscSrv().canCreateDataSource();
 
   const message =
     'Explore requires at least one data source. Once you have added a data source, you can query it here.';

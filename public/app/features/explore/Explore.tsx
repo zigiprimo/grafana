@@ -30,11 +30,9 @@ import {
   AdHocFilterItem,
 } from '@grafana/ui';
 import { FILTER_FOR_OPERATOR, FILTER_OUT_OPERATOR } from '@grafana/ui/src/components/Table/types';
-import appEvents from 'app/core/app_events';
 import { ExploreState } from 'app/features/explore/types';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 import { getNodeGraphDataFrames } from 'app/plugins/panel/nodeGraph/utils';
-import { AbsoluteTimeEvent } from 'app/types/events';
 
 import { CustomContainer } from './CustomContainer';
 import ExploreQueryInspector from './ExploreQueryInspector';
@@ -154,11 +152,11 @@ export class Explore extends React.PureComponent<Props, ExploreComponentState> {
   }
 
   componentDidMount() {
-    this.absoluteTimeUnsubsciber = appEvents.subscribe(AbsoluteTimeEvent, this.onMakeAbsoluteTime);
+    // this.absoluteTimeUnsubsciber = appEvents.subscribe(AbsoluteTimeEvent, this.onMakeAbsoluteTime);
   }
 
   componentWillUnmount() {
-    this.absoluteTimeUnsubsciber?.unsubscribe();
+    // this.absoluteTimeUnsubsciber?.unsubscribe();
   }
 
   onChangeTime = (rawRange: RawTimeRange) => {

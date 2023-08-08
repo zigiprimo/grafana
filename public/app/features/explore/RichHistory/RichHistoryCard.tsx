@@ -14,7 +14,6 @@ import {
 import { DataQuery } from '@grafana/schema';
 import { TextArea, Button, IconButton, useStyles2, LoadingPlaceholder } from '@grafana/ui';
 import { notifyApp } from 'app/core/actions';
-import appEvents from 'app/core/app_events';
 import { createSuccessNotification } from 'app/core/copy/appNotification';
 import { createAndCopyShortLink } from 'app/core/utils/shortLinks';
 import { changeDatasource } from 'app/features/explore/state/datasource';
@@ -22,7 +21,6 @@ import { starHistoryItem, commentHistoryItem, deleteHistoryItem } from 'app/feat
 import { setQueries } from 'app/features/explore/state/query';
 import { ExploreState } from 'app/features/explore/types';
 import { dispatch } from 'app/store/store';
-import { ShowConfirmModalEvent } from 'app/types/events';
 
 function mapStateToProps(state: ExploreState, { exploreId }: { exploreId: string }) {
   const explore = state;
@@ -237,15 +235,16 @@ export function RichHistoryCard(props: Props) {
 
     // For starred queries, we want confirmation. For non-starred, we don't.
     if (query.starred) {
-      appEvents.publish(
-        new ShowConfirmModalEvent({
-          title: 'Delete',
-          text: 'Are you sure you want to permanently delete your starred query?',
-          yesText: 'Delete',
-          icon: 'trash-alt',
-          onConfirm: () => performDelete(query.id),
-        })
-      );
+      performDelete(query.id);
+      // appEvents.publish(
+      //   new ShowConfirmModalEvent({
+      //     title: 'Delete',
+      //     text: 'Are you sure you want to permanently delete your starred query?',
+      //     yesText: 'Delete',
+      //     icon: 'trash-alt',
+      //     onConfirm: () => performDelete(query.id),
+      //   })
+      // );
     } else {
       performDelete(query.id);
     }

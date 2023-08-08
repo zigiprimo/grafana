@@ -5,7 +5,6 @@ import {
   getNewDashboardModelData,
   setDashboardToFetchFromLocalStorage,
 } from 'app/features/dashboard/state/initDashboard';
-import { DashboardDTO } from 'app/types';
 
 import { ExplorePanelData } from '../../types';
 
@@ -21,7 +20,7 @@ interface AddPanelToDashboardOptions {
   dashboardUid?: string;
 }
 
-function createDashboard(): DashboardDTO {
+function createDashboard() {
   const dto = getNewDashboardModelData();
 
   // getNewDashboardModelData adds by default the "add-panel" panel. We don't want that.
@@ -40,7 +39,7 @@ export async function setDashboardInLocalStorage(options: AddPanelToDashboardOpt
     datasource: options.datasource,
   };
 
-  let dto: DashboardDTO;
+  let dto;
 
   if (options.dashboardUid) {
     try {

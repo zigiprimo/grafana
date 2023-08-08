@@ -1,9 +1,8 @@
-import { contextSrv } from 'app/core/services/context_srv';
-import { AccessControlAction } from 'app/types';
+import { getMiscSrv } from '@grafana/runtime';
 
 export function getAddToDashboardTitle(): string {
-  const canCreateDashboard = contextSrv.hasAccess(AccessControlAction.DashboardsCreate, contextSrv.isEditor);
-  const canWriteDashboard = contextSrv.hasAccess(AccessControlAction.DashboardsWrite, contextSrv.isEditor);
+  const canCreateDashboard = getMiscSrv().canCreateDashboard();
+  const canWriteDashboard = getMiscSrv().canWriteDashboard();
 
   if (canCreateDashboard && !canWriteDashboard) {
     return 'Add panel to new dashboard';

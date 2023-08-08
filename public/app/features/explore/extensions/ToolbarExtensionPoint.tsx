@@ -1,12 +1,10 @@
 import React, { lazy, ReactElement, Suspense, useMemo, useState } from 'react';
 
 import { type PluginExtensionLink, PluginExtensionPoints, RawTimeRange } from '@grafana/data';
-import { getPluginLinkExtensions } from '@grafana/runtime';
+import { getMiscSrv, getPluginLinkExtensions } from '@grafana/runtime';
 import { DataQuery, TimeZone } from '@grafana/schema';
 import { Dropdown, ToolbarButton } from '@grafana/ui';
-import { contextSrv } from 'app/core/services/context_srv';
 import { useExploreSelector } from 'app/features/explore/state/store';
-import { AccessControlAction } from 'app/types';
 
 import { getExploreItemSelector } from '../state/selectors';
 import { ExplorePanelData } from '../types';
@@ -36,9 +34,7 @@ export function ToolbarExtensionPoint(props: Props): ReactElement | null {
   // If we only have the explore core extension point registered we show the old way of
   // adding a query to a dashboard.
   if (extensions.length <= 1) {
-    const canAddPanelToDashboard =
-      contextSrv.hasAccess(AccessControlAction.DashboardsCreate, contextSrv.isEditor) ||
-      contextSrv.hasAccess(AccessControlAction.DashboardsWrite, contextSrv.isEditor);
+    const canAddPanelToDashboard = getMiscSrv().canAddPanelToDashboard();
 
     if (!canAddPanelToDashboard) {
       return null;

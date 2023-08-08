@@ -3,13 +3,11 @@ import React, { type ReactElement, useEffect, useState } from 'react';
 import { DeepMap, FieldError, useForm } from 'react-hook-form';
 
 import { locationUtil, SelectableValue } from '@grafana/data';
-import { config, locationService, reportInteraction } from '@grafana/runtime';
+import { config, getMiscSrv, locationService, reportInteraction } from '@grafana/runtime';
 import { Alert, Button, Field, InputControl, Modal, RadioButtonGroup } from '@grafana/ui';
 import { DashboardPicker } from 'app/core/components/Select/DashboardPicker';
-import { contextSrv } from 'app/core/services/context_srv';
 import { removeDashboardToFetchFromLocalStorage } from 'app/features/dashboard/state/initDashboard';
 import { useExploreSelector } from 'app/features/explore/state/store';
-import { AccessControlAction } from 'app/types';
 
 import { getExploreItemSelector } from '../../state/selectors';
 
@@ -74,8 +72,8 @@ export function AddToDashboardForm(props: Props): ReactElement {
     defaultValues: { saveTarget: SaveTarget.NewDashboard },
   });
 
-  const canCreateDashboard = contextSrv.hasAccess(AccessControlAction.DashboardsCreate, contextSrv.isEditor);
-  const canWriteDashboard = contextSrv.hasAccess(AccessControlAction.DashboardsWrite, contextSrv.isEditor);
+  const canCreateDashboard = getMiscSrv().canCreateDashboard();
+  const canWriteDashboard = getMiscSrv().canWriteDashboard();
 
   const saveTargets: Array<SelectableValue<SaveTarget>> = [];
   if (canCreateDashboard) {

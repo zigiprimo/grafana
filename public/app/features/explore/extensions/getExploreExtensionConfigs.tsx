@@ -1,8 +1,7 @@
 import React from 'react';
 
 import { PluginExtensionPoints, type PluginExtensionLinkConfig } from '@grafana/data';
-import { contextSrv } from 'app/core/core';
-import { AccessControlAction } from 'app/types';
+import { getMiscSrv } from '@grafana/runtime';
 
 import { createExtensionLinkConfig, logWarning } from '../../plugins/extensions/utils';
 
@@ -20,9 +19,7 @@ export function getExploreExtensionConfigs(): PluginExtensionLinkConfig[] {
         icon: 'apps',
         category: 'Dashboards',
         configure: () => {
-          const canAddPanelToDashboard =
-            contextSrv.hasAccess(AccessControlAction.DashboardsCreate, contextSrv.isEditor) ||
-            contextSrv.hasAccess(AccessControlAction.DashboardsWrite, contextSrv.isEditor);
+          const canAddPanelToDashboard = getMiscSrv().canAddPanelToDashboard();
 
           // hide option if user has insufficient permissions
           if (!canAddPanelToDashboard) {

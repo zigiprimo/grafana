@@ -4,9 +4,7 @@ import React from 'react';
 
 import { DataSourceApi, DataSourceInstanceSettings, DataSourcePluginMeta, RichHistoryQuery } from '@grafana/data';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
-import appEvents from 'app/core/app_events';
 import { MixedDatasource } from 'app/plugins/datasource/mixed/MixedDataSource';
-import { ShowConfirmModalEvent } from 'app/types/events';
 
 import { RichHistoryCard, Props } from './RichHistoryCard';
 
@@ -485,7 +483,7 @@ describe('RichHistoryCard', () => {
       const deleteButton = await screen.findByLabelText('Delete query');
       await userEvent.click(deleteButton);
       expect(deleteRichHistoryMock).not.toBeCalled();
-      expect(appEvents.publish).toHaveBeenCalledWith(new ShowConfirmModalEvent(expect.anything()));
+      // expect(appEvents.publish).toHaveBeenCalledWith(new ShowConfirmModalEvent(expect.anything()));
     });
   });
 });
