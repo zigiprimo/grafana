@@ -38,7 +38,7 @@ export function configureExploreStore(reducer: Reducer<ExploreState, AnyAction>,
     preloadedState,
   });
   // this enables "refetchOnFocus" and "refetchOnReconnect" for RTK Query
-  setupListeners(store.dispatch);
+  setupListeners(typedStore.dispatch);
 
   store = typedStore;
   return typedStore;
