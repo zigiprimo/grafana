@@ -6,11 +6,11 @@ import { DataSourceSrv, generateExploreId, GetExploreUrlArguments, locationServi
 import { PanelModel } from 'app/features/dashboard/state';
 import { ExploreItemState, ExploreState } from 'app/features/explore/types';
 
-import { createAsyncThunk, ThunkResult } from '../../../types';
 import { TimeSrv } from '../../dashboard/services/TimeSrv';
 import { withUniqueRefIds } from '../utils/queries';
 
 import { initializeExplore, InitializeExploreOptions, paneReducer } from './explorePane';
+import { createExploreAsyncThunk, ExploreThunkResult } from './store';
 import { DEFAULT_RANGE, makeExplorePaneState } from './utils';
 
 //
@@ -59,15 +59,15 @@ export const clearPanes = createAction('explore/clearPanes');
 /**
  * Ensure Explore doesn't exceed supported number of panes and initializes the new pane.
  */
-export const splitOpen = createAsyncThunk(
+export const splitOpen = createExploreAsyncThunk(
   'explore/splitOpen',
   async (options: SplitOpenOptions | undefined, { getState, dispatch, requestId }) => {
     // we currently support showing only 2 panes in explore, so if this action is dispatched we know it has been dispatched from the "first" pane.
-    const originState = Object.values(getState().explore.panes)[0];
+    const originState = Object.values(getState().panes)[0];
 
     const queries = options?.queries ?? (options?.query ? [options?.query] : originState?.queries || []);
 
-    Object.keys(getState().explore.panes).forEach((paneId, index) => {
+    Object.keys(getState().panes).forEach((paneId, index) => {
       // Only 2 panes are supported. Remove panes before create a new one.
       if (index >= 1) {
         dispatch(splitClose(paneId));
@@ -95,7 +95,7 @@ export const splitOpen = createAsyncThunk(
  *
  * TODO: this can be improved by better inferring fallback values.
  */
-const createNewSplitOpenPane = createAsyncThunk(
+const createNewSplitOpenPane = createExploreAsyncThunk(
   'explore/createNewSplitOpen',
   async (options: InitializeExploreOptions, { dispatch }) => {
     await dispatch(initializeExplore(options));
@@ -112,7 +112,7 @@ export interface NavigateToExploreDependencies {
 export const navigateToExplore = (
   panel: PanelModel,
   dependencies: NavigateToExploreDependencies
-): ThunkResult<void> => {
+): ExploreThunkResult<void> => {
   return async (dispatch) => {
     const { getDataSourceSrv, getTimeSrv, getExploreUrl, openInNewWindow } = dependencies;
     const datasourceSrv = getDataSourceSrv();

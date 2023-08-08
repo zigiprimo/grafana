@@ -21,10 +21,18 @@ import {
   ScopedVars,
   SupplementaryQueryType,
   toLegacyResponseData,
+  getTimeZone,
 } from '@grafana/data';
 import { config, getDataSourceSrv, reportInteraction, getCorrelationsSrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 import { getShiftedTimeRange } from 'app/core/utils/timePicker';
+import {
+  createExploreAsyncThunk,
+  ExploreThunkDispatch,
+  ExploreThunkResult,
+  getExploreState,
+  getExploreStore,
+} from 'app/features/explore/state/store';
 import {
   ExploreItemState,
   ExplorePanelData,
@@ -43,10 +51,7 @@ import {
   stopQueryState,
   updateHistory,
 } from 'app/features/explore/utils';
-import { getTimeZone } from 'app/features/profile/state/selectors';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
-import { store } from 'app/store/store';
-import { createAsyncThunk, StoreState, ThunkDispatch, ThunkResult } from 'app/types';
 
 import { notifyApp } from '../../../core/actions';
 import { createErrorNotification } from '../../../core/copy/appNotification';
@@ -67,8 +72,8 @@ import { createCacheKey, filterLogRowsByIndex, getDatasourceUIDs, getResultsFrom
  * Derives from explore state if a given Explore pane is waiting for more data to be received
  */
 export const selectIsWaitingForData = (exploreId: string) => {
-  return (state: StoreState) => {
-    const panelState = state.explore.panes[exploreId];
+  return (state: ExploreState) => {
+    const panelState = state.panes[exploreId];
     if (!panelState) {
       return false;
     }
@@ -247,9 +252,9 @@ export const clearCacheAction = createAction<ClearCachePayload>('explore/clearCa
 /**
  * Adds a query row after the row with the given index.
  */
-export function addQueryRow(exploreId: string, index: number): ThunkResult<Promise<void>> {
+export function addQueryRow(exploreId: string, index: number): ExploreThunkResult<Promise<void>> {
   return async (dispatch, getState) => {
-    const pane = getState().explore.panes[exploreId]!;
+    const pane = getState().panes[exploreId]!;
     let datasourceOverride = undefined;
 
     // if we are not in mixed mode, use root datasource
@@ -268,12 +273,12 @@ export function addQueryRow(exploreId: string, index: number): ThunkResult<Promi
 /**
  * Cancel running queries
  */
-export function cancelQueries(exploreId: string): ThunkResult<void> {
+export function cancelQueries(exploreId: string): ExploreThunkResult<void> {
   return (dispatch, getState) => {
     dispatch(scanStopAction({ exploreId }));
     dispatch(cancelQueriesAction({ exploreId }));
 
-    const supplementaryQueries = getState().explore.panes[exploreId]!.supplementaryQueries;
+    const supplementaryQueries = getState().panes[exploreId]!.supplementaryQueries;
     // Cancel all data providers
     for (const type of supplementaryQueryTypes) {
       dispatch(cleanSupplementaryQueryDataProviderAction({ exploreId, type }));
@@ -312,12 +317,12 @@ const getImportableQueries = async (
   return addDatasourceToQueries(targetDataSource, queriesOut);
 };
 
-export const changeQueries = createAsyncThunk<void, ChangeQueriesPayload>(
+export const changeQueries = createExploreAsyncThunk<void, ChangeQueriesPayload>(
   'explore/changeQueries',
   async ({ queries, exploreId }, { getState, dispatch }) => {
     let queriesImported = false;
-    const oldQueries = getState().explore.panes[exploreId]!.queries;
-    const rootUID = getState().explore.panes[exploreId]!.datasourceInstance?.uid;
+    const oldQueries = getState().panes[exploreId]!.queries;
+    const rootUID = getState().panes[exploreId]!.datasourceInstance?.uid;
 
     for (const newQuery of queries) {
       for (const oldQuery of oldQueries) {
@@ -366,7 +371,7 @@ export const importQueries = (
   sourceDataSource: DataSourceApi | undefined | null,
   targetDataSource: DataSourceApi,
   singleQueryChangeRef?: string // when changing one query DS to another in a mixed environment, we do not want to change all queries, just the one being changed
-): ThunkResult<Promise<DataQuery[] | void>> => {
+): ExploreThunkResult<Promise<DataQuery[] | void>> => {
   return async (dispatch) => {
     if (!sourceDataSource) {
       // explore not initialized
@@ -437,9 +442,9 @@ export function modifyQueries(
   exploreId: string,
   modification: QueryFixAction,
   modifier: (query: DataQuery, modification: QueryFixAction) => Promise<DataQuery>
-): ThunkResult<void> {
+): ExploreThunkResult<void> {
   return async (dispatch, getState) => {
-    const state = getState().explore.panes[exploreId]!;
+    const state = getState().panes[exploreId]!;
 
     const { queries } = state;
 
@@ -457,7 +462,7 @@ export function modifyQueries(
 }
 
 async function handleHistory(
-  dispatch: ThunkDispatch,
+  dispatch: ExploreThunkDispatch,
   state: ExploreState,
   history: Array<HistoryItem<DataQuery>>,
   datasource: DataSourceApi,
@@ -485,7 +490,7 @@ interface RunQueriesOptions {
 /**
  * Main action to run queries and dispatches sub-actions based on which result viewers are active
  */
-export const runQueries = createAsyncThunk<void, RunQueriesOptions>(
+export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
   'explore/runQueries',
   async ({ exploreId, preserveCache }, { dispatch, getState }) => {
     dispatch(updateTime({ exploreId }));
@@ -497,7 +502,7 @@ export const runQueries = createAsyncThunk<void, RunQueriesOptions>(
       dispatch(clearCache(exploreId));
     }
 
-    const exploreItemState = getState().explore.panes[exploreId]!;
+    const exploreItemState = getState().panes[exploreId]!;
     const {
       datasourceInstance,
       containerWidth,
@@ -520,7 +525,7 @@ export const runQueries = createAsyncThunk<void, RunQueriesOptions>(
     }));
 
     if (datasourceInstance != null) {
-      handleHistory(dispatch, getState().explore, exploreItemState.history, datasourceInstance, queries, exploreId);
+      handleHistory(dispatch, getState(), exploreItemState.history, datasourceInstance, queries, exploreId);
     }
 
     const cachedValue = getResultsFromCache(cache, absoluteRange);
@@ -561,7 +566,7 @@ export const runQueries = createAsyncThunk<void, RunQueriesOptions>(
         liveStreaming: live,
       };
 
-      const timeZone = getTimeZone(getState().user);
+      const timeZone = getTimeZone();
       const transaction = buildQueryTransaction(exploreId, queries, queryOptions, range, scanning, timeZone);
 
       dispatch(changeLoadingStateAction({ exploreId, loadingState: LoadingState.Loading }));
@@ -589,9 +594,9 @@ export const runQueries = createAsyncThunk<void, RunQueriesOptions>(
           dispatch(queryStreamUpdatedAction({ exploreId, response: data }));
 
           // Keep scanning for results if this was the last scanning transaction
-          if (getState().explore.panes[exploreId]!.scanning) {
+          if (getState().panes[exploreId]!.scanning) {
             if (data.state === LoadingState.Done && data.series.length === 0) {
-              const range = getShiftedTimeRange(-1, getState().explore.panes[exploreId]!.range);
+              const range = getShiftedTimeRange(-1, getState().panes[exploreId]!.range);
               dispatch(updateTime({ exploreId, absoluteRange: range }));
               dispatch(runQueries({ exploreId }));
             } else {
@@ -609,7 +614,7 @@ export const runQueries = createAsyncThunk<void, RunQueriesOptions>(
           // In case we don't get any response at all but the observable completed, make sure we stop loading state.
           // This is for cases when some queries are noop like running first query after load but we don't have any
           // actual query input.
-          if (getState().explore.panes[exploreId]!.queryResponse.state === LoadingState.Loading) {
+          if (getState().panes[exploreId]!.queryResponse.state === LoadingState.Loading) {
             dispatch(changeLoadingStateAction({ exploreId, loadingState: LoadingState.Done }));
           }
         },
@@ -671,7 +676,7 @@ type HandleSupplementaryQueriesOptions = {
   absoluteRange: AbsoluteTimeRange;
 };
 
-const handleSupplementaryQueries = createAsyncThunk(
+const handleSupplementaryQueries = createExploreAsyncThunk(
   'explore/handleSupplementaryQueries',
   async (
     {
@@ -781,10 +786,10 @@ function canReuseSupplementaryQueryData(
  * Reset queries to the given queries. Any modifications will be discarded.
  * Use this action for clicks on query examples. Triggers a query run.
  */
-export function setQueries(exploreId: string, rawQueries: DataQuery[]): ThunkResult<void> {
+export function setQueries(exploreId: string, rawQueries: DataQuery[]): ExploreThunkResult<void> {
   return (dispatch, getState) => {
     // Inject react keys into query objects
-    const queries = getState().explore.panes[exploreId]!.queries;
+    const queries = getState().panes[exploreId]!.queries;
     const nextQueries = rawQueries.map((query, index) => generateNewKeyAndAddRefIdIfMissing(query, queries, index));
     dispatch(setQueriesAction({ exploreId, queries: nextQueries }));
     dispatch(runQueries({ exploreId }));
@@ -796,22 +801,22 @@ export function setQueries(exploreId: string, rawQueries: DataQuery[]): ThunkRes
  * @param exploreId Explore area
  * @param scanner Function that a) returns a new time range and b) triggers a query run for the new range
  */
-export function scanStart(exploreId: string): ThunkResult<void> {
+export function scanStart(exploreId: string): ExploreThunkResult<void> {
   return (dispatch, getState) => {
     // Register the scanner
     dispatch(scanStartAction({ exploreId }));
     // Scanning must trigger query run, and return the new range
-    const range = getShiftedTimeRange(-1, getState().explore.panes[exploreId]!.range);
+    const range = getShiftedTimeRange(-1, getState().panes[exploreId]!.range);
     // Set the new range to be displayed
     dispatch(updateTime({ exploreId, absoluteRange: range }));
     dispatch(runQueries({ exploreId }));
   };
 }
 
-export function addResultsToCache(exploreId: string): ThunkResult<void> {
+export function addResultsToCache(exploreId: string): ExploreThunkResult<void> {
   return (dispatch, getState) => {
-    const queryResponse = getState().explore.panes[exploreId]!.queryResponse;
-    const absoluteRange = getState().explore.panes[exploreId]!.absoluteRange;
+    const queryResponse = getState().panes[exploreId]!.queryResponse;
+    const absoluteRange = getState().panes[exploreId]!.absoluteRange;
     const cacheKey = createCacheKey(absoluteRange);
 
     // Save results to cache only when all results received and loading is done
@@ -821,7 +826,7 @@ export function addResultsToCache(exploreId: string): ThunkResult<void> {
   };
 }
 
-export function clearCache(exploreId: string): ThunkResult<void> {
+export function clearCache(exploreId: string): ExploreThunkResult<void> {
   return (dispatch, getState) => {
     dispatch(clearCacheAction({ exploreId }));
   };
@@ -830,9 +835,9 @@ export function clearCache(exploreId: string): ThunkResult<void> {
 /**
  * Initializes loading logs volume data and stores emitted value.
  */
-export function loadSupplementaryQueryData(exploreId: string, type: SupplementaryQueryType): ThunkResult<void> {
+export function loadSupplementaryQueryData(exploreId: string, type: SupplementaryQueryType): ExploreThunkResult<void> {
   return (dispatch, getState) => {
-    const { supplementaryQueries } = getState().explore.panes[exploreId]!;
+    const { supplementaryQueries } = getState().panes[exploreId]!;
     const dataProvider = supplementaryQueries[type].dataProvider;
 
     if (dataProvider) {
@@ -856,7 +861,7 @@ export function setSupplementaryQueryEnabled(
   exploreId: string,
   enabled: boolean,
   type: SupplementaryQueryType
-): ThunkResult<void> {
+): ExploreThunkResult<void> {
   return (dispatch, getState) => {
     dispatch(setSupplementaryQueryEnabledAction({ exploreId, enabled, type }));
     storeSupplementaryQueryEnabled(enabled, type);
@@ -1145,13 +1150,13 @@ export const queryReducer = (state: ExploreItemState, action: AnyAction): Explor
  */
 const getCorrelations = (exploreId: string) => {
   return new Observable<CorrelationData[]>((subscriber) => {
-    const existingCorrelations = store.getState().explore.panes[exploreId]?.correlations;
+    const existingCorrelations = getExploreState().panes[exploreId]?.correlations;
     if (existingCorrelations) {
       subscriber.next(existingCorrelations);
       subscriber.complete();
     } else {
-      const unsubscribe = store.subscribe(() => {
-        const correlations = store.getState().explore.panes[exploreId]?.correlations;
+      const unsubscribe = getExploreStore().subscribe(() => {
+        const correlations = getExploreState().panes[exploreId]?.correlations;
         if (correlations) {
           unsubscribe();
           subscriber.next(correlations);

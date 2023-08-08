@@ -2,19 +2,24 @@ import { inRange } from 'lodash';
 import { useState } from 'react';
 import { useWindowSize } from 'react-use';
 
-import { useDispatch, useSelector } from 'app/types';
+import { useExploreDispatch, useExploreSelector } from 'app/features/explore/state/store';
 
 import { splitSizeUpdateAction } from '../state/main';
 import { isSplit, selectPanesEntries } from '../state/selectors';
 
 export const useSplitSizeUpdater = (minWidth: number) => {
-  const dispatch = useDispatch();
+  const dispatch = useExploreDispatch();
   const { width: windowWidth } = useWindowSize();
-  const panes = useSelector(selectPanesEntries);
-  const hasSplit = useSelector(isSplit);
+  const panes = useExploreSelector(selectPanesEntries);
+  const hasSplit = useExploreSelector(isSplit);
   const [rightPaneWidthRatio, setRightPaneWidthRatio] = useState(0.5);
 
-  const exploreState = useSelector((state) => state.explore);
+  const { evenSplitPanes, maxedExploreId } = useExploreSelector((state) => {
+    return {
+      maxedExploreId: state.maxedExploreId,
+      evenSplitPanes: state.evenSplitPanes,
+    };
+  });
 
   const updateSplitSize = (size: number) => {
     const evenSplitWidth = windowWidth / 2;
@@ -34,9 +39,9 @@ export const useSplitSizeUpdater = (minWidth: number) => {
 
   let widthCalc = 0;
   if (hasSplit) {
-    if (!exploreState.evenSplitPanes && exploreState.maxedExploreId) {
-      widthCalc = exploreState.maxedExploreId === panes[1][0] ? windowWidth - minWidth : minWidth;
-    } else if (exploreState.evenSplitPanes) {
+    if (!evenSplitPanes && maxedExploreId) {
+      widthCalc = maxedExploreId === panes[1][0] ? windowWidth - minWidth : minWidth;
+    } else if (evenSplitPanes) {
       widthCalc = Math.floor(windowWidth / 2);
     } else if (rightPaneWidthRatio !== undefined) {
       widthCalc = windowWidth * rightPaneWidthRatio;

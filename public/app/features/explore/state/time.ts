@@ -1,12 +1,18 @@
 import { AnyAction, createAction } from '@reduxjs/toolkit';
 
-import { AbsoluteTimeRange, dateTimeForTimeZone, LoadingState, RawTimeRange, TimeRange } from '@grafana/data';
-import { getTemplateSrv } from '@grafana/runtime';
+import {
+  AbsoluteTimeRange,
+  dateTimeForTimeZone,
+  LoadingState,
+  RawTimeRange,
+  TimeRange,
+  getTimeZone,
+} from '@grafana/data';
+import { getMiscSrv, getTemplateSrv } from '@grafana/runtime';
 import { RefreshPicker } from '@grafana/ui';
+import { ExploreThunkResult } from 'app/features/explore/state/store';
 import { getTimeRange, refreshIntervalToSortOrder, stopQueryState } from 'app/features/explore/utils';
 import { sortLogsResult } from 'app/features/logs/utils';
-import { getFiscalYearStartMonth, getTimeZone } from 'app/features/profile/state/selectors';
-import { ThunkResult } from 'app/types';
 
 import { getTimeSrv } from '../../dashboard/services/TimeSrv';
 import { TimeModel } from '../../dashboard/state/TimeModel';
@@ -39,11 +45,11 @@ export const updateTimeRange = (options: {
   exploreId: string;
   rawRange?: RawTimeRange;
   absoluteRange?: AbsoluteTimeRange;
-}): ThunkResult<void> => {
+}): ExploreThunkResult<void> => {
   return (dispatch, getState) => {
-    const { syncedTimes } = getState().explore;
+    const { syncedTimes } = getState();
     if (syncedTimes) {
-      Object.keys(getState().explore.panes).forEach((exploreId) => {
+      Object.keys(getState().panes).forEach((exploreId) => {
         dispatch(updateTime({ ...options, exploreId }));
         dispatch(runQueries({ exploreId: exploreId, preserveCache: true }));
       });
@@ -58,12 +64,12 @@ export const updateTime = (config: {
   exploreId: string;
   rawRange?: RawTimeRange;
   absoluteRange?: AbsoluteTimeRange;
-}): ThunkResult<void> => {
+}): ExploreThunkResult<void> => {
   return (dispatch, getState) => {
     const { exploreId, absoluteRange: absRange, rawRange: actionRange } = config;
-    const itemState = getState().explore.panes[exploreId]!;
-    const timeZone = getTimeZone(getState().user);
-    const fiscalYearStartMonth = getFiscalYearStartMonth(getState().user);
+    const itemState = getState().panes[exploreId]!;
+    const timeZone = getTimeZone();
+    const fiscalYearStartMonth = getMiscSrv().getUserFiscalYearStartMonth();
     const { range: rangeInState } = itemState;
     let rawRange: RawTimeRange = rangeInState.raw;
 
@@ -104,17 +110,17 @@ export const updateTime = (config: {
  * Syncs time interval, if they are not synced on both panels in a split mode.
  * Unsyncs time interval, if they are synced on both panels in a split mode.
  */
-export function syncTimes(exploreId: string): ThunkResult<void> {
+export function syncTimes(exploreId: string): ExploreThunkResult<void> {
   return (dispatch, getState) => {
-    const range = getState().explore.panes[exploreId]!.range.raw;
+    const range = getState().panes[exploreId]!.range.raw;
 
-    Object.keys(getState().explore.panes)
+    Object.keys(getState().panes)
       .filter((key) => key !== exploreId)
       .forEach((exploreId) => {
         dispatch(updateTimeRange({ exploreId, rawRange: range }));
       });
 
-    const isTimeSynced = getState().explore.syncedTimes;
+    const isTimeSynced = getState().syncedTimes;
     dispatch(syncTimesAction({ syncedTimes: !isTimeSynced }));
   };
 }
@@ -124,12 +130,12 @@ export function syncTimes(exploreId: string): ThunkResult<void> {
  * The conversion is applied to all Explore panes.
  * Useful to produce a bookmarkable URL that points to the same data.
  */
-export function makeAbsoluteTime(): ThunkResult<void> {
+export function makeAbsoluteTime(): ExploreThunkResult<void> {
   return (dispatch, getState) => {
-    const timeZone = getTimeZone(getState().user);
-    const fiscalYearStartMonth = getFiscalYearStartMonth(getState().user);
+    const timeZone = getTimeZone();
+    const fiscalYearStartMonth = getMiscSrv().getUserFiscalYearStartMonth();
 
-    Object.entries(getState().explore.panes).forEach(([exploreId, exploreItemState]) => {
+    Object.entries(getState().panes).forEach(([exploreId, exploreItemState]) => {
       const range = getTimeRange(timeZone, exploreItemState!.range.raw, fiscalYearStartMonth);
       const absoluteRange: AbsoluteTimeRange = { from: range.from.valueOf(), to: range.to.valueOf() };
       dispatch(updateTime({ exploreId, absoluteRange }));

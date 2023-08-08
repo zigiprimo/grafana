@@ -2,12 +2,13 @@ import { identity, isEmpty, isEqual, isObject, mapValues, omitBy } from 'lodash'
 import { useEffect, useRef } from 'react';
 
 import { CoreApp, ExploreUrlState, RawTimeRange, DataSourceApi } from '@grafana/data';
+import { getMiscSrv } from '@grafana/runtime';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
 import { useGrafana } from 'app/core/context/GrafanaContext';
+import { addExploreListener, useExploreDispatch, useExploreSelector } from 'app/features/explore/state/store';
 import { clearQueryKeys, getLastUsedDatasourceUID } from 'app/features/explore/utils';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
-import { addListener, useDispatch, useSelector } from 'app/types';
 
 import { changeDatasource } from '../../state/datasource';
 import { initializeExplore } from '../../state/explorePane';
@@ -27,9 +28,8 @@ import { parseURL } from './parseURL';
  */
 export function useStateSync(params: ExploreQueryParams) {
   const { location } = useGrafana();
-  const dispatch = useDispatch();
-  const panesState = useSelector(selectPanes);
-  const orgId = useSelector((state) => state.user.orgId);
+  const dispatch = useExploreDispatch();
+  const panesState = useExploreSelector(selectPanes);
   const prevParams = useRef(params);
   const initState = useRef<'notstarted' | 'pending' | 'done'>('notstarted');
 
@@ -44,7 +44,7 @@ export function useStateSync(params: ExploreQueryParams) {
 
   useEffect(() => {
     const unsubscribe = dispatch(
-      addListener({
+      addExploreListener({
         predicate: (action) =>
           // We want to update the URL when:
           // - a pane is opened or closed
@@ -59,7 +59,7 @@ export function useStateSync(params: ExploreQueryParams) {
           cancelActiveListeners();
           await delay(200);
 
-          const panesQueryParams = Object.entries(getState().explore.panes).reduce((acc, [id, paneState]) => {
+          const panesQueryParams = Object.entries(getState().panes).reduce((acc, [id, paneState]) => {
             if (!paneState) {
               return acc;
             }
@@ -85,7 +85,7 @@ export function useStateSync(params: ExploreQueryParams) {
       })
     );
 
-    // @ts-expect-error the return type of addListener is actually callable, but dispatch is not middleware-aware
+    // @ts-expect-error the return type of addExploreListener is actually callable, but dispatch is not middleware-aware
     return () => unsubscribe();
   }, [dispatch, location]);
 
@@ -163,6 +163,8 @@ export function useStateSync(params: ExploreQueryParams) {
 
       // Clear all the panes in the store first to avoid stale data.
       dispatch(clearPanes());
+
+      const orgId = getMiscSrv().getUserOrgId();
 
       Promise.all(
         Object.entries(urlState.panes).map(([exploreId, { datasource, queries, range, panelsState }]) => {
@@ -250,7 +252,7 @@ export function useStateSync(params: ExploreQueryParams) {
     prevParams.current = params;
 
     isURLOutOfSync && initState.current === 'done' && sync();
-  }, [dispatch, panesState, orgId, location, params]);
+  }, [dispatch, panesState, location, params]);
 }
 
 function getDefaultQuery(ds: DataSourceApi) {

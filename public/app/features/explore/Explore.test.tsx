@@ -6,11 +6,11 @@ import { TestProvider } from 'test/helpers/TestProvider';
 import { DataSourceApi, LoadingState, CoreApp, createTheme, EventBusSrv, PluginExtensionTypes } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { getPluginLinkExtensions } from '@grafana/runtime';
-import { configureStore } from 'app/store/configureStore';
 
 import { Explore, Props } from './Explore';
-import { initialExploreState } from './state/main';
+import { exploreReducer, initialExploreState } from './state/main';
 import { scanStopAction } from './state/query';
+import { configureExploreStore } from './state/store';
 import { createEmptyQueryResponse, makeExplorePaneState } from './state/utils';
 
 const resizeWindow = (x: number, y: number) => {
@@ -127,12 +127,10 @@ jest.mock('react-virtualized-auto-sizer', () => {
 const getPluginLinkExtensionsMock = jest.mocked(getPluginLinkExtensions);
 
 const setup = (overrideProps?: Partial<Props>) => {
-  const store = configureStore({
-    explore: {
-      ...initialExploreState,
-      panes: {
-        left: makeExplorePaneState(),
-      },
+  const store = configureExploreStore(exploreReducer, {
+    ...initialExploreState,
+    panes: {
+      left: makeExplorePaneState(),
     },
   });
   const exploreProps = { ...dummyProps, ...overrideProps };

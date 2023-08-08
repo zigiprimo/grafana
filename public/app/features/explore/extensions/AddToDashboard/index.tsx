@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from 'react';
 
 import { Modal, ToolbarButton } from '@grafana/ui';
-import { useSelector } from 'app/types';
+import { useExploreSelector } from 'app/features/explore/state/store';
 
 import { getExploreItemSelector } from '../../state/selectors';
 
@@ -15,7 +15,7 @@ interface Props {
 export const AddToDashboard = ({ exploreId }: Props) => {
   const [isOpen, setIsOpen] = useState(false);
   const selectExploreItem = getExploreItemSelector(exploreId);
-  const explorePaneHasQueries = !!useSelector(selectExploreItem)?.queries?.length;
+  const explorePaneHasQueries = !!useExploreSelector(selectExploreItem)?.queries?.length;
   const onClose = useCallback(() => setIsOpen(false), []);
 
   return (

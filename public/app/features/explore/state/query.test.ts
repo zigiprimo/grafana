@@ -16,17 +16,17 @@ import {
   SupplementaryQueryType,
 } from '@grafana/data';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
-import { createAsyncThunk, StoreState, ThunkDispatch } from 'app/types';
+import { configureExploreStore, createExploreAsyncThunk, ExploreThunkDispatch } from 'app/features/explore/state/store';
 
 import { reducerTester } from '../../../../test/core/redux/reducerTester';
-import { configureStore } from '../../../store/configureStore';
 import { setTimeSrv, TimeSrv } from '../../dashboard/services/TimeSrv';
 import { makeLogs } from '../__mocks__/makeLogs';
-import { ExploreItemState } from '../types';
+import { ExploreItemState, ExploreState } from '../types';
 import { supplementaryQueryTypes } from '../utils/supplementaryQueries';
 
 import { saveCorrelationsAction } from './explorePane';
 import { createDefaultInitialState } from './helpers';
+import { exploreReducer } from './main';
 import {
   addQueryRowAction,
   addResultsToCache,
@@ -101,8 +101,8 @@ jest.mock('@grafana/runtime', () => ({
   },
 }));
 
-function setupQueryResponse(state: StoreState) {
-  const leftDatasourceInstance = assertIsDefined(state.explore.panes.left!.datasourceInstance);
+function setupQueryResponse(state: ExploreState) {
+  const leftDatasourceInstance = assertIsDefined(state.panes.left!.datasourceInstance);
 
   jest.mocked(leftDatasourceInstance.query).mockReturnValueOnce(
     of({
@@ -120,20 +120,21 @@ function setupQueryResponse(state: StoreState) {
 }
 
 async function setupStore(queries: DataQuery[], datasourceInstance: Partial<DataSourceApi>) {
-  let dispatch: ThunkDispatch, getState: () => StoreState;
+  let dispatch: ExploreThunkDispatch, getState: () => ExploreState;
 
-  const store: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-    ...defaultInitialState,
-    explore: {
+  const store: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } = configureExploreStore(
+    exploreReducer,
+    {
+      ...defaultInitialState,
       panes: {
         [exploreId]: {
-          ...defaultInitialState.explore.panes[exploreId],
+          ...defaultInitialState.panes[exploreId],
           queries: queries,
           datasourceInstance: datasourceInstance,
         },
       },
-    },
-  } as unknown as Partial<StoreState>);
+    } as unknown as ExploreState
+  );
 
   dispatch = store.dispatch;
   getState = store.getState;
@@ -148,9 +149,9 @@ async function setupStore(queries: DataQuery[], datasourceInstance: Partial<Data
 describe('runQueries', () => {
   const setupTests = () => {
     setTimeSrv({ init() {} } as unknown as TimeSrv);
-    return configureStore({
+    return configureExploreStore(exploreReducer, {
       ...defaultInitialState,
-    } as unknown as Partial<StoreState>);
+    } as unknown as ExploreState);
   };
 
   it('should pass dataFrames to state even if there is error in response', async () => {
@@ -159,8 +160,8 @@ describe('runQueries', () => {
 
     await dispatch(saveCorrelationsAction({ exploreId: 'left', correlations: [] }));
     await dispatch(runQueries({ exploreId: 'left' }));
-    expect(getState().explore.panes.left!.showMetrics).toBeTruthy();
-    expect(getState().explore.panes.left!.graphResult).toBeDefined();
+    expect(getState().panes.left!.showMetrics).toBeTruthy();
+    expect(getState().panes.left!.graphResult).toBeDefined();
   });
 
   it('should modify the request-id for all supplementary queries', () => {
@@ -169,7 +170,7 @@ describe('runQueries', () => {
     dispatch(saveCorrelationsAction({ exploreId: 'left', correlations: [] }));
     dispatch(runQueries({ exploreId: 'left' }));
 
-    const state = getState().explore.panes.left!;
+    const state = getState().panes.left!;
     expect(state.queryResponse.request?.requestId).toBe('explore_left');
     const datasource = state.datasourceInstance as unknown as DataSourceWithSupplementaryQueriesSupport<DataQuery>;
     for (const type of supplementaryQueryTypes) {
@@ -184,21 +185,21 @@ describe('runQueries', () => {
 
   it('should set state to done if query completes without emitting', async () => {
     const { dispatch, getState } = setupTests();
-    const leftDatasourceInstance = assertIsDefined(getState().explore.panes.left!.datasourceInstance);
+    const leftDatasourceInstance = assertIsDefined(getState().panes.left!.datasourceInstance);
     jest.mocked(leftDatasourceInstance.query).mockReturnValueOnce(EMPTY);
     await dispatch(saveCorrelationsAction({ exploreId: 'left', correlations: [] }));
     await dispatch(runQueries({ exploreId: 'left' }));
     await new Promise((resolve) => setTimeout(() => resolve(''), 500));
-    expect(getState().explore.panes.left!.queryResponse.state).toBe(LoadingState.Done);
+    expect(getState().panes.left!.queryResponse.state).toBe(LoadingState.Done);
   });
 
   it('shows results only after correlations are loaded', async () => {
     const { dispatch, getState } = setupTests();
     setupQueryResponse(getState());
     await dispatch(runQueries({ exploreId: 'left' }));
-    expect(getState().explore.panes.left!.graphResult).not.toBeDefined();
+    expect(getState().panes.left!.graphResult).not.toBeDefined();
     await dispatch(saveCorrelationsAction({ exploreId: 'left', correlations: [] }));
-    expect(getState().explore.panes.left!.graphResult).toBeDefined();
+    expect(getState().panes.left!.graphResult).toBeDefined();
   });
 });
 
@@ -208,25 +209,19 @@ describe('running queries', () => {
     unsubscribable.subscribe();
     const exploreId = 'left';
     const initialState = {
-      explore: {
-        panes: {
-          [exploreId]: {
-            datasourceInstance: { name: 'testDs' },
-            initialized: true,
-            loading: true,
-            querySubscription: unsubscribable,
-            queries: ['A'],
-            range: testRange,
-            supplementaryQueries: {
-              [SupplementaryQueryType.LogsVolume]: { enabled: true },
-              [SupplementaryQueryType.LogsSample]: { enabled: true },
-            },
+      panes: {
+        [exploreId]: {
+          datasourceInstance: { name: 'testDs' },
+          initialized: true,
+          loading: true,
+          querySubscription: unsubscribable,
+          queries: ['A'],
+          range: testRange,
+          supplementaryQueries: {
+            [SupplementaryQueryType.LogsVolume]: { enabled: true },
+            [SupplementaryQueryType.LogsSample]: { enabled: true },
           },
         },
-      },
-
-      user: {
-        orgId: 'A',
       },
     };
 
@@ -258,18 +253,16 @@ describe('changeQueries', () => {
 
       const originalQueries = [{ refId: 'A', datasource: datasources[0].getRef() }];
 
-      const { dispatch } = configureStore({
+      const { dispatch } = configureExploreStore(exploreReducer, {
         ...defaultInitialState,
-        explore: {
-          panes: {
-            left: {
-              ...defaultInitialState.explore.panes.left,
-              datasourceInstance: datasources[0],
-              queries: originalQueries,
-            },
+        panes: {
+          left: {
+            ...defaultInitialState.panes.left,
+            datasourceInstance: datasources[0],
+            queries: originalQueries,
           },
         },
-      } as unknown as Partial<StoreState>);
+      } as unknown as ExploreState);
 
       await dispatch(
         changeQueries({
@@ -292,18 +285,16 @@ describe('changeQueries', () => {
       jest.spyOn(actions, 'importQueries');
       jest.spyOn(actions, 'changeQueriesAction');
 
-      const { dispatch } = configureStore({
+      const { dispatch } = configureExploreStore(exploreReducer, {
         ...defaultInitialState,
-        explore: {
-          panes: {
-            left: {
-              ...defaultInitialState.explore.panes.left,
-              datasourceInstance: datasources[0],
-              queries: [{ refId: 'A', datasource: datasources[0].getRef() }],
-            },
+        panes: {
+          left: {
+            ...defaultInitialState.panes.left,
+            datasourceInstance: datasources[0],
+            queries: [{ refId: 'A', datasource: datasources[0].getRef() }],
           },
         },
-      } as unknown as Partial<StoreState>);
+      } as unknown as ExploreState);
 
       await dispatch(
         changeQueries({
@@ -321,18 +312,16 @@ describe('changeQueries', () => {
     it('should import queries when datasource is changed', async () => {
       const originalQueries = [{ refId: 'A', datasource: datasources[0].getRef() }];
 
-      const { dispatch, getState } = configureStore({
+      const { dispatch, getState } = configureExploreStore(exploreReducer, {
         ...defaultInitialState,
-        explore: {
-          panes: {
-            left: {
-              ...defaultInitialState.explore.panes.left,
-              datasourceInstance: datasources[0],
-              queries: originalQueries,
-            },
+        panes: {
+          left: {
+            ...defaultInitialState.panes.left,
+            datasourceInstance: datasources[0],
+            queries: originalQueries,
           },
         },
-      } as unknown as Partial<StoreState>);
+      } as unknown as ExploreState);
 
       await dispatch(
         changeQueries({
@@ -341,23 +330,21 @@ describe('changeQueries', () => {
         })
       );
 
-      expect(getState().explore.panes.left!.queries[0]).toHaveProperty('refId', 'A');
-      expect(getState().explore.panes.left!.queries[0]).toHaveProperty('datasource', datasources[1].getRef());
+      expect(getState().panes.left!.queries[0]).toHaveProperty('refId', 'A');
+      expect(getState().panes.left!.queries[0]).toHaveProperty('datasource', datasources[1].getRef());
     });
 
     it('should not import queries when datasource is not changed', async () => {
-      const { dispatch, getState } = configureStore({
+      const { dispatch, getState } = configureExploreStore(exploreReducer, {
         ...defaultInitialState,
-        explore: {
-          panes: {
-            left: {
-              ...defaultInitialState.explore.panes.left,
-              datasourceInstance: datasources[0],
-              queries: [{ refId: 'A', datasource: datasources[0].getRef() }],
-            },
+        panes: {
+          left: {
+            ...defaultInitialState.panes.left,
+            datasourceInstance: datasources[0],
+            queries: [{ refId: 'A', datasource: datasources[0].getRef() }],
           },
         },
-      } as unknown as Partial<StoreState>);
+      } as unknown as ExploreState);
 
       await dispatch(
         changeQueries({
@@ -366,9 +353,9 @@ describe('changeQueries', () => {
         })
       );
 
-      expect(getState().explore.panes.left!.queries[0]).toHaveProperty('refId', 'A');
-      expect(getState().explore.panes.left!.queries[0]).toHaveProperty('datasource', datasources[0].getRef());
-      expect(getState().explore.panes.left!.queries[0]).toEqual({
+      expect(getState().panes.left!.queries[0]).toHaveProperty('refId', 'A');
+      expect(getState().panes.left!.queries[0]).toHaveProperty('datasource', datasources[0].getRef());
+      expect(getState().panes.left!.queries[0]).toEqual({
         refId: 'A',
         datasource: datasources[0].getRef(),
         queryType: 'someValue',
@@ -377,25 +364,23 @@ describe('changeQueries', () => {
   });
 
   it('runs remaining queries when one query is removed', async () => {
-    jest.spyOn(actions, 'runQueries').mockImplementation(createAsyncThunk('@explore/runQueries', () => {}));
+    jest.spyOn(actions, 'runQueries').mockImplementation(createExploreAsyncThunk('@explore/runQueries', () => {}));
 
     const originalQueries = [
       { refId: 'A', datasource: datasources[0].getRef() },
       { refId: 'B', datasource: datasources[0].getRef() },
     ];
 
-    const { dispatch } = configureStore({
+    const { dispatch } = configureExploreStore(exploreReducer, {
       ...defaultInitialState,
-      explore: {
-        panes: {
-          left: {
-            ...defaultInitialState.explore.panes.left,
-            datasourceInstance: datasources[0],
-            queries: originalQueries,
-          },
+      panes: {
+        left: {
+          ...defaultInitialState.panes.left,
+          datasourceInstance: datasources[0],
+          queries: originalQueries,
         },
       },
-    } as unknown as Partial<StoreState>);
+    } as unknown as ExploreState);
 
     await dispatch(
       changeQueries({
@@ -411,17 +396,16 @@ describe('changeQueries', () => {
 describe('importing queries', () => {
   describe('when importing queries between the same type of data source', () => {
     it('remove datasource property from all of the queries', async () => {
-      const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+        configureExploreStore(exploreReducer, {
+          ...defaultInitialState,
           panes: {
             left: {
-              ...defaultInitialState.explore.panes.left,
+              ...defaultInitialState.panes.left,
               datasourceInstance: datasources[0],
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
+        } as unknown as ExploreState);
 
       await dispatch(
         importQueries(
@@ -435,10 +419,10 @@ describe('importing queries', () => {
         )
       );
 
-      expect(getState().explore.panes.left!.queries[0]).toHaveProperty('refId', 'refId_A');
-      expect(getState().explore.panes.left!.queries[1]).toHaveProperty('refId', 'refId_B');
-      expect(getState().explore.panes.left!.queries[0]).toHaveProperty('datasource.uid', 'ds2');
-      expect(getState().explore.panes.left!.queries[1]).toHaveProperty('datasource.uid', 'ds2');
+      expect(getState().panes.left!.queries[0]).toHaveProperty('refId', 'refId_A');
+      expect(getState().panes.left!.queries[1]).toHaveProperty('refId', 'refId_B');
+      expect(getState().panes.left!.queries[0]).toHaveProperty('datasource.uid', 'ds2');
+      expect(getState().panes.left!.queries[1]).toHaveProperty('datasource.uid', 'ds2');
     });
   });
 });
@@ -465,10 +449,10 @@ describe('adding new query rows', () => {
     };
     const getState = await setupStore(queries, datasourceInstance);
 
-    expect(getState().explore.panes[exploreId]!.datasourceInstance?.meta?.id).toBe('loki');
-    expect(getState().explore.panes[exploreId]!.datasourceInstance?.meta?.mixed).toBe(false);
-    expect(getState().explore.panes[exploreId]!.queries).toHaveLength(3);
-    expect(getState().explore.panes[exploreId]!.queryKeys).toEqual(['ds3-0', 'ds4-1', 'ds4-2']);
+    expect(getState().panes[exploreId]!.datasourceInstance?.meta?.id).toBe('loki');
+    expect(getState().panes[exploreId]!.datasourceInstance?.meta?.mixed).toBe(false);
+    expect(getState().panes[exploreId]!.queries).toHaveLength(3);
+    expect(getState().panes[exploreId]!.queryKeys).toEqual(['ds3-0', 'ds4-1', 'ds4-2']);
   });
 
   it('should add query row whith root ds (without overriding the default ds) when there is not yet a row', async () => {
@@ -484,11 +468,11 @@ describe('adding new query rows', () => {
 
     const getState = await setupStore(queries, datasourceInstance);
 
-    expect(getState().explore.panes[exploreId]!.datasourceInstance?.meta?.id).toBe('mixed');
-    expect(getState().explore.panes[exploreId]!.datasourceInstance?.meta?.mixed).toBe(true);
-    expect(getState().explore.panes[exploreId]!.queries).toHaveLength(1);
-    expect(getState().explore.panes[exploreId]!.queries[0]?.datasource?.type).toBe('postgres');
-    expect(getState().explore.panes[exploreId]!.queryKeys).toEqual(['ds1-0']);
+    expect(getState().panes[exploreId]!.datasourceInstance?.meta?.id).toBe('mixed');
+    expect(getState().panes[exploreId]!.datasourceInstance?.meta?.mixed).toBe(true);
+    expect(getState().panes[exploreId]!.queries).toHaveLength(1);
+    expect(getState().panes[exploreId]!.queries[0]?.datasource?.type).toBe('postgres');
+    expect(getState().panes[exploreId]!.queryKeys).toEqual(['ds1-0']);
   });
 
   it('should add query row whith root ds (with overriding the default ds) when there is not yet a row', async () => {
@@ -506,11 +490,11 @@ describe('adding new query rows', () => {
 
     const getState = await setupStore(queries, datasourceInstance);
 
-    expect(getState().explore.panes[exploreId]!.datasourceInstance?.meta?.id).toBe('loki');
-    expect(getState().explore.panes[exploreId]!.datasourceInstance?.meta?.mixed).toBe(false);
-    expect(getState().explore.panes[exploreId]!.queries).toHaveLength(1);
-    expect(getState().explore.panes[exploreId]!.queries[0]?.datasource?.type).toBe('loki');
-    expect(getState().explore.panes[exploreId]!.queryKeys).toEqual(['uid-loki-0']);
+    expect(getState().panes[exploreId]!.datasourceInstance?.meta?.id).toBe('loki');
+    expect(getState().panes[exploreId]!.datasourceInstance?.meta?.mixed).toBe(false);
+    expect(getState().panes[exploreId]!.queries).toHaveLength(1);
+    expect(getState().panes[exploreId]!.queries[0]?.datasource?.type).toBe('loki');
+    expect(getState().panes[exploreId]!.queryKeys).toEqual(['uid-loki-0']);
   });
 
   it('should add another query row if there are two rows already', async () => {
@@ -535,11 +519,11 @@ describe('adding new query rows', () => {
 
     const getState = await setupStore(queries, datasourceInstance);
 
-    expect(getState().explore.panes[exploreId]!.datasourceInstance?.meta?.id).toBe('mixed');
-    expect(getState().explore.panes[exploreId]!.datasourceInstance?.meta?.mixed).toBe(true);
-    expect(getState().explore.panes[exploreId]!.queries).toHaveLength(3);
-    expect(getState().explore.panes[exploreId]!.queries[2]?.datasource?.type).toBe('loki');
-    expect(getState().explore.panes[exploreId]!.queryKeys).toEqual(['ds3-0', 'ds4-1', 'ds4-2']);
+    expect(getState().panes[exploreId]!.datasourceInstance?.meta?.id).toBe('mixed');
+    expect(getState().panes[exploreId]!.datasourceInstance?.meta?.mixed).toBe(true);
+    expect(getState().panes[exploreId]!.queries).toHaveLength(3);
+    expect(getState().panes[exploreId]!.queries[2]?.datasource?.type).toBe('loki');
+    expect(getState().panes[exploreId]!.queryKeys).toEqual(['ds3-0', 'ds4-1', 'ds4-2']);
   });
 });
 
@@ -618,13 +602,12 @@ describe('reducer', () => {
 
     describe('addQueryRow', () => {
       it('adds a query from root datasource if root is not mixed and there are no queries', async () => {
-        const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-          ...defaultInitialState,
-          explore: {
-            ...defaultInitialState.explore,
+        const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+          configureExploreStore(exploreReducer, {
+            ...defaultInitialState,
             panes: {
               left: {
-                ...defaultInitialState.explore.panes.left,
+                ...defaultInitialState.panes.left,
                 queries: [],
                 datasourceInstance: {
                   meta: {
@@ -636,23 +619,22 @@ describe('reducer', () => {
                 },
               },
             },
-          },
-        } as unknown as Partial<StoreState>);
+          } as unknown as ExploreState);
 
         await dispatch(addQueryRow('left', 0));
 
-        expect(getState().explore.panes.left?.queries).toEqual([
+        expect(getState().panes.left?.queries).toEqual([
           expect.objectContaining({ datasource: { type: 'loki', uid: 'uid-loki' } }),
         ]);
       });
 
       it('adds a query from root datasource if root is not mixed and there are queries without a datasource specified', async () => {
-        const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-          ...defaultInitialState,
-          explore: {
+        const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+          configureExploreStore(exploreReducer, {
+            ...defaultInitialState,
             panes: {
               left: {
-                ...defaultInitialState.explore.panes.left,
+                ...defaultInitialState.panes.left,
                 queries: [{ expr: 1 }],
                 datasourceInstance: {
                   meta: {
@@ -664,24 +646,23 @@ describe('reducer', () => {
                 },
               },
             },
-          },
-        } as unknown as Partial<StoreState>);
+          } as unknown as ExploreState);
 
         await dispatch(addQueryRow('left', 0));
 
-        expect(getState().explore.panes.left?.queries).toEqual([
+        expect(getState().panes.left?.queries).toEqual([
           expect.anything(),
           expect.objectContaining({ datasource: { type: 'loki', uid: 'uid-loki' } }),
         ]);
       });
 
       it('adds a query from default datasource if root is mixed and there are no queries', async () => {
-        const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-          ...defaultInitialState,
-          explore: {
+        const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+          configureExploreStore(exploreReducer, {
+            ...defaultInitialState,
             panes: {
               left: {
-                ...defaultInitialState.explore.panes.left,
+                ...defaultInitialState.panes.left,
                 queries: [],
                 datasourceInstance: {
                   meta: {
@@ -693,12 +674,11 @@ describe('reducer', () => {
                 },
               },
             },
-          },
-        } as unknown as Partial<StoreState>);
+          } as unknown as ExploreState);
 
         await dispatch(addQueryRow('left', 0));
 
-        expect(getState().explore.panes.left?.queries).toEqual([
+        expect(getState().panes.left?.queries).toEqual([
           expect.objectContaining({ datasource: { type: 'postgres', uid: 'ds1' } }),
         ]);
       });
@@ -707,12 +687,12 @@ describe('reducer', () => {
 
   describe('caching', () => {
     it('should add response to cache', async () => {
-      const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+        configureExploreStore(exploreReducer, {
+          ...defaultInitialState,
           panes: {
             left: {
-              ...defaultInitialState.explore.panes.left,
+              ...defaultInitialState.panes.left,
               queryResponse: {
                 series: [{ name: 'test name' }],
                 state: LoadingState.Done,
@@ -720,42 +700,40 @@ describe('reducer', () => {
               absoluteRange: { from: 1621348027000, to: 1621348050000 },
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
+        } as unknown as ExploreState);
 
       await dispatch(addResultsToCache('left'));
 
-      expect(getState().explore.panes.left!.cache).toEqual([
+      expect(getState().panes.left!.cache).toEqual([
         { key: 'from=1621348027000&to=1621348050000', value: { series: [{ name: 'test name' }], state: 'Done' } },
       ]);
     });
 
     it('should not add response to cache if response is still loading', async () => {
-      const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+        configureExploreStore(exploreReducer, {
+          ...defaultInitialState,
           panes: {
             left: {
-              ...defaultInitialState.explore.panes.left,
+              ...defaultInitialState.panes.left,
               queryResponse: { series: [{ name: 'test name' }], state: LoadingState.Loading },
               absoluteRange: { from: 1621348027000, to: 1621348050000 },
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
+        } as unknown as ExploreState);
 
       await dispatch(addResultsToCache('left'));
 
-      expect(getState().explore.panes.left!.cache).toEqual([]);
+      expect(getState().panes.left!.cache).toEqual([]);
     });
 
     it('should not add duplicate response to cache', async () => {
-      const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+        configureExploreStore(exploreReducer, {
+          ...defaultInitialState,
           panes: {
             left: {
-              ...defaultInitialState.explore.panes.left,
+              ...defaultInitialState.panes.left,
               queryResponse: {
                 series: [{ name: 'test name' }],
                 state: LoadingState.Done,
@@ -769,24 +747,23 @@ describe('reducer', () => {
               ],
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
+        } as unknown as ExploreState);
 
       await dispatch(addResultsToCache('left'));
 
-      expect(getState().explore.panes.left!.cache).toHaveLength(1);
-      expect(getState().explore.panes.left!.cache).toEqual([
+      expect(getState().panes.left!.cache).toHaveLength(1);
+      expect(getState().panes.left!.cache).toEqual([
         { key: 'from=1621348027000&to=1621348050000', value: { series: [{ name: 'old test name' }], state: 'Done' } },
       ]);
     });
 
     it('should clear cache', async () => {
-      const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+        configureExploreStore(exploreReducer, {
+          ...defaultInitialState,
           panes: {
             left: {
-              ...defaultInitialState.explore.panes.left,
+              ...defaultInitialState.panes.left,
               cache: [
                 {
                   key: 'from=1621348027000&to=1621348050000',
@@ -795,23 +772,23 @@ describe('reducer', () => {
               ],
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
+        } as unknown as ExploreState);
 
       await dispatch(clearCache('left'));
 
-      expect(getState().explore.panes.left!.cache).toEqual([]);
+      expect(getState().panes.left!.cache).toEqual([]);
     });
   });
 
   describe('when data source does not support log volume supplementary query', () => {
     it('cleans up query subscription correctly (regression #70049)', async () => {
-      const store: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const store: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } = configureExploreStore(
+        exploreReducer,
+        {
+          ...defaultInitialState,
           panes: {
             left: {
-              ...defaultInitialState.explore.panes.left,
+              ...defaultInitialState.panes.left,
               datasourceInstance: {
                 getRef: jest.fn(),
                 meta: {
@@ -825,8 +802,8 @@ describe('reducer', () => {
               },
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
+        } as unknown as ExploreState
+      );
 
       const dispatch = store.dispatch;
 
@@ -838,8 +815,8 @@ describe('reducer', () => {
   });
 
   describe('supplementary queries', () => {
-    let dispatch: ThunkDispatch,
-      getState: () => StoreState,
+    let dispatch: ExploreThunkDispatch,
+      getState: () => ExploreState,
       unsubscribes: Function[],
       mockDataProvider: () => Observable<DataQueryResponse>;
 
@@ -857,12 +834,13 @@ describe('reducer', () => {
         } as unknown as Observable<DataQueryResponse>;
       };
 
-      const store: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const store: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } = configureExploreStore(
+        exploreReducer,
+        {
+          ...defaultInitialState,
           panes: {
             left: {
-              ...defaultInitialState.explore.panes.left,
+              ...defaultInitialState.panes.left,
               datasourceInstance: {
                 query: jest.fn(),
                 getRef: jest.fn(),
@@ -880,8 +858,8 @@ describe('reducer', () => {
               },
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
+        } as unknown as ExploreState
+      );
 
       dispatch = store.dispatch;
       getState = store.getState;
@@ -920,8 +898,8 @@ describe('reducer', () => {
       expect(unsubscribes[1]).toBeCalled();
 
       for (const type of supplementaryQueryTypes) {
-        expect(getState().explore.panes.left!.supplementaryQueries[type].data).toBeUndefined();
-        expect(getState().explore.panes.left!.supplementaryQueries[type].dataProvider).toBeUndefined();
+        expect(getState().panes.left!.supplementaryQueries[type].data).toBeUndefined();
+        expect(getState().panes.left!.supplementaryQueries[type].dataProvider).toBeUndefined();
       }
     });
 
@@ -937,20 +915,20 @@ describe('reducer', () => {
       dispatch(runQueries({ exploreId: 'left' }));
 
       for (const type of supplementaryQueryTypes) {
-        expect(getState().explore.panes.left!.supplementaryQueries[type].data).toBeDefined();
-        expect(getState().explore.panes.left!.supplementaryQueries[type].data!.state).toBe(LoadingState.Loading);
-        expect(getState().explore.panes.left!.supplementaryQueries[type].dataProvider).toBeDefined();
+        expect(getState().panes.left!.supplementaryQueries[type].data).toBeDefined();
+        expect(getState().panes.left!.supplementaryQueries[type].data!.state).toBe(LoadingState.Loading);
+        expect(getState().panes.left!.supplementaryQueries[type].dataProvider).toBeDefined();
       }
       for (const type of supplementaryQueryTypes) {
-        expect(getState().explore.panes.left!.supplementaryQueries[type].data).toBeDefined();
-        expect(getState().explore.panes.left!.supplementaryQueries[type].data!.state).toBe(LoadingState.Loading);
-        expect(getState().explore.panes.left!.supplementaryQueries[type].dataProvider).toBeDefined();
+        expect(getState().panes.left!.supplementaryQueries[type].data).toBeDefined();
+        expect(getState().panes.left!.supplementaryQueries[type].data!.state).toBe(LoadingState.Loading);
+        expect(getState().panes.left!.supplementaryQueries[type].dataProvider).toBeDefined();
       }
 
       dispatch(cancelQueries('left'));
       for (const type of supplementaryQueryTypes) {
-        expect(getState().explore.panes.left!.supplementaryQueries[type].data).toBeUndefined();
-        expect(getState().explore.panes.left!.supplementaryQueries[type].data).toBeUndefined();
+        expect(getState().panes.left!.supplementaryQueries[type].data).toBeUndefined();
+        expect(getState().panes.left!.supplementaryQueries[type].data).toBeUndefined();
       }
     });
 
@@ -964,17 +942,17 @@ describe('reducer', () => {
       dispatch(runQueries({ exploreId: 'left' }));
 
       for (const types of supplementaryQueryTypes) {
-        expect(getState().explore.panes.left!.supplementaryQueries[types].data).toBeDefined();
-        expect(getState().explore.panes.left!.supplementaryQueries[types].data!.state).toBe(LoadingState.Done);
-        expect(getState().explore.panes.left!.supplementaryQueries[types].dataProvider).toBeDefined();
+        expect(getState().panes.left!.supplementaryQueries[types].data).toBeDefined();
+        expect(getState().panes.left!.supplementaryQueries[types].data!.state).toBe(LoadingState.Done);
+        expect(getState().panes.left!.supplementaryQueries[types].dataProvider).toBeDefined();
       }
 
       dispatch(cancelQueries('left'));
 
       for (const types of supplementaryQueryTypes) {
-        expect(getState().explore.panes.left!.supplementaryQueries[types].data).toBeDefined();
-        expect(getState().explore.panes.left!.supplementaryQueries[types].data!.state).toBe(LoadingState.Done);
-        expect(getState().explore.panes.left!.supplementaryQueries[types].dataProvider).toBeUndefined();
+        expect(getState().panes.left!.supplementaryQueries[types].data).toBeDefined();
+        expect(getState().panes.left!.supplementaryQueries[types].data!.state).toBe(LoadingState.Done);
+        expect(getState().panes.left!.supplementaryQueries[types].dataProvider).toBeUndefined();
       }
     });
 
@@ -984,31 +962,23 @@ describe('reducer', () => {
       };
       // turn logs volume off (but keep logs sample on)
       dispatch(setSupplementaryQueryEnabled('left', false, SupplementaryQueryType.LogsVolume));
-      expect(getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].enabled).toBe(
-        false
-      );
-      expect(getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].enabled).toBe(true);
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].enabled).toBe(false);
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].enabled).toBe(true);
 
       // verify that if we run a query, it will: 1) not do logs volume, 2) do logs sample 3) provider will still be set for both
       dispatch(runQueries({ exploreId: 'left' }));
 
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].data).toBeUndefined();
       expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].data
+        getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].dataSubscription
       ).toBeUndefined();
-      expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].dataSubscription
-      ).toBeUndefined();
-      expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].dataProvider
-      ).toBeDefined();
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].dataProvider).toBeDefined();
 
-      expect(getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].data).toBeDefined();
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].data).toBeDefined();
       expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataSubscription
+        getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataSubscription
       ).toBeDefined();
-      expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataProvider
-      ).toBeDefined();
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataProvider).toBeDefined();
     });
 
     it('load data of supplementary query that gets enabled', async () => {
@@ -1018,29 +988,23 @@ describe('reducer', () => {
 
       // runQueries sets up providers, but does not run queries
       dispatch(runQueries({ exploreId: 'left' }));
-      expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].dataProvider
-      ).toBeDefined();
-      expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataProvider
-      ).toBeDefined();
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].dataProvider).toBeDefined();
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataProvider).toBeDefined();
 
       // we turn 1 supplementary query (logs volume) on
       dispatch(setSupplementaryQueryEnabled('left', true, SupplementaryQueryType.LogsVolume));
 
       // verify it was turned on
-      expect(getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].enabled).toBe(true);
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].enabled).toBe(true);
       // verify that other stay off
-      expect(getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].enabled).toBe(
-        false
-      );
+      expect(getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].enabled).toBe(false);
 
       expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].dataSubscription
+        getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsVolume].dataSubscription
       ).toBeDefined();
 
       expect(
-        getState().explore.panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataSubscription
+        getState().panes.left!.supplementaryQueries[SupplementaryQueryType.LogsSample].dataSubscription
       ).toBeUndefined();
     });
   });
@@ -1048,12 +1012,12 @@ describe('reducer', () => {
     it('should clear current log rows', async () => {
       const logRows = makeLogs(10);
 
-      const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+        configureExploreStore(exploreReducer, {
+          ...defaultInitialState,
           panes: {
             ['left']: {
-              ...defaultInitialState.explore.panes['left'],
+              ...defaultInitialState.panes['left'],
               queryResponse: {
                 state: LoadingState.Streaming,
               },
@@ -1063,14 +1027,13 @@ describe('reducer', () => {
               },
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
-      expect(getState().explore.panes['left']?.logsResult?.rows.length).toBe(logRows.length);
+        } as unknown as ExploreState);
+      expect(getState().panes['left']?.logsResult?.rows.length).toBe(logRows.length);
 
       await dispatch(clearLogs({ exploreId: 'left' }));
 
-      expect(getState().explore.panes['left']?.logsResult?.rows.length).toBe(0);
-      expect(getState().explore.panes['left']?.clearedAtIndex).toBe(logRows.length - 1);
+      expect(getState().panes['left']?.logsResult?.rows.length).toBe(0);
+      expect(getState().panes['left']?.clearedAtIndex).toBe(logRows.length - 1);
     });
 
     it('should filter new log rows', async () => {
@@ -1078,12 +1041,12 @@ describe('reducer', () => {
       const newLogRows = makeLogs(5);
       const allLogRows = [...oldLogRows, ...newLogRows];
 
-      const { dispatch, getState }: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-        ...defaultInitialState,
-        explore: {
+      const { dispatch, getState }: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } =
+        configureExploreStore(exploreReducer, {
+          ...defaultInitialState,
           panes: {
             ['left']: {
-              ...defaultInitialState.explore.panes['left'],
+              ...defaultInitialState.panes['left'],
               isLive: true,
               queryResponse: {
                 state: LoadingState.Streaming,
@@ -1094,10 +1057,9 @@ describe('reducer', () => {
               },
             },
           },
-        },
-      } as unknown as Partial<StoreState>);
+        } as unknown as ExploreState);
 
-      expect(getState().explore.panes['left']?.logsResult?.rows.length).toBe(oldLogRows.length);
+      expect(getState().panes['left']?.logsResult?.rows.length).toBe(oldLogRows.length);
 
       await dispatch(clearLogs({ exploreId: 'left' }));
       await dispatch(
@@ -1117,8 +1079,8 @@ describe('reducer', () => {
         } as unknown as QueryEndedPayload)
       );
 
-      expect(getState().explore.panes['left']?.logsResult?.rows.length).toBe(newLogRows.length);
-      expect(getState().explore.panes['left']?.clearedAtIndex).toBe(oldLogRows.length - 1);
+      expect(getState().panes['left']?.logsResult?.rows.length).toBe(newLogRows.length);
+      expect(getState().panes['left']?.clearedAtIndex).toBe(oldLogRows.length - 1);
     });
   });
 });

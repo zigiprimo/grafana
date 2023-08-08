@@ -17,13 +17,12 @@ import {
   LogRowContextOptions,
   DataSourceWithLogsContextSupport,
   DataSourceApi,
+  getTimeZone,
 } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
 import { Collapse } from '@grafana/ui';
-import { ExploreItemState } from 'app/features/explore/types';
-import { StoreState } from 'app/types';
+import { ExploreState, ExploreItemState } from 'app/features/explore/types';
 
-import { getTimeZone } from '../../profile/state/selectors';
 import {
   addResultsToCache,
   clearCache,
@@ -226,8 +225,8 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
   }
 }
 
-function mapStateToProps(state: StoreState, { exploreId }: { exploreId: string }) {
-  const explore = state.explore;
+function mapStateToProps(state: ExploreState, { exploreId }: { exploreId: string }) {
+  const explore = state;
   const item: ExploreItemState = explore.panes[exploreId]!;
   const {
     logsResult,
@@ -242,7 +241,7 @@ function mapStateToProps(state: StoreState, { exploreId }: { exploreId: string }
   } = item;
   const loading = selectIsWaitingForData(exploreId)(state);
   const panelState = item.panelsState;
-  const timeZone = getTimeZone(state.user);
+  const timeZone = getTimeZone();
   const logsVolume = supplementaryQueries[SupplementaryQueryType.LogsVolume];
 
   return {

@@ -7,11 +7,10 @@ import { PanelModel } from 'app/features/dashboard/state';
 
 import { reducerTester } from '../../../../test/core/redux/reducerTester';
 import { MockDataSourceApi } from '../../../../test/mocks/datasource_srv';
-import { configureStore } from '../../../store/configureStore';
-import { StoreState, ThunkDispatch } from '../../../types';
 import { ExploreItemState, ExploreState } from '../types';
 
 import { exploreReducer, navigateToExplore, splitClose, splitOpen } from './main';
+import { configureExploreStore, ExploreThunkDispatch } from './store';
 
 const getNavigateToExploreContext = async (openInNewWindow?: (url: string) => void) => {
   const url = '/explore';
@@ -120,26 +119,27 @@ describe('Explore reducer', () => {
   describe('split view', () => {
     describe('split open', () => {
       it('it should create only ony new pane', async () => {
-        let dispatch: ThunkDispatch, getState: () => StoreState;
+        let dispatch: ExploreThunkDispatch, getState: () => ExploreState;
 
-        const store: { dispatch: ThunkDispatch; getState: () => StoreState } = configureStore({
-          explore: {
+        const store: { dispatch: ExploreThunkDispatch; getState: () => ExploreState } = configureExploreStore(
+          exploreReducer,
+          {
             panes: {
               one: { queries: [], range: {} },
             },
-          },
-        } as unknown as Partial<StoreState>);
+          } as unknown as ExploreState
+        );
 
         dispatch = store.dispatch;
         getState = store.getState;
 
         await dispatch(splitOpen());
-        let splitPanes = Object.keys(getState().explore.panes);
+        let splitPanes = Object.keys(getState().panes);
         expect(splitPanes).toHaveLength(2);
         let secondSplitPaneId = splitPanes[1];
 
         await dispatch(splitOpen());
-        splitPanes = Object.keys(getState().explore.panes);
+        splitPanes = Object.keys(getState().panes);
         // only 2 panes exist...
         expect(splitPanes).toHaveLength(2);
         // ...and the second pane is replaced

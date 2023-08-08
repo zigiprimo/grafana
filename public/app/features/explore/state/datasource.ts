@@ -2,11 +2,11 @@
 import { AnyAction, createAction } from '@reduxjs/toolkit';
 
 import { DataSourceApi, HistoryItem } from '@grafana/data';
-import { reportInteraction, getCorrelationsSrv } from '@grafana/runtime';
+import { reportInteraction, getCorrelationsSrv, getMiscSrv } from '@grafana/runtime';
 import { DataSourceRef } from '@grafana/schema';
 import { RefreshPicker } from '@grafana/ui';
+import { ExploreThunkResult } from 'app/features/explore/state/store';
 import { stopQueryState } from 'app/features/explore/utils';
-import { ThunkResult } from 'app/types';
 
 import { ExploreItemState } from '../types';
 import { loadSupplementaryQueries } from '../utils/supplementaryQueries';
@@ -43,11 +43,11 @@ export function changeDatasource(
   exploreId: string,
   datasource: string | DataSourceRef,
   options?: { importQueries: boolean }
-): ThunkResult<Promise<void>> {
+): ExploreThunkResult<Promise<void>> {
   return async (dispatch, getState) => {
-    const orgId = getState().user.orgId;
+    const orgId = getMiscSrv().getUserOrgId();
     const { history, instance } = await loadAndInitDatasource(orgId, datasource);
-    const currentDataSourceInstance = getState().explore.panes[exploreId]!.datasourceInstance;
+    const currentDataSourceInstance = getState().panes[exploreId]!.datasourceInstance;
 
     reportInteraction('explore_change_ds', {
       from: (currentDataSourceInstance?.meta?.mixed ? 'mixed' : currentDataSourceInstance?.type) || 'unknown',
@@ -62,7 +62,7 @@ export function changeDatasource(
       })
     );
 
-    const queries = getState().explore.panes[exploreId]!.queries;
+    const queries = getState().panes[exploreId]!.queries;
 
     const datasourceUIDs = getDatasourceUIDs(instance.uid, queries);
     const correlations = await getCorrelationsSrv().getCorrelationsBySourceUIDs(datasourceUIDs);
@@ -72,7 +72,7 @@ export function changeDatasource(
       await dispatch(importQueries(exploreId, queries, currentDataSourceInstance, instance));
     }
 
-    if (getState().explore.panes[exploreId]!.isLive) {
+    if (getState().panes[exploreId]!.isLive) {
       dispatch(changeRefreshInterval({ exploreId, refreshInterval: RefreshPicker.offOption.value }));
     }
 

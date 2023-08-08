@@ -20,12 +20,12 @@ import { createAndCopyShortLink } from 'app/core/utils/shortLinks';
 import { changeDatasource } from 'app/features/explore/state/datasource';
 import { starHistoryItem, commentHistoryItem, deleteHistoryItem } from 'app/features/explore/state/history';
 import { setQueries } from 'app/features/explore/state/query';
+import { ExploreState } from 'app/features/explore/types';
 import { dispatch } from 'app/store/store';
-import { StoreState } from 'app/types';
 import { ShowConfirmModalEvent } from 'app/types/events';
 
-function mapStateToProps(state: StoreState, { exploreId }: { exploreId: string }) {
-  const explore = state.explore;
+function mapStateToProps(state: ExploreState, { exploreId }: { exploreId: string }) {
+  const explore = state;
   const { datasourceInstance } = explore.panes[exploreId]!;
   return {
     exploreId,

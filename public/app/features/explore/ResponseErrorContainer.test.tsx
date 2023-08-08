@@ -5,9 +5,9 @@ import { TestProvider } from 'test/helpers/TestProvider';
 import { DataQueryError, LoadingState } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 
-import { configureStore } from '../../store/configureStore';
-
 import { ResponseErrorContainer } from './ResponseErrorContainer';
+import { exploreReducer, initialExploreState } from './state/main';
+import { configureExploreStore } from './state/store';
 import { createEmptyQueryResponse, makeExplorePaneState } from './state/utils';
 
 describe('ResponseErrorContainer', () => {
@@ -45,8 +45,8 @@ describe('ResponseErrorContainer', () => {
 });
 
 function setup(error: DataQueryError) {
-  const store = configureStore();
-  store.getState().explore.panes = {
+  const store = configureExploreStore(exploreReducer, initialExploreState);
+  store.getState().panes = {
     left: {
       ...makeExplorePaneState(),
       queryResponse: {

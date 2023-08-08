@@ -2,23 +2,21 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import React, { ReactNode } from 'react';
 import { TestProvider } from 'test/helpers/TestProvider';
 
-import { initialExploreState } from 'app/features/explore/state/main';
+import { exploreReducer, initialExploreState } from 'app/features/explore/state/main';
 import { makeExplorePaneState } from 'app/features/explore/state/utils';
-import { configureStore } from 'app/store/configureStore';
 
 import { splitSizeUpdateAction } from '../state/main';
+import { configureExploreStore } from '../state/store';
 
 import { useSplitSizeUpdater } from './useSplitSizeUpdater';
 
 describe('useSplitSizeUpdater', () => {
   it('dispatches correct action and calculates widthCalc correctly', () => {
-    const store = configureStore({
-      explore: {
-        ...initialExploreState,
-        panes: {
-          left: makeExplorePaneState(),
-          right: makeExplorePaneState(),
-        },
+    const store = configureExploreStore(exploreReducer, {
+      ...initialExploreState,
+      panes: {
+        left: makeExplorePaneState(),
+        right: makeExplorePaneState(),
       },
     });
 

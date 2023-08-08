@@ -12,8 +12,8 @@ import {
   TABLE_RESULTS_STYLES,
   TableResultsStyle,
   TABLE_RESULTS_STYLE,
+  ExploreState,
 } from 'app/features/explore/types';
-import { StoreState } from 'app/types';
 
 import { MetaInfoText } from '../MetaInfoText';
 import RawListContainer from '../PrometheusListView/RawListContainer';
@@ -34,8 +34,8 @@ interface PrometheusContainerState {
   resultsStyle: TableResultsStyle;
 }
 
-function mapStateToProps(state: StoreState, { exploreId }: RawPrometheusContainerProps) {
-  const explore = state.explore;
+function mapStateToProps(state: ExploreState, { exploreId }: RawPrometheusContainerProps) {
+  const explore = state;
   const item: ExploreItemState = explore.panes[exploreId]!;
   const { tableResult, rawPrometheusResult, range } = item;
   const loadingInState = selectIsWaitingForData(exploreId)(state);

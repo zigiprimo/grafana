@@ -6,7 +6,8 @@ import { Provider } from 'react-redux';
 import { DataFrame, MutableDataFrame, getDefaultTimeRange, LoadingState } from '@grafana/data';
 import { DataSourceSrv, setDataSourceSrv } from '@grafana/runtime';
 
-import { configureStore } from '../../../store/configureStore';
+import { exploreReducer, initialExploreState } from '../state/main';
+import { configureExploreStore } from '../state/store';
 
 import { TraceView } from './TraceView';
 import { TopOfViewRefType } from './components/TraceTimelineViewer/VirtualizedTraceView';
@@ -14,7 +15,7 @@ import { TraceData, TraceSpanData } from './components/types/trace';
 import { transformDataFrames } from './utils/transform';
 
 function getTraceView(frames: DataFrame[]) {
-  const store = configureStore();
+  const store = configureExploreStore(exploreReducer, initialExploreState);
   const mockPanelData = {
     state: LoadingState.Done,
     series: [],

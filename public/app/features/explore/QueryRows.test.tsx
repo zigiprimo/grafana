@@ -4,11 +4,10 @@ import { Provider } from 'react-redux';
 
 import { DataSourceSrv, setDataSourceSrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
-import { configureStore } from 'app/store/configureStore';
-
-import { UserState } from '../profile/state/reducers';
 
 import { QueryRows } from './QueryRows';
+import { exploreReducer } from './state/main';
+import { configureExploreStore } from './state/store';
 import { makeExplorePaneState } from './state/utils';
 import { ExploreState } from './types';
 
@@ -63,7 +62,7 @@ function setup(queries: DataQuery[]) {
     richHistoryStorageFull: false,
     richHistoryLimitExceededWarningShown: false,
   };
-  const store = configureStore({ explore: initialState, user: { orgId: 1 } as UserState });
+  const store = configureExploreStore(exploreReducer, initialState);
 
   return {
     store,

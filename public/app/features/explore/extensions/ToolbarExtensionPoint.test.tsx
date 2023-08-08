@@ -7,8 +7,9 @@ import { PluginExtensionPoints, PluginExtensionTypes } from '@grafana/data';
 import { getPluginLinkExtensions } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 import { contextSrv } from 'app/core/services/context_srv';
-import { configureStore } from 'app/store/configureStore';
 
+import { exploreReducer } from '../state/main';
+import { configureExploreStore } from '../state/store';
 import { createEmptyQueryResponse } from '../state/utils';
 import { ExplorePanelData, ExploreState } from '../types';
 
@@ -34,19 +35,17 @@ function renderWithExploreStore(
   options: storeOptions = { targets: [{ refId: 'A' }], data: createEmptyQueryResponse() }
 ) {
   const { targets, data } = options;
-  const store = configureStore({
-    explore: {
-      panes: {
-        left: {
-          queries: targets,
-          queryResponse: data,
-          range: {
-            raw: { from: 'now-1h', to: 'now' },
-          },
+  const store = configureExploreStore(exploreReducer, {
+    panes: {
+      left: {
+        queries: targets,
+        queryResponse: data,
+        range: {
+          raw: { from: 'now-1h', to: 'now' },
         },
       },
-    } as unknown as ExploreState,
-  });
+    },
+  } as unknown as ExploreState);
 
   render(<Provider store={store}>{children}</Provider>, {});
 }

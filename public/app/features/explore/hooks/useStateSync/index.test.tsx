@@ -10,10 +10,10 @@ import { DataSourceApi, UrlQueryMap } from '@grafana/data';
 import { HistoryWrapper, setDataSourceSrv, DataSourceSrv } from '@grafana/runtime';
 import { setLastUsedDatasourceUID } from 'app/features/explore/utils';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
-import { configureStore } from 'app/store/configureStore';
 
 import { makeDatasourceSetup } from '../../spec/helper/setup';
-import { splitClose, splitOpen } from '../../state/main';
+import { exploreReducer, initialExploreState, splitClose, splitOpen } from '../../state/main';
+import { configureExploreStore } from '../../state/store';
 
 import { useStateSync } from './';
 
@@ -76,22 +76,7 @@ function setup({ queryParams = {}, datasourceGetter = defaultDsGetter }: SetupPa
     reload: jest.fn(),
   });
 
-  const store = configureStore({
-    user: {
-      orgId: 1,
-      fiscalYearStartMonth: 0,
-      isUpdating: false,
-      orgs: [],
-      orgsAreLoading: false,
-      sessions: [],
-      sessionsAreLoading: false,
-      teams: [],
-      teamsAreLoading: false,
-      timeZone: 'utc',
-      user: null,
-      weekStart: 'monday',
-    },
-  });
+  const store = configureExploreStore(exploreReducer, initialExploreState);
 
   const context = getGrafanaContextMock();
 
@@ -184,7 +169,7 @@ describe('useStateSync', () => {
       expect(JSON.parse(panes)['one'].queries[0].refId).toBe('1+2');
 
       // we expect panes in the state to be in the same order as the ones in the URL
-      expect(Object.keys(store.getState().explore.panes)).toStrictEqual(Object.keys(JSON.parse(panes)));
+      expect(Object.keys(store.getState().panes)).toStrictEqual(Object.keys(JSON.parse(panes)));
     }
   });
 
@@ -207,7 +192,7 @@ describe('useStateSync', () => {
     const search = location.getSearchObject();
     expect(search.panes).toBeDefined();
 
-    const queries = store.getState().explore.panes['one']?.queries;
+    const queries = store.getState().panes['one']?.queries;
     expect(queries).toHaveLength(1);
 
     expect(queries?.[0].datasource?.uid).toBe('loki-uid');
@@ -221,7 +206,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(Object.values(store.getState().explore.panes)[0]?.datasourceInstance?.uid).toBe('elastic-uid');
+    expect(Object.values(store.getState().panes)[0]?.datasourceInstance?.uid).toBe('elastic-uid');
   });
 
   it('inits with the default datasource if the last used in localStorage does not exits', async () => {
@@ -232,7 +217,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(Object.values(store.getState().explore.panes)[0]?.datasourceInstance?.uid).toBe('loki-uid');
+    expect(Object.values(store.getState().panes)[0]?.datasourceInstance?.uid).toBe('loki-uid');
   });
 
   it('updates the state with correct queries from URL', async () => {
@@ -247,7 +232,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    let queries = store.getState().explore.panes['one']?.queries;
+    let queries = store.getState().panes['one']?.queries;
     expect(queries).toHaveLength(1);
     expect(queries?.[0]).toMatchObject({ expr: 'a' });
 
@@ -263,7 +248,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    queries = store.getState().explore.panes['one']?.queries;
+    queries = store.getState().panes['one']?.queries;
     expect(queries).toHaveLength(2);
     expect(queries?.[0]).toMatchObject({ expr: 'a' });
     expect(queries?.[1]).toMatchObject({ expr: 'b' });
@@ -280,7 +265,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    queries = store.getState().explore.panes['one']?.queries;
+    queries = store.getState().panes['one']?.queries;
     expect(queries).toHaveLength(1);
     expect(queries?.[0]).toMatchObject({ expr: 'a' });
   });
@@ -297,7 +282,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    let panes = Object.keys(store.getState().explore.panes);
+    let panes = Object.keys(store.getState().panes);
     expect(panes).toHaveLength(1);
 
     rerender({
@@ -313,7 +298,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(Object.keys(store.getState().explore.panes)).toHaveLength(2);
+    expect(Object.keys(store.getState().panes)).toHaveLength(2);
 
     rerender({
       children: null,
@@ -328,7 +313,7 @@ describe('useStateSync', () => {
     await waitForNextUpdate();
 
     await waitFor(() => {
-      expect(Object.keys(store.getState().explore.panes)).toHaveLength(1);
+      expect(Object.keys(store.getState().panes)).toHaveLength(1);
     });
   });
 
@@ -344,7 +329,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(store.getState().explore.panes['one']?.datasourceInstance?.getRef()).toMatchObject({
+    expect(store.getState().panes['one']?.datasourceInstance?.getRef()).toMatchObject({
       type: 'logs',
       uid: 'loki-uid',
     });
@@ -361,7 +346,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(store.getState().explore.panes['one']?.datasourceInstance?.getRef()).toMatchObject({
+    expect(store.getState().panes['one']?.datasourceInstance?.getRef()).toMatchObject({
       type: 'logs',
       uid: 'elastic-uid',
     });
@@ -379,7 +364,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(store.getState().explore.panes['one']?.range.raw).toMatchObject({ from: 'now-1h', to: 'now' });
+    expect(store.getState().panes['one']?.range.raw).toMatchObject({ from: 'now-1h', to: 'now' });
 
     rerender({
       children: null,
@@ -393,7 +378,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(store.getState().explore.panes['one']?.range.raw).toMatchObject({ from: 'now-6h', to: 'now' });
+    expect(store.getState().panes['one']?.range.raw).toMatchObject({ from: 'now-6h', to: 'now' });
   });
 
   it('Changes time range when the range in the URL is updated to absolute range', async () => {
@@ -408,7 +393,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(store.getState().explore.panes['one']?.range.raw).toMatchObject({ from: 'now-1h', to: 'now' });
+    expect(store.getState().panes['one']?.range.raw).toMatchObject({ from: 'now-1h', to: 'now' });
 
     rerender({
       children: null,
@@ -426,8 +411,8 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(store.getState().explore.panes['one']?.range.raw.from.valueOf().toString()).toEqual('1500000000000');
-    expect(store.getState().explore.panes['one']?.range.raw.to.valueOf().toString()).toEqual('1500000001000');
+    expect(store.getState().panes['one']?.range.raw.from.valueOf().toString()).toEqual('1500000000000');
+    expect(store.getState().panes['one']?.range.raw.to.valueOf().toString()).toEqual('1500000001000');
   });
 
   it('uses the first query datasource if no root datasource is specified in the URL', async () => {
@@ -444,7 +429,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(store.getState().explore.panes['one']?.datasourceInstance?.getRef()).toMatchObject({
+    expect(store.getState().panes['one']?.datasourceInstance?.getRef()).toMatchObject({
       uid: 'loki-uid',
       type: 'logs',
     });
@@ -467,7 +452,7 @@ describe('useStateSync', () => {
 
     expect(location.getHistory().length).toBe(1);
 
-    expect(store.getState().explore.panes['one']?.datasourceInstance?.uid).toBe('loki-uid');
+    expect(store.getState().panes['one']?.datasourceInstance?.uid).toBe('loki-uid');
 
     act(() => {
       store.dispatch(splitOpen());
@@ -478,7 +463,7 @@ describe('useStateSync', () => {
     await waitFor(async () => {
       expect(location.getHistory().length).toBe(2);
     });
-    expect(Object.keys(store.getState().explore.panes)).toHaveLength(2);
+    expect(Object.keys(store.getState().panes)).toHaveLength(2);
 
     act(() => {
       store.dispatch(splitClose('one'));
@@ -507,7 +492,7 @@ describe('useStateSync', () => {
 
     await waitForNextUpdate();
 
-    expect(store.getState().explore.panes['one']?.queries.length).toBe(1);
-    expect(store.getState().explore.panes['one']?.queries[0]).toMatchObject({ expr: 'b', refId: 'B' });
+    expect(store.getState().panes['one']?.queries.length).toBe(1);
+    expect(store.getState().panes['one']?.queries[0]).toMatchObject({ expr: 'b', refId: 'B' });
   });
 });

@@ -8,7 +8,8 @@ import { Alert, Button, Field, InputControl, Modal, RadioButtonGroup } from '@gr
 import { DashboardPicker } from 'app/core/components/Select/DashboardPicker';
 import { contextSrv } from 'app/core/services/context_srv';
 import { removeDashboardToFetchFromLocalStorage } from 'app/features/dashboard/state/initDashboard';
-import { AccessControlAction, useSelector } from 'app/types';
+import { useExploreSelector } from 'app/features/explore/state/store';
+import { AccessControlAction } from 'app/types';
 
 import { getExploreItemSelector } from '../../state/selectors';
 
@@ -62,7 +63,7 @@ interface Props {
 
 export function AddToDashboardForm(props: Props): ReactElement {
   const { exploreId, onClose } = props;
-  const exploreItem = useSelector(getExploreItemSelector(exploreId))!;
+  const exploreItem = useExploreSelector(getExploreItemSelector(exploreId))!;
   const [submissionError, setSubmissionError] = useState<SubmissionError | undefined>();
   const {
     handleSubmit,

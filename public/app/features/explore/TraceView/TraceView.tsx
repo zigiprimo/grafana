@@ -14,16 +14,16 @@ import {
   mapInternalLinkToExplore,
   PanelData,
   SplitOpen,
+  getTimeZone,
 } from '@grafana/data';
 import { getTemplateSrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 import { useStyles2 } from '@grafana/ui';
 import { getTraceToLogsOptions, TraceToLogsData } from 'app/core/components/TraceToLogs/TraceToLogsSettings';
 import { TraceToMetricsData } from 'app/core/components/TraceToMetrics/TraceToMetricsSettings';
+import { useExploreDispatch, useExploreSelector } from 'app/features/explore/state/store';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
-import { getTimeZone } from 'app/features/profile/state/selectors';
 import { TempoQuery } from 'app/plugins/datasource/tempo/types';
-import { useDispatch, useSelector } from 'app/types';
 
 import { changePanelState } from '../state/explorePane';
 
@@ -132,7 +132,7 @@ export function TraceView(props: Props) {
       }),
     [props.splitOpenFn, traceToLogsOptions, traceToMetricsOptions, props.dataFrames, createFocusSpanLink, traceProp]
   );
-  const timeZone = useSelector((state) => getTimeZone(state.user));
+  const timeZone = getTimeZone();
   const datasourceType = datasource ? datasource?.type : 'unknown';
   const scrollElement = props.scrollElement
     ? props.scrollElement
@@ -222,10 +222,10 @@ function useFocusSpanLink(options: {
   refId?: string;
   datasource?: DataSourceApi;
 }): [string | undefined, (traceId: string, spanId: string) => LinkModel<Field>] {
-  const panelState = useSelector((state) => state.explore.panes[options.exploreId]?.panelsState.trace);
+  const panelState = useExploreSelector((state) => state.panes[options.exploreId]?.panelsState.trace);
   const focusedSpanId = panelState?.spanId;
 
-  const dispatch = useDispatch();
+  const dispatch = useExploreDispatch();
   const setFocusedSpanId = (spanId?: string) =>
     dispatch(
       changePanelState(options.exploreId, 'trace', {
@@ -234,8 +234,8 @@ function useFocusSpanLink(options: {
       })
     );
 
-  const query = useSelector(
-    (state) => state.explore.panes[options.exploreId]?.queries.find((query) => query.refId === options.refId)
+  const query = useExploreSelector(
+    (state) => state.panes[options.exploreId]?.queries.find((query) => query.refId === options.refId)
   );
 
   const createFocusSpanLink = (traceId: string, spanId: string) => {

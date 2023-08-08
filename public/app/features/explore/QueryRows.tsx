@@ -5,7 +5,7 @@ import { CoreApp } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 import { getNextRefIdChar } from 'app/core/utils/query';
-import { useDispatch, useSelector } from 'app/types';
+import { useExploreDispatch, useExploreSelector } from 'app/features/explore/state/store';
 
 import { getDatasourceSrv } from '../plugins/datasource_srv';
 import { QueryEditorRows } from '../query/components/QueryEditorRows';
@@ -32,17 +32,17 @@ const makeSelectors = (exploreId: string) => {
 };
 
 export const QueryRows = ({ exploreId }: Props) => {
-  const dispatch = useDispatch();
+  const dispatch = useExploreDispatch();
   const { getQueries, getDatasourceInstanceSettings, getQueryResponse, getHistory, getEventBridge } = useMemo(
     () => makeSelectors(exploreId),
     [exploreId]
   );
 
-  const queries = useSelector(getQueries);
-  const dsSettings = useSelector(getDatasourceInstanceSettings);
-  const queryResponse = useSelector(getQueryResponse);
-  const history = useSelector(getHistory);
-  const eventBridge = useSelector(getEventBridge);
+  const queries = useExploreSelector(getQueries);
+  const dsSettings = useExploreSelector(getDatasourceInstanceSettings);
+  const queryResponse = useExploreSelector(getQueryResponse);
+  const history = useExploreSelector(getHistory);
+  const eventBridge = useExploreSelector(getEventBridge);
 
   const onRunQueries = useCallback(() => {
     dispatch(runQueries({ exploreId }));

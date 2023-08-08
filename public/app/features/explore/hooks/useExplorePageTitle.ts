@@ -1,8 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { NavModel } from '@grafana/data';
 import { Branding } from 'app/core/components/Branding/Branding';
-import { useNavModel } from 'app/core/hooks/useNavModel';
 import { safeParseJson } from 'app/features/explore/utils';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
 
@@ -11,8 +9,6 @@ import { ExploreQueryParams } from '../types';
 import { isFulfilled, hasKey } from './utils';
 
 export function useExplorePageTitle(params: ExploreQueryParams) {
-  const navModel = useRef<NavModel>();
-  navModel.current = useNavModel('explore');
   const dsService = useRef(getDatasourceSrv());
 
   useEffect(() => {
@@ -37,18 +33,14 @@ export function useExplorePageTitle(params: ExploreQueryParams) {
     )
       .then((results) => results.filter(isFulfilled).map((result) => result.value))
       .then((datasources) => {
-        if (!navModel.current) {
-          return;
-        }
-
         const names = datasources.map((ds) => ds.name);
 
         if (names.length === 0) {
-          global.document.title = `${navModel.current.main.text} - ${Branding.AppTitle}`;
+          global.document.title = `${Branding.AppTitle}`;
           return;
         }
 
-        global.document.title = `${navModel.current.main.text} - ${names.join(' | ')} - ${Branding.AppTitle}`;
+        global.document.title = `${names.join(' | ')} - ${Branding.AppTitle}`;
       });
   }, [params.panes]);
 }

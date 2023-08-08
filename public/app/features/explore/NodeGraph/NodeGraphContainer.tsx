@@ -9,7 +9,7 @@ import { Collapse, useStyles2, useTheme2 } from '@grafana/ui';
 
 import { NodeGraph } from '../../../plugins/panel/nodeGraph';
 import { useCategorizeFrames } from '../../../plugins/panel/nodeGraph/useCategorizeFrames';
-import { StoreState } from '../../../types';
+import { ExploreState } from '../types';
 import { useLinks } from '../utils/links';
 
 const getStyles = (theme: GrafanaTheme2) => ({
@@ -105,9 +105,9 @@ export function UnconnectedNodeGraphContainer(props: Props) {
   );
 }
 
-function mapStateToProps(state: StoreState, { exploreId }: OwnProps) {
+function mapStateToProps(state: ExploreState, { exploreId }: OwnProps) {
   return {
-    range: state.explore.panes[exploreId]!.range,
+    range: state.panes[exploreId]!.range,
   };
 }
 

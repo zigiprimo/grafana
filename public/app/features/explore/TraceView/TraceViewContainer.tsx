@@ -2,7 +2,8 @@ import React, { RefObject, useMemo } from 'react';
 
 import { DataFrame, SplitOpen, PanelData } from '@grafana/data';
 import { PanelChrome } from '@grafana/ui/src/components/PanelChrome/PanelChrome';
-import { StoreState, useSelector } from 'app/types';
+import { useExploreSelector } from 'app/features/explore/state/store';
+import { ExploreState } from 'app/features/explore/types';
 
 import { TraceView } from './TraceView';
 import { TopOfViewRefType } from './components/TraceTimelineViewer/VirtualizedTraceView';
@@ -22,8 +23,8 @@ export function TraceViewContainer(props: Props) {
   const frame = props.dataFrames[0];
   const { dataFrames, splitOpenFn, exploreId, scrollElement, topOfViewRef, queryResponse } = props;
   const traceProp = useMemo(() => transformDataFrames(frame), [frame]);
-  const datasource = useSelector(
-    (state: StoreState) => state.explore.panes[props.exploreId]?.datasourceInstance ?? undefined
+  const datasource = useExploreSelector(
+    (state: ExploreState) => state.panes[props.exploreId]?.datasourceInstance ?? undefined
   );
 
   if (!traceProp) {

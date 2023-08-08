@@ -5,7 +5,8 @@ import { getPluginLinkExtensions } from '@grafana/runtime';
 import { DataQuery, TimeZone } from '@grafana/schema';
 import { Dropdown, ToolbarButton } from '@grafana/ui';
 import { contextSrv } from 'app/core/services/context_srv';
-import { AccessControlAction, useSelector } from 'app/types';
+import { useExploreSelector } from 'app/features/explore/state/store';
+import { AccessControlAction } from 'app/types';
 
 import { getExploreItemSelector } from '../state/selectors';
 import { ExplorePanelData } from '../types';
@@ -30,7 +31,7 @@ export function ToolbarExtensionPoint(props: Props): ReactElement | null {
   const context = useExtensionPointContext(props);
   const extensions = useExtensionLinks(context);
   const selectExploreItem = getExploreItemSelector(exploreId);
-  const noQueriesInPane = useSelector(selectExploreItem)?.queries?.length;
+  const noQueriesInPane = useExploreSelector(selectExploreItem)?.queries?.length;
 
   // If we only have the explore core extension point registered we show the old way of
   // adding a query to a dashboard.
@@ -86,7 +87,7 @@ export type PluginExtensionExploreContext = {
 
 function useExtensionPointContext(props: Props): PluginExtensionExploreContext {
   const { exploreId, timeZone } = props;
-  const { queries, queryResponse, range } = useSelector(getExploreItemSelector(exploreId))!;
+  const { queries, queryResponse, range } = useExploreSelector(getExploreItemSelector(exploreId))!;
 
   return useMemo(() => {
     return {

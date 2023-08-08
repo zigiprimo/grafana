@@ -9,13 +9,13 @@ import {
   PreferredVisualisationType,
   RawTimeRange,
   CorrelationData,
+  getTimeZone,
 } from '@grafana/data';
-import { getCorrelationsSrv } from '@grafana/runtime';
+import { getCorrelationsSrv, getMiscSrv } from '@grafana/runtime';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
+import { createExploreAsyncThunk, ExploreThunkResult } from 'app/features/explore/state/store';
 import { ExploreItemState } from 'app/features/explore/types';
 import { getQueryKeys } from 'app/features/explore/utils';
-import { getTimeZone } from 'app/features/profile/state/selectors';
-import { createAsyncThunk, ThunkResult } from 'app/types';
 
 import { datasourceReducer } from './datasource';
 import { historyReducer } from './history';
@@ -33,7 +33,7 @@ import {
 
 //
 // Actions and Payloads
-//
+//fana/public/app/features/explore/Logs/LogsContainer.tsx
 
 /**
  * Keep track of the Explore container size, in particular the width.
@@ -57,9 +57,9 @@ export function changePanelState(
   exploreId: string,
   panel: PreferredVisualisationType,
   panelState: ExplorePanelsState[PreferredVisualisationType]
-): ThunkResult<void> {
+): ExploreThunkResult<void> {
   return async (dispatch, getState) => {
-    const exploreItem = getState().explore.panes[exploreId];
+    const exploreItem = getState().panes[exploreId];
     if (exploreItem === undefined) {
       return;
     }
@@ -124,7 +124,7 @@ export interface InitializeExploreOptions {
  * and can be either a string that is the name or uid, or a datasourceRef
  * This is to maximize compatability with how datasources are accessed from the URL param.
  */
-export const initializeExplore = createAsyncThunk(
+export const initializeExplore = createExploreAsyncThunk(
   'explore/initializeExplore',
   async (
     { exploreId, datasource, queries, range, panelsState }: InitializeExploreOptions,
@@ -134,7 +134,7 @@ export const initializeExplore = createAsyncThunk(
     let history: HistoryItem[] = [];
 
     if (datasource) {
-      const orgId = getState().user.orgId;
+      const orgId = getMiscSrv().getUserOrgId();
       const loadResult = await loadAndInitDatasource(orgId, datasource);
       instance = loadResult.instance;
       history = loadResult.history;
@@ -144,7 +144,7 @@ export const initializeExplore = createAsyncThunk(
       initializeExploreAction({
         exploreId,
         queries,
-        range: getRange(range, getTimeZone(getState().user)),
+        range: getRange(range, getTimeZone()),
         datasourceInstance: instance,
         history,
       })
@@ -162,7 +162,7 @@ export const initializeExplore = createAsyncThunk(
       dispatch(runQueries({ exploreId }));
     }
 
-    return fulfillWithValue({ exploreId, state: getState().explore.panes[exploreId]! });
+    return fulfillWithValue({ exploreId, state: getState().panes[exploreId]! });
   }
 );
 

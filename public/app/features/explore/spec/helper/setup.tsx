@@ -29,12 +29,12 @@ import { GrafanaRoute } from 'app/core/navigation/GrafanaRoute';
 import { Echo } from 'app/core/services/echo/Echo';
 import { setLastUsedDatasourceUID } from 'app/features/explore/utils';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
-import { configureStore } from 'app/store/configureStore';
 
 import { LokiDatasource } from '../../../../plugins/datasource/loki/datasource';
 import { LokiQuery } from '../../../../plugins/datasource/loki/types';
-import { initialUserState } from '../../../profile/state/reducers';
 import ExplorePage from '../../ExplorePage';
+import { exploreReducer, initialExploreState } from '../../state/main';
+import { configureExploreStore } from '../../state/store';
 import { ExploreQueryParams } from '../../types';
 
 type DatasourceSetup = { settings: DataSourceInstanceSettings; api: DataSourceApi };
@@ -48,7 +48,7 @@ type SetupOptions = {
 
 export function setupExplore(options?: SetupOptions): {
   datasources: { [uid: string]: DataSourceApi };
-  store: ReturnType<typeof configureStore>;
+  store: ReturnType<typeof configureExploreStore>;
   unmount: () => void;
   container: HTMLElement;
   location: LocationService;
@@ -105,22 +105,7 @@ export function setupExplore(options?: SetupOptions): {
 
   setEchoSrv(new Echo());
 
-  const storeState = configureStore();
-  storeState.getState().user = {
-    ...initialUserState,
-    orgId: 1,
-    timeZone: 'utc',
-  };
-
-  storeState.getState().navIndex = {
-    explore: {
-      id: 'explore',
-      text: 'Explore',
-      subTitle: 'Explore your data',
-      icon: 'compass',
-      url: '/explore',
-    },
-  };
+  const exploreStore = configureExploreStore(exploreReducer, initialExploreState);
 
   const history = createMemoryHistory({
     initialEntries: [{ pathname: '/explore', search: stringify(options?.urlParams) }],
@@ -131,13 +116,15 @@ export function setupExplore(options?: SetupOptions): {
 
   const contextMock = getGrafanaContextMock({ location });
 
+  // @ts-ignore
   const { unmount, container } = render(
-    <Provider store={storeState}>
+    <Provider store={exploreStore}>
       <GrafanaContext.Provider value={contextMock}>
         <Router history={history}>
           <Route
             path="/explore"
             exact
+            // @ts-ignore
             render={(props) => <GrafanaRoute {...props} route={{ component: ExplorePage, path: '/explore' }} />}
           />
         </Router>
@@ -147,7 +134,7 @@ export function setupExplore(options?: SetupOptions): {
 
   return {
     datasources: fromPairs(dsSettings.map((d) => [d.api.name, d.api])),
-    store: storeState,
+    store: exploreStore,
     unmount,
     container,
     location,

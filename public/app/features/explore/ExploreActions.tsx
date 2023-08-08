@@ -1,7 +1,7 @@
 import { useRegisterActions, useKBar, Action, Priority } from 'kbar';
 import { useEffect, useState } from 'react';
 
-import { useDispatch, useSelector } from 'app/types';
+import { useExploreDispatch, useExploreSelector } from 'app/features/explore/state/store';
 
 import { splitOpen, splitClose } from './state/main';
 import { runQueries } from './state/query';
@@ -11,9 +11,9 @@ import { isSplit, selectPanes } from './state/selectors';
 export const ExploreActions = () => {
   const [actions, setActions] = useState<Action[]>([]);
   const { query } = useKBar();
-  const dispatch = useDispatch();
-  const panes = useSelector(selectPanes);
-  const splitted = useSelector(isSplit);
+  const dispatch = useExploreDispatch();
+  const panes = useExploreSelector(selectPanes);
+  const splitted = useExploreSelector(isSplit);
 
   useEffect(() => {
     const keys = Object.keys(panes);

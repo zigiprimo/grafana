@@ -36,6 +36,7 @@ import {
   setAppEvents,
   setCorrelationsSrv,
   setQueryHistorySrv,
+  setMiscSrv,
   type GetPluginExtensions,
 } from '@grafana/runtime';
 import { setPanelDataErrorView } from '@grafana/runtime/src/components/PanelDataErrorView';
@@ -96,6 +97,7 @@ import { setVariableQueryRunner, VariableQueryRunner } from './features/variable
 import { createQueryVariableAdapter } from './features/variables/query/adapter';
 import { createSystemVariableAdapter } from './features/variables/system/adapter';
 import { createTextBoxVariableAdapter } from './features/variables/textbox/adapter';
+import { MiscService } from './miscService';
 import { configureStore } from './store/configureStore';
 
 // add move to lodash for backward compatabilty with plugins
@@ -136,6 +138,7 @@ export class GrafanaApp {
       setTimeZoneResolver(() => config.bootData.user.timezone);
       setCorrelationsSrv(correlationsService);
       setQueryHistorySrv(queryHistoryService);
+      setMiscSrv(new MiscService(contextSrv));
       initGrafanaLive();
 
       // Expose the app-wide eventbus

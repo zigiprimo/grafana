@@ -10,8 +10,9 @@ import { contextSrv } from 'app/core/services/context_srv';
 import { Echo } from 'app/core/services/echo/Echo';
 import * as initDashboard from 'app/features/dashboard/state/initDashboard';
 import { DashboardSearchItemType } from 'app/features/search/types';
-import { configureStore } from 'app/store/configureStore';
 
+import { exploreReducer } from '../../state/main';
+import { configureExploreStore } from '../../state/store';
 import { createEmptyQueryResponse } from '../../state/utils';
 import { ExploreState } from '../../types';
 
@@ -20,16 +21,14 @@ import * as api from './addToDashboard';
 import { AddToDashboard } from '.';
 
 const setup = (children: ReactNode, queries: DataQuery[] = [{ refId: 'A' }]) => {
-  const store = configureStore({
-    explore: {
-      panes: {
-        left: {
-          queries,
-          queryResponse: createEmptyQueryResponse(),
-        },
+  const store = configureExploreStore(exploreReducer, {
+    panes: {
+      left: {
+        queries,
+        queryResponse: createEmptyQueryResponse(),
       },
-    } as unknown as ExploreState,
-  });
+    },
+  } as unknown as ExploreState);
 
   return render(<Provider store={store}>{children}</Provider>);
 };

@@ -45,13 +45,13 @@ import {
 } from '@grafana/ui';
 import store from 'app/core/store';
 import { createAndCopyShortLink } from 'app/core/utils/shortLinks';
-import { getState, dispatch } from 'app/store/store';
 
 import { LogRows } from '../../logs/components/LogRows';
 import { LogRowContextModal } from '../../logs/components/log-context/LogRowContextModal';
 import { dedupLogRows, filterLogLevels } from '../../logs/logsModel';
 import { getUrlStateFromPaneState } from '../hooks/useStateSync';
 import { changePanelState } from '../state/explorePane';
+import { getExploreState, getExploreStore } from '../state/store';
 
 import { LogsMetaRow } from './LogsMetaRow';
 import LogsNavigation from './LogsNavigation';
@@ -182,7 +182,8 @@ class UnthemedLogs extends PureComponent<Props, State> {
     if (this.props.loading && !prevProps.loading && this.props.panelState?.logs?.id) {
       // loading stopped, so we need to remove any permalinked log lines
       delete this.props.panelState.logs.id;
-      dispatch(
+      getExploreStore().dispatch(
+        // @ts-ignore
         changePanelState(this.props.exploreId, 'logs', {
           ...this.props.panelState,
         })
@@ -384,7 +385,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
     }
 
     // get explore state, add log-row-id and make timerange absolute
-    const urlState = getUrlStateFromPaneState(getState().explore.panes[this.props.exploreId]!);
+    const urlState = getUrlStateFromPaneState(getExploreState().panes[this.props.exploreId]!);
     urlState.panelsState = { ...this.props.panelState, logs: { id: row.uid } };
     urlState.range = {
       from: new Date(this.props.absoluteRange.from).toISOString(),

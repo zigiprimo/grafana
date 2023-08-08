@@ -21,7 +21,7 @@ import { Icon, Button, Modal, useTheme2 } from '@grafana/ui';
 import store from 'app/core/store';
 import { SETTINGS_KEYS } from 'app/features/explore/Logs/utils/logs';
 import { splitOpen } from 'app/features/explore/state/main';
-import { useDispatch } from 'app/types';
+import { useExploreDispatch } from 'app/features/explore/state/store';
 
 import { dataFrameToLogsModel } from '../../logsModel';
 import { sortLogRows } from '../../utils';
@@ -213,7 +213,7 @@ export const LogRowContextModal: React.FunctionComponent<LogRowContextModalProps
 
   const loadCountRef = useRef<LoadCounter>({ above: 0, below: 0 });
 
-  const dispatch = useDispatch();
+  const dispatch = useExploreDispatch();
   const theme = useTheme2();
   const styles = getStyles(theme);
 

@@ -5,12 +5,12 @@ import { CoreApp, TimeZone } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime/src';
 import { TabbedContainer, TabConfig } from '@grafana/ui';
 import { ExploreDrawer } from 'app/features/explore/ExploreDrawer';
+import { ExploreState } from 'app/features/explore/types';
 import { InspectDataTab } from 'app/features/inspector/InspectDataTab';
 import { InspectErrorTab } from 'app/features/inspector/InspectErrorTab';
 import { InspectJSONTab } from 'app/features/inspector/InspectJSONTab';
 import { InspectStatsTab } from 'app/features/inspector/InspectStatsTab';
 import { QueryInspector } from 'app/features/inspector/QueryInspector';
-import { StoreState } from 'app/types';
 
 import { runQueries, selectIsWaitingForData } from './state/query';
 import { ExploreItemState } from './types';
@@ -91,8 +91,8 @@ export function ExploreQueryInspector(props: Props) {
   );
 }
 
-function mapStateToProps(state: StoreState, { exploreId }: { exploreId: string }) {
-  const explore = state.explore;
+function mapStateToProps(state: ExploreState, { exploreId }: { exploreId: string }) {
+  const explore = state;
   const item: ExploreItemState = explore.panes[exploreId]!;
   const { queryResponse } = item;
 

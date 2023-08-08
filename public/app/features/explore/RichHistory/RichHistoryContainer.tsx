@@ -5,7 +5,7 @@ import { connect, ConnectedProps } from 'react-redux';
 import { config, reportInteraction } from '@grafana/runtime';
 import { useTheme2 } from '@grafana/ui';
 // Types
-import { StoreState } from 'app/types';
+import { ExploreState } from 'app/features/explore/types';
 
 // Components, enums
 import { ExploreDrawer } from '../ExploreDrawer';
@@ -24,8 +24,8 @@ import { RichHistory, Tabs } from './RichHistory';
 
 //Actions
 
-function mapStateToProps(state: StoreState, { exploreId }: { exploreId: string }) {
-  const explore = state.explore;
+function mapStateToProps(state: ExploreState, { exploreId }: { exploreId: string }) {
+  const explore = state;
   const item: ExploreItemState = explore.panes[exploreId]!;
   const richHistorySearchFilters = item.richHistorySearchFilters;
   const richHistorySettings = explore.richHistorySettings;

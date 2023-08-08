@@ -16,6 +16,7 @@ import {
   SplitOpenOptions,
   SupplementaryQueryType,
   hasToggleableQueryFiltersSupport,
+  getTimeZone,
 } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { config, getDataSourceSrv, getQueryHistorySrv, reportInteraction } from '@grafana/runtime';
@@ -30,12 +31,10 @@ import {
 } from '@grafana/ui';
 import { FILTER_FOR_OPERATOR, FILTER_OUT_OPERATOR } from '@grafana/ui/src/components/Table/types';
 import appEvents from 'app/core/app_events';
+import { ExploreState } from 'app/features/explore/types';
 import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 import { getNodeGraphDataFrames } from 'app/plugins/panel/nodeGraph/utils';
-import { StoreState } from 'app/types';
 import { AbsoluteTimeEvent } from 'app/types/events';
-
-import { getTimeZone } from '../profile/state/selectors';
 
 import { CustomContainer } from './CustomContainer';
 import ExploreQueryInspector from './ExploreQueryInspector';
@@ -108,7 +107,7 @@ enum ExploreDrawer {
   QueryInspector,
 }
 
-interface ExploreState {
+interface ExploreComponentState {
   openDrawer?: ExploreDrawer;
 }
 
@@ -138,7 +137,7 @@ export type Props = ExploreProps & ConnectedProps<typeof connector>;
  * The result viewers determine some of the query options sent to the datasource, e.g.,
  * `format`, to indicate eventual transformations by the datasources' result transformers.
  */
-export class Explore extends React.PureComponent<Props, ExploreState> {
+export class Explore extends React.PureComponent<Props, ExploreComponentState> {
   scrollElement: HTMLDivElement | undefined;
   absoluteTimeUnsubsciber: Unsubscribable | undefined;
   topOfViewRef = createRef<HTMLDivElement>();
@@ -594,12 +593,12 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
   }
 }
 
-function mapStateToProps(state: StoreState, { exploreId }: ExploreProps) {
-  const explore = state.explore;
+function mapStateToProps(state: ExploreState, { exploreId }: ExploreProps) {
+  const explore = state;
   const { syncedTimes } = explore;
   const item = explore.panes[exploreId]!;
 
-  const timeZone = getTimeZone(state.user);
+  const timeZone = getTimeZone();
   const {
     datasourceInstance,
     queryKeys,
