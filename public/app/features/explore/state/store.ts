@@ -29,7 +29,7 @@ const listenerMiddleware = createListenerMiddleware();
 let store: Store<ExploreState>;
 
 export function configureExploreStore(reducer: Reducer<ExploreState, AnyAction>, preloadedState: ExploreState) {
-  store = configureStore({
+  const typedStore = configureStore({
     reducer,
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware({ thunk: true, serializableCheck: false, immutableCheck: false }).concat(
@@ -40,7 +40,8 @@ export function configureExploreStore(reducer: Reducer<ExploreState, AnyAction>,
   // this enables "refetchOnFocus" and "refetchOnReconnect" for RTK Query
   setupListeners(store.dispatch);
 
-  return store;
+  store = typedStore;
+  return typedStore;
 }
 
 export function getExploreStore() {
@@ -55,7 +56,8 @@ export function getExploreState(): ExploreState {
   return store.getState();
 }
 
-export function exploreDispatch(action: Action) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function exploreDispatch(action: any) {
   if (!store || !store.dispatch) {
     throw new Error('Explore store not configured yet');
   }
