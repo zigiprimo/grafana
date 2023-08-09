@@ -51,7 +51,6 @@ import {
   stopQueryState,
   updateHistory,
 } from 'app/features/explore/utils';
-import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 
 import { notifyApp } from '../../../core/actions';
 import { createErrorNotification } from '../../../core/copy/appNotification';
@@ -334,11 +333,11 @@ export const changeQueries = createExploreAsyncThunk<void, ChangeQueriesPayload>
         }
 
         if (
-          rootUID === MIXED_DATASOURCE_NAME &&
+          rootUID === '-- Mixed --' &&
           newQuery.refId === oldQuery.refId &&
           newQuery.datasource?.uid !== oldQuery.datasource?.uid
         ) {
-          const datasourceUIDs = getDatasourceUIDs(MIXED_DATASOURCE_NAME, queries);
+          const datasourceUIDs = getDatasourceUIDs('-- Mixed --', queries);
           const correlations = await getCorrelationsSrv().getCorrelationsBySourceUIDs(datasourceUIDs);
           dispatch(saveCorrelationsAction({ exploreId: exploreId, correlations: correlations.correlations || [] }));
         }
@@ -381,13 +380,13 @@ export const importQueries = (
 
     let importedQueries = queries;
     // If going to mixed, keep queries with source datasource
-    if (targetDataSource.uid === MIXED_DATASOURCE_NAME) {
+    if (targetDataSource.uid === '-- Mixed --') {
       importedQueries = queries.map((query) => {
         return { ...query, datasource: sourceDataSource.getRef() };
       });
     }
     // If going from mixed, see what queries you keep by their individual datasources
-    else if (sourceDataSource.uid === MIXED_DATASOURCE_NAME) {
+    else if (sourceDataSource.uid === '-- Mixed --') {
       const groupedQueries = groupBy(queries, (query) => query.datasource?.uid);
       const groupedImportableQueries = await Promise.all(
         Object.keys(groupedQueries).map(async (key: string) => {
@@ -651,7 +650,7 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
 
 const groupDataQueries = async (datasources: DataQuery[], scopedVars: ScopedVars) => {
   const nonMixedDataSources = datasources.filter((t) => {
-    return t.datasource?.uid !== MIXED_DATASOURCE_NAME;
+    return t.datasource?.uid !== '-- Mixed --';
   });
   const sets: { [key: string]: DataQuery[] } = groupBy(nonMixedDataSources, 'datasource.uid');
 

@@ -8,7 +8,6 @@ import { useGrafana } from 'app/core/context/GrafanaContext';
 import { addExploreListener, useExploreDispatch, useExploreSelector } from 'app/features/explore/state/store';
 import { clearQueryKeys, getLastUsedDatasourceUID } from 'app/features/explore/utils';
 import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
-import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 
 import { changeDatasource } from '../../state/datasource';
 import { initializeExplore } from '../../state/explorePane';
@@ -260,7 +259,7 @@ function getDefaultQuery(ds: DataSourceApi) {
 }
 
 function isMixedDatasource(datasource: DataSourceApi) {
-  return datasource.name === MIXED_DATASOURCE_NAME;
+  return datasource.name === '-- Mixed --';
 }
 
 function getQueryFilter(datasource?: DataSourceApi) {

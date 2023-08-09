@@ -28,7 +28,6 @@ import { GrafanaContext } from 'app/core/context/GrafanaContext';
 import { GrafanaRoute } from 'app/core/navigation/GrafanaRoute';
 import { Echo } from 'app/core/services/echo/Echo';
 import { setLastUsedDatasourceUID } from 'app/features/explore/utils';
-import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 
 import { LokiDatasource } from '../../../../plugins/datasource/loki/datasource';
 import { LokiQuery } from '../../../../plugins/datasource/loki/types';
@@ -69,7 +68,7 @@ export function setupExplore(options?: SetupOptions): {
   const defaultDatasources: DatasourceSetup[] = [
     makeDatasourceSetup(),
     makeDatasourceSetup({ name: 'elastic', id: 2 }),
-    makeDatasourceSetup({ name: MIXED_DATASOURCE_NAME, uid: MIXED_DATASOURCE_NAME, id: 999 }),
+    makeDatasourceSetup({ name: '-- Mixed --', uid: '-- Mixed --', id: 999 }),
   ];
 
   const dsSettings = options?.datasources || defaultDatasources;

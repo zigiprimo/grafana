@@ -9,7 +9,6 @@ import { getGrafanaContextMock } from 'test/mocks/getGrafanaContextMock';
 import { DataSourceApi, UrlQueryMap } from '@grafana/data';
 import { HistoryWrapper, setDataSourceSrv, DataSourceSrv } from '@grafana/runtime';
 import { setLastUsedDatasourceUID } from 'app/features/explore/utils';
-import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 
 import { makeDatasourceSetup } from '../../spec/helper/setup';
 import { exploreReducer, initialExploreState, splitClose, splitOpen } from '../../state/main';
@@ -66,7 +65,7 @@ function setup({ queryParams = {}, datasourceGetter = defaultDsGetter }: SetupPa
   const datasources = [
     makeDatasourceSetup({ name: 'loki', uid: 'loki-uid' }),
     makeDatasourceSetup({ name: 'elastic', uid: 'elastic-uid' }),
-    makeDatasourceSetup({ name: MIXED_DATASOURCE_NAME, uid: MIXED_DATASOURCE_NAME, id: 999 }),
+    makeDatasourceSetup({ name: '-- Mixed --', uid: '-- Mixed --', id: 999 }),
   ];
 
   setDataSourceSrv({
@@ -479,7 +478,7 @@ describe('useStateSync', () => {
       queryParams: {
         panes: JSON.stringify({
           one: {
-            datasource: MIXED_DATASOURCE_NAME,
+            datasource: '-- Mixed --',
             queries: [
               { expr: 'a', refId: 'A' },
               { expr: 'b', datasource: { uid: 'loki-uid', type: 'logs' }, refId: 'B' },

@@ -19,7 +19,6 @@ import {
 } from '@grafana/data';
 import { DataQuery, DataSourceRef, TimeZone } from '@grafana/schema';
 import { ExploreItemState, ExplorePanelData } from 'app/features/explore/types';
-import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 
 import store from '../../../core/store';
 import { getDatasourceSrv } from '../../plugins/datasource_srv';
@@ -246,7 +245,7 @@ export const filterLogRowsByIndex = (
 };
 
 export const getDatasourceUIDs = (datasourceUID: string, queries: DataQuery[]): string[] => {
-  if (datasourceUID === MIXED_DATASOURCE_NAME) {
+  if (datasourceUID === '-- Mixed --') {
     return uniq(queries.map((query) => query.datasource?.uid).filter((uid): uid is string => !!uid));
   } else {
     return [datasourceUID];

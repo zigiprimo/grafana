@@ -31,7 +31,6 @@ import {
 } from '@grafana/ui';
 import { FILTER_FOR_OPERATOR, FILTER_OUT_OPERATOR } from '@grafana/ui/src/components/Table/types';
 import { ExploreState } from 'app/features/explore/types';
-import { MIXED_DATASOURCE_NAME } from 'app/plugins/datasource/mixed/MixedDataSource';
 import { getNodeGraphDataFrames } from 'app/plugins/panel/nodeGraph/utils';
 
 import { CustomContainer } from './CustomContainer';
@@ -294,7 +293,7 @@ export class Explore extends React.PureComponent<Props, ExploreComponentState> {
       if (options && this.props.datasourceInstance) {
         const target = (await getDataSourceSrv().get(options.datasourceUid)).type;
         const source =
-          this.props.datasourceInstance.uid === MIXED_DATASOURCE_NAME
+          this.props.datasourceInstance.uid === '-- Mixed --'
             ? get(this.props.queries, '0.datasource.type')
             : this.props.datasourceInstance.type;
         const tracking = {
