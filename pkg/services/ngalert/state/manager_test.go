@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/grafana/grafana/pkg/services/ngalert/store"
 	"math/rand"
 	"sort"
 	"testing"
@@ -196,7 +197,7 @@ func TestWarmStateCache(t *testing.T) {
 	cfg := state.ManagerCfg{
 		Metrics:                 testMetrics.GetStateMetrics(),
 		ExternalURL:             nil,
-		InstanceStore:           dbstore,
+		Instances:               &store.AlertInstanceStore{DB: dbstore},
 		Images:                  &state.NoopImageService{},
 		Clock:                   clock.NewMock(),
 		Historian:               &state.FakeHistorian{},
@@ -226,12 +227,12 @@ func TestDashboardAnnotations(t *testing.T) {
 
 	fakeAnnoRepo := annotationstest.NewFakeAnnotationsRepo()
 	metrics := metrics.NewHistorianMetrics(prometheus.NewRegistry())
-	store := historian.NewAnnotationStore(fakeAnnoRepo, &dashboards.FakeDashboardService{}, metrics)
-	hist := historian.NewAnnotationBackend(store, nil, metrics)
+	annotations := historian.NewAnnotationStore(fakeAnnoRepo, &dashboards.FakeDashboardService{}, metrics)
+	hist := historian.NewAnnotationBackend(annotations, nil, metrics)
 	cfg := state.ManagerCfg{
 		Metrics:                 testMetrics.GetStateMetrics(),
 		ExternalURL:             nil,
-		InstanceStore:           dbstore,
+		Instances:               &store.AlertInstanceStore{DB: dbstore},
 		Images:                  &state.NoopImageService{},
 		Clock:                   clock.New(),
 		Historian:               hist,
@@ -2325,12 +2326,12 @@ func TestProcessEvalResults(t *testing.T) {
 	for _, tc := range testCases {
 		fakeAnnoRepo := annotationstest.NewFakeAnnotationsRepo()
 		metrics := metrics.NewHistorianMetrics(prometheus.NewRegistry())
-		store := historian.NewAnnotationStore(fakeAnnoRepo, &dashboards.FakeDashboardService{}, metrics)
-		hist := historian.NewAnnotationBackend(store, nil, metrics)
+		annotations := historian.NewAnnotationStore(fakeAnnoRepo, &dashboards.FakeDashboardService{}, metrics)
+		hist := historian.NewAnnotationBackend(annotations, nil, metrics)
 		cfg := state.ManagerCfg{
 			Metrics:                 testMetrics.GetStateMetrics(),
 			ExternalURL:             nil,
-			InstanceStore:           &state.FakeInstanceStore{},
+			Instances:               &state.FakeAlertInstanceManager{},
 			Images:                  &state.NotAvailableImageService{},
 			Clock:                   clock.New(),
 			Historian:               hist,
@@ -2366,7 +2367,7 @@ func TestProcessEvalResults(t *testing.T) {
 		cfg := state.ManagerCfg{
 			Metrics:                 testMetrics.GetStateMetrics(),
 			ExternalURL:             nil,
-			InstanceStore:           instanceStore,
+			Instances:               &state.FakeAlertInstanceManager{},
 			Images:                  &state.NotAvailableImageService{},
 			Clock:                   clk,
 			Historian:               &state.FakeHistorian{},
@@ -2508,7 +2509,7 @@ func TestStaleResultsHandler(t *testing.T) {
 		cfg := state.ManagerCfg{
 			Metrics:                 testMetrics.GetStateMetrics(),
 			ExternalURL:             nil,
-			InstanceStore:           dbstore,
+			Instances:               &store.AlertInstanceStore{DB: dbstore},
 			Images:                  &state.NoopImageService{},
 			Clock:                   clock.New(),
 			Historian:               &state.FakeHistorian{},
@@ -2583,12 +2584,11 @@ func TestStaleResults(t *testing.T) {
 	ctx := context.Background()
 	clk := clock.NewMock()
 
-	store := &state.FakeInstanceStore{}
-
+	im := &state.FakeAlertInstanceManager{}
 	cfg := state.ManagerCfg{
 		Metrics:                 testMetrics.GetStateMetrics(),
 		ExternalURL:             nil,
-		InstanceStore:           store,
+		Instances:               im,
 		Images:                  &state.NoopImageService{},
 		Clock:                   clk,
 		Historian:               &state.FakeHistorian{},
@@ -2658,7 +2658,7 @@ func TestStaleResults(t *testing.T) {
 	})
 
 	t.Run("should delete stale states from the database", func(t *testing.T) {
-		for _, op := range store.RecordedOps {
+		for _, op := range im.RecordedOps {
 			switch q := op.(type) {
 			case state.FakeInstanceStoreOp:
 				keys, ok := q.Args[1].([]models.AlertInstanceKey)
@@ -2756,7 +2756,7 @@ func TestDeleteStateByRuleUID(t *testing.T) {
 			cfg := state.ManagerCfg{
 				Metrics:                 testMetrics.GetStateMetrics(),
 				ExternalURL:             nil,
-				InstanceStore:           dbstore,
+				Instances:               &store.AlertInstanceStore{DB: dbstore},
 				Images:                  &state.NoopImageService{},
 				Clock:                   clk,
 				Historian:               &state.FakeHistorian{},
@@ -2896,7 +2896,7 @@ func TestResetStateByRuleUID(t *testing.T) {
 			cfg := state.ManagerCfg{
 				Metrics:                 testMetrics.GetStateMetrics(),
 				ExternalURL:             nil,
-				InstanceStore:           dbstore,
+				Instances:               &store.AlertInstanceStore{DB: dbstore},
 				Images:                  &state.NoopImageService{},
 				Clock:                   clk,
 				Historian:               fakeHistorian,

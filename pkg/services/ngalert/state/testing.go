@@ -11,6 +11,51 @@ import (
 
 var _ InstanceStore = &FakeInstanceStore{}
 
+type FakeAlertInstanceManager struct {
+	mtx         sync.Mutex
+	RecordedOps []interface{}
+}
+
+type FakeAlertInstanceManagerOp struct {
+	Name string
+	Args []interface{}
+}
+
+func (f *FakeAlertInstanceManager) List(_ context.Context, orgID int64, ruleUID string) ([]*models.AlertInstance, error) {
+	f.mtx.Lock()
+	defer f.mtx.Unlock()
+	f.RecordedOps = append(f.RecordedOps, []interface{}{orgID, ruleUID})
+	return nil, nil
+}
+
+func (f *FakeAlertInstanceManager) ListForOrg(_ context.Context, orgID int64) ([]*models.AlertInstance, error) {
+	f.mtx.Lock()
+	defer f.mtx.Unlock()
+	f.RecordedOps = append(f.RecordedOps, orgID)
+	return nil, nil
+}
+
+func (f *FakeAlertInstanceManager) Delete(_ context.Context, orgID int64, ruleUID string) error {
+	f.mtx.Lock()
+	defer f.mtx.Unlock()
+	f.RecordedOps = append(f.RecordedOps, []interface{}{orgID, ruleUID})
+	return nil
+}
+
+func (f *FakeAlertInstanceManager) DeleteKeys(_ context.Context, keys ...models.AlertInstanceKey) error {
+	f.mtx.Lock()
+	defer f.mtx.Unlock()
+	f.RecordedOps = append(f.RecordedOps, keys)
+	return nil
+}
+
+func (f *FakeAlertInstanceManager) Save(_ context.Context, orgID int64, ruleUID string, instances []*models.AlertInstance) error {
+	f.mtx.Lock()
+	defer f.mtx.Unlock()
+	f.RecordedOps = append(f.RecordedOps, instances)
+	return nil
+}
+
 type FakeInstanceStore struct {
 	mtx         sync.Mutex
 	RecordedOps []interface{}

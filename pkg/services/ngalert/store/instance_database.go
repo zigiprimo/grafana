@@ -3,6 +3,9 @@ package store
 import (
 	"context"
 	"fmt"
+	"github.com/grafana/dskit/concurrency"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
+	"github.com/grafana/grafana/pkg/cmd/grafana-cli/logger"
 	"sort"
 	"strings"
 
@@ -10,6 +13,43 @@ import (
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
 )
+
+type AlertInstanceStore struct {
+	DB                      *DBstore
+	maxStateSaveConcurrency int
+}
+
+func (st *AlertInstanceStore) List(ctx context.Context, orgID int64, ruleUID string) ([]*models.AlertInstance, error) {
+	return st.DB.ListAlertInstances(ctx, &models.ListAlertInstancesQuery{
+		RuleOrgID: orgID,
+		RuleUID:   ruleUID,
+	})
+}
+
+func (st *AlertInstanceStore) ListForOrg(ctx context.Context, orgID int64) ([]*models.AlertInstance, error) {
+	return st.DB.ListAlertInstances(ctx, &models.ListAlertInstancesQuery{
+		RuleOrgID: orgID,
+	})
+}
+
+func (st *AlertInstanceStore) Delete(ctx context.Context, orgID int64, ruleUID string) error {
+	return st.DB.DeleteAlertInstancesByRule(ctx, models.AlertRuleKey{OrgID: orgID, UID: ruleUID})
+}
+
+func (st *AlertInstanceStore) DeleteKeys(ctx context.Context, keys ...models.AlertInstanceKey) error {
+	return st.DB.DeleteAlertInstances(ctx, keys...)
+}
+
+func (st *AlertInstanceStore) Save(ctx context.Context, orgID int64, ruleUID string, instances []*models.AlertInstance) error {
+	return concurrency.ForEachJob(ctx, len(instances), st.maxStateSaveConcurrency, func(ctx context.Context, idx int) error {
+		if err := st.DB.SaveAlertInstance(ctx, *instances[idx]); err != nil {
+			logger.Error("Failed to save alert state",
+				"labels", data.Labels(instances[idx].Labels).String(), "hash", instances[idx].LabelsHash, "error", err)
+			return nil
+		}
+		return nil
+	})
+}
 
 // ListAlertInstances is a handler for retrieving alert instances within specific organisation
 // based on various filters.

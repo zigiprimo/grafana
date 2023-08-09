@@ -81,7 +81,7 @@ func (srv TestingApiSrv) RouteTestGrafanaRuleConfig(c *contextmodel.ReqContext, 
 	cfg := state.ManagerCfg{
 		Metrics:                 nil,
 		ExternalURL:             srv.appUrl,
-		InstanceStore:           nil,
+		Instances:               nil,
 		Images:                  &backtesting.NoopImageService{},
 		Clock:                   clock.New(),
 		Historian:               nil,

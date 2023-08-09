@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-	"github.com/grafana/dskit/concurrency"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 
 	"github.com/grafana/grafana/pkg/infra/log"
@@ -23,6 +22,19 @@ var (
 
 // AlertInstanceManager defines the interface for querying the current alert instances.
 type AlertInstanceManager interface {
+	// List returns all alert instances for the rule.
+	List(ctx context.Context, orgID int64, ruleUID string) ([]*ngModels.AlertInstance, error)
+	// ListForOrg returns all alert instances for all rules in the organization.
+	ListForOrg(ctx context.Context, orgID int64) ([]*ngModels.AlertInstance, error)
+	// Delete deletes all alert instances for the rule.
+	Delete(ctx context.Context, orgID int64, ruleUID string) error
+	// Deprecated: Will be removed in future versions of Grafana
+	DeleteKeys(ctx context.Context, keys ...ngModels.AlertInstanceKey) error
+	// Save all alert instances for the rule.
+	Save(ctx context.Context, orgID int64, ruleUID string, instances []*ngModels.AlertInstance) error
+}
+
+type DeprecatedAlertInstanceManager interface {
 	GetAll(orgID int64) []*State
 	GetStatesForRuleUID(orgID int64, alertRuleUID string) []*State
 }
@@ -35,22 +47,22 @@ type Manager struct {
 	cache       *cache
 	ResendDelay time.Duration
 
-	instanceStore InstanceStore
-	images        ImageCapturer
-	historian     Historian
-	externalURL   *url.URL
+	instances   AlertInstanceManager
+	images      ImageCapturer
+	historian   Historian
+	externalURL *url.URL
 
 	doNotSaveNormalState    bool
 	maxStateSaveConcurrency int
 }
 
 type ManagerCfg struct {
-	Metrics       *metrics.State
-	ExternalURL   *url.URL
-	InstanceStore InstanceStore
-	Images        ImageCapturer
-	Clock         clock.Clock
-	Historian     Historian
+	Metrics     *metrics.State
+	ExternalURL *url.URL
+	Instances   AlertInstanceManager
+	Images      ImageCapturer
+	Clock       clock.Clock
+	Historian   Historian
 	// DoNotSaveNormalState controls whether eval.Normal state is persisted to the database and returned by get methods
 	DoNotSaveNormalState bool
 	// MaxStateSaveConcurrency controls the number of goroutines (per rule) that can save alert state in parallel.
@@ -63,7 +75,7 @@ func NewManager(cfg ManagerCfg) *Manager {
 		ResendDelay:             ResendDelay, // TODO: make this configurable
 		log:                     log.New("ngalert.state.manager"),
 		metrics:                 cfg.Metrics,
-		instanceStore:           cfg.InstanceStore,
+		instances:               cfg.Instances,
 		images:                  cfg.Images,
 		historian:               cfg.Historian,
 		clock:                   cfg.Clock,
@@ -89,83 +101,67 @@ func (st *Manager) Run(ctx context.Context) error {
 }
 
 func (st *Manager) Warm(ctx context.Context, rulesReader RuleReader) {
-	if st.instanceStore == nil {
-		st.log.Info("Skip warming the state because instance store is not configured")
+	if st.instances == nil {
+		st.log.Info("Skipping warming the state cache")
 		return
 	}
-	startTime := time.Now()
-	st.log.Info("Warming state cache for startup")
 
-	orgIds, err := st.instanceStore.FetchOrgIds(ctx)
+	start := time.Now()
+	st.log.Info("Warming state cache")
+
+	rulesForAllOrgs, err := rulesReader.ListAlertRules(ctx, &ngModels.ListAlertRulesQuery{})
 	if err != nil {
-		st.log.Error("Unable to fetch orgIds", "error", err)
+		st.log.Error("Unable to fetch rules", "error", err)
+		return
+	}
+	orgIDs := make(map[int64]struct{})
+	for _, r := range rulesForAllOrgs {
+		orgIDs[r.OrgID] = struct{}{}
 	}
 
-	statesCount := 0
-	states := make(map[int64]map[string]*ruleStates, len(orgIds))
-	for _, orgId := range orgIds {
-		// Get Rules
-		ruleCmd := ngModels.ListAlertRulesQuery{
-			OrgID: orgId,
-		}
-		alertRules, err := rulesReader.ListAlertRules(ctx, &ruleCmd)
+	states := make(map[int64]map[string]*ruleStates)
+	num := 0
+	for orgID := range orgIDs {
+		instances, err := st.instances.ListForOrg(ctx, orgID)
 		if err != nil {
-			st.log.Error("Unable to fetch previous state", "error", err)
+			st.log.Error("Failed to get instances for org", "orgID", orgID, "error", err)
+			return
 		}
-
-		ruleByUID := make(map[string]*ngModels.AlertRule, len(alertRules))
-		for _, rule := range alertRules {
-			ruleByUID[rule.UID] = rule
-		}
-
-		orgStates := make(map[string]*ruleStates, len(ruleByUID))
-		states[orgId] = orgStates
-
-		// Get Instances
-		cmd := ngModels.ListAlertInstancesQuery{
-			RuleOrgID: orgId,
-		}
-		alertInstances, err := st.instanceStore.ListAlertInstances(ctx, &cmd)
-		if err != nil {
-			st.log.Error("Unable to fetch previous state", "error", err)
-		}
-
-		for _, entry := range alertInstances {
-			ruleForEntry, ok := ruleByUID[entry.RuleUID]
+		for _, instance := range instances {
+			orgStates, ok := states[instance.RuleOrgID]
 			if !ok {
-				// TODO Should we delete the orphaned state from the db?
-				continue
+				orgStates = make(map[string]*ruleStates)
 			}
-
-			rulesStates, ok := orgStates[entry.RuleUID]
+			rulesStates, ok := orgStates[instance.RuleUID]
 			if !ok {
 				rulesStates = &ruleStates{states: make(map[string]*State)}
-				orgStates[entry.RuleUID] = rulesStates
+				orgStates[instance.RuleUID] = rulesStates
 			}
 
-			lbs := map[string]string(entry.Labels)
-			cacheID, err := entry.Labels.StringKey()
+			lbs := map[string]string(instance.Labels)
+			cacheID, err := instance.Labels.StringKey()
 			if err != nil {
 				st.log.Error("Error getting cacheId for entry", "error", err)
 			}
 			rulesStates.states[cacheID] = &State{
-				AlertRuleUID:         entry.RuleUID,
-				OrgID:                entry.RuleOrgID,
+				AlertRuleUID:         instance.RuleUID,
+				OrgID:                instance.RuleOrgID,
 				CacheID:              cacheID,
 				Labels:               lbs,
-				State:                translateInstanceState(entry.CurrentState),
-				StateReason:          entry.CurrentReason,
+				State:                translateInstanceState(instance.CurrentState),
+				StateReason:          instance.CurrentReason,
 				LastEvaluationString: "",
-				StartsAt:             entry.CurrentStateSince,
-				EndsAt:               entry.CurrentStateEnd,
-				LastEvaluationTime:   entry.LastEvalTime,
-				Annotations:          ruleForEntry.Annotations,
+				StartsAt:             instance.CurrentStateSince,
+				EndsAt:               instance.CurrentStateEnd,
+				LastEvaluationTime:   instance.LastEvalTime,
+				// TODO(grobinson): Add these back
+				//Annotations:          ruleForEntry.Annotations,
 			}
-			statesCount++
+			num++
 		}
 	}
 	st.cache.setAllStates(states)
-	st.log.Info("State cache has been initialized", "states", statesCount, "duration", time.Since(startTime))
+	st.log.Info("State cache has been initialized", "states", num, "duration", time.Since(start))
 }
 
 func (st *Manager) Get(orgID int64, alertRuleUID, stateId string) *State {
@@ -207,8 +203,8 @@ func (st *Manager) DeleteStateByRuleUID(ctx context.Context, ruleKey ngModels.Al
 		})
 	}
 
-	if st.instanceStore != nil {
-		err := st.instanceStore.DeleteAlertInstancesByRule(ctx, ruleKey)
+	if st.instances != nil {
+		err := st.instances.Delete(ctx, ruleKey.OrgID, ruleKey.UID)
 		if err != nil {
 			logger.Error("Failed to delete states that belong to a rule from database", "error", err)
 		}
@@ -253,7 +249,7 @@ func (st *Manager) ProcessEvalResults(ctx context.Context, evaluatedAt time.Time
 	staleStates := st.deleteStaleStatesFromCache(ctx, logger, evaluatedAt, alertRule)
 	st.deleteAlertStates(ctx, logger, staleStates)
 
-	st.saveAlertStates(ctx, logger, states...)
+	st.saveAlertStates(ctx, logger, alertRule.OrgID, alertRule.UID, states...)
 
 	allChanges := append(states, staleStates...)
 	if st.historian != nil {
@@ -371,24 +367,23 @@ func (st *Manager) Put(states []*State) {
 }
 
 // TODO: Is the `State` type necessary? Should it embed the instance?
-func (st *Manager) saveAlertStates(ctx context.Context, logger log.Logger, states ...StateTransition) {
-	if st.instanceStore == nil || len(states) == 0 {
+func (st *Manager) saveAlertStates(ctx context.Context, logger log.Logger, orgID int64, ruleUID string, states ...StateTransition) {
+	if st.instances == nil || len(states) == 0 {
 		return
 	}
 
-	saveState := func(ctx context.Context, idx int) error {
-		s := states[idx]
+	instances := make([]*ngModels.AlertInstance, 0, len(states))
+	for _, s := range states {
 		// Do not save normal state to database and remove transition to Normal state but keep mapped states
 		if st.doNotSaveNormalState && IsNormalStateWithNoReason(s.State) && !s.Changed() {
-			return nil
+			continue
 		}
-
 		key, err := s.GetAlertInstanceKey()
 		if err != nil {
 			logger.Error("Failed to create a key for alert state to save it to database. The state will be ignored ", "cacheID", s.CacheID, "error", err, "labels", s.Labels.String())
-			return nil
+			return
 		}
-		instance := ngModels.AlertInstance{
+		instance := &ngModels.AlertInstance{
 			AlertInstanceKey:  key,
 			Labels:            ngModels.InstanceLabels(s.Labels),
 			CurrentState:      ngModels.InstanceStateType(s.State.State.String()),
@@ -397,23 +392,20 @@ func (st *Manager) saveAlertStates(ctx context.Context, logger log.Logger, state
 			CurrentStateSince: s.StartsAt,
 			CurrentStateEnd:   s.EndsAt,
 		}
-
-		err = st.instanceStore.SaveAlertInstance(ctx, instance)
-		if err != nil {
-			logger.Error("Failed to save alert state", "labels", s.Labels.String(), "state", s.State, "error", err)
-			return nil
-		}
-		return nil
+		instances = append(instances, instance)
 	}
 
 	start := time.Now()
-	logger.Debug("Saving alert states", "count", len(states), "max_state_save_concurrency", st.maxStateSaveConcurrency)
-	_ = concurrency.ForEachJob(ctx, len(states), st.maxStateSaveConcurrency, saveState)
-	logger.Debug("Saving alert states done", "count", len(states), "max_state_save_concurrency", st.maxStateSaveConcurrency, "duration", time.Since(start))
+	logger.Debug("Saving alert states", "count", len(states))
+	if err := st.instances.Save(ctx, orgID, ruleUID, instances); err != nil {
+		logger.Error("Failed to save alert states", "error", err)
+		return
+	}
+	logger.Debug("Saving alert states done", "count", len(states), "duration", time.Since(start))
 }
 
 func (st *Manager) deleteAlertStates(ctx context.Context, logger log.Logger, states []StateTransition) {
-	if st.instanceStore == nil || len(states) == 0 {
+	if st.instances == nil || len(states) == 0 {
 		return
 	}
 
@@ -429,7 +421,7 @@ func (st *Manager) deleteAlertStates(ctx context.Context, logger log.Logger, sta
 		toDelete = append(toDelete, key)
 	}
 
-	err := st.instanceStore.DeleteAlertInstances(ctx, toDelete...)
+	err := st.instances.DeleteKeys(ctx, toDelete...)
 	if err != nil {
 		logger.Error("Failed to delete stale states", "error", err)
 	}

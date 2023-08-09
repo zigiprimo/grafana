@@ -27,7 +27,7 @@ import (
 
 type PrometheusSrv struct {
 	log     log.Logger
-	manager state.AlertInstanceManager
+	manager state.DeprecatedAlertInstanceManager
 	store   RuleStore
 	ac      accesscontrol.AccessControl
 }

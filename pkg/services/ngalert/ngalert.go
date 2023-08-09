@@ -214,7 +214,7 @@ func (ng *AlertNG) init() error {
 	cfg := state.ManagerCfg{
 		Metrics:                 ng.Metrics.GetStateMetrics(),
 		ExternalURL:             appUrl,
-		InstanceStore:           ng.store,
+		Instances:               &store.AlertInstanceStore{DB: ng.store},
 		Images:                  ng.ImageService,
 		Clock:                   clk,
 		Historian:               history,

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"math/rand"
 	"net/url"
 	"testing"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/benbjohnson/clock"
 	alertingModels "github.com/grafana/alerting/models"
-	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	prometheusModel "github.com/prometheus/common/model"
@@ -77,7 +77,7 @@ func TestProcessTicks(t *testing.T) {
 	managerCfg := state.ManagerCfg{
 		Metrics:                 testMetrics.GetStateMetrics(),
 		ExternalURL:             nil,
-		InstanceStore:           nil,
+		Instances:               nil,
 		Images:                  &state.NoopImageService{},
 		Clock:                   mockedClock,
 		Historian:               &state.FakeHistorian{},
@@ -357,16 +357,16 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 	createSchedule := func(
 		evalAppliedChan chan time.Time,
 		senderMock *AlertsSenderMock,
-	) (*schedule, *fakeRulesStore, *state.FakeInstanceStore, prometheus.Gatherer) {
+	) (*schedule, *fakeRulesStore, *state.FakeAlertInstanceManager, prometheus.Gatherer) {
 		ruleStore := newFakeRulesStore()
-		instanceStore := &state.FakeInstanceStore{}
+		im := &state.FakeAlertInstanceManager{}
 
 		registry := prometheus.NewPedanticRegistry()
-		sch := setupScheduler(t, ruleStore, instanceStore, registry, senderMock, nil)
+		sch := setupScheduler(t, ruleStore, im, registry, senderMock, nil)
 		sch.evalAppliedFunc = func(key models.AlertRuleKey, t time.Time) {
 			evalAppliedChan <- t
 		}
-		return sch, ruleStore, instanceStore, registry
+		return sch, ruleStore, im, registry
 	}
 
 	// normal states do not include NoData and Error because currently it is not possible to perform any sensible test
@@ -378,7 +378,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		t.Run(fmt.Sprintf("when rule evaluation happens (evaluation state %s)", evalState), func(t *testing.T) {
 			evalChan := make(chan *evaluation)
 			evalAppliedChan := make(chan time.Time)
-			sch, ruleStore, instanceStore, reg := createSchedule(evalAppliedChan, nil)
+			sch, ruleStore, im, reg := createSchedule(evalAppliedChan, nil)
 
 			rule := models.AlertRuleGen(withQueryForState(t, evalState))()
 			ruleStore.PutRule(context.Background(), rule)
@@ -428,13 +428,12 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 				// TODO rewrite when we are able to mock/fake state manager
 				states := sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID)
 				require.Len(t, states, 1)
-				s := states[0]
 
-				var cmd *models.AlertInstance
-				for _, op := range instanceStore.RecordedOps {
+				var cmd []*models.AlertInstance
+				for _, op := range im.RecordedOps {
 					switch q := op.(type) {
-					case models.AlertInstance:
-						cmd = &q
+					case []*models.AlertInstance:
+						cmd = q
 					}
 					if cmd != nil {
 						break
@@ -443,11 +442,15 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 
 				require.NotNil(t, cmd)
 				t.Logf("Saved alert instances: %v", cmd)
-				require.Equal(t, rule.OrgID, cmd.RuleOrgID)
-				require.Equal(t, expectedTime, cmd.LastEvalTime)
-				require.Equal(t, rule.UID, cmd.RuleUID)
-				require.Equal(t, evalState.String(), string(cmd.CurrentState))
-				require.Equal(t, s.Labels, data.Labels(cmd.Labels))
+				require.Len(t, cmd, len(states))
+
+				for i, s := range states {
+					require.Equal(t, rule.OrgID, cmd[i].RuleOrgID)
+					require.Equal(t, expectedTime, cmd[i].LastEvalTime)
+					require.Equal(t, rule.UID, cmd[i].RuleUID)
+					require.Equal(t, evalState.String(), string(cmd[i].CurrentState))
+					require.Equal(t, s.Labels, data.Labels(cmd[i].Labels))
+				}
 			})
 
 			t.Run("it reports metrics", func(t *testing.T) {
@@ -768,7 +771,7 @@ func TestSchedule_deleteAlertRule(t *testing.T) {
 	})
 }
 
-func setupScheduler(t *testing.T, rs *fakeRulesStore, is *state.FakeInstanceStore, registry *prometheus.Registry, senderMock *AlertsSenderMock, evalMock eval.EvaluatorFactory) *schedule {
+func setupScheduler(t *testing.T, rs *fakeRulesStore, im *state.FakeAlertInstanceManager, registry *prometheus.Registry, senderMock *AlertsSenderMock, evalMock eval.EvaluatorFactory) *schedule {
 	t.Helper()
 	testTracer := tracing.InitializeTracerForTest()
 
@@ -778,8 +781,8 @@ func setupScheduler(t *testing.T, rs *fakeRulesStore, is *state.FakeInstanceStor
 		rs = newFakeRulesStore()
 	}
 
-	if is == nil {
-		is = &state.FakeInstanceStore{}
+	if im == nil {
+		im = &state.FakeAlertInstanceManager{}
 	}
 
 	var evaluator = evalMock
@@ -821,7 +824,7 @@ func setupScheduler(t *testing.T, rs *fakeRulesStore, is *state.FakeInstanceStor
 	managerCfg := state.ManagerCfg{
 		Metrics:                 m.GetStateMetrics(),
 		ExternalURL:             nil,
-		InstanceStore:           is,
+		Instances:               im,
 		Images:                  &state.NoopImageService{},
 		Clock:                   mockedClock,
 		Historian:               &state.FakeHistorian{},

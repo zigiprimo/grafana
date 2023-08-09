@@ -113,14 +113,14 @@ func TestManager_saveAlertStates(t *testing.T) {
 	}
 
 	t.Run("should save all transitions if doNotSaveNormalState is false", func(t *testing.T) {
-		st := &FakeInstanceStore{}
-		m := Manager{instanceStore: st, doNotSaveNormalState: false, maxStateSaveConcurrency: 1}
-		m.saveAlertStates(context.Background(), &logtest.Fake{}, transitions...)
+		im := &FakeAlertInstanceManager{}
+		m := Manager{instances: im, doNotSaveNormalState: false, maxStateSaveConcurrency: 1}
+		m.saveAlertStates(context.Background(), &logtest.Fake{}, 1, "foo", transitions...)
 
-		savedKeys := map[ngmodels.AlertInstanceKey]ngmodels.AlertInstance{}
-		for _, op := range st.RecordedOps {
-			saved := op.(ngmodels.AlertInstance)
-			savedKeys[saved.AlertInstanceKey] = saved
+		savedKeys := map[ngmodels.AlertInstanceKey][]*ngmodels.AlertInstance{}
+		for _, op := range im.RecordedOps {
+			saved := op.([]*ngmodels.AlertInstance)
+			savedKeys[saved[0].AlertInstanceKey] = saved
 		}
 		assert.Len(t, transitionToKey, len(savedKeys))
 
@@ -130,14 +130,14 @@ func TestManager_saveAlertStates(t *testing.T) {
 	})
 
 	t.Run("should not save Normal->Normal if doNotSaveNormalState is true", func(t *testing.T) {
-		st := &FakeInstanceStore{}
-		m := Manager{instanceStore: st, doNotSaveNormalState: true, maxStateSaveConcurrency: 1}
-		m.saveAlertStates(context.Background(), &logtest.Fake{}, transitions...)
+		im := &FakeAlertInstanceManager{}
+		m := Manager{instances: im, doNotSaveNormalState: true, maxStateSaveConcurrency: 1}
+		m.saveAlertStates(context.Background(), &logtest.Fake{}, 1, "bar", transitions...)
 
-		savedKeys := map[ngmodels.AlertInstanceKey]ngmodels.AlertInstance{}
-		for _, op := range st.RecordedOps {
-			saved := op.(ngmodels.AlertInstance)
-			savedKeys[saved.AlertInstanceKey] = saved
+		savedKeys := map[ngmodels.AlertInstanceKey][]*ngmodels.AlertInstance{}
+		for _, op := range im.RecordedOps {
+			saved := op.([]*ngmodels.AlertInstance)
+			savedKeys[saved[0].AlertInstanceKey] = saved
 		}
 		for key, tr := range transitionToKey {
 			if tr.State.State == eval.Normal && tr.StateReason == "" && tr.PreviousState == eval.Normal && tr.PreviousStateReason == "" {
