@@ -52,4 +52,16 @@ Medium.args = {
   size: 24,
 };
 
+export const Small: StoryFn = (args: Spinner2Props) => {
+  return (
+    <div>
+      <Spinner2 size={args.size} />
+    </div>
+  );
+};
+
+Small.args = {
+  size: 12,
+};
+
 export default meta;

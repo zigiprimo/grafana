@@ -11,7 +11,7 @@ export interface Spinner2Props {
   color?: GrafanaTheme2 | string;
 }
 
-export const Spinner2 = ({ size = 16, inline = false }: Spinner2Props) => {
+export const Spinner2 = ({ size = 12, inline = false }: Spinner2Props) => {
   const [count, setCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -40,7 +40,7 @@ export const Spinner2 = ({ size = 16, inline = false }: Spinner2Props) => {
         </div>
       </div>
 
-      <div className={style.counter}>{loading ? size === 16 ? '' : <p>{count}</p> : ''}</div>
+      <div className={style.counter}>{loading ? size === 16 || size === 12 ? '' : <p>{count}</p> : ''}</div>
     </div>
   );
 };
@@ -77,7 +77,7 @@ const getStyles = (theme: GrafanaTheme2, size: number | string) => {
       alignItems: 'center',
       width: '100%',
       height: '100%',
-      borderRight: `1px solid ${theme.colors.text.disabled}`,
+      borderLeft: `1px solid ${theme.colors.text.disabled}`,
       borderBottom: `1px solid ${theme.colors.text.disabled}`,
       borderRadius: theme.shape.radius.circle,
       position: 'relative',
@@ -90,12 +90,12 @@ const getStyles = (theme: GrafanaTheme2, size: number | string) => {
       alignItems: 'center',
       width: '85%',
       height: '85%',
-      borderRight: `1px solid ${theme.colors.text.disabled}`,
-      borderBottom: `1px solid ${theme.colors.text.disabled}`,
+      borderLeft: `1px solid ${theme.colors.text.disabled}`,
+      borderTop: `1px solid ${theme.colors.text.disabled}`,
       borderRadius: theme.shape.radius.circle,
       position: 'absolute',
-      top: '3px',
-      left: ' 3px',
+      top: '2px',
+      left: '2px',
       animation: `${spinnerAnimation} 3s infinite linear`,
     }),
     third: css({
@@ -104,12 +104,12 @@ const getStyles = (theme: GrafanaTheme2, size: number | string) => {
       alignItems: 'center',
       width: '75%',
       height: '75%',
-      borderRight: `1px solid ${theme.colors.text.disabled}`,
+      borderLeft: `1px solid ${theme.colors.text.disabled}`,
       borderBottom: `1px solid ${theme.colors.text.disabled}`,
       borderRadius: theme.shape.radius.circle,
       position: 'absolute',
-      top: '3px',
-      left: '3px',
+      top: '2px',
+      left: '2px',
       animation: `${spinnerAnimation} 3s infinite linear`,
     }),
     counter: css({
