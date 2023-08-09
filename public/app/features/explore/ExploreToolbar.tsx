@@ -11,8 +11,6 @@ import { createAndCopyShortLink } from 'app/core/utils/shortLinks';
 import { DataSourcePicker } from 'app/features/datasources/components/picker/DataSourcePicker';
 import { useExploreDispatch, useExploreSelector } from 'app/features/explore/state/store';
 
-import { getTimeSrv } from '../dashboard/services/TimeSrv';
-
 import { ExploreNavButton } from './ExploreNavButton';
 import { ExploreTimeControls } from './ExploreTimeControls';
 import { LiveTailButton } from './LiveTailButton';
@@ -200,7 +198,7 @@ export function ExploreToolbar({ exploreId, topOfViewRef, onChangeTime }: Props)
             isLoading={loading}
             text={showSmallTimePicker ? undefined : loading ? 'Cancel' : 'Run query'}
             tooltip={showSmallTimePicker ? (loading ? 'Cancel' : 'Run query') : undefined}
-            intervals={getTimeSrv().getValidIntervals(defaultIntervals)}
+            intervals={getMiscSrv().getValidIntervals(defaultIntervals)}
             isLive={isLive}
             onRefresh={() => onRunQuery(loading)}
             noIntervalPicker={isLive}

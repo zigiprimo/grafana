@@ -7,11 +7,11 @@ import {
   RichHistorySettings,
   RichHistoryResults,
   PanelModel,
+  RawTimeRange,
 } from '@grafana/data';
 import { DataSourceSrv, generateExploreId, GetExploreUrlArguments, locationService } from '@grafana/runtime';
 import { ExploreItemState, ExploreState } from 'app/features/explore/types';
 
-import { TimeSrv } from '../../dashboard/services/TimeSrv';
 import { withUniqueRefIds } from '../utils/queries';
 
 import { initializeExplore, InitializeExploreOptions, paneReducer } from './explorePane';
@@ -109,7 +109,7 @@ const createNewSplitOpenPane = createExploreAsyncThunk(
 
 export interface NavigateToExploreDependencies {
   getDataSourceSrv: () => DataSourceSrv;
-  getTimeSrv: () => TimeSrv;
+  getTimeSrv: () => { timeRangeForUrl(): RawTimeRange };
   getExploreUrl: (args: GetExploreUrlArguments) => Promise<string | undefined>;
   openInNewWindow?: (url: string) => void;
 }

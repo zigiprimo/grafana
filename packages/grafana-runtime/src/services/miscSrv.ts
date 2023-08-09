@@ -7,6 +7,7 @@ export interface MiscSrv {
   canWriteDashboard(): boolean;
   canCreateDashboard(): boolean;
   canCreateDataSource(): boolean;
+  getValidIntervals(intervals: string[]): string[];
 }
 
 let singletonInstance: MiscSrv;

@@ -14,8 +14,6 @@ import { ExploreThunkResult } from 'app/features/explore/state/store';
 import { getTimeRange, refreshIntervalToSortOrder, stopQueryState } from 'app/features/explore/utils';
 import { sortLogsResult } from 'app/features/logs/utils';
 
-import { getTimeSrv } from '../../dashboard/services/TimeSrv';
-import { TimeModel } from '../../dashboard/state/TimeModel';
 import { ExploreItemState } from '../types';
 
 import { syncTimesAction } from './main';
@@ -86,21 +84,11 @@ export const updateTime = (config: {
 
     const range = getTimeRange(timeZone, rawRange, fiscalYearStartMonth);
     const absoluteRange: AbsoluteTimeRange = { from: range.from.valueOf(), to: range.to.valueOf() };
-    const timeModel: TimeModel = {
-      time: range.raw,
-      refresh: false,
-      timepicker: {},
-      getTimezone: () => timeZone,
-      timeRangeUpdated: (rawTimeRange: RawTimeRange) => {
-        dispatch(updateTimeRange({ exploreId: exploreId, rawRange: rawTimeRange }));
-      },
-    };
 
     // We need to re-initialize TimeSrv because it might have been triggered by the other Explore pane (when split)
-    getTimeSrv().init(timeModel);
     // After re-initializing TimeSrv we need to update the time range in Template service for interpolation
     // of __from and __to variables
-    getTemplateSrv().updateTimeRange(getTimeSrv().timeRange());
+    getTemplateSrv().updateTimeRange(range);
 
     dispatch(changeRangeAction({ exploreId, range, absoluteRange }));
   };

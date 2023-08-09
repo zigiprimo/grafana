@@ -49,4 +49,11 @@ export class MiscService implements MiscSrv {
       contextSrv.hasPermission(AccessControlAction.DataSourcesWrite)
     );
   }
+
+  getValidIntervals(intervals: string[]): string[] {
+    if (this.contextSrv.minRefreshInterval) {
+      return intervals.filter((str) => str !== '').filter(this.contextSrv.isAllowedInterval);
+    }
+    return intervals;
+  }
 }
