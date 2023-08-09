@@ -248,8 +248,10 @@ func (s *OAuth2ServiceImpl) SaveExternalService(ctx context.Context, registratio
 		s.logger.Error("Error handling key options", "client", client.LogID(), "error", err)
 		return nil, err
 	}
-	if keys != nil {
+	if keys.PublicPem != "" {
 		client.PublicPem = []byte(keys.PublicPem)
+	} else {
+		client.JWKSURL = keys.URL
 	}
 	dto := client.ToDTO()
 	dto.KeyResult = keys
@@ -363,11 +365,11 @@ func (s *OAuth2ServiceImpl) handleKeyOptions(ctx context.Context, keyOption *oau
 	}
 
 	// TODO MVP allow specifying a URL to get the public key
-	// if registration.Key.URL != "" {
-	// 	return &oauthserver.KeyResult{
-	// 		URL: registration.Key.URL,
-	// 	}, nil
-	// }
+	if keyOption.URL != "" {
+		return &oauthserver.KeyResult{
+			URL: keyOption.URL,
+		}, nil
+	}
 
 	if keyOption.PublicPEM != "" {
 		pemEncoded, err := base64.StdEncoding.DecodeString(keyOption.PublicPEM)

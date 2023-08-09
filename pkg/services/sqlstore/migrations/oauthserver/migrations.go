@@ -45,6 +45,10 @@ func AddMigration(mg *migrator.Migrator) {
 	// Client
 	mg.AddMigration("create client table", migrator.NewAddTableMigration(clientTable))
 
+	mg.AddMigration("add jwks_url column to client table", migrator.NewAddColumnMigration(clientTable, &migrator.Column{
+		Name: "jwks_url", Type: migrator.DB_Varchar, Length: 190, Nullable: true,
+	}))
+
 	//-------  indexes ------------------
 	mg.AddMigration("add unique index client_id", migrator.NewAddIndexMigration(clientTable, clientTable.Indices[0]))
 	mg.AddMigration("add unique index client_id service_account_id", migrator.NewAddIndexMigration(clientTable, clientTable.Indices[1]))

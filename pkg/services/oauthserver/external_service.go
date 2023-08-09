@@ -37,6 +37,7 @@ type ExternalService struct {
 	GrantTypes       string `xorm:"grant_types"`  // CSV value
 	Audiences        string `xorm:"audiences"`    // CSV value
 	PublicPem        []byte `xorm:"public_pem"`
+	JWKSURL          string `xorm:"jwks_url"`
 	ServiceAccountID int64  `xorm:"service_account_id"`
 	// SelfPermissions are the registered service account permissions (registered and managed permissions)
 	SelfPermissions []ac.Permission
