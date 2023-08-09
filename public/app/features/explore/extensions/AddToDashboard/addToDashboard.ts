@@ -1,63 +1,16 @@
 import { DataFrame } from '@grafana/data';
-import { DataQuery, DataSourceRef } from '@grafana/schema';
-import { backendSrv } from 'app/core/services/backend_srv';
-import {
-  getNewDashboardModelData,
-  setDashboardToFetchFromLocalStorage,
-} from 'app/features/dashboard/state/initDashboard';
+import { AddPanelToDashboardOptions, getAddToDashboardSrv } from '@grafana/runtime';
+import { DataQuery } from '@grafana/schema';
 
 import { ExplorePanelData } from '../../types';
 
-export enum AddToDashboardError {
-  FETCH_DASHBOARD = 'fetch-dashboard',
-  SET_DASHBOARD_LS = 'set-dashboard-ls-error',
-}
+export { AddToDashboardError } from '@grafana/runtime';
 
-interface AddPanelToDashboardOptions {
-  queries: DataQuery[];
-  queryResponse: ExplorePanelData;
-  datasource?: DataSourceRef;
-  dashboardUid?: string;
-}
-
-function createDashboard() {
-  const dto = getNewDashboardModelData();
-
-  // getNewDashboardModelData adds by default the "add-panel" panel. We don't want that.
-  dto.dashboard.panels = [];
-
-  return dto;
-}
-
-export async function setDashboardInLocalStorage(options: AddPanelToDashboardOptions) {
+export async function setDashboardInLocalStorage(
+  options: Omit<AddPanelToDashboardOptions, 'panelType'> & { queryResponse: ExplorePanelData }
+) {
   const panelType = getPanelType(options.queries, options.queryResponse);
-  const panel = {
-    targets: options.queries,
-    type: panelType,
-    title: 'New Panel',
-    gridPos: { x: 0, y: 0, w: 12, h: 8 },
-    datasource: options.datasource,
-  };
-
-  let dto;
-
-  if (options.dashboardUid) {
-    try {
-      dto = await backendSrv.getDashboardByUid(options.dashboardUid);
-    } catch (e) {
-      throw AddToDashboardError.FETCH_DASHBOARD;
-    }
-  } else {
-    dto = createDashboard();
-  }
-
-  dto.dashboard.panels = [panel, ...(dto.dashboard.panels ?? [])];
-
-  try {
-    setDashboardToFetchFromLocalStorage(dto);
-  } catch {
-    throw AddToDashboardError.SET_DASHBOARD_LS;
-  }
+  return getAddToDashboardSrv().setDashboardInLocalStorage({ ...options, panelType });
 }
 
 const isVisible = (query: DataQuery) => !query.hide;

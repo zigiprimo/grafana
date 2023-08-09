@@ -11,9 +11,9 @@ import { createAndCopyShortLink } from 'app/core/utils/shortLinks';
 import { DataSourcePicker } from 'app/features/datasources/components/picker/DataSourcePicker';
 import { useExploreDispatch, useExploreSelector } from 'app/features/explore/state/store';
 
-import { DashNavButton } from '../dashboard/components/DashNav/DashNavButton';
 import { getTimeSrv } from '../dashboard/services/TimeSrv';
 
+import { ExploreNavButton } from './ExploreNavButton';
 import { ExploreTimeControls } from './ExploreTimeControls';
 import { LiveTailButton } from './LiveTailButton';
 import { ToolbarExtensionPoint } from './extensions/ToolbarExtensionPoint';
@@ -119,7 +119,7 @@ export function ExploreToolbar({ exploreId, topOfViewRef, onChangeTime }: Props)
       <div ref={topOfViewRef}>
         <AppChromeUpdate
           actions={[
-            <DashNavButton
+            <ExploreNavButton
               key="share"
               tooltip="Copy shortened link"
               icon="share-alt"

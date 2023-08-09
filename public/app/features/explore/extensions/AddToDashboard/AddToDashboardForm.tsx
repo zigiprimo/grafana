@@ -3,10 +3,9 @@ import React, { type ReactElement, useEffect, useState } from 'react';
 import { DeepMap, FieldError, useForm } from 'react-hook-form';
 
 import { locationUtil, SelectableValue } from '@grafana/data';
-import { config, getMiscSrv, locationService, reportInteraction } from '@grafana/runtime';
+import { config, getAddToDashboardSrv, getMiscSrv, locationService, reportInteraction } from '@grafana/runtime';
 import { Alert, Button, Field, InputControl, Modal, RadioButtonGroup } from '@grafana/ui';
 import { DashboardPicker } from 'app/core/components/Select/DashboardPicker';
-import { removeDashboardToFetchFromLocalStorage } from 'app/features/dashboard/state/initDashboard';
 import { useExploreSelector } from 'app/features/explore/state/store';
 
 import { getExploreItemSelector } from '../../state/selectors';
@@ -135,7 +134,7 @@ export function AddToDashboardForm(props: Props): ReactElement {
         error: GenericError.NAVIGATION,
         message: 'Could not navigate to the selected dashboard. Please try again.',
       });
-      removeDashboardToFetchFromLocalStorage();
+      getAddToDashboardSrv().removeDashboardFromLocalStorage();
       return;
     }
     onClose();

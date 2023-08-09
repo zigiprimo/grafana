@@ -37,6 +37,7 @@ import {
   setCorrelationsSrv,
   setQueryHistorySrv,
   setMiscSrv,
+  setAddToDashboardSrv,
   type GetPluginExtensions,
 } from '@grafana/runtime';
 import { setPanelDataErrorView } from '@grafana/runtime/src/components/PanelDataErrorView';
@@ -73,6 +74,7 @@ import { KeybindingSrv } from './core/services/keybindingSrv';
 import { startMeasure, stopMeasure } from './core/utils/metrics';
 import { initDevFeatures } from './dev';
 import { correlationsService } from './features/correlations/service';
+import { addToDashboardService } from './features/dashboard/services/AddToDashboardService';
 import { getTimeSrv } from './features/dashboard/services/TimeSrv';
 import { initGrafanaLive } from './features/live';
 import { PanelDataErrorView } from './features/panel/components/PanelDataErrorView';
@@ -139,6 +141,7 @@ export class GrafanaApp {
       setCorrelationsSrv(correlationsService);
       setQueryHistorySrv(queryHistoryService);
       setMiscSrv(new MiscService(contextSrv));
+      setAddToDashboardSrv(addToDashboardService);
       initGrafanaLive();
 
       // Expose the app-wide eventbus

@@ -1,3 +1,4 @@
+export * from './addToDashboardSrv';
 export * from './backendSrv';
 export * from './correlationsSrv';
 export * from './historySrv';

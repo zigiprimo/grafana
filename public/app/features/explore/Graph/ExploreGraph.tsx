@@ -27,20 +27,11 @@ import {
   SortOrder,
   GraphThresholdsStyleConfig,
 } from '@grafana/schema';
-import {
-  Button,
-  Icon,
-  PanelContext,
-  PanelContextProvider,
-  SeriesVisibilityChangeMode,
-  useStyles2,
-  useTheme2,
-} from '@grafana/ui';
+import { Button, Icon, PanelContext, PanelContextProvider, useStyles2, useTheme2 } from '@grafana/ui';
 import { GraphFieldConfig } from 'app/plugins/panel/graph/types';
 import { defaultGraphConfig, getGraphFieldConfig } from 'app/plugins/panel/timeseries/config';
 import { Options as TimeSeriesOptions } from 'app/plugins/panel/timeseries/panelcfg.gen';
 
-import { seriesVisibilityConfigFactory } from '../../dashboard/dashgrid/SeriesVisibilityConfigFactory';
 import { useExploreDataLinkPostProcessor } from '../hooks/useExploreDataLinkPostProcessor';
 import { ExploreGraphStyle } from '../types';
 
@@ -109,7 +100,7 @@ export function ExploreGraph({
     []
   );
 
-  const [fieldConfig, setFieldConfig] = useState<FieldConfigSource<GraphFieldConfig>>({
+  const [fieldConfig, _] = useState<FieldConfigSource<GraphFieldConfig>>({
     defaults: {
       min: anchorToZero ? 0 : undefined,
       max: yAxisMaximum || undefined,
@@ -177,9 +168,9 @@ export function ExploreGraph({
     eventsScope: 'explore',
     eventBus,
     sync: () => DashboardCursorSync.Crosshair,
-    onToggleSeriesVisibility(label: string, mode: SeriesVisibilityChangeMode) {
-      setFieldConfig(seriesVisibilityConfigFactory(label, mode, fieldConfig, data));
-    },
+    // onToggleSeriesVisibility(label: string, mode: SeriesVisibilityChangeMode) {
+    //   setFieldConfig(seriesVisibilityConfigFactory(label, mode, fieldConfig, data));
+    // },
     dataLinkPostProcessor,
   };
 

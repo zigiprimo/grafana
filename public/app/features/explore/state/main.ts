@@ -1,9 +1,14 @@
 import { createAction } from '@reduxjs/toolkit';
 import { AnyAction } from 'redux';
 
-import { SplitOpenOptions, RichHistorySearchFilters, RichHistorySettings, RichHistoryResults } from '@grafana/data';
+import {
+  SplitOpenOptions,
+  RichHistorySearchFilters,
+  RichHistorySettings,
+  RichHistoryResults,
+  PanelModel,
+} from '@grafana/data';
 import { DataSourceSrv, generateExploreId, GetExploreUrlArguments, locationService } from '@grafana/runtime';
-import { PanelModel } from 'app/features/dashboard/state';
 import { ExploreItemState, ExploreState } from 'app/features/explore/types';
 
 import { TimeSrv } from '../../dashboard/services/TimeSrv';
