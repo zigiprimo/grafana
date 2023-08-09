@@ -11,14 +11,11 @@ import {
   SplitOpen,
   TimeRange,
   transformDataFrame,
-  ValueLinkConfig,
 } from '@grafana/data';
 import { config } from '@grafana/runtime';
 import { Table } from '@grafana/ui';
 import { separateVisibleFields } from 'app/features/logs/components/logParser';
 import { parseLogsFrame } from 'app/features/logs/logsFrame';
-
-import { getFieldLinksForExplore } from '../utils/links';
 
 interface Props {
   logsFrames?: DataFrame[];
@@ -38,7 +35,7 @@ const getTableHeight = memoizeOne((dataFrames: DataFrame[] | undefined) => {
 });
 
 export const LogsTable: React.FunctionComponent<Props> = (props) => {
-  const { timeZone, splitOpen, range, logsSortOrder, width, logsFrames } = props;
+  const { timeZone, logsSortOrder, width, logsFrames } = props;
 
   const [tableFrame, setTableFrame] = useState<DataFrame | undefined>(undefined);
 
@@ -60,28 +57,9 @@ export const LogsTable: React.FunctionComponent<Props> = (props) => {
           overrides: [],
         },
       });
-      // `getLinks` and `applyFieldOverrides` are taken from TableContainer.tsx
-      for (const field of frameWithOverrides.fields) {
-        field.getLinks = (config: ValueLinkConfig) => {
-          return getFieldLinksForExplore({
-            field,
-            rowIndex: config.valueRowIndex!,
-            splitOpenFn: splitOpen,
-            range: range,
-            dataFrame: sortedFrame!,
-          });
-        };
-        field.config = {
-          custom: {
-            filterable: true,
-            inspect: true,
-          },
-        };
-      }
-
       return frameWithOverrides;
     },
-    [logsSortOrder, range, splitOpen, timeZone]
+    [logsSortOrder, timeZone]
   );
 
   useEffect(() => {

@@ -17,11 +17,9 @@ import {
 } from '@grafana/data';
 import { config, reportInteraction } from '@grafana/runtime';
 import { DataQuery, LoadingState, TimeZone } from '@grafana/schema';
-import { Icon, Button, Modal, useTheme2 } from '@grafana/ui';
+import { Icon, Button, Modal, useTheme2, useExplorationPaneContext } from '@grafana/ui';
 import store from 'app/core/store';
 import { SETTINGS_KEYS } from 'app/features/explore/Logs/utils/logs';
-import { splitOpen } from 'app/features/explore/state/main';
-import { useExploreDispatch } from 'app/features/explore/state/store';
 
 import { dataFrameToLogsModel } from '../../logsModel';
 import { sortLogRows } from '../../utils';
@@ -213,7 +211,6 @@ export const LogRowContextModal: React.FunctionComponent<LogRowContextModalProps
 
   const loadCountRef = useRef<LoadCounter>({ above: 0, below: 0 });
 
-  const dispatch = useExploreDispatch();
   const theme = useTheme2();
   const styles = getStyles(theme);
 
@@ -483,6 +480,8 @@ export const LogRowContextModal: React.FunctionComponent<LogRowContextModalProps
   const loadingStateAbove = context.above.loadingState;
   const loadingStateBelow = context.below.loadingState;
 
+  const explorationPane = useExplorationPaneContext();
+
   return (
     <Modal
       isOpen={open}
@@ -615,18 +614,16 @@ export const LogRowContextModal: React.FunctionComponent<LogRowContextModalProps
                 rowId = row.uid.replace(row.dataFrame.refId, contextQuery.refId);
               }
 
-              dispatch(
-                splitOpen({
-                  queries: [contextQuery],
-                  range: getFullTimeRange(),
-                  datasourceUid: contextQuery.datasource!.uid!,
-                  panelsState: {
-                    logs: {
-                      id: rowId,
-                    },
+              explorationPane?.actions?.onSplitOpen({
+                queries: [contextQuery],
+                range: getFullTimeRange(),
+                datasourceUid: contextQuery.datasource!.uid!,
+                panelsState: {
+                  logs: {
+                    id: rowId,
                   },
-                })
-              );
+                },
+              });
               onClose();
               reportInteraction('grafana_explore_logs_log_context_open_split_view_clicked', {
                 datasourceType: row.datasourceType,

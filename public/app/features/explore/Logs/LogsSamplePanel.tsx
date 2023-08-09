@@ -18,8 +18,8 @@ import store from 'app/core/store';
 
 import { LogRows } from '../../logs/components/LogRows';
 import { dataFrameToLogsModel } from '../../logs/logsModel';
-import { SupplementaryResultError } from '../SupplementaryResultError';
 
+import { SupplementaryResultError } from './SupplementaryResultError';
 import { SETTINGS_KEYS } from './utils/logs';
 
 type Props = {

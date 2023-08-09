@@ -27,8 +27,6 @@ import {
   EventBus,
   LogRowContextOptions,
   ExplorePanelsState,
-  serializeStateToUrlParam,
-  urlUtil,
   TimeRange,
 } from '@grafana/data';
 import { config, reportInteraction } from '@grafana/runtime';
@@ -44,14 +42,10 @@ import {
   Collapse,
 } from '@grafana/ui';
 import store from 'app/core/store';
-import { createAndCopyShortLink } from 'app/core/utils/shortLinks';
 
 import { LogRows } from '../../logs/components/LogRows';
 import { LogRowContextModal } from '../../logs/components/log-context/LogRowContextModal';
 import { dedupLogRows, filterLogLevels } from '../../logs/logsModel';
-import { getUrlStateFromPaneState } from '../hooks/useStateSync';
-import { changePanelState } from '../state/explorePane';
-import { getExploreState, getExploreStore } from '../state/store';
 
 import { LogsMetaRow } from './LogsMetaRow';
 import LogsNavigation from './LogsNavigation';
@@ -180,14 +174,14 @@ class UnthemedLogs extends PureComponent<Props, State> {
 
   componentDidUpdate(prevProps: Readonly<Props>): void {
     if (this.props.loading && !prevProps.loading && this.props.panelState?.logs?.id) {
-      // loading stopped, so we need to remove any permalinked log lines
-      delete this.props.panelState.logs.id;
-      getExploreStore().dispatch(
-        // @ts-ignore
-        changePanelState(this.props.exploreId, 'logs', {
-          ...this.props.panelState,
-        })
-      );
+      // // loading stopped, so we need to remove any permalinked log lines
+      // delete this.props.panelState.logs.id;
+      // getExploreStore().dispatch(
+      //   // @ts-ignore
+      //   changePanelState(this.props.exploreId, 'logs', {
+      //     ...this.props.panelState,
+      //   })
+      // );
     }
   }
 
@@ -375,34 +369,34 @@ class UnthemedLogs extends PureComponent<Props, State> {
     };
   };
 
-  onPermalinkClick = async (row: LogRowModel) => {
-    // this is an extra check, to be sure that we are not
-    // creating permalinks for logs without an id-field.
-    // normally it should never happen, because we do not
-    // display the permalink button in such cases.
-    if (row.rowId === undefined) {
-      return;
-    }
-
-    // get explore state, add log-row-id and make timerange absolute
-    const urlState = getUrlStateFromPaneState(getExploreState().panes[this.props.exploreId]!);
-    urlState.panelsState = { ...this.props.panelState, logs: { id: row.uid } };
-    urlState.range = {
-      from: new Date(this.props.absoluteRange.from).toISOString(),
-      to: new Date(this.props.absoluteRange.to).toISOString(),
-    };
-
-    // append changed urlState to baseUrl
-    const serializedState = serializeStateToUrlParam(urlState);
-    const baseUrl = /.*(?=\/explore)/.exec(`${window.location.href}`)![0];
-    const url = urlUtil.renderUrl(`${baseUrl}/explore`, { left: serializedState });
-    await createAndCopyShortLink(url);
-
-    reportInteraction('grafana_explore_logs_permalink_clicked', {
-      datasourceType: row.datasourceType ?? 'unknown',
-      logRowUid: row.uid,
-      logRowLevel: row.logLevel,
-    });
+  onPermalinkClick = async (_: LogRowModel) => {
+    // // this is an extra check, to be sure that we are not
+    // // creating permalinks for logs without an id-field.
+    // // normally it should never happen, because we do not
+    // // display the permalink button in such cases.
+    // if (row.rowId === undefined) {
+    //   return;
+    // }
+    //
+    // // get explore state, add log-row-id and make timerange absolute
+    // const urlState = getUrlStateFromPaneState(getExploreState().panes[this.props.exploreId]!);
+    // urlState.panelsState = { ...this.props.panelState, logs: { id: row.uid } };
+    // urlState.range = {
+    //   from: new Date(this.props.absoluteRange.from).toISOString(),
+    //   to: new Date(this.props.absoluteRange.to).toISOString(),
+    // };
+    //
+    // // append changed urlState to baseUrl
+    // const serializedState = serializeStateToUrlParam(urlState);
+    // const baseUrl = /.*(?=\/explore)/.exec(`${window.location.href}`)![0];
+    // const url = urlUtil.renderUrl(`${baseUrl}/explore`, { left: serializedState });
+    // await createAndCopyShortLink(url);
+    //
+    // reportInteraction('grafana_explore_logs_permalink_clicked', {
+    //   datasourceType: row.datasourceType ?? 'unknown',
+    //   logRowUid: row.uid,
+    //   logRowLevel: row.logLevel,
+    // });
   };
 
   scrollIntoView = (element: HTMLElement) => {

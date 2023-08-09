@@ -11,16 +11,20 @@ import {
   standardTransformers,
   preProcessPanelData,
   CorrelationData,
+  applyFieldOverrides,
 } from '@grafana/data';
-import { config } from '@grafana/runtime';
+import { config, getTemplateSrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 
 import { attachCorrelationsToDataFrames } from '../../correlations/utils';
 import { dataFrameToLogsModel } from '../../logs/logsModel';
 import { sortLogsResult } from '../../logs/utils';
 import { hasPanelPlugin } from '../../plugins/importPanelPlugin';
+import { getExploreService } from '../state/service';
 import { ExplorePanelData } from '../types';
 import { refreshIntervalToSortOrder } from '../utils';
+
+import { exploreDataLinkPostProcessorFactory } from './links';
 
 /**
  * When processing response first we try to determine what kind of dataframes we got as one query can return multiple
@@ -37,7 +41,29 @@ export const decorateWithFrameTypeMetadata = (data: PanelData): ExplorePanelData
   const flameGraphFrames: DataFrame[] = [];
   const customFrames: DataFrame[] = [];
 
+  const dataLinkPostProcessor = exploreDataLinkPostProcessorFactory(
+    getExploreService().onSplitOpen.bind(getExploreService()),
+    data.timeRange
+  );
+
+  data.series = applyFieldOverrides({
+    data: data.series,
+    theme: config.theme2,
+    replaceVariables: getTemplateSrv().replace.bind(getTemplateSrv()),
+    fieldConfig: {
+      defaults: {},
+      overrides: [],
+    },
+    dataLinkPostProcessor,
+  });
+
   for (const frame of data.series) {
+    switch (frame.meta?.preferredVisualisationType) {
+      case 'flamegraph':
+        frame.meta.preferredVisualisationPluginId = 'flamegraph';
+        break;
+    }
+
     if (canFindPanel(frame)) {
       customFrames.push(frame);
       continue;

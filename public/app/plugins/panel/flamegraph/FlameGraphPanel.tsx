@@ -13,5 +13,10 @@ export const FlameGraphPanel = (props: PanelProps) => {
       <PanelDataErrorView panelId={props.id} data={props.data} message={getMessageCheckFieldsResult(wrongFields)} />
     );
   }
-  return <FlameGraphContainer data={props.data.series[0]} app={CoreApp.Unknown} />;
+  return (
+    <div>
+      CORE
+      <FlameGraphContainer data={props.data.series[0]} app={CoreApp.Unknown} />
+    </div>
+  );
 };

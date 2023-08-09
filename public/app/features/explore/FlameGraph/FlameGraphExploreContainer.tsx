@@ -14,6 +14,7 @@ export const FlameGraphExploreContainer = (props: Props) => {
 
   return (
     <div className={styles.container}>
+      EXPLORE
       <FlameGraphContainer data={props.dataFrames[0]} app={CoreApp.Explore} />
     </div>
   );

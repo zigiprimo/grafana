@@ -10,7 +10,8 @@ import { downloadLogsModelAsTxt } from '../../inspector/utils/download';
 import { LogLabels } from '../../logs/components/LogLabels';
 import { MAX_CHARACTERS } from '../../logs/components/LogRowMessage';
 import { logRowsToReadableJson } from '../../logs/utils';
-import { MetaInfoText, MetaItemProps } from '../MetaInfoText';
+
+import { MetaInfoText, MetaItemProps } from './MetaInfoText';
 
 const getStyles = () => ({
   metaContainer: css`

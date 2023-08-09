@@ -9,7 +9,19 @@ import { LogMessageAnsi } from '../../logs/components/LogMessageAnsi';
 import { getLogRowStyles } from '../../logs/components/getLogRowStyles';
 import { sortLogRows } from '../../logs/utils';
 import { ElapsedTime } from '../ElapsedTime';
-import { filterLogRowsByIndex } from '../state/utils';
+
+export const filterLogRowsByIndex = (clearedAtIndex: number, logRows?: LogRowModel[]): LogRowModel[] => {
+  if (!logRows) {
+    return [];
+  }
+
+  if (clearedAtIndex) {
+    const filteredRows = logRows.slice(clearedAtIndex + 1);
+    return filteredRows;
+  }
+
+  return logRows;
+};
 
 const getStyles = (theme: GrafanaTheme2) => ({
   logsRowsLive: css`

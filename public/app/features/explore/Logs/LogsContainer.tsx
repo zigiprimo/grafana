@@ -1,16 +1,11 @@
 import React, { PureComponent } from 'react';
-import { connect, ConnectedProps } from 'react-redux';
 
 import {
   AbsoluteTimeRange,
   Field,
   hasLogsContextSupport,
   hasLogsContextUiSupport,
-  LoadingState,
   LogRowModel,
-  RawTimeRange,
-  EventBus,
-  SplitOpen,
   DataFrame,
   SupplementaryQueryType,
   DataQueryResponse,
@@ -18,46 +13,25 @@ import {
   DataSourceWithLogsContextSupport,
   DataSourceApi,
   getTimeZone,
+  EventBusSrv,
 } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
-import { Collapse } from '@grafana/ui';
-import { ExploreState, ExploreItemState } from 'app/features/explore/types';
+import { Collapse, ExplorationPane, ExplorationPaneContext } from '@grafana/ui';
 
-import {
-  addResultsToCache,
-  clearCache,
-  loadSupplementaryQueryData,
-  selectIsWaitingForData,
-  setSupplementaryQueryEnabled,
-} from '../state/query';
-import { updateTimeRange } from '../state/time';
-import { LiveTailControls } from '../useLiveTailControls';
-import { getFieldLinksForExplore } from '../utils/links';
-
-import { LiveLogsWithTheme } from './LiveLogs';
 import { Logs } from './Logs';
 import { LogsCrossFadeTransition } from './utils/LogsCrossFadeTransition';
 
-interface LogsContainerProps extends PropsFromRedux {
+interface LogsContainerProps {
   width: number;
-  exploreId: string;
-  scanRange?: RawTimeRange;
-  syncedTimes: boolean;
-  loadingState: LoadingState;
-  onClickFilterLabel: (key: string, value: string) => void;
-  onClickFilterOutLabel: (key: string, value: string) => void;
-  onStartScanning: () => void;
-  onStopScanning: () => void;
-  eventBus: EventBus;
-  splitOpenFn: SplitOpen;
-  scrollElement?: HTMLDivElement;
-  isFilterLabelActive: (key: string, value: string) => Promise<boolean>;
 }
 
 class LogsContainer extends PureComponent<LogsContainerProps> {
+  declare context: React.ContextType<typeof ExplorationPaneContext>;
+  static contextType = ExplorationPaneContext;
+
   onChangeTime = (absoluteRange: AbsoluteTimeRange) => {
-    const { exploreId, updateTimeRange } = this.props;
-    updateTimeRange({ exploreId, absoluteRange });
+    const { exploreId, actions } = this.getContext();
+    actions.updateTimeRange({ exploreId, absoluteRange });
   };
 
   private getQuery(
@@ -77,7 +51,7 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
     origRow: LogRowModel,
     options: LogRowContextOptions
   ): Promise<DataQueryResponse | []> => {
-    const { datasourceInstance, logsQueries } = this.props;
+    const { datasourceInstance, logsQueries } = this.getContext();
 
     if (hasLogsContextSupport(datasourceInstance)) {
       const query = this.getQuery(logsQueries, origRow, datasourceInstance);
@@ -88,7 +62,7 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
   };
 
   getLogRowContextQuery = async (row: LogRowModel, options?: LogRowContextOptions): Promise<DataQuery | null> => {
-    const { datasourceInstance, logsQueries } = this.props;
+    const { datasourceInstance, logsQueries } = this.getContext();
 
     if (hasLogsContextSupport(datasourceInstance) && datasourceInstance.getLogRowContextQuery) {
       const query = this.getQuery(logsQueries, row, datasourceInstance);
@@ -99,7 +73,7 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
   };
 
   getLogRowContextUi = (row: LogRowModel, runContextQuery?: () => void): React.ReactNode => {
-    const { datasourceInstance, logsQueries } = this.props;
+    const { datasourceInstance, logsQueries } = this.getContext();
 
     if (hasLogsContextUiSupport(datasourceInstance) && datasourceInstance.getLogRowContextUi) {
       const query = this.getQuery(logsQueries, row, datasourceInstance);
@@ -110,7 +84,7 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
   };
 
   showContextToggle = (row?: LogRowModel): boolean => {
-    const { datasourceInstance } = this.props;
+    const { datasourceInstance } = this.getContext();
 
     if (hasLogsContextSupport(datasourceInstance)) {
       return datasourceInstance.showContextToggle(row);
@@ -120,38 +94,55 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
   };
 
   getFieldLinks = (field: Field, rowIndex: number, dataFrame: DataFrame) => {
-    const { splitOpenFn, range } = this.props;
-    return getFieldLinksForExplore({ field, rowIndex, splitOpenFn, range, dataFrame });
+    // const { range, actions } = this.getContext();
+    return field.getLinks
+      ? field.getLinks({
+          valueRowIndex: rowIndex,
+        })
+      : [];
+    // @ts-ignore
+    // return getFieldLinksForExplore({ field, rowIndex, onSplitOpenFn: actions.onSplitOpen.bind(actions), range, dataFrame });
   };
+
+  private getContext() {
+    // @ts-ignore
+    const context: ExplorationPane = this.context;
+    return {
+      ...context,
+      logRows: context.logsResult?.rows,
+      logsMeta: context.logsResult?.meta,
+      logsSeries: context.logsResult?.series,
+      logsQueries: context.logsResult?.queries,
+      visibleRange: context.logsResult?.visibleRange,
+      logsFrames: context.queryResponse.logsFrames,
+      logsVolume: context.supplementaryQueries[SupplementaryQueryType.LogsVolume],
+      timeZone: getTimeZone(),
+    };
+  }
 
   render() {
     const {
+      exploreId,
       loading,
-      loadingState,
       logRows,
       logsMeta,
       logsSeries,
       logsQueries,
-      loadSupplementaryQueryData,
-      setSupplementaryQueryEnabled,
-      onClickFilterLabel,
-      onClickFilterOutLabel,
-      onStartScanning,
-      onStopScanning,
       absoluteRange,
       timeZone,
       visibleRange,
       scanning,
       range,
-      width,
-      splitOpenFn,
-      isLive,
-      exploreId,
-      addResultsToCache,
-      clearCache,
       logsVolume,
-      scrollElement,
-    } = this.props;
+      isLive,
+      loadingState,
+    } = this.getContext();
+
+    const actions = this.getContext().actions;
+
+    const { width } = this.props;
+
+    const scrollElement = undefined;
 
     if (!logRows) {
       return null;
@@ -161,45 +152,45 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
       <>
         <LogsCrossFadeTransition visible={isLive}>
           <Collapse label="Logs" loading={false} isOpen>
-            <LiveTailControls exploreId={exploreId}>
-              {(controls) => (
-                <LiveLogsWithTheme
-                  logRows={logRows}
-                  timeZone={timeZone}
-                  stopLive={controls.stop}
-                  isPaused={this.props.isPaused}
-                  onPause={controls.pause}
-                  onResume={controls.resume}
-                  onClear={controls.clear}
-                  clearedAtIndex={this.props.clearedAtIndex}
-                />
-              )}
-            </LiveTailControls>
+            {/*<LiveTailControls exploreId={exploreId}>*/}
+            {/*  {(controls) => (*/}
+            {/*    <LiveLogsWithTheme*/}
+            {/*      logRows={logRows}*/}
+            {/*      timeZone={timeZone}*/}
+            {/*      stopLive={controls.stop}*/}
+            {/*      isPaused={this.getContext().isPaused}*/}
+            {/*      onPause={controls.pause}*/}
+            {/*      onResume={controls.resume}*/}
+            {/*      onClear={controls.clear}*/}
+            {/*      clearedAtIndex={this.getContext().clearedAtIndex}*/}
+            {/*    />*/}
+            {/*  )}*/}
+            {/*</LiveTailControls>*/}
           </Collapse>
         </LogsCrossFadeTransition>
         <LogsCrossFadeTransition visible={!isLive}>
           <Logs
             exploreId={exploreId}
-            datasourceType={this.props.datasourceInstance?.type}
+            datasourceType={this.getContext().datasourceInstance?.type}
             logRows={logRows}
             logsMeta={logsMeta}
             logsSeries={logsSeries}
             logsVolumeEnabled={logsVolume.enabled}
             onSetLogsVolumeEnabled={(enabled) =>
-              setSupplementaryQueryEnabled(exploreId, enabled, SupplementaryQueryType.LogsVolume)
+              actions.setSupplementaryQueryEnabled(exploreId, enabled, SupplementaryQueryType.LogsVolume)
             }
             logsVolumeData={logsVolume.data}
             logsQueries={logsQueries}
             width={width}
-            splitOpen={splitOpenFn}
+            splitOpen={actions.onSplitOpen.bind(actions)}
             loading={loading}
             loadingState={loadingState}
-            loadLogsVolumeData={() => loadSupplementaryQueryData(exploreId, SupplementaryQueryType.LogsVolume)}
+            loadLogsVolumeData={() => actions.loadSupplementaryQueryData(exploreId, SupplementaryQueryType.LogsVolume)}
             onChangeTime={this.onChangeTime}
-            onClickFilterLabel={onClickFilterLabel}
-            onClickFilterOutLabel={onClickFilterOutLabel}
-            onStartScanning={onStartScanning}
-            onStopScanning={onStopScanning}
+            onClickFilterLabel={actions.onClickFilterLabel.bind(actions, exploreId)}
+            onClickFilterOutLabel={actions.onClickFilterOutLabel.bind(actions, exploreId)}
+            onStartScanning={actions.onStartScanning.bind(actions, exploreId)}
+            onStopScanning={actions.onStopScanning.bind(actions, exploreId)}
             absoluteRange={absoluteRange}
             visibleRange={visibleRange}
             timeZone={timeZone}
@@ -210,13 +201,13 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
             getRowContextQuery={this.getLogRowContextQuery}
             getLogRowContextUi={this.getLogRowContextUi}
             getFieldLinks={this.getFieldLinks}
-            addResultsToCache={() => addResultsToCache(exploreId)}
-            clearCache={() => clearCache(exploreId)}
-            eventBus={this.props.eventBus}
-            panelState={this.props.panelState}
-            logsFrames={this.props.logsFrames}
+            addResultsToCache={() => actions.addResultsToCache(exploreId)}
+            clearCache={() => actions.clearCache(exploreId)}
+            eventBus={new EventBusSrv()}
+            panelState={this.getContext().panelsState}
+            logsFrames={this.getContext().logsFrames}
             scrollElement={scrollElement}
-            isFilterLabelActive={this.props.isFilterLabelActive}
+            isFilterLabelActive={actions.isFilterLabelActive.bind(actions, exploreId)}
             range={range}
           />
         </LogsCrossFadeTransition>
@@ -225,55 +216,4 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
   }
 }
 
-function mapStateToProps(state: ExploreState, { exploreId }: { exploreId: string }) {
-  const explore = state;
-  const item: ExploreItemState = explore.panes[exploreId]!;
-  const {
-    logsResult,
-    scanning,
-    datasourceInstance,
-    isLive,
-    isPaused,
-    clearedAtIndex,
-    range,
-    absoluteRange,
-    supplementaryQueries,
-  } = item;
-  const loading = selectIsWaitingForData(exploreId)(state);
-  const panelState = item.panelsState;
-  const timeZone = getTimeZone();
-  const logsVolume = supplementaryQueries[SupplementaryQueryType.LogsVolume];
-
-  return {
-    loading,
-    logRows: logsResult?.rows,
-    logsMeta: logsResult?.meta,
-    logsSeries: logsResult?.series,
-    logsQueries: logsResult?.queries,
-    visibleRange: logsResult?.visibleRange,
-    scanning,
-    timeZone,
-    datasourceInstance,
-    isLive,
-    isPaused,
-    clearedAtIndex,
-    range,
-    absoluteRange,
-    logsVolume,
-    panelState,
-    logsFrames: item.queryResponse.logsFrames,
-  };
-}
-
-const mapDispatchToProps = {
-  updateTimeRange,
-  addResultsToCache,
-  clearCache,
-  loadSupplementaryQueryData,
-  setSupplementaryQueryEnabled,
-};
-
-const connector = connect(mapStateToProps, mapDispatchToProps);
-type PropsFromRedux = ConnectedProps<typeof connector>;
-
-export default connector(LogsContainer);
+export default LogsContainer;

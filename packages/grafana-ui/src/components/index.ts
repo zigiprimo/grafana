@@ -138,6 +138,7 @@ export {
   PanelContextRoot,
   usePanelContext,
 } from './PanelChrome';
+export * from './Exploration';
 export {
   VizLayout,
   type VizLayoutComponentType,

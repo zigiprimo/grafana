@@ -392,24 +392,9 @@ export class Explore extends React.PureComponent<Props, ExploreComponentState> {
   }
 
   renderLogsPanel(width: number) {
-    const { exploreId, syncedTimes, theme, queryResponse } = this.props;
-    const spacing = parseInt(theme.spacing(2).slice(0, -2), 10);
-    return (
-      <LogsContainer
-        exploreId={exploreId}
-        loadingState={queryResponse.state}
-        syncedTimes={syncedTimes}
-        width={width - spacing}
-        onClickFilterLabel={this.onClickFilterLabel}
-        onClickFilterOutLabel={this.onClickFilterOutLabel}
-        onStartScanning={this.onStartScanning}
-        onStopScanning={this.onStopScanning}
-        eventBus={this.logsEventBus}
-        splitOpenFn={this.onSplitOpen('logs')}
-        scrollElement={this.scrollElement}
-        isFilterLabelActive={this.isFilterLabelActive}
-      />
-    );
+    // const { exploreId, syncedTimes, theme, queryResponse } = this.props;
+    // const spacing = parseInt(theme.spacing(2).slice(0, -2), 10);
+    return <LogsContainer width={width} />;
   }
 
   renderLogsSamplePanel() {

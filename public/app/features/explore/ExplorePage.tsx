@@ -2,7 +2,13 @@ import { css } from '@emotion/css';
 import React, { useEffect } from 'react';
 import { Provider } from 'react-redux';
 
-import { ErrorBoundaryAlert } from '@grafana/ui';
+import {
+  ErrorBoundaryAlert,
+  Exploration,
+  ExplorationContextProvider,
+  ExplorationPaneContextProvider,
+  useExplorationContext,
+} from '@grafana/ui';
 import { SplitPaneWrapper } from 'app/core/components/SplitPaneWrapper/SplitPaneWrapper';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 import { useNavModel } from 'app/core/hooks/useNavModel';
@@ -15,9 +21,9 @@ import { useExplorePageTitle } from './hooks/useExplorePageTitle';
 import { useSplitSizeUpdater } from './hooks/useSplitSizeUpdater';
 import { useStateSync } from './hooks/useStateSync';
 import { useTimeSrvFix } from './hooks/useTimeSrvFix';
-import { exploreReducer, initialExploreState } from './state/main';
 import { isSplit, selectPanesEntries } from './state/selectors';
-import { configureExploreStore, useExploreSelector } from './state/store';
+import { getExploreService, setupExploreRedux } from './state/service';
+import { getExploreStore, useExploreSelector } from './state/store';
 
 const MIN_PANE_WIDTH = 200;
 
@@ -31,7 +37,8 @@ const styles = {
   `,
 };
 
-const store = configureExploreStore(exploreReducer, initialExploreState);
+setupExploreRedux();
+const store = getExploreStore();
 
 export default function ExplorePage(props: GrafanaRouteComponentProps<{}, ExploreQueryParams>) {
   const navModel = useNavModel('explore');
@@ -43,11 +50,15 @@ export default function ExplorePage(props: GrafanaRouteComponentProps<{}, Explor
     chrome.update({ sectionNav: navModel });
   }, [chrome, navModel]);
 
+  const exploration = getExploreService();
+
   return (
     <div className={styles.pageScrollbarWrapper}>
-      <Provider store={store}>
-        <ExplorePageContent {...props} />
-      </Provider>
+      <ExplorationContextProvider value={exploration}>
+        <Provider store={store}>
+          <ExplorePageContent {...props} />
+        </Provider>
+      </ExplorationContextProvider>
     </div>
   );
 }
@@ -67,6 +78,9 @@ function ExplorePageContent(props: GrafanaRouteComponentProps<{}, ExploreQueryPa
   const panes = useExploreSelector(selectPanesEntries);
   const hasSplit = useExploreSelector(isSplit);
 
+  // @ts-ignore
+  const exploration: Exploration = useExplorationContext();
+
   useEffect(() => {
     keybindings.setupTimeRangeBindings(false);
   }, [keybindings]);
@@ -85,10 +99,13 @@ function ExplorePageContent(props: GrafanaRouteComponentProps<{}, ExploreQueryPa
         paneStyle={{ overflow: 'auto', display: 'flex', flexDirection: 'column' }}
         onDragFinished={(size) => size && updateSplitSize(size)}
       >
-        {panes.map(([exploreId]) => {
+        {panes.map(([exploreId], index) => {
+          const explorationPane = exploration.panes[index];
           return (
             <ErrorBoundaryAlert key={exploreId} style="page">
-              <ExplorePaneContainer exploreId={exploreId} />
+              <ExplorationPaneContextProvider value={explorationPane}>
+                <ExplorePaneContainer exploreId={exploreId} />
+              </ExplorationPaneContextProvider>
             </ErrorBoundaryAlert>
           );
         })}
