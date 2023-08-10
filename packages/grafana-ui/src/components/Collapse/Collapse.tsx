@@ -55,7 +55,7 @@ const getStyles = (theme: GrafanaTheme2) => ({
       animation: loader 2s cubic-bezier(0.17, 0.67, 0.83, 0.67) 500ms;
       animation-iteration-count: 100;
       left: -25%;
-      background: ${theme.colors.primary.main};
+      // background: ${theme.colors.primary.main};
     }
     @keyframes loader {
       from {
