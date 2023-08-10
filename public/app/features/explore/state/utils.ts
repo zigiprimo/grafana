@@ -17,13 +17,14 @@ import {
   isDateTime,
   toUtc,
 } from '@grafana/data';
+import { getDataSourceSrv } from '@grafana/runtime';
 import { DataQuery, DataSourceRef, TimeZone } from '@grafana/schema';
 import { ExploreItemState, ExplorePanelData } from 'app/features/explore/types';
 
-import store from '../../../core/store';
-import { getDatasourceSrv } from '../../plugins/datasource_srv';
 import { setLastUsedDatasourceUID } from '../utils';
 import { loadSupplementaryQueries } from '../utils/supplementaryQueries';
+
+import store from './localstore';
 
 export const DEFAULT_RANGE = {
   from: 'now-6h',
@@ -96,12 +97,12 @@ export async function loadAndInitDatasource(
   let instance;
   try {
     // let datasource be a ref if we have the info, otherwise a name or uid will do for lookup
-    instance = await getDatasourceSrv().get(datasource);
+    instance = await getDataSourceSrv().get(datasource);
   } catch (error) {
     // Falling back to the default data source in case the provided data source was not found.
     // It may happen if last used data source or the data source provided in the URL has been
     // removed or it is not provisioned anymore.
-    instance = await getDatasourceSrv().get();
+    instance = await getDataSourceSrv().get();
   }
   if (instance.init) {
     try {

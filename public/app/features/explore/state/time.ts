@@ -11,8 +11,7 @@ import {
 import { getMiscSrv, getTemplateSrv } from '@grafana/runtime';
 import { RefreshPicker } from '@grafana/ui';
 import { ExploreThunkResult } from 'app/features/explore/state/store';
-import { getTimeRange, refreshIntervalToSortOrder, stopQueryState } from 'app/features/explore/utils';
-import { sortLogsResult } from 'app/features/logs/utils';
+import { getTimeRange, stopQueryState } from 'app/features/explore/utils';
 
 import { ExploreItemState } from '../types';
 
@@ -143,8 +142,7 @@ export const timeReducer = (state: ExploreItemState, action: AnyAction): Explore
   if (changeRefreshInterval.match(action)) {
     const { refreshInterval } = action.payload;
     const live = RefreshPicker.isLive(refreshInterval);
-    const sortOrder = refreshIntervalToSortOrder(refreshInterval);
-    const logsResult = sortLogsResult(state.logsResult, sortOrder);
+    const logsResult = state.logsResult;
 
     if (RefreshPicker.isLive(state.refreshInterval) && !live) {
       stopQueryState(state.querySubscription);

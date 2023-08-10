@@ -19,10 +19,10 @@ import {
 } from '@grafana/data';
 import { getDataSourceSrv } from '@grafana/runtime';
 import { RefreshPicker } from '@grafana/ui';
-import store from 'app/core/store';
 import { QueryOptions, QueryTransaction } from 'app/features/explore/types';
 
-import { getNextRefIdChar } from '../../core/utils/query';
+import store from './state/localstore';
+import { getNextRefIdChar } from './utils/queries';
 
 export const DEFAULT_UI_STATE = {
   dedupStrategy: LogsDedupStrategy.none,

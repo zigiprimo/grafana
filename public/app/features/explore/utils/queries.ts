@@ -1,5 +1,23 @@
 import { DataQuery } from '@grafana/schema';
-import { getNextRefIdChar } from 'app/core/utils/query';
+
+function getRefId(num: number): string {
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
+  if (num < letters.length) {
+    return letters[num];
+  } else {
+    return getRefId(Math.floor(num / letters.length) - 1) + letters[num % letters.length];
+  }
+}
+
+export const getNextRefIdChar = (queries: DataQuery[]): string => {
+  for (let num = 0; ; num++) {
+    const refId = getRefId(num);
+    if (!queries.some((query) => query.refId === refId)) {
+      return refId;
+    }
+  }
+};
 
 /**
  * Makes sure all the queries have unique (and valid) refIds

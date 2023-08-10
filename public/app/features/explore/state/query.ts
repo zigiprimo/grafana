@@ -22,10 +22,18 @@ import {
   SupplementaryQueryType,
   toLegacyResponseData,
   getTimeZone,
+  AppEvents,
 } from '@grafana/data';
-import { config, getDataSourceSrv, reportInteraction, getCorrelationsSrv } from '@grafana/runtime';
+import {
+  config,
+  getDataSourceSrv,
+  reportInteraction,
+  getCorrelationsSrv,
+  getAppEvents,
+  getRunRequest,
+} from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
-import { getShiftedTimeRange } from 'app/core/utils/timePicker';
+// import { getShiftedTimeRange } from 'app/core/utils/timePicker';
 import {
   createExploreAsyncThunk,
   ExploreThunkDispatch,
@@ -52,9 +60,6 @@ import {
   updateHistory,
 } from 'app/features/explore/utils';
 
-import { notifyApp } from '../../../core/actions';
-import { createErrorNotification } from '../../../core/copy/appNotification';
-import { runRequest } from '../../query/state/runRequest';
 import { decorateData } from '../utils/decorators';
 import {
   getSupplementaryQueryProvider,
@@ -523,6 +528,11 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
       datasource: query.datasource || datasourceInstance?.getRef(),
     }));
 
+    // getAppEvents().publish({
+    //   type: AppEvents.alertSuccess.name,
+    //   payload: ['Hello'],
+    // });
+
     if (datasourceInstance != null) {
       handleHistory(dispatch, getState(), exploreItemState.history, datasourceInstance, queries, exploreId);
     }
@@ -565,6 +575,8 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
         liveStreaming: live,
       };
 
+      const runRequest = getRunRequest();
+
       const timeZone = getTimeZone();
       const transaction = buildQueryTransaction(exploreId, queries, queryOptions, range, scanning, timeZone);
 
@@ -595,9 +607,9 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
           // Keep scanning for results if this was the last scanning transaction
           if (getState().panes[exploreId]!.scanning) {
             if (data.state === LoadingState.Done && data.series.length === 0) {
-              const range = getShiftedTimeRange(-1, getState().panes[exploreId]!.range);
-              dispatch(updateTime({ exploreId, absoluteRange: range }));
-              dispatch(runQueries({ exploreId }));
+              // // const range = getShiftedTimeRange(-1, getState().panes[exploreId]!.range);
+              // dispatch(updateTime({ exploreId, absoluteRange: range }));
+              // dispatch(runQueries({ exploreId }));
             } else {
               // We can stop scanning if we have a result
               dispatch(scanStopAction({ exploreId }));
@@ -605,7 +617,10 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
           }
         },
         error(error) {
-          dispatch(notifyApp(createErrorNotification('Query processing error', error)));
+          getAppEvents().publish({
+            type: AppEvents.alertError.name,
+            payload: ['Query processing error'],
+          });
           dispatch(changeLoadingStateAction({ exploreId, loadingState: LoadingState.Error }));
           console.error(error);
         },
@@ -803,12 +818,12 @@ export function setQueries(exploreId: string, rawQueries: DataQuery[]): ExploreT
 export function scanStart(exploreId: string): ExploreThunkResult<void> {
   return (dispatch, getState) => {
     // Register the scanner
-    dispatch(scanStartAction({ exploreId }));
-    // Scanning must trigger query run, and return the new range
-    const range = getShiftedTimeRange(-1, getState().panes[exploreId]!.range);
-    // Set the new range to be displayed
-    dispatch(updateTime({ exploreId, absoluteRange: range }));
-    dispatch(runQueries({ exploreId }));
+    // dispatch(scanStartAction({ exploreId }));
+    // // Scanning must trigger query run, and return the new range
+    // const range = getShiftedTimeRange(-1, getState().panes[exploreId]!.range);
+    // // Set the new range to be displayed
+    // dispatch(updateTime({ exploreId, absoluteRange: range }));
+    // dispatch(runQueries({ exploreId }));
   };
 }
 
