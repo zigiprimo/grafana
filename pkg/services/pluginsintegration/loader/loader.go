@@ -30,6 +30,6 @@ func (l *Loader) Load(ctx context.Context, src plugins.PluginSource) ([]*plugins
 	return l.loader.Load(ctx, src)
 }
 
-func (l *Loader) Unload(ctx context.Context, pluginID string) error {
-	return l.loader.Unload(ctx, pluginID)
+func (l *Loader) Unload(ctx context.Context, pluginID, version string) error {
+	return l.loader.Unload(ctx, pluginID, version)
 }

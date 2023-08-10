@@ -21,6 +21,10 @@ type ConstructFunc func(ctx context.Context, src plugins.PluginSource, bundles [
 // DecorateFunc is the function used for the Decorate step of the Bootstrap stage.
 type DecorateFunc func(ctx context.Context, p *plugins.Plugin) (*plugins.Plugin, error)
 
+type OnSuccessFunc func(ctx context.Context, ps []*plugins.Plugin)
+
+type OnErrorFunc func(ctx context.Context, bundles []*plugins.FoundBundle, err error)
+
 // Bootstrap implements the Bootstrapper interface.
 //
 // The Bootstrap stage is made up of the following steps (in order):
@@ -33,12 +37,19 @@ type DecorateFunc func(ctx context.Context, p *plugins.Plugin) (*plugins.Plugin,
 type Bootstrap struct {
 	constructStep ConstructFunc
 	decorateSteps []DecorateFunc
-	log           log.Logger
+
+	onSuccessFunc OnSuccessFunc
+	onErrorFunc   OnErrorFunc
+
+	log log.Logger
 }
 
 type Opts struct {
 	ConstructFunc ConstructFunc
 	DecorateFuncs []DecorateFunc
+
+	OnSuccessFunc OnSuccessFunc
+	OnErrorFunc   OnErrorFunc
 }
 
 // New returns a new Bootstrap stage.
@@ -51,9 +62,19 @@ func New(cfg *config.Cfg, opts Opts) *Bootstrap {
 		opts.DecorateFuncs = DefaultDecorateFuncs
 	}
 
+	if opts.OnSuccessFunc == nil {
+		opts.OnSuccessFunc = func(ctx context.Context, ps []*plugins.Plugin) {}
+	}
+
+	if opts.OnErrorFunc == nil {
+		opts.OnErrorFunc = func(ctx context.Context, bundles []*plugins.FoundBundle, err error) {}
+	}
+
 	return &Bootstrap{
 		constructStep: opts.ConstructFunc,
 		decorateSteps: opts.DecorateFuncs,
+		onSuccessFunc: opts.OnSuccessFunc,
+		onErrorFunc:   opts.OnErrorFunc,
 		log:           log.New("plugins.bootstrap"),
 	}
 }
@@ -62,6 +83,7 @@ func New(cfg *config.Cfg, opts Opts) *Bootstrap {
 func (b *Bootstrap) Bootstrap(ctx context.Context, src plugins.PluginSource, found []*plugins.FoundBundle) ([]*plugins.Plugin, error) {
 	ps, err := b.constructStep(ctx, src, found)
 	if err != nil {
+		b.onErrorFunc(ctx, found, err)
 		return nil, err
 	}
 
@@ -69,6 +91,7 @@ func (b *Bootstrap) Bootstrap(ctx context.Context, src plugins.PluginSource, fou
 		return ps, nil
 	}
 
+	var failedStep []*plugins.Plugin
 	bootstrappedPlugins := make([]*plugins.Plugin, 0, len(ps))
 	for _, p := range ps {
 		var ip *plugins.Plugin
@@ -78,6 +101,7 @@ func (b *Bootstrap) Bootstrap(ctx context.Context, src plugins.PluginSource, fou
 			if err != nil {
 				stepFailed = true
 				b.log.Error("Could not decorate plugin", "pluginId", p.ID, "error", err)
+				failedStep = append(failedStep, p)
 				break
 			}
 		}
@@ -86,5 +110,35 @@ func (b *Bootstrap) Bootstrap(ctx context.Context, src plugins.PluginSource, fou
 		}
 	}
 
+	// Remove any plugins associated with a plugin that failed to decorate
+	for i, bootstrapped := range bootstrappedPlugins {
+		for _, failed := range failedStep {
+			if bootstrapped.ID == failed.ID && bootstrapped.Info.Version == failed.Info.Version {
+				b.onErrorFunc(ctx, []*plugins.FoundBundle{reconstructBundle(failed)}, err)
+				bootstrappedPlugins = append(bootstrappedPlugins[:i], bootstrappedPlugins[i+1:]...)
+				break
+			}
+		}
+	}
+
+	b.onSuccessFunc(ctx, bootstrappedPlugins)
 	return bootstrappedPlugins, nil
+}
+
+func reconstructBundle(p *plugins.Plugin) *plugins.FoundBundle {
+	var children []*plugins.FoundPlugin
+	for _, child := range p.Children {
+		children = append(children, &plugins.FoundPlugin{
+			JSONData: child.JSONData,
+			FS:       child.FS,
+		})
+	}
+
+	return &plugins.FoundBundle{
+		Primary: plugins.FoundPlugin{
+			JSONData: p.JSONData,
+			FS:       p.FS,
+		},
+		Children: children,
+	}
 }

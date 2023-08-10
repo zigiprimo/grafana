@@ -28,6 +28,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/oauth"
 	"github.com/grafana/grafana/pkg/plugins/pluginscdn"
 	"github.com/grafana/grafana/pkg/plugins/repo"
+	"github.com/grafana/grafana/pkg/plugins/state"
 	"github.com/grafana/grafana/pkg/services/caching"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/oauthtoken"
@@ -76,6 +77,9 @@ var WireSet = wire.NewSet(
 	wire.Bind(new(termination.Terminator), new(*termination.Terminate)),
 	pipeline.ProvideValidationStage,
 	wire.Bind(new(validation.Validator), new(*validation.Validate)),
+
+	state.ProvideService,
+	wire.Bind(new(state.Manager), new(*state.Service)),
 
 	angularpatternsstore.ProvideService,
 	angulardetectorsprovider.ProvideDynamic,

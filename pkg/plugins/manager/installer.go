@@ -145,7 +145,7 @@ func (m *PluginInstaller) Remove(ctx context.Context, pluginID string) error {
 		return plugins.ErrUninstallCorePlugin
 	}
 
-	if err := m.pluginLoader.Unload(ctx, plugin.ID); err != nil {
+	if err := m.pluginLoader.Unload(ctx, plugin.ID, plugin.Info.Version); err != nil {
 		return err
 	}
 	return nil

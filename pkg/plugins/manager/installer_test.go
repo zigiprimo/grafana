@@ -129,7 +129,7 @@ func TestPluginManager_Add_Remove(t *testing.T) {
 
 			var unloadedPlugins []string
 			inst.pluginLoader = &fakes.FakeLoader{
-				UnloadFunc: func(_ context.Context, id string) error {
+				UnloadFunc: func(_ context.Context, id, _ string) error {
 					unloadedPlugins = append(unloadedPlugins, id)
 					return nil
 				},

@@ -432,7 +432,19 @@ func (hs *HTTPServer) CheckHealth(c *contextmodel.ReqContext) response.Response 
 }
 
 func (hs *HTTPServer) GetPluginErrorsList(c *contextmodel.ReqContext) response.Response {
-	return response.JSON(http.StatusOK, hs.pluginErrorResolver.PluginErrors(c.Req.Context()))
+	pluginErrs := hs.pluginErrorResolver.PluginErrors(c.Req.Context())
+	states := hs.pluginStateManager.GetPluginStates()
+
+	for info, state := range states {
+		if state.IsError() {
+			pluginErrs = append(pluginErrs, &plugins.Error{
+				PluginID:  info.PluginID,
+				ErrorCode: plugins.ErrorCode(state),
+			})
+		}
+	}
+
+	return response.JSON(http.StatusOK, pluginErrs)
 }
 
 func (hs *HTTPServer) InstallPlugin(c *contextmodel.ReqContext) response.Response {

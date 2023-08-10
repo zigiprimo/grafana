@@ -1316,14 +1316,16 @@ func newLoader(t *testing.T, cfg *config.Cfg, reg registry.Service, proc process
 	assets := assetpath.ProvideService(pluginscdn.ProvideService(cfg))
 	lic := fakes.NewFakeLicensingService()
 	angularInspector := angularinspector.NewStaticInspector()
+	stateManager := fakes.NewFakePluginStateManager()
 
-	terminate, err := pipeline.ProvideTerminationStage(cfg, reg, proc)
+	terminate, err := pipeline.ProvideTerminationStage(cfg, reg, proc, stateManager)
 	require.NoError(t, err)
 
-	return ProvideService(pipeline.ProvideDiscoveryStage(cfg, finder.NewLocalFinder(false), reg),
-		pipeline.ProvideBootstrapStage(cfg, signature.DefaultCalculator(cfg), assets),
-		pipeline.ProvideValidationStage(cfg, signature.NewValidator(signature.NewUnsignedAuthorizer(cfg)), angularInspector, sigErrTracker),
-		pipeline.ProvideInitializationStage(cfg, reg, lic, backendFactory, proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry()),
+	return ProvideService(
+		pipeline.ProvideDiscoveryStage(cfg, finder.NewLocalFinder(false), reg, stateManager),
+		pipeline.ProvideBootstrapStage(cfg, signature.DefaultCalculator(cfg), assets, stateManager),
+		pipeline.ProvideValidationStage(cfg, signature.NewValidator(signature.NewUnsignedAuthorizer(cfg)), angularInspector, sigErrTracker, stateManager),
+		pipeline.ProvideInitializationStage(cfg, reg, lic, backendFactory, proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry(), stateManager),
 		terminate)
 }
 
@@ -1333,15 +1335,17 @@ func newLoaderWithAngularInspector(t *testing.T, cfg *config.Cfg, angularInspect
 	reg := fakes.NewFakePluginRegistry()
 	backendFactory := fakes.NewFakeBackendProcessProvider()
 	proc := fakes.NewFakeProcessManager()
-
-	terminate, err := pipeline.ProvideTerminationStage(cfg, reg, proc)
-	require.NoError(t, err)
+	stateManager := fakes.NewFakePluginStateManager()
 	sigErrTracker := pluginerrs.ProvideSignatureErrorTracker()
 
-	return ProvideService(pipeline.ProvideDiscoveryStage(cfg, finder.NewLocalFinder(false), reg),
-		pipeline.ProvideBootstrapStage(cfg, signature.DefaultCalculator(cfg), assets),
-		pipeline.ProvideValidationStage(cfg, signature.NewValidator(signature.NewUnsignedAuthorizer(cfg)), angularInspector, sigErrTracker),
-		pipeline.ProvideInitializationStage(cfg, reg, lic, backendFactory, proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry()),
+	terminate, err := pipeline.ProvideTerminationStage(cfg, reg, proc, stateManager)
+	require.NoError(t, err)
+
+	return ProvideService(
+		pipeline.ProvideDiscoveryStage(cfg, finder.NewLocalFinder(false), reg, stateManager),
+		pipeline.ProvideBootstrapStage(cfg, signature.DefaultCalculator(cfg), assets, stateManager),
+		pipeline.ProvideValidationStage(cfg, signature.NewValidator(signature.NewUnsignedAuthorizer(cfg)), angularInspector, sigErrTracker, stateManager),
+		pipeline.ProvideInitializationStage(cfg, reg, lic, backendFactory, proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry(), stateManager),
 		terminate)
 }
 

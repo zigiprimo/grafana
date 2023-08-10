@@ -16,14 +16,25 @@ type Validator interface {
 // ValidateFunc is the function used for the Validate step of the Validation stage.
 type ValidateFunc func(ctx context.Context, p *plugins.Plugin) error
 
+type OnSuccessFunc func(ctx context.Context, ps []*plugins.Plugin)
+
+type OnErrorFunc func(ctx context.Context, p *plugins.Plugin, err error)
+
 type Validate struct {
 	cfg           *config.Cfg
 	validateSteps []ValidateFunc
-	log           log.Logger
+
+	onSuccessFunc OnSuccessFunc
+	onErrorFunc   OnErrorFunc
+
+	log log.Logger
 }
 
 type Opts struct {
 	ValidateFuncs []ValidateFunc
+
+	OnSuccessFunc OnSuccessFunc
+	OnErrorFunc   OnErrorFunc
 }
 
 // New returns a new Validation stage.
@@ -32,9 +43,19 @@ func New(cfg *config.Cfg, opts Opts) *Validate {
 		opts.ValidateFuncs = DefaultValidateFuncs(cfg)
 	}
 
+	if opts.OnSuccessFunc == nil {
+		opts.OnSuccessFunc = func(ctx context.Context, p []*plugins.Plugin) {}
+	}
+
+	if opts.OnErrorFunc == nil {
+		opts.OnErrorFunc = func(ctx context.Context, p *plugins.Plugin, err error) {}
+	}
+
 	return &Validate{
 		cfg:           cfg,
 		validateSteps: opts.ValidateFuncs,
+		onSuccessFunc: opts.OnSuccessFunc,
+		onErrorFunc:   opts.OnErrorFunc,
 		log:           log.New("plugins.validation"),
 	}
 }
@@ -53,6 +74,7 @@ func (v *Validate) Validate(ctx context.Context, ps []*plugins.Plugin) ([]*plugi
 			if err != nil {
 				stepFailed = true
 				v.log.Error("Plugin validation failed", "pluginId", p.ID, "error", err)
+				v.onErrorFunc(ctx, p, err)
 				break
 			}
 		}
@@ -61,5 +83,6 @@ func (v *Validate) Validate(ctx context.Context, ps []*plugins.Plugin) ([]*plugi
 		}
 	}
 
+	v.onSuccessFunc(ctx, validatedPlugins)
 	return validatedPlugins, nil
 }

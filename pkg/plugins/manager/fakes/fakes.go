@@ -15,6 +15,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/oauth"
 	"github.com/grafana/grafana/pkg/plugins/plugindef"
 	"github.com/grafana/grafana/pkg/plugins/repo"
+	"github.com/grafana/grafana/pkg/plugins/state"
 	"github.com/grafana/grafana/pkg/plugins/storage"
 )
 
@@ -39,8 +40,8 @@ func (i *FakePluginInstaller) Remove(ctx context.Context, pluginID string) error
 }
 
 type FakeLoader struct {
-	LoadFunc   func(_ context.Context, _ plugins.PluginSource) ([]*plugins.Plugin, error)
-	UnloadFunc func(_ context.Context, _ string) error
+	LoadFunc   func(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error)
+	UnloadFunc func(ctx context.Context, pluginID, version string) error
 }
 
 func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSource) ([]*plugins.Plugin, error) {
@@ -50,9 +51,9 @@ func (l *FakeLoader) Load(ctx context.Context, src plugins.PluginSource) ([]*plu
 	return nil, nil
 }
 
-func (l *FakeLoader) Unload(ctx context.Context, pluginID string) error {
+func (l *FakeLoader) Unload(ctx context.Context, pluginID, version string) error {
 	if l.UnloadFunc != nil {
-		return l.UnloadFunc(ctx, pluginID)
+		return l.UnloadFunc(ctx, pluginID, version)
 	}
 	return nil
 }
@@ -509,12 +510,42 @@ func (f *FakeInitializer) Initialize(ctx context.Context, ps []*plugins.Plugin) 
 }
 
 type FakeTerminator struct {
-	TerminateFunc func(ctx context.Context, pluginID string) error
+	TerminateFunc func(ctx context.Context, pluginID, version string) error
 }
 
-func (f *FakeTerminator) Terminate(ctx context.Context, pluginID string) error {
+func (f *FakeTerminator) Terminate(ctx context.Context, pluginID, version string) error {
 	if f.TerminateFunc != nil {
-		return f.TerminateFunc(ctx, pluginID)
+		return f.TerminateFunc(ctx, pluginID, version)
 	}
 	return nil
+}
+
+type FakePluginStateManager struct {
+	GetPluginStateFunc  func(state.PluginInfo) (state.PluginStatus, bool)
+	SetPluginStateFunc  func(state.PluginInfo, state.Status)
+	GetPluginStatesFunc func() map[state.PluginInfo]state.Status
+}
+
+func NewFakePluginStateManager() *FakePluginStateManager {
+	return &FakePluginStateManager{}
+}
+
+func (f *FakePluginStateManager) GetPluginState(info state.PluginInfo) (state.PluginStatus, bool) {
+	if f.GetPluginStateFunc != nil {
+		return f.GetPluginStateFunc(info)
+	}
+	return state.PluginStatus{}, false
+}
+
+func (f *FakePluginStateManager) SetPluginState(info state.PluginInfo, status state.Status) {
+	if f.SetPluginStateFunc != nil {
+		f.SetPluginStateFunc(info, status)
+	}
+}
+
+func (f *FakePluginStateManager) GetPluginStates() map[state.PluginInfo]state.Status {
+	if f.GetPluginStatesFunc != nil {
+		return f.GetPluginStatesFunc()
+	}
+	return map[state.PluginInfo]state.Status{}
 }

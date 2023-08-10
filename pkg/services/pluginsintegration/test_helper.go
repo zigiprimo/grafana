@@ -28,6 +28,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/sources"
 	"github.com/grafana/grafana/pkg/plugins/manager/store"
 	"github.com/grafana/grafana/pkg/plugins/pluginscdn"
+	"github.com/grafana/grafana/pkg/plugins/state"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/config"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pipeline"
@@ -50,12 +51,13 @@ func CreateIntegrationTestCtx(t *testing.T, cfg *setting.Cfg, coreRegistry *core
 	angularInspector := angularinspector.NewStaticInspector()
 	proc := process.NewManager(reg)
 	errTracker := pluginerrs.ProvideSignatureErrorTracker()
+	stateManager := state.ProvideService()
 
-	disc := pipeline.ProvideDiscoveryStage(pCfg, finder.NewLocalFinder(true), reg)
-	boot := pipeline.ProvideBootstrapStage(pCfg, signature.ProvideService(pCfg, statickey.New()), assetpath.ProvideService(cdn))
-	valid := pipeline.ProvideValidationStage(pCfg, signature.NewValidator(signature.NewUnsignedAuthorizer(pCfg)), angularInspector, errTracker)
-	init := pipeline.ProvideInitializationStage(pCfg, reg, fakes.NewFakeLicensingService(), provider.ProvideService(coreRegistry), proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry())
-	term, err := pipeline.ProvideTerminationStage(pCfg, reg, proc)
+	disc := pipeline.ProvideDiscoveryStage(pCfg, finder.NewLocalFinder(true), reg, stateManager)
+	boot := pipeline.ProvideBootstrapStage(pCfg, signature.ProvideService(pCfg, statickey.New()), assetpath.ProvideService(cdn), stateManager)
+	valid := pipeline.ProvideValidationStage(pCfg, signature.NewValidator(signature.NewUnsignedAuthorizer(pCfg)), angularInspector, errTracker, stateManager)
+	init := pipeline.ProvideInitializationStage(pCfg, reg, fakes.NewFakeLicensingService(), provider.ProvideService(coreRegistry), proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry(), stateManager)
+	term, err := pipeline.ProvideTerminationStage(pCfg, reg, proc, stateManager)
 	require.NoError(t, err)
 
 	l := CreateTestLoader(t, pCfg, LoaderOpts{
@@ -86,27 +88,27 @@ type LoaderOpts struct {
 
 func CreateTestLoader(t *testing.T, cfg *pluginsCfg.Cfg, opts LoaderOpts) *loader.Loader {
 	if opts.Discoverer == nil {
-		opts.Discoverer = pipeline.ProvideDiscoveryStage(cfg, finder.NewLocalFinder(cfg.DevMode), registry.ProvideService())
+		opts.Discoverer = pipeline.ProvideDiscoveryStage(cfg, finder.NewLocalFinder(cfg.DevMode), registry.ProvideService(), state.ProvideService())
 	}
 
 	if opts.Bootstrapper == nil {
-		opts.Bootstrapper = pipeline.ProvideBootstrapStage(cfg, signature.ProvideService(cfg, statickey.New()), assetpath.ProvideService(pluginscdn.ProvideService(cfg)))
+		opts.Bootstrapper = pipeline.ProvideBootstrapStage(cfg, signature.ProvideService(cfg, statickey.New()), assetpath.ProvideService(pluginscdn.ProvideService(cfg)), state.ProvideService())
 	}
 
 	if opts.Validator == nil {
-		opts.Validator = pipeline.ProvideValidationStage(cfg, signature.NewValidator(signature.NewUnsignedAuthorizer(cfg)), angularinspector.NewStaticInspector(), pluginerrs.ProvideSignatureErrorTracker())
+		opts.Validator = pipeline.ProvideValidationStage(cfg, signature.NewValidator(signature.NewUnsignedAuthorizer(cfg)), angularinspector.NewStaticInspector(), pluginerrs.ProvideSignatureErrorTracker(), state.ProvideService())
 	}
 
 	if opts.Initializer == nil {
 		reg := registry.ProvideService()
 		coreRegistry := coreplugin.NewRegistry(make(map[string]backendplugin.PluginFactoryFunc))
-		opts.Initializer = pipeline.ProvideInitializationStage(cfg, reg, fakes.NewFakeLicensingService(), provider.ProvideService(coreRegistry), process.NewManager(reg), &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry())
+		opts.Initializer = pipeline.ProvideInitializationStage(cfg, reg, fakes.NewFakeLicensingService(), provider.ProvideService(coreRegistry), process.NewManager(reg), &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry(), state.ProvideService())
 	}
 
 	if opts.Terminator == nil {
 		var err error
 		reg := registry.ProvideService()
-		opts.Terminator, err = pipeline.ProvideTerminationStage(cfg, reg, process.NewManager(reg))
+		opts.Terminator, err = pipeline.ProvideTerminationStage(cfg, reg, process.NewManager(reg), state.ProvideService())
 		require.NoError(t, err)
 	}
 

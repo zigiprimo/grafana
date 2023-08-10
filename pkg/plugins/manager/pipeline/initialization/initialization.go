@@ -16,14 +16,25 @@ type Initializer interface {
 // InitializeFunc is the function used for the Initialize step of the Initialization stage.
 type InitializeFunc func(ctx context.Context, p *plugins.Plugin) (*plugins.Plugin, error)
 
+type OnSuccessFunc func(ctx context.Context, ps []*plugins.Plugin)
+
+type OnErrorFunc func(ctx context.Context, p *plugins.Plugin, err error)
+
 type Initialize struct {
 	cfg             *config.Cfg
 	initializeSteps []InitializeFunc
-	log             log.Logger
+
+	onSuccessFunc OnSuccessFunc
+	onErrorFunc   OnErrorFunc
+
+	log log.Logger
 }
 
 type Opts struct {
 	InitializeFuncs []InitializeFunc
+
+	OnSuccessFunc OnSuccessFunc
+	OnErrorFunc   OnErrorFunc
 }
 
 // New returns a new Initialization stage.
@@ -32,9 +43,19 @@ func New(cfg *config.Cfg, opts Opts) *Initialize {
 		opts.InitializeFuncs = []InitializeFunc{}
 	}
 
+	if opts.OnSuccessFunc == nil {
+		opts.OnSuccessFunc = func(ctx context.Context, p []*plugins.Plugin) {}
+	}
+
+	if opts.OnErrorFunc == nil {
+		opts.OnErrorFunc = func(ctx context.Context, p *plugins.Plugin, err error) {}
+	}
+
 	return &Initialize{
 		cfg:             cfg,
 		initializeSteps: opts.InitializeFuncs,
+		onSuccessFunc:   opts.OnSuccessFunc,
+		onErrorFunc:     opts.OnErrorFunc,
 		log:             log.New("plugins.initialization"),
 	}
 }
@@ -63,5 +84,6 @@ func (i *Initialize) Initialize(ctx context.Context, ps []*plugins.Plugin) ([]*p
 		}
 	}
 
+	i.onSuccessFunc(ctx, initializedPlugins)
 	return initializedPlugins, nil
 }
