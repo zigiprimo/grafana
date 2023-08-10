@@ -1,16 +1,18 @@
 import { css } from '@emotion/css';
 import React, { RefObject, useMemo, useState } from 'react';
 
-import { DataFrame, SplitOpen, PanelData, GrafanaTheme2 } from '@grafana/data';
+import { DataFrame, SplitOpen, PanelData, GrafanaTheme2, LoadingState } from '@grafana/data';
 import { config } from '@grafana/runtime';
 import { useStyles2 } from '@grafana/ui';
 import { StoreState, useSelector } from 'app/types';
 
 import { TraceView } from './TraceView';
+import { TraceViewLoader } from './TraceViewLoader';
 import TracePageSearchBar from './components/TracePageHeader/TracePageSearchBar';
 import { TopOfViewRefType } from './components/TraceTimelineViewer/VirtualizedTraceView';
 import { useSearch } from './useSearch';
 import { transformDataFrames } from './utils/transform';
+
 interface Props {
   dataFrames: DataFrame[];
   splitOpenFn: SplitOpen;
@@ -22,7 +24,7 @@ interface Props {
 
 const getStyles = (theme: GrafanaTheme2) => ({
   container: css`
-    label: container;
+    label: TraceViewContainer;
     margin-bottom: ${theme.spacing(1)};
     background-color: ${theme.colors.background.primary};
     border: 1px solid ${theme.colors.border.medium};
@@ -40,6 +42,7 @@ export function TraceViewContainer(props: Props) {
   // At this point we only show single trace
   const frame = props.dataFrames[0];
   const style = useStyles2(getStyles);
+  console.log(props);
   const { dataFrames, splitOpenFn, exploreId, scrollElement, topOfViewRef, queryResponse } = props;
   const traceProp = useMemo(() => transformDataFrames(frame), [frame]);
   const { search, setSearch, spanFindMatches } = useSearch(traceProp?.spans);
@@ -56,33 +59,39 @@ export function TraceViewContainer(props: Props) {
 
   return (
     <div className={style.container}>
-      {!config.featureToggles.newTraceViewHeader && (
-        <TracePageSearchBar
-          navigable={true}
-          searchValue={search}
-          setSearch={setSearch}
-          spanFindMatches={spanFindMatches}
-          searchBarSuffix={searchBarSuffix}
-          setSearchBarSuffix={setSearchBarSuffix}
-          focusedSpanIdForSearch={focusedSpanIdForSearch}
-          setFocusedSpanIdForSearch={setFocusedSpanIdForSearch}
-          datasourceType={datasourceType}
-        />
+      {queryResponse.state === LoadingState.Loading ? (
+        <TraceViewLoader />
+      ) : (
+        <>
+          {!config.featureToggles.newTraceViewHeader && (
+            <TracePageSearchBar
+              navigable={true}
+              searchValue={search}
+              setSearch={setSearch}
+              spanFindMatches={spanFindMatches}
+              searchBarSuffix={searchBarSuffix}
+              setSearchBarSuffix={setSearchBarSuffix}
+              focusedSpanIdForSearch={focusedSpanIdForSearch}
+              setFocusedSpanIdForSearch={setFocusedSpanIdForSearch}
+              datasourceType={datasourceType}
+            />
+          )}
+          <TraceView
+            exploreId={exploreId}
+            dataFrames={dataFrames}
+            splitOpenFn={splitOpenFn}
+            scrollElement={scrollElement}
+            traceProp={traceProp}
+            spanFindMatches={spanFindMatches}
+            search={search}
+            focusedSpanIdForSearch={focusedSpanIdForSearch}
+            queryResponse={queryResponse}
+            datasource={datasource}
+            topOfViewRef={topOfViewRef}
+            topOfViewRefType={TopOfViewRefType.Explore}
+          />
+        </>
       )}
-      <TraceView
-        exploreId={exploreId}
-        dataFrames={dataFrames}
-        splitOpenFn={splitOpenFn}
-        scrollElement={scrollElement}
-        traceProp={traceProp}
-        spanFindMatches={spanFindMatches}
-        search={search}
-        focusedSpanIdForSearch={focusedSpanIdForSearch}
-        queryResponse={queryResponse}
-        datasource={datasource}
-        topOfViewRef={topOfViewRef}
-        topOfViewRefType={TopOfViewRefType.Explore}
-      />
     </div>
   );
 }

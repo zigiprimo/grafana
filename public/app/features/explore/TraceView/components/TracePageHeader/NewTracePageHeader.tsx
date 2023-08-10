@@ -50,6 +50,7 @@ export type TracePageHeaderProps = {
 };
 
 export const NewTracePageHeader = memo((props: TracePageHeaderProps) => {
+  console.log('holiwis');
   const {
     trace,
     data,

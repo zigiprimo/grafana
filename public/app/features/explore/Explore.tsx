@@ -296,7 +296,8 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
         onChangeTime={this.onUpdateTimeRange}
         annotations={queryResponse.annotations}
         splitOpenFn={this.onSplitOpen('graph')}
-        loadingState={queryResponse.state}
+        // loadingState={queryResponse.state}
+        loadingState={LoadingState.Loading}
         eventBus={this.graphEventBus}
       />
     );
@@ -394,6 +395,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
   renderTraceViewPanel() {
     const { queryResponse, exploreId } = this.props;
     const dataFrames = queryResponse.series.filter((series) => series.meta?.preferredVisualisationType === 'trace');
+    queryResponse.state = LoadingState.Loading;
 
     return (
       // If there is no data (like 404) we show a separate error so no need to show anything here
