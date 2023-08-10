@@ -29,7 +29,7 @@ export const Spinner2 = ({ size = 12, inline = false }: Spinner2Props) => {
   }, [loading, count]);
 
   const theme = useTheme2();
-  const style = getStyles(theme, size);
+  const style = getStyles(theme, size, inline);
   return (
     <div className={style.container}>
       <div className={style.first}>
@@ -54,22 +54,13 @@ const spinnerAnimation = keyframes`
   }
 `;
 
-// const counterAnimation = keyframes`
-//  from {
-//     --num: 1;
-//   }
-//   to {
-//     --num: 100;
-//   }
-//   `;
-
-const getStyles = (theme: GrafanaTheme2, size: number | string) => {
+const getStyles = (theme: GrafanaTheme2, size: number | string, inline: boolean) => {
   return {
     container: css({
       position: 'relative',
       width: `${size}px`,
       height: `${size}px`,
-      margin: '0 auto',
+      display: inline ? 'inline-block' : 'block',
     }),
     first: css({
       display: 'flex',
@@ -117,13 +108,8 @@ const getStyles = (theme: GrafanaTheme2, size: number | string) => {
       top: '70%',
       left: '50%',
       transform: 'translate(-50%, -50%)',
-      /* animation: `${counterAnimation} 5s ease-in-out infinite`, */
-      /* counterReset: 'num var(--num)', */
       font: '150 10px system-ui',
       padding: '2rem',
-      /* '&:after': {
-        content: 'counter(num)',
-      }, */
     }),
   };
 };
