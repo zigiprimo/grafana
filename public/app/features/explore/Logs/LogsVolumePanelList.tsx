@@ -13,6 +13,7 @@ import {
   TimeZone,
 } from '@grafana/data';
 import { Button, InlineField, Alert, useStyles2 } from '@grafana/ui';
+import { LogsVolumeLoader } from 'app/features/logs/components/LogsVolumeLoader';
 
 import { mergeLogsVolumeDataFrames, isLogsVolumeLimited, getLogsVolumeMaximumRange } from '../../logs/utils';
 import { SupplementaryResultError } from '../SupplementaryResultError';
@@ -83,7 +84,7 @@ export const LogsVolumePanelList = ({
   };
 
   if (logsVolumeData?.state === LoadingState.Loading) {
-    return <span>Loading...</span>;
+    return <LogsVolumeLoader />;
   } else if (timeoutError) {
     return (
       <SupplementaryResultError

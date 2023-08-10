@@ -429,31 +429,31 @@ class UnthemedLogs extends PureComponent<Props, State> {
 
   render() {
     const {
-      width,
-      splitOpen,
+      absoluteRange,
+      addResultsToCache,
+      clearCache,
+      exploreId,
+      getFieldLinks,
+      getLogRowContextUi,
+      getRowContext,
+      getRowContextQuery,
+      loading = false,
+      loadLogsVolumeData,
       logRows,
       logsMeta,
-      logsVolumeEnabled,
+      logsQueries,
       logsVolumeData,
-      loadLogsVolumeData,
-      loading = false,
+      logsVolumeEnabled,
+      onChangeTime,
       onClickFilterLabel,
       onClickFilterOutLabel,
-      timeZone,
       scanning,
       scanRange,
       showContextToggle,
-      absoluteRange,
-      onChangeTime,
-      getFieldLinks,
+      splitOpen,
       theme,
-      logsQueries,
-      clearCache,
-      addResultsToCache,
-      exploreId,
-      getRowContext,
-      getLogRowContextUi,
-      getRowContextQuery,
+      timeZone,
+      width,
     } = this.props;
 
     const {
@@ -601,30 +601,33 @@ class UnthemedLogs extends PureComponent<Props, State> {
           <div className={styles.logsSection}>
             <div className={styles.logRows} data-testid="logRows" ref={this.logsContainer}>
               <LogRows
-                logRows={logRows}
+                app={CoreApp.Explore}
                 deduplicatedRows={dedupedRows}
                 dedupStrategy={dedupStrategy}
-                onClickFilterLabel={onClickFilterLabel}
-                onClickFilterOutLabel={onClickFilterOutLabel}
-                showContextToggle={showContextToggle}
-                showLabels={showLabels}
-                showTime={showTime}
+                displayedFields={displayedFields}
                 enableLogDetails={true}
                 forceEscape={forceEscape}
-                wrapLogMessage={wrapLogMessage}
-                prettifyLogMessage={prettifyLogMessage}
-                timeZone={timeZone}
                 getFieldLinks={getFieldLinks}
+                // Change this prop to make the logs table load indefinitely
+                loading={loading}
+                // loading={true}
+                logRows={logRows}
                 logsSortOrder={logsSortOrder}
-                displayedFields={displayedFields}
-                onClickShowField={this.showField}
+                onClickFilterLabel={onClickFilterLabel}
+                onClickFilterOutLabel={onClickFilterOutLabel}
                 onClickHideField={this.hideField}
-                app={CoreApp.Explore}
+                onClickShowField={this.showField}
                 onLogRowHover={this.onLogRowHover}
                 onOpenContext={this.onOpenContext}
                 onPermalinkClick={this.onPermalinkClick}
                 permalinkedRowId={this.props.panelState?.logs?.id}
+                prettifyLogMessage={prettifyLogMessage}
                 scrollIntoView={this.scrollIntoView}
+                showContextToggle={showContextToggle}
+                showLabels={showLabels}
+                showTime={showTime}
+                timeZone={timeZone}
+                wrapLogMessage={wrapLogMessage}
               />
               {!loading && !hasData && !scanning && (
                 <div className={styles.noData}>

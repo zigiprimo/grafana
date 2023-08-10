@@ -152,6 +152,10 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
       logsVolume,
       scrollElement,
     } = this.props;
+    // this change makes the logs volume panel stay in loading indefinitely
+    // if (logsVolume.data) {
+    //   logsVolume.data.state = LoadingState.Loading;
+    // }
 
     if (!logRows) {
       return null;
