@@ -5,10 +5,10 @@ import tinycolor from 'tinycolor2';
 import { LogRowModel, TimeZone, dateTimeFormat, GrafanaTheme2, LogsSortOrder } from '@grafana/data';
 import { Button, Themeable2, withTheme2 } from '@grafana/ui';
 
-import { LogMessageAnsi } from '../../logs/components/LogMessageAnsi';
-import { getLogRowStyles } from '../../logs/components/getLogRowStyles';
-import { sortLogRows } from '../../logs/utils';
-import { ElapsedTime } from '../ElapsedTime';
+import { ElapsedTime } from '../../../../features/explore/ElapsedTime';
+import { LogMessageAnsi } from '../../../../features/logs/components/LogMessageAnsi';
+import { getLogRowStyles } from '../../../../features/logs/components/getLogRowStyles';
+import { sortLogRows } from '../../../../features/logs/utils';
 
 export const filterLogRowsByIndex = (clearedAtIndex: number, logRows?: LogRowModel[]): LogRowModel[] => {
   if (!logRows) {

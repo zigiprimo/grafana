@@ -62,15 +62,18 @@ export const decorateWithFrameTypeMetadata = (data: PanelData): ExplorePanelData
       case 'flamegraph':
         frame.meta.preferredVisualisationPluginId = 'flamegraph';
         break;
+      // case 'logs':
+      //   frame.meta.preferredVisualisationPluginId = 'logsexploration';
+      //   break;
     }
 
     if (canFindPanel(frame)) {
       customFrames.push(frame);
-      continue;
     }
     switch (frame.meta?.preferredVisualisationType) {
       case 'logs':
         logsFrames.push(frame);
+        frame.meta.preferredVisualisationPluginId = 'logsexploration';
         break;
       case 'graph':
         graphFrames.push(frame);

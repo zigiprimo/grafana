@@ -5,9 +5,9 @@ import { Provider } from 'react-redux';
 import {
   ErrorBoundaryAlert,
   Exploration,
-  ExplorationContextProvider,
   ExplorationPaneContextProvider,
   useExplorationContext,
+  ProviderWrapper,
 } from '@grafana/ui';
 import { SplitPaneWrapper } from 'app/core/components/SplitPaneWrapper/SplitPaneWrapper';
 import { useGrafana } from 'app/core/context/GrafanaContext';
@@ -21,7 +21,7 @@ import { useExplorePageTitle } from './hooks/useExplorePageTitle';
 import { useSplitSizeUpdater } from './hooks/useSplitSizeUpdater';
 import { useStateSync } from './hooks/useStateSync';
 import { useTimeSrvFix } from './hooks/useTimeSrvFix';
-import { isSplit, selectPanesEntries } from './state/selectors';
+import { isSplit } from './state/selectors';
 import { getExploreService, setupExploreRedux } from './state/service';
 import { getExploreStore, useExploreSelector } from './state/store';
 
@@ -54,11 +54,11 @@ export default function ExplorePage(props: GrafanaRouteComponentProps<{}, Explor
 
   return (
     <div className={styles.pageScrollbarWrapper}>
-      <ExplorationContextProvider value={exploration}>
+      <ProviderWrapper exploration={exploration}>
         <Provider store={store}>
           <ExplorePageContent {...props} />
         </Provider>
-      </ExplorationContextProvider>
+      </ProviderWrapper>
     </div>
   );
 }
@@ -75,7 +75,7 @@ function ExplorePageContent(props: GrafanaRouteComponentProps<{}, ExploreQueryPa
   const { keybindings } = useGrafana();
   const { updateSplitSize, widthCalc } = useSplitSizeUpdater(MIN_PANE_WIDTH);
 
-  const panes = useExploreSelector(selectPanesEntries);
+  const { panes } = useExplorationContext();
   const hasSplit = useExploreSelector(isSplit);
 
   // @ts-ignore
@@ -99,12 +99,11 @@ function ExplorePageContent(props: GrafanaRouteComponentProps<{}, ExploreQueryPa
         paneStyle={{ overflow: 'auto', display: 'flex', flexDirection: 'column' }}
         onDragFinished={(size) => size && updateSplitSize(size)}
       >
-        {panes.map(([exploreId], index) => {
-          const explorationPane = exploration.panes[index];
+        {panes!.map((explorationPane, index) => {
           return (
-            <ErrorBoundaryAlert key={exploreId} style="page">
+            <ErrorBoundaryAlert key={explorationPane.exploreId} style="page">
               <ExplorationPaneContextProvider value={explorationPane}>
-                <ExplorePaneContainer exploreId={exploreId} />
+                <ExplorePaneContainer exploreId={explorationPane.exploreId} />
               </ExplorationPaneContextProvider>
             </ErrorBoundaryAlert>
           );

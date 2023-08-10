@@ -16,7 +16,7 @@ import {
   EventBusSrv,
 } from '@grafana/data';
 import { DataQuery } from '@grafana/schema';
-import { Collapse, ExplorationPane, ExplorationPaneContext } from '@grafana/ui';
+import { Alert, Collapse, ExplorationPane, ExplorationPaneContext } from '@grafana/ui';
 
 import { Logs } from './Logs';
 import { LogsCrossFadeTransition } from './utils/LogsCrossFadeTransition';
@@ -114,8 +114,8 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
       logsSeries: context.logsResult?.series,
       logsQueries: context.logsResult?.queries,
       visibleRange: context.logsResult?.visibleRange,
-      logsFrames: context.queryResponse.logsFrames,
-      logsVolume: context.supplementaryQueries[SupplementaryQueryType.LogsVolume],
+      logsFrames: context.queryResponse?.logsFrames,
+      logsVolume: context.supplementaryQueries?.[SupplementaryQueryType.LogsVolume],
       timeZone: getTimeZone(),
     };
   }
@@ -136,7 +136,16 @@ class LogsContainer extends PureComponent<LogsContainerProps> {
       logsVolume,
       isLive,
       loadingState,
+      available,
     } = this.getContext();
+
+    if (!available) {
+      return (
+        <Alert title="Exploration mode not available">
+          This plugin requires to be rendered inside an app/feature that supports exploration.
+        </Alert>
+      );
+    }
 
     const actions = this.getContext().actions;
 

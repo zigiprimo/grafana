@@ -6,10 +6,10 @@ import { LogsDedupStrategy, LogsMetaItem, LogsMetaKind, LogRowModel, CoreApp, da
 import { reportInteraction } from '@grafana/runtime';
 import { Button, Dropdown, Menu, ToolbarButton, Tooltip, useStyles2 } from '@grafana/ui';
 
-import { downloadLogsModelAsTxt } from '../../inspector/utils/download';
-import { LogLabels } from '../../logs/components/LogLabels';
-import { MAX_CHARACTERS } from '../../logs/components/LogRowMessage';
-import { logRowsToReadableJson } from '../../logs/utils';
+import { downloadLogsModelAsTxt } from '../../../../features/inspector/utils/download';
+import { LogLabels } from '../../../../features/logs/components/LogLabels';
+import { MAX_CHARACTERS } from '../../../../features/logs/components/LogRowMessage';
+import { logRowsToReadableJson } from '../../../../features/logs/utils';
 
 import { MetaInfoText, MetaItemProps } from './MetaInfoText';
 
@@ -160,6 +160,7 @@ export const LogsMetaRow = React.memo(
 
 LogsMetaRow.displayName = 'LogsMetaRow';
 
+// eslint-disable-next-line
 function renderMetaItem(value: any, kind: LogsMetaKind) {
   if (kind === LogsMetaKind.LabelsMap) {
     return <LogLabels labels={value} />;

@@ -19,7 +19,7 @@ import { config, reportInteraction } from '@grafana/runtime';
 import { DataQuery, LoadingState, TimeZone } from '@grafana/schema';
 import { Icon, Button, Modal, useTheme2, useExplorationPaneContext } from '@grafana/ui';
 import store from 'app/core/store';
-import { SETTINGS_KEYS } from 'app/features/explore/Logs/utils/logs';
+import { SETTINGS_KEYS } from 'app/plugins/panel/logsexploration/Logs/utils/logs';
 
 import { dataFrameToLogsModel } from '../../logsModel';
 import { sortLogRows } from '../../utils';

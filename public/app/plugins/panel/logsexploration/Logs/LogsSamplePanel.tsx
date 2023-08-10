@@ -16,8 +16,8 @@ import { DataQuery, TimeZone } from '@grafana/schema';
 import { Button, Collapse, Icon, Tooltip, useStyles2 } from '@grafana/ui';
 import store from 'app/core/store';
 
-import { LogRows } from '../../logs/components/LogRows';
-import { dataFrameToLogsModel } from '../../logs/logsModel';
+import { LogRows } from '../../../../features/logs/components/LogRows';
+import { dataFrameToLogsModel } from '../../../../features/logs/logsModel';
 
 import { SupplementaryResultError } from './SupplementaryResultError';
 import { SETTINGS_KEYS } from './utils/logs';

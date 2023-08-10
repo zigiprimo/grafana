@@ -4,6 +4,7 @@ import { Exploration, ExplorationPane } from './types';
 
 export const ExplorationContext = React.createContext<Partial<Exploration>>({
   available: false,
+  panes: [],
 });
 export const ExplorationContextProvider = ExplorationContext.Provider;
 export const useExplorationContext = () => React.useContext(ExplorationContext);

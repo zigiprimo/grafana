@@ -30,6 +30,7 @@ import { ExploreState } from '../types';
 
 export class ReduxExploreService implements Exploration {
   private readonly store: Store<ExploreState>;
+  private onChange: (value: Exploration) => void = () => {};
   private unsub?: Unsubscribe;
 
   available = true;
@@ -67,7 +68,8 @@ export class ReduxExploreService implements Exploration {
         return pane;
       });
       if (!deepEqual(panes, this.panes)) {
-        this.panes = panes;
+        this.panes = [...panes];
+        this.onChange(this);
       }
     });
   }
@@ -162,5 +164,9 @@ export class ReduxExploreService implements Exploration {
     };
     // @ts-ignore
     this.store.dispatch(modifyQueries(paneId, action, modifier));
+  }
+
+  setOnChange(callback: (value: Exploration) => void): void {
+    this.onChange = callback;
   }
 }

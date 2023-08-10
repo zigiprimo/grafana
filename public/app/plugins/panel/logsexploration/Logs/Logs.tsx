@@ -43,9 +43,9 @@ import {
 } from '@grafana/ui';
 import store from 'app/core/store';
 
-import { LogRows } from '../../logs/components/LogRows';
-import { LogRowContextModal } from '../../logs/components/log-context/LogRowContextModal';
-import { dedupLogRows, filterLogLevels } from '../../logs/logsModel';
+import { LogRows } from '../../../../features/logs/components/LogRows';
+import { LogRowContextModal } from '../../../../features/logs/components/log-context/LogRowContextModal';
+import { dedupLogRows, filterLogLevels } from '../../../../features/logs/logsModel';
 
 import { LogsMetaRow } from './LogsMetaRow';
 import LogsNavigation from './LogsNavigation';

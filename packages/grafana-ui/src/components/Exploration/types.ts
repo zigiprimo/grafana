@@ -191,6 +191,8 @@ export interface Exploration {
   available: boolean;
   panes: ExplorationPane[];
 
+  setOnChange(callback: (value: Exploration) => void): void;
+
   init: () => void;
   destroy: () => void;
 

@@ -33,13 +33,13 @@ import { FILTER_FOR_OPERATOR, FILTER_OUT_OPERATOR } from '@grafana/ui/src/compon
 import { ExploreState } from 'app/features/explore/types';
 import { getNodeGraphDataFrames } from 'app/plugins/panel/nodeGraph/utils';
 
+import { LogsSamplePanel } from '../../plugins/panel/logsexploration/Logs/LogsSamplePanel';
+
 import { CustomContainer } from './CustomContainer';
 import ExploreQueryInspector from './ExploreQueryInspector';
 import { ExploreToolbar } from './ExploreToolbar';
 import { FlameGraphExploreContainer } from './FlameGraph/FlameGraphExploreContainer';
 import { GraphContainer } from './Graph/GraphContainer';
-import LogsContainer from './Logs/LogsContainer';
-import { LogsSamplePanel } from './Logs/LogsSamplePanel';
 import { NoData } from './NoData';
 import { NoDataSourceCallToAction } from './NoDataSourceCallToAction';
 import { NodeGraphContainer } from './NodeGraph/NodeGraphContainer';
@@ -391,12 +391,6 @@ export class Explore extends React.PureComponent<Props, ExploreComponentState> {
     );
   }
 
-  renderLogsPanel(width: number) {
-    // const { exploreId, syncedTimes, theme, queryResponse } = this.props;
-    // const spacing = parseInt(theme.spacing(2).slice(0, -2), 10);
-    return <LogsContainer width={width} />;
-  }
-
   renderLogsSamplePanel() {
     const { logsSample, timeZone, setSupplementaryQueryEnabled, exploreId, datasourceInstance, queries } = this.props;
 
@@ -467,7 +461,6 @@ export class Explore extends React.PureComponent<Props, ExploreComponentState> {
       showMetrics,
       showTable,
       showRawPrometheus,
-      showLogs,
       showTrace,
       showCustom,
       showNodeGraph,
@@ -537,7 +530,6 @@ export class Explore extends React.PureComponent<Props, ExploreComponentState> {
                             <ErrorBoundaryAlert>{this.renderRawPrometheus(width)}</ErrorBoundaryAlert>
                           )}
                           {showTable && <ErrorBoundaryAlert>{this.renderTablePanel(width)}</ErrorBoundaryAlert>}
-                          {showLogs && <ErrorBoundaryAlert>{this.renderLogsPanel(width)}</ErrorBoundaryAlert>}
                           {showNodeGraph && <ErrorBoundaryAlert>{this.renderNodeGraphPanel()}</ErrorBoundaryAlert>}
                           {showFlameGraph && <ErrorBoundaryAlert>{this.renderFlameGraphPanel()}</ErrorBoundaryAlert>}
                           {showTrace && <ErrorBoundaryAlert>{this.renderTraceViewPanel()}</ErrorBoundaryAlert>}

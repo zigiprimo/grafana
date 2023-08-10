@@ -57,6 +57,7 @@ import * as gettingStartedPanel from 'app/plugins/panel/gettingstarted/module';
 import * as histogramPanel from 'app/plugins/panel/histogram/module';
 import * as livePanel from 'app/plugins/panel/live/module';
 import * as logsPanel from 'app/plugins/panel/logs/module';
+import * as logsExplorationPanel from 'app/plugins/panel/logsexploration/module';
 import * as newsPanel from 'app/plugins/panel/news/module';
 import * as nodeGraph from 'app/plugins/panel/nodeGraph/module';
 import * as pieChartPanel from 'app/plugins/panel/piechart/module';
@@ -133,6 +134,7 @@ const builtInPlugins: any = {
   'app/plugins/panel/bargauge/module': barGaugePanel,
   'app/plugins/panel/barchart/module': barChartPanel,
   'app/plugins/panel/logs/module': logsPanel,
+  'app/plugins/panel/logsexploration/module': logsExplorationPanel,
   'app/plugins/panel/traces/module': tracesPanel,
   'app/plugins/panel/welcome/module': welcomeBanner,
   'app/plugins/panel/nodeGraph/module': nodeGraph,

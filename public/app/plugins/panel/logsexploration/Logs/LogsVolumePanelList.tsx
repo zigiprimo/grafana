@@ -14,7 +14,11 @@ import {
 } from '@grafana/data';
 import { Button, InlineField, Alert, useStyles2 } from '@grafana/ui';
 
-import { mergeLogsVolumeDataFrames, isLogsVolumeLimited, getLogsVolumeMaximumRange } from '../../logs/utils';
+import {
+  mergeLogsVolumeDataFrames,
+  isLogsVolumeLimited,
+  getLogsVolumeMaximumRange,
+} from '../../../../features/logs/utils';
 
 import { LogsVolumePanel } from './LogsVolumePanel';
 import { SupplementaryResultError } from './SupplementaryResultError';

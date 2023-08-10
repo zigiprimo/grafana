@@ -3,7 +3,7 @@ import React from 'react';
 
 import { LogRowModel } from '@grafana/data';
 
-import { makeLogs } from '../__mocks__/makeLogs';
+import { makeLogs } from '../../../../features/explore/__mocks__/makeLogs';
 
 import { LiveLogsWithTheme } from './LiveLogs';
 
