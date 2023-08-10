@@ -46,6 +46,20 @@ export const getLogRowStyles = memoizeOne((theme: GrafanaTheme2) => {
   const contextOutlineColor = tinycolor(theme.components.dashboard.background).setAlpha(0.7).toRgbString();
   const scrollableLogsContainer = config.featureToggles.exploreScrollableLogsContainer;
   return {
+    loadingOverrides: {
+      logsRow: css`
+        // We want the background to change on hover, but not make it clickable
+        cursor: default;
+        &:hover {
+          background: initial;
+        }
+      `,
+      logsCell: css`
+        min-width: ${theme.spacing(23)};
+        height: ${theme.spacing(2.5)};
+        background-color: ${theme.colors.background.secondary};
+      `,
+    },
     logsRowLevel: css`
       label: logs-row__level;
       max-width: ${theme.spacing(1.25)};

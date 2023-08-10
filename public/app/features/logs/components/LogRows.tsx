@@ -1,55 +1,58 @@
+import { cx } from '@emotion/css';
 import memoizeOne from 'memoize-one';
 import React, { PureComponent } from 'react';
 
 import {
-  TimeZone,
-  LogsDedupStrategy,
-  LogRowModel,
-  Field,
-  LinkModel,
-  LogsSortOrder,
   CoreApp,
   DataFrame,
+  Field,
+  LinkModel,
+  LogRowModel,
+  LogsDedupStrategy,
+  LogsSortOrder,
+  TimeZone,
 } from '@grafana/data';
-import { withTheme2, Themeable2 } from '@grafana/ui';
+import { Icon, Themeable2, withTheme2 } from '@grafana/ui';
 
 import { sortLogRows } from '../utils';
 
 //Components
 import { LogRow } from './LogRow';
-import { getLogRowStyles } from './getLogRowStyles';
+import { Skeleton } from './SkeletonLoader';
+import { getLogLevelStyles, getLogRowStyles } from './getLogRowStyles';
 
 export const PREVIEW_LIMIT = 100;
 
 export interface Props extends Themeable2 {
-  logRows?: LogRowModel[];
+  app?: CoreApp;
   deduplicatedRows?: LogRowModel[];
   dedupStrategy: LogsDedupStrategy;
-  showLabels: boolean;
-  showTime: boolean;
-  wrapLogMessage: boolean;
-  prettifyLogMessage: boolean;
-  timeZone: TimeZone;
-  enableLogDetails: boolean;
-  logsSortOrder?: LogsSortOrder | null;
-  previewLimit?: number;
-  forceEscape?: boolean;
   displayedFields?: string[];
-  app?: CoreApp;
-  showContextToggle?: (row?: LogRowModel) => boolean;
+  enableLogDetails: boolean;
+  forceEscape?: boolean;
+  getFieldLinks?: (field: Field, rowIndex: number, dataFrame: DataFrame) => Array<LinkModel<Field>>;
+  loading?: boolean;
+  logRows?: LogRowModel[];
+  logsSortOrder?: LogsSortOrder | null;
   onClickFilterLabel?: (key: string, value: string) => void;
   onClickFilterOutLabel?: (key: string, value: string) => void;
-  getFieldLinks?: (field: Field, rowIndex: number, dataFrame: DataFrame) => Array<LinkModel<Field>>;
-  onClickShowField?: (key: string) => void;
   onClickHideField?: (key: string) => void;
-  onPinLine?: (row: LogRowModel) => void;
-  onUnpinLine?: (row: LogRowModel) => void;
+  onClickShowField?: (key: string) => void;
   onLogRowHover?: (row?: LogRowModel) => void;
   onOpenContext?: (row: LogRowModel, onClose: () => void) => void;
   onPermalinkClick?: (row: LogRowModel) => Promise<void>;
+  onPinLine?: (row: LogRowModel) => void;
+  onUnpinLine?: (row: LogRowModel) => void;
   permalinkedRowId?: string;
-  scrollIntoView?: (element: HTMLElement) => void;
   pinnedRowId?: string;
+  prettifyLogMessage: boolean;
+  previewLimit?: number;
+  scrollIntoView?: (element: HTMLElement) => void;
+  showContextToggle?: (row?: LogRowModel) => boolean;
+  showLabels: boolean;
+  showTime: boolean;
+  timeZone: TimeZone;
+  wrapLogMessage: boolean;
 }
 
 interface State {
@@ -104,7 +107,9 @@ class UnThemedLogRows extends PureComponent<Props, State> {
   );
 
   render() {
-    const { deduplicatedRows, logRows, dedupStrategy, theme, logsSortOrder, previewLimit, ...rest } = this.props;
+    const { deduplicatedRows, logRows, dedupStrategy, theme, logsSortOrder, previewLimit, loading, ...rest } =
+      this.props;
+
     const { renderAll } = this.state;
     const styles = getLogRowStyles(theme);
     const dedupedRows = deduplicatedRows ? deduplicatedRows : logRows;
@@ -121,6 +126,42 @@ class UnThemedLogRows extends PureComponent<Props, State> {
 
     // React profiler becomes unusable if we pass all rows to all rows and their labels, using getter instead
     const getRows = this.makeGetRows(orderedRows);
+
+    if (loading) {
+      const levelStyles = getLogLevelStyles(theme);
+      const loadingRows = Array.from({ length: 20 }, () => null);
+
+      return (
+        <table className={styles.logsRowsTable}>
+          <tbody>
+            {loadingRows.map((_, idx) => {
+              return (
+                <tr key={idx} className={cx(styles.logsRow, styles.loadingOverrides.logsRow)}>
+                  {/* log health */}
+                  <td className={cx(levelStyles.logsRowLevelColor, styles.logsRowLevel)}></td>
+                  {/* arrow */}
+                  <td className={styles.logsRowToggleDetails}>
+                    <Icon className={styles.topVerticalAlign} name="angle-right" />
+                  </td>
+                  {/* date */}
+                  <td className={cx(styles.logsRowLocalTime)}>
+                    <div className={styles.loadingOverrides.logsCell}>
+                      <Skeleton />
+                    </div>
+                  </td>
+                  {/* log line */}
+                  <td className={styles.logsRowMessage}>
+                    <div className={styles.loadingOverrides.logsCell}>
+                      <Skeleton />
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      );
+    }
 
     return (
       <table className={styles.logsRowsTable}>
