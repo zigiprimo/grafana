@@ -48,6 +48,10 @@ import config from 'app/core/config';
 import { arrayMove } from 'app/core/utils/arrayMove';
 import { getStandardTransformers } from 'app/features/transformers/standardTransformers';
 
+import {
+  getExplorationServiceFactory,
+  setExplorationServiceFactory,
+} from '../../packages/grafana-ui/src/components/Exploration/service';
 import getDefaultMonacoLanguages from '../lib/monaco-languages';
 
 import { AppWrapper } from './AppWrapper';
@@ -76,6 +80,7 @@ import { initDevFeatures } from './dev';
 import { correlationsService } from './features/correlations/service';
 import { addToDashboardService } from './features/dashboard/services/AddToDashboardService';
 import { getTimeSrv } from './features/dashboard/services/TimeSrv';
+import { ReduxExploreService } from './features/explore/extensions/ReduxExploreService';
 import { initGrafanaLive } from './features/live';
 import { PanelDataErrorView } from './features/panel/components/PanelDataErrorView';
 import { PanelRenderer } from './features/panel/components/PanelRenderer';
@@ -142,6 +147,9 @@ export class GrafanaApp {
       setQueryHistorySrv(queryHistoryService);
       setMiscSrv(new MiscService(contextSrv));
       setAddToDashboardSrv(addToDashboardService);
+      setExplorationServiceFactory(ReduxExploreService);
+      // @ts-ignore
+      global.getExplorationServiceFactory = getExplorationServiceFactory;
       initGrafanaLive();
 
       // Expose the app-wide eventbus

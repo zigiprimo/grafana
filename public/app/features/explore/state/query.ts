@@ -34,13 +34,7 @@ import {
 } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
 // import { getShiftedTimeRange } from 'app/core/utils/timePicker';
-import {
-  createExploreAsyncThunk,
-  ExploreThunkDispatch,
-  ExploreThunkResult,
-  getExploreState,
-  getExploreStore,
-} from 'app/features/explore/state/store';
+import { createExploreAsyncThunk, ExploreThunkDispatch, ExploreThunkResult } from 'app/features/explore/state/store';
 import {
   ExploreItemState,
   ExplorePanelData,
@@ -499,7 +493,7 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
   async ({ exploreId, preserveCache }, { dispatch, getState }) => {
     dispatch(updateTime({ exploreId }));
 
-    const correlations$ = getCorrelations(exploreId);
+    const correlations$ = getCorrelations(exploreId, getState);
 
     // We always want to clear cache unless we explicitly pass preserveCache parameter
     if (preserveCache !== true) {
@@ -1162,21 +1156,21 @@ export const queryReducer = (state: ExploreItemState, action: AnyAction): Explor
 /**
  * Creates an observable that emits correlations once they are loaded
  */
-const getCorrelations = (exploreId: string) => {
+const getCorrelations = (exploreId: string, getState: () => ExploreState) => {
   return new Observable<CorrelationData[]>((subscriber) => {
-    const existingCorrelations = getExploreState().panes[exploreId]?.correlations;
+    const existingCorrelations = getState().panes[exploreId]?.correlations;
     if (existingCorrelations) {
       subscriber.next(existingCorrelations);
       subscriber.complete();
     } else {
-      const unsubscribe = getExploreStore().subscribe(() => {
-        const correlations = getExploreState().panes[exploreId]?.correlations;
+      const id = setInterval(() => {
+        const correlations = getState().panes[exploreId]?.correlations;
         if (correlations) {
-          unsubscribe();
+          clearInterval(id);
           subscriber.next(correlations);
           subscriber.complete();
         }
-      });
+      }, 100);
     }
   });
 };

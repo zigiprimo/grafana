@@ -33,6 +33,17 @@ type SupplementaryQueries = {
   [key in SupplementaryQueryType]: SupplementaryQuery;
 };
 
+interface DataSourceRef {
+  /**
+   * The plugin type-id
+   */
+  type?: string;
+  /**
+   * Specific datasource instance
+   */
+  uid?: string;
+}
+
 interface ExplorePanelData extends PanelData {
   graphFrames: DataFrame[];
   tableFrames: DataFrame[];
@@ -195,6 +206,10 @@ export interface Exploration {
 
   init: () => void;
   destroy: () => void;
+
+  runQueries(paneId: string): void;
+  changeQueries(paneId: string, queries: DataQuery[]): void;
+  changeDatasource(exploreId: string, datasource: string | DataSourceRef, options?: { importQueries: boolean }): void;
 
   updateTimeRange(options: { exploreId: string; rawRange?: RawTimeRange; absoluteRange?: AbsoluteTimeRange }): void;
 

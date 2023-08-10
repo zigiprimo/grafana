@@ -10,15 +10,18 @@ import {
   SupplementaryQueryType,
 } from '@grafana/data';
 import { config, getDataSourceSrv } from '@grafana/runtime';
-import { DataQuery } from '@grafana/schema/dist/esm/veneer/common.types';
+import { DataQuery, DataSourceRef } from '@grafana/schema/dist/esm/veneer/common.types';
 import { Exploration, ExplorationPane } from '@grafana/ui';
 
+import { changeDatasource } from '../state/datasource';
 import { exploreReducer, initialExploreState, splitOpen } from '../state/main';
 import {
   addResultsToCache,
+  changeQueries,
   clearCache,
   loadSupplementaryQueryData,
   modifyQueries,
+  runQueries,
   scanStart,
   scanStopAction,
   selectIsWaitingForData,
@@ -168,5 +171,20 @@ export class ReduxExploreService implements Exploration {
 
   setOnChange(callback: (value: Exploration) => void): void {
     this.onChange = callback;
+  }
+
+  changeQueries(paneId: string, queries: DataQuery[]): void {
+    // @ts-ignore
+    this.store.dispatch(changeQueries({ exploreId: paneId, queries }));
+  }
+
+  runQueries(paneId: string): void {
+    // @ts-ignore
+    this.store.dispatch(runQueries({ exploreId: paneId }));
+  }
+
+  changeDatasource(paneId: string, datasource: string | DataSourceRef, options?: { importQueries: boolean }) {
+    // @ts-ignore
+    this.store.dispatch(changeDatasource(paneId, datasource, options));
   }
 }
