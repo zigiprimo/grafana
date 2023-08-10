@@ -1,15 +1,16 @@
 import React, { PureComponent } from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 
-import { ValueLinkConfig, applyFieldOverrides, TimeZone, SplitOpen, DataFrame, LoadingState } from '@grafana/data';
-import { Table, AdHocFilterItem, PanelChrome } from '@grafana/ui';
+import { applyFieldOverrides, DataFrame, LoadingState, SplitOpen, TimeZone, ValueLinkConfig } from '@grafana/data';
+import { AdHocFilterItem, PanelChrome, Table } from '@grafana/ui';
 import { config } from 'app/core/config';
 import { StoreState } from 'app/types';
 import { ExploreItemState } from 'app/types/explore';
 
 import { MetaInfoText } from '../MetaInfoText';
-import { selectIsWaitingForData } from '../state/query';
 import { getFieldLinksForExplore } from '../utils/links';
+
+import { TableLoader } from './TableLoader';
 
 interface TableContainerProps {
   ariaLabel?: string;
@@ -24,8 +25,10 @@ function mapStateToProps(state: StoreState, { exploreId }: TableContainerProps) 
   const explore = state.explore;
   const item: ExploreItemState = explore.panes[exploreId]!;
   const { tableResult, range } = item;
-  const loadingInState = selectIsWaitingForData(exploreId);
-  const loading = tableResult && tableResult.length > 0 ? false : loadingInState;
+  // Undo this change to get back to normal loading
+  // const loadingInState = selectIsWaitingForData(exploreId);
+  // const loading = tableResult && tableResult.length > 0 ? false : loadingInState;
+  const loading = true;
   return { loading, tableResult, range };
 }
 
@@ -95,22 +98,22 @@ export class TableContainer extends PureComponent<Props> {
         height={height}
         loadingState={loading ? LoadingState.Loading : undefined}
       >
-        {(innerWidth, innerHeight) => (
-          <>
-            {mainFrame?.length ? (
-              <Table
-                ariaLabel={ariaLabel}
-                data={mainFrame}
-                subData={subFrames}
-                width={innerWidth}
-                height={innerHeight}
-                onCellFilterAdded={onCellFilterAdded}
-              />
-            ) : (
-              <MetaInfoText metaItems={[{ value: '0 series returned' }]} />
-            )}
-          </>
-        )}
+        {(innerWidth, innerHeight) =>
+          loading ? (
+            <TableLoader />
+          ) : mainFrame?.length ? (
+            <Table
+              ariaLabel={ariaLabel}
+              data={mainFrame}
+              subData={subFrames}
+              width={innerWidth}
+              height={innerHeight}
+              onCellFilterAdded={onCellFilterAdded}
+            />
+          ) : (
+            <MetaInfoText metaItems={[{ value: '0 series returned' }]} />
+          )
+        }
       </PanelChrome>
     );
   }
