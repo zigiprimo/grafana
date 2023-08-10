@@ -16,6 +16,7 @@ import { storeGraphStyle } from '../state/utils';
 
 import { ExploreGraph } from './ExploreGraph';
 import { ExploreGraphLabel } from './ExploreGraphLabel';
+import { GraphLoader } from './GraphLoader';
 import { loadGraphStyle } from './utils';
 
 interface Props extends Pick<PanelChromeProps, 'width' | 'height' | 'statusMessage'> {
@@ -62,23 +63,27 @@ export const GraphContainer = ({
       statusMessage={statusMessage}
       actions={<ExploreGraphLabel graphStyle={graphStyle} onChangeGraphStyle={onGraphStyleChange} />}
     >
-      {(innerWidth, innerHeight) => (
-        <ExploreGraph
-          graphStyle={graphStyle}
-          data={data}
-          height={innerHeight}
-          width={innerWidth}
-          absoluteRange={absoluteRange}
-          onChangeTime={onChangeTime}
-          timeZone={timeZone}
-          annotations={annotations}
-          splitOpenFn={splitOpenFn}
-          loadingState={loadingState}
-          thresholdsConfig={thresholdsConfig}
-          thresholdsStyle={thresholdsStyle}
-          eventBus={eventBus}
-        />
-      )}
+      {(innerWidth, innerHeight) =>
+        loadingState === LoadingState.Loading ? (
+          <GraphLoader height={innerHeight} width={innerWidth} />
+        ) : (
+          <ExploreGraph
+            graphStyle={graphStyle}
+            data={data}
+            height={innerHeight}
+            width={innerWidth}
+            absoluteRange={absoluteRange}
+            onChangeTime={onChangeTime}
+            timeZone={timeZone}
+            annotations={annotations}
+            splitOpenFn={splitOpenFn}
+            loadingState={loadingState}
+            thresholdsConfig={thresholdsConfig}
+            thresholdsStyle={thresholdsStyle}
+            eventBus={eventBus}
+          />
+        )
+      }
     </PanelChrome>
   );
 };
