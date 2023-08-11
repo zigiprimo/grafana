@@ -45,6 +45,9 @@ func ProvideConfig(settingProvider setting.Provider, grafanaCfg *setting.Cfg, fe
 		featuremgmt.ProvideToggles(features),
 		grafanaCfg.AngularSupportEnabled,
 		grafanaCfg.GrafanaComURL,
+		grafanaCfg.PluginUseMultiTenantAuthService,
+		grafanaCfg.PluginAuthServiceURL,
+		grafanaCfg.ExtendedJWTExpectAudience, //FIXME: create a different setting, or move this to a different/global config
 	), nil
 }
 

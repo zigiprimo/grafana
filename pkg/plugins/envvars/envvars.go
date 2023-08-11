@@ -2,6 +2,8 @@ package envvars
 
 import (
 	"context"
+	"crypto/x509"
+	"encoding/pem"
 	"fmt"
 	"os"
 	"strconv"
@@ -13,6 +15,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/config"
+	"github.com/grafana/grafana/pkg/services/signingkeys"
 )
 
 type Provider interface {
@@ -20,14 +23,16 @@ type Provider interface {
 }
 
 type Service struct {
-	cfg     *config.Cfg
-	license plugins.Licensing
+	cfg         *config.Cfg
+	license     plugins.Licensing
+	signingKeys signingkeys.Service
 }
 
-func NewProvider(cfg *config.Cfg, license plugins.Licensing) *Service {
+func NewProvider(cfg *config.Cfg, license plugins.Licensing, signingKeys signingkeys.Service) *Service {
 	return &Service{
-		cfg:     cfg,
-		license: license,
+		cfg:         cfg,
+		license:     license,
+		signingKeys: signingKeys,
 	}
 }
 
@@ -49,11 +54,40 @@ func (s *Service) Get(ctx context.Context, p *plugins.Plugin) ([]string, error) 
 	if p.ExternalService != nil {
 		hostEnv = append(
 			hostEnv,
-			fmt.Sprintf("GF_APP_URL=%s", s.cfg.GrafanaAppURL),
-			fmt.Sprintf("GF_PLUGIN_APP_CLIENT_ID=%s", p.ExternalService.ClientID),
-			fmt.Sprintf("GF_PLUGIN_APP_CLIENT_SECRET=%s", p.ExternalService.ClientSecret),
-			fmt.Sprintf("GF_PLUGIN_APP_PRIVATE_KEY=%s", p.ExternalService.PrivateKey),
+			fmt.Sprintf("GF_USE_MULTI_TENANT_AUTH_SERVICE=%s", strconv.FormatBool(s.cfg.UseMultiTenantAuthService)),
 		)
+
+		if s.cfg.UseMultiTenantAuthService {
+			ecKeyBytes, err := x509.MarshalPKCS8PrivateKey(s.signingKeys.GetServerPrivateKey())
+			if err != nil {
+				return nil, err
+			}
+			hostEnv = append(hostEnv,
+				fmt.Sprintf("GF_PLUGIN_APP_PRIVATE_KEY=%s", string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: ecKeyBytes}))),
+				fmt.Sprintf("GF_PLUGIN_AUTH_SERVICE_URL=%s", s.cfg.AuthServiceURL),
+				fmt.Sprintf("GF_PLUGIN_AUTH_AUDIENCE=%s", s.cfg.GrafanaInstanceAudience),
+			)
+		} else {
+			hostEnv = append(
+				hostEnv,
+				fmt.Sprintf("GF_USE_MULTI_TENANT_AUTH_SERVICE=%s", strconv.FormatBool(s.cfg.UseMultiTenantAuthService)),
+				fmt.Sprintf("GF_APP_URL=%s", s.cfg.GrafanaAppURL),
+				fmt.Sprintf("GF_PLUGIN_APP_CLIENT_ID=%s", p.ExternalService.ClientID),
+				fmt.Sprintf("GF_PLUGIN_APP_CLIENT_SECRET=%s", p.ExternalService.ClientSecret),
+				fmt.Sprintf("GF_PLUGIN_APP_PRIVATE_KEY=%s", p.ExternalService.PrivateKey),
+			)
+		}
+		// if s.cfg.UseMultiTenantAuthService {
+		// 	ecKeyBytes, err := x509.MarshalPKCS8PrivateKey(s.signingKeys.GetServerPrivateKey())
+		// 	if err != nil {
+		// 		return nil, err
+		// 	}
+		// 	hostEnv = append(hostEnv,
+		// 		fmt.Sprintf("GF_PLUGIN_APP_PRIVATE_KEY=%s", string(pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: ecKeyBytes}))))
+		// } else {
+		// 	hostEnv = append(hostEnv,
+		// 		fmt.Sprintf("GF_PLUGIN_APP_PRIVATE_KEY=%s", p.ExternalService.PrivateKey))
+		// }
 	}
 
 	hostEnv = append(hostEnv, s.awsEnvVars()...)

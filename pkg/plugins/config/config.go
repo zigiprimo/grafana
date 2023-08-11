@@ -41,6 +41,11 @@ type Cfg struct {
 
 	GrafanaAppURL string
 
+	// Multi-tenant auth service settings
+	UseMultiTenantAuthService bool
+	AuthServiceURL            string
+	GrafanaInstanceAudience   string
+
 	Features plugins.FeatureToggles
 
 	AngularSupportEnabled bool
@@ -49,25 +54,28 @@ type Cfg struct {
 func NewCfg(devMode bool, pluginsPath string, pluginSettings setting.PluginSettings, pluginsAllowUnsigned []string,
 	awsAllowedAuthProviders []string, awsAssumeRoleEnabled bool, awsExternalId string, azure *azsettings.AzureSettings, secureSocksDSProxy setting.SecureSocksDSProxySettings,
 	grafanaVersion string, logDatasourceRequests bool, pluginsCDNURLTemplate string, appURL string, tracing Tracing, features plugins.FeatureToggles, angularSupportEnabled bool,
-	grafanaComURL string) *Cfg {
+	grafanaComURL string, useMultiTenantAuthService bool, authServiceURL string, instanceAudience string) *Cfg {
 	return &Cfg{
-		log:                     log.New("plugin.cfg"),
-		PluginsPath:             pluginsPath,
-		BuildVersion:            grafanaVersion,
-		DevMode:                 devMode,
-		PluginSettings:          pluginSettings,
-		PluginsAllowUnsigned:    pluginsAllowUnsigned,
-		AWSAllowedAuthProviders: awsAllowedAuthProviders,
-		AWSAssumeRoleEnabled:    awsAssumeRoleEnabled,
-		AWSExternalId:           awsExternalId,
-		Azure:                   azure,
-		ProxySettings:           secureSocksDSProxy,
-		LogDatasourceRequests:   logDatasourceRequests,
-		PluginsCDNURLTemplate:   pluginsCDNURLTemplate,
-		Tracing:                 tracing,
-		GrafanaComURL:           grafanaComURL,
-		GrafanaAppURL:           appURL,
-		Features:                features,
-		AngularSupportEnabled:   angularSupportEnabled,
+		log:                       log.New("plugin.cfg"),
+		PluginsPath:               pluginsPath,
+		BuildVersion:              grafanaVersion,
+		DevMode:                   devMode,
+		PluginSettings:            pluginSettings,
+		PluginsAllowUnsigned:      pluginsAllowUnsigned,
+		AWSAllowedAuthProviders:   awsAllowedAuthProviders,
+		AWSAssumeRoleEnabled:      awsAssumeRoleEnabled,
+		AWSExternalId:             awsExternalId,
+		Azure:                     azure,
+		ProxySettings:             secureSocksDSProxy,
+		LogDatasourceRequests:     logDatasourceRequests,
+		PluginsCDNURLTemplate:     pluginsCDNURLTemplate,
+		Tracing:                   tracing,
+		GrafanaComURL:             grafanaComURL,
+		GrafanaAppURL:             appURL,
+		Features:                  features,
+		AngularSupportEnabled:     angularSupportEnabled,
+		UseMultiTenantAuthService: useMultiTenantAuthService,
+		AuthServiceURL:            authServiceURL,
+		GrafanaInstanceAudience:   instanceAudience,
 	}
 }

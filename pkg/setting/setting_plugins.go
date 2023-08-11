@@ -32,6 +32,8 @@ func (cfg *Cfg) readPluginSettings(iniFile *ini.File) error {
 	cfg.PluginSettings = extractPluginSettings(iniFile.Sections())
 	cfg.PluginSkipPublicKeyDownload = pluginsSection.Key("public_key_retrieval_disabled").MustBool(false)
 	cfg.PluginForcePublicKeyDownload = pluginsSection.Key("public_key_retrieval_on_startup").MustBool(false)
+	cfg.PluginUseMultiTenantAuthService = pluginsSection.Key("use_multi_tenant_auth_service").MustBool(false)
+	cfg.PluginAuthServiceURL = pluginsSection.Key("auth_service_url").MustString("")
 
 	pluginsAllowUnsigned := pluginsSection.Key("allow_loading_unsigned_plugins").MustString("")
 

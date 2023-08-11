@@ -45,6 +45,7 @@ import (
 	pluginSettings "github.com/grafana/grafana/pkg/services/pluginsintegration/pluginsettings/service"
 	"github.com/grafana/grafana/pkg/services/quota/quotatest"
 	fakeSecrets "github.com/grafana/grafana/pkg/services/secrets/fakes"
+	"github.com/grafana/grafana/pkg/services/signingkeys/signingkeystest"
 	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch"
@@ -75,7 +76,7 @@ func TestCallResource(t *testing.T) {
 
 	discovery := pipeline.ProvideDiscoveryStage(pCfg, finder.NewLocalFinder(pCfg.DevMode), reg)
 	bootstrap := pipeline.ProvideBootstrapStage(pCfg, signature.ProvideService(pCfg, statickey.New()), assetpath.ProvideService(pluginscdn.ProvideService(pCfg)))
-	initialize := pipeline.ProvideInitializationStage(pCfg, reg, fakes.NewFakeLicensingService(), provider.ProvideService(coreRegistry), proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry())
+	initialize := pipeline.ProvideInitializationStage(pCfg, reg, fakes.NewFakeLicensingService(), provider.ProvideService(coreRegistry), proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry(), &signingkeystest.FakeSigningKeysService{})
 	terminate, err := pipeline.ProvideTerminationStage(pCfg, reg, proc)
 	require.NoError(t, err)
 

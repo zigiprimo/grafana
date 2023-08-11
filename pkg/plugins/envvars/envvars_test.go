@@ -14,6 +14,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/oauth"
 	"github.com/grafana/grafana/pkg/plugins/plugindef"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
+	"github.com/grafana/grafana/pkg/services/signingkeys/signingkeystest"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -38,7 +39,7 @@ func TestInitializer_envVars(t *testing.T) {
 					"custom_env_var": "customVal",
 				},
 			},
-		}, licensing)
+		}, licensing, &signingkeystest.FakeSigningKeysService{})
 
 		envVars, err := envVarsProvider.Get(context.Background(), p)
 		require.NoError(t, err)
@@ -300,7 +301,7 @@ func TestInitializer_tracingEnvironmentVariables(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			envVarsProvider := NewProvider(tc.cfg, nil)
+			envVarsProvider := NewProvider(tc.cfg, nil, &signingkeystest.FakeSigningKeysService{})
 			envVars, err := envVarsProvider.Get(context.Background(), tc.plugin)
 			require.NoError(t, err)
 			tc.exp(t, envVars)
@@ -325,7 +326,7 @@ func TestInitializer_oauthEnvVars(t *testing.T) {
 		envVarsProvider := NewProvider(&config.Cfg{
 			GrafanaAppURL: "https://myorg.com/",
 			Features:      featuremgmt.WithFeatures(featuremgmt.FlagExternalServiceAuth),
-		}, nil)
+		}, nil, &signingkeystest.FakeSigningKeysService{})
 		envVars, err := envVarsProvider.Get(context.Background(), p)
 
 		require.NoError(t, err)
@@ -345,7 +346,7 @@ func TestInitalizer_awsEnvVars(t *testing.T) {
 			AWSAssumeRoleEnabled:    true,
 			AWSAllowedAuthProviders: []string{"grafana_assume_role", "keys"},
 			AWSExternalId:           "mock_external_id",
-		}, nil)
+		}, nil, &signingkeystest.FakeSigningKeysService{})
 		envVars, err := envVarsProvider.Get(context.Background(), p)
 		require.NoError(t, err)
 		assert.ElementsMatch(t, []string{"GF_VERSION=", "AWS_AUTH_AssumeRoleEnabled=true", "AWS_AUTH_AllowedAuthProviders=grafana_assume_role,keys", "AWS_AUTH_EXTERNAL_ID=mock_external_id"}, envVars)

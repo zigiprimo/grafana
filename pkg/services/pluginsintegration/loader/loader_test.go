@@ -30,6 +30,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/pluginscdn"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pipeline"
+	"github.com/grafana/grafana/pkg/services/signingkeys/signingkeystest"
 	"github.com/grafana/grafana/pkg/setting"
 )
 
@@ -1327,7 +1328,7 @@ func newLoader(t *testing.T, cfg *config.Cfg, reg registry.Service, proc process
 		angularInspector, &fakes.FakeOauthService{},
 		pipeline.ProvideDiscoveryStage(cfg, finder.NewLocalFinder(false), reg),
 		pipeline.ProvideBootstrapStage(cfg, signature.DefaultCalculator(cfg), assets),
-		pipeline.ProvideInitializationStage(cfg, reg, lic, backendFactory, proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry()),
+		pipeline.ProvideInitializationStage(cfg, reg, lic, backendFactory, proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry(), &signingkeystest.FakeSigningKeysService{}),
 		terminate)
 }
 

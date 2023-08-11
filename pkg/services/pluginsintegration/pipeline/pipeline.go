@@ -15,6 +15,7 @@ import (
 	"github.com/grafana/grafana/pkg/plugins/manager/process"
 	"github.com/grafana/grafana/pkg/plugins/manager/registry"
 	"github.com/grafana/grafana/pkg/plugins/oauth"
+	"github.com/grafana/grafana/pkg/services/signingkeys"
 )
 
 func ProvideDiscoveryStage(cfg *config.Cfg, pf finder.Finder, pr registry.Service) *discovery.Discovery {
@@ -39,13 +40,13 @@ func ProvideBootstrapStage(cfg *config.Cfg, sc plugins.SignatureCalculator, a *a
 
 func ProvideInitializationStage(cfg *config.Cfg, pr registry.Service, l plugins.Licensing,
 	bp plugins.BackendFactoryProvider, pm process.Service, externalServiceRegistry oauth.ExternalServiceRegistry,
-	roleRegistry plugins.RoleRegistry) *initialization.Initialize {
+	roleRegistry plugins.RoleRegistry, signingKeys signingkeys.Service) *initialization.Initialize {
 	return initialization.New(cfg, initialization.Opts{
 		InitializeFuncs: []initialization.InitializeFunc{
-			initialization.BackendClientInitStep(envvars.NewProvider(cfg, l), bp),
+			ExternalServiceRegistrationStep(cfg, externalServiceRegistry),
+			initialization.BackendClientInitStep(envvars.NewProvider(cfg, l, signingKeys), bp),
 			initialization.PluginRegistrationStep(pr),
 			initialization.BackendProcessStartStep(pm),
-			ExternalServiceRegistrationStep(cfg, externalServiceRegistry),
 			RegisterPluginRolesStep(roleRegistry),
 			ReportBuildMetrics,
 		},

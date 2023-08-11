@@ -38,6 +38,7 @@ import (
 	plicensing "github.com/grafana/grafana/pkg/services/pluginsintegration/licensing"
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pipeline"
 	"github.com/grafana/grafana/pkg/services/searchV2"
+	"github.com/grafana/grafana/pkg/services/signingkeys/signingkeystest"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/tsdb/azuremonitor"
 	cloudmonitoring "github.com/grafana/grafana/pkg/tsdb/cloud-monitoring"
@@ -126,7 +127,7 @@ func TestIntegrationPluginManager(t *testing.T) {
 
 	discovery := pipeline.ProvideDiscoveryStage(pCfg, finder.NewLocalFinder(pCfg.DevMode), reg)
 	bootstrap := pipeline.ProvideBootstrapStage(pCfg, signature.ProvideService(pCfg, statickey.New()), assetpath.ProvideService(pluginscdn.ProvideService(pCfg)))
-	initialize := pipeline.ProvideInitializationStage(pCfg, reg, lic, provider.ProvideService(coreRegistry), proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry())
+	initialize := pipeline.ProvideInitializationStage(pCfg, reg, lic, provider.ProvideService(coreRegistry), proc, &fakes.FakeOauthService{}, fakes.NewFakeRoleRegistry(), &signingkeystest.FakeSigningKeysService{})
 	terminate, err := pipeline.ProvideTerminationStage(pCfg, reg, proc)
 	require.NoError(t, err)
 
