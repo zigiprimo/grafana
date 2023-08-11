@@ -61,7 +61,7 @@ function LogsNavigation({
     const newPage = { logsRange: visibleRange, queryRange: absoluteRange };
     let newPages: LogsPage[] = [];
     // We want to start new pagination if queries change or if absolute range is different than expected
-    if (!isEqual(expectedRangeRef.current, absoluteRange) || !isEqual(expectedQueriesRef.current, queries)) {
+    if (false) {
       clearCache();
       setPages([newPage]);
       setCurrentPageIndex(0);

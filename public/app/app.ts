@@ -43,15 +43,11 @@ import {
 import { setPanelDataErrorView } from '@grafana/runtime/src/components/PanelDataErrorView';
 import { setPanelRenderer } from '@grafana/runtime/src/components/PanelRenderer';
 import { setPluginPage } from '@grafana/runtime/src/components/PluginPage';
-import { getScrollbarWidth } from '@grafana/ui';
+import { getScrollbarWidth, getExplorationServiceFactory, setExplorationServiceFactory } from '@grafana/ui';
 import config from 'app/core/config';
 import { arrayMove } from 'app/core/utils/arrayMove';
 import { getStandardTransformers } from 'app/features/transformers/standardTransformers';
 
-import {
-  getExplorationServiceFactory,
-  setExplorationServiceFactory,
-} from '../../packages/grafana-ui/src/components/Exploration/service';
 import getDefaultMonacoLanguages from '../lib/monaco-languages';
 
 import { AppWrapper } from './AppWrapper';

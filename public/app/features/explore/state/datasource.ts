@@ -111,6 +111,12 @@ export const datasourceReducer = (state: ExploreItemState, action: AnyAction): E
       supplementaryQueries: loadSupplementaryQueries(),
       queryResponse: createEmptyQueryResponse(),
       queryKeys: [],
+      queries: state.queries.map((q) => {
+        return {
+          ...q,
+          datasource: datasourceInstance,
+        };
+      }),
       history,
     };
   }

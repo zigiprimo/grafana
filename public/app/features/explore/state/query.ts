@@ -23,6 +23,8 @@ import {
   toLegacyResponseData,
   getTimeZone,
   AppEvents,
+  SplitOpen,
+  SplitOpenOptions,
 } from '@grafana/data';
 import {
   config,
@@ -63,6 +65,7 @@ import {
 
 import { saveCorrelationsAction } from './explorePane';
 import { addHistoryItem, historyUpdatedAction, loadRichHistory } from './history';
+import { splitOpen } from './main';
 import { updateTime } from './time';
 import { createCacheKey, filterLogRowsByIndex, getDatasourceUIDs, getResultsFromCache } from './utils';
 
@@ -500,6 +503,10 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
       dispatch(clearCache(exploreId));
     }
 
+    const splitOpenFn: SplitOpen = (options: SplitOpenOptions) => {
+      dispatch(splitOpen(options));
+    };
+
     const exploreItemState = getState().panes[exploreId]!;
     const {
       datasourceInstance,
@@ -537,7 +544,7 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
     if (cachedValue) {
       newQuerySource = combineLatest([of(cachedValue), correlations$]).pipe(
         mergeMap(([data, correlations]) =>
-          decorateData(data, queryResponse, absoluteRange, refreshInterval, queries, correlations)
+          decorateData(data, queryResponse, absoluteRange, refreshInterval, queries, correlations, splitOpenFn)
         )
       );
 
@@ -585,7 +592,7 @@ export const runQueries = createExploreAsyncThunk<void, RunQueriesOptions>(
         correlations$,
       ]).pipe(
         mergeMap(([data, correlations]) =>
-          decorateData(data, queryResponse, absoluteRange, refreshInterval, queries, correlations)
+          decorateData(data, queryResponse, absoluteRange, refreshInterval, queries, correlations, splitOpenFn)
         )
       );
 
@@ -908,7 +915,12 @@ export const queryReducer = (state: ExploreItemState, action: AnyAction): Explor
 
     return {
       ...state,
-      queries,
+      queries: queries.map((q) => {
+        return {
+          ...q,
+          datasource: state.datasourceInstance,
+        };
+      }),
     };
   }
 

@@ -12,6 +12,7 @@ import {
   preProcessPanelData,
   CorrelationData,
   applyFieldOverrides,
+  SplitOpen,
 } from '@grafana/data';
 import { config, getTemplateSrv } from '@grafana/runtime';
 import { DataQuery } from '@grafana/schema';
@@ -40,22 +41,6 @@ export const decorateWithFrameTypeMetadata = (data: PanelData): ExplorePanelData
   const nodeGraphFrames: DataFrame[] = [];
   const flameGraphFrames: DataFrame[] = [];
   const customFrames: DataFrame[] = [];
-
-  const dataLinkPostProcessor = exploreDataLinkPostProcessorFactory(
-    getExploreService().onSplitOpen.bind(getExploreService()),
-    data.timeRange
-  );
-
-  data.series = applyFieldOverrides({
-    data: data.series,
-    theme: config.theme2,
-    replaceVariables: getTemplateSrv().replace.bind(getTemplateSrv()),
-    fieldConfig: {
-      defaults: {},
-      overrides: [],
-    },
-    dataLinkPostProcessor,
-  });
 
   for (const frame of data.series) {
     switch (frame.meta?.preferredVisualisationType) {
@@ -284,10 +269,26 @@ export function decorateData(
   absoluteRange: AbsoluteTimeRange,
   refreshInterval: string | undefined,
   queries: DataQuery[] | undefined,
-  correlations: CorrelationData[] | undefined
+  correlations: CorrelationData[] | undefined,
+  splitOpen?: SplitOpen
 ): Observable<ExplorePanelData> {
   return of(data).pipe(
-    map((data: PanelData) => preProcessPanelData(data, queryResponse)),
+    map((data: PanelData) => preProcessPanelData(data, queryResponse, splitOpen)),
+    map((data: PanelData) => {
+      const dataLinkPostProcessor = exploreDataLinkPostProcessorFactory(splitOpen, data.timeRange);
+
+      data.series = applyFieldOverrides({
+        data: data.series,
+        theme: config.theme2,
+        replaceVariables: getTemplateSrv().replace.bind(getTemplateSrv()),
+        fieldConfig: {
+          defaults: {},
+          overrides: [],
+        },
+        dataLinkPostProcessor,
+      });
+      return data;
+    }),
     map(decorateWithCorrelations({ queries, correlations })),
     map(decorateWithFrameTypeMetadata),
     map(decorateWithGraphResult),
