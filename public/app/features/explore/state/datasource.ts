@@ -114,7 +114,7 @@ export const datasourceReducer = (state: ExploreItemState, action: AnyAction): E
       queries: state.queries.map((q) => {
         return {
           ...q,
-          datasource: datasourceInstance,
+          datasource: datasourceInstance.getRef(),
         };
       }),
       history,

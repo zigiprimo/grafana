@@ -74,9 +74,9 @@ export const splitOpen = createExploreAsyncThunk(
 
     Object.keys(getState().panes).forEach((paneId, index) => {
       // Only 2 panes are supported. Remove panes before create a new one.
-      if (index >= 1) {
-        dispatch(splitClose(paneId));
-      }
+      // if (index >= 2) {
+      //   dispatch(splitClose(paneId));
+      // }
     });
 
     await dispatch(

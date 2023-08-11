@@ -918,7 +918,7 @@ export const queryReducer = (state: ExploreItemState, action: AnyAction): Explor
       queries: queries.map((q) => {
         return {
           ...q,
-          datasource: state.datasourceInstance,
+          datasource: state.datasourceInstance.getRef(),
         };
       }),
     };
