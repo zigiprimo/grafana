@@ -672,9 +672,10 @@ func (s *Service) handleLogsScenario(ctx context.Context, req *backend.QueryData
 			frame.Fields = append(frame.Fields, data.NewField("level", nil, []string{}))
 		}
 
-		for i := int64(0); i < lines && to > from; i++ {
+		logLineTime := from
+		for i := int64(0); i < lines && logLineTime < to; i++ {
 			logLevel := logLevelGenerator.Next()
-			timeFormatted := time.Unix(to/1000, 0).Format(time.RFC3339)
+			timeFormatted := time.Unix(logLineTime/1000, 0).Format(time.RFC3339)
 			lvlString := ""
 			if !includeLevelColumn {
 				lvlString = fmt.Sprintf("lvl=%s ", logLevel)
@@ -684,7 +685,7 @@ func (s *Service) handleLogsScenario(ctx context.Context, req *backend.QueryData
 			containerID := containerIDGenerator.Next()
 			hostname := hostnameGenerator.Next()
 
-			t := time.Unix(to/int64(1e+3), (to%int64(1e+3))*int64(1e+6))
+			t := time.Unix(logLineTime/int64(1e+3), (logLineTime%int64(1e+3))*int64(1e+6))
 
 			if includeLevelColumn {
 				frame.AppendRow(t, message, containerID, hostname, logLevel)
@@ -692,7 +693,7 @@ func (s *Service) handleLogsScenario(ctx context.Context, req *backend.QueryData
 				frame.AppendRow(t, message, containerID, hostname)
 			}
 
-			to -= q.Interval.Milliseconds()
+			logLineTime += q.Interval.Milliseconds()
 		}
 
 		respD := resp.Responses[q.RefID]
