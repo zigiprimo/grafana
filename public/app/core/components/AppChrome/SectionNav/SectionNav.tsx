@@ -69,6 +69,8 @@ const getStyles = (theme: GrafanaTheme2) => {
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
+      background: theme.colors.background.primary,
+      borderRight: `1px solid ${theme.colors.border.weak}`,
 
       [theme.breakpoints.up('md')]: {
         flexDirection: 'row',
@@ -77,7 +79,6 @@ const getStyles = (theme: GrafanaTheme2) => {
     nav: css({
       display: 'flex',
       flexDirection: 'column',
-      background: theme.colors.background.canvas,
       flexShrink: 0,
       transition: theme.transitions.create(['width', 'max-height']),
       maxHeight: 0,
