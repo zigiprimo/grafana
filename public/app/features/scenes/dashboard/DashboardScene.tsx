@@ -76,14 +76,14 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> {
 
   onEnterEditMode = () => {
     this.setState({ isEditing: true });
-    (this.state.body as SceneGridLayout).toggleEditMode(true);
+    (this.state.body as SceneGridLayout).setState({ isDraggable: true, isResizable: true });
   };
 
   onDiscard = () => {
     // TODO open confirm modal if dirty
     // TODO actually discard changes
     this.setState({ isEditing: false });
-    (this.state.body as SceneGridLayout).toggleEditMode(false);
+    (this.state.body as SceneGridLayout).setState({ isDraggable: false, isResizable: false });
   };
 
   onCloseInspectDrawer = () => {
