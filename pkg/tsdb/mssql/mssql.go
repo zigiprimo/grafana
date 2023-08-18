@@ -91,14 +91,6 @@ func newInstanceSettings(cfg *setting.Cfg) datasource.InstanceFactoryFunc {
 			return nil, err
 		}
 
-		logger.Error("TEST", "teststr", cnnstr)
-
-		// path, _ := os.Getwd()
-
-		// logger.Error("TEST", "PATH", path)
-
-		// cnnstr = "authenticator=krb5;server=673863ace5b7;database=master;user id=sa;password=Password!;krb5-realm=EXAMPLE.COM;krb5-configfile=../krb5.conf;krb5-udppreferencelimit=1465;"
-
 		if cfg.Env == setting.Dev {
 			logger.Debug("GetEngine", "connection", cnnstr)
 		}
