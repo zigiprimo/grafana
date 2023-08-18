@@ -228,7 +228,7 @@ export class PanelQueryRunner {
         return of({
           ...data,
           state: LoadingState.Error,
-          error: toDataQueryError(err),
+          errors: [toDataQueryError(err)],
         });
       })
     );
