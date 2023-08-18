@@ -5,17 +5,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 
-	mssql "github.com/grafana/go-mssqldb"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/datasource"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/instancemgmt"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	"github.com/grafana/grafana-plugin-sdk-go/data/sqlutil"
+	mssql "github.com/microsoft/go-mssqldb"
+	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5"
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
@@ -88,6 +90,14 @@ func newInstanceSettings(cfg *setting.Cfg) datasource.InstanceFactoryFunc {
 		if err != nil {
 			return nil, err
 		}
+
+		logger.Error("TEST", "teststr", cnnstr)
+
+		// path, _ := os.Getwd()
+
+		// logger.Error("TEST", "PATH", path)
+
+		// cnnstr = "authenticator=krb5;server=673863ace5b7;database=master;user id=sa;password=Password!;krb5-realm=EXAMPLE.COM;krb5-configfile=../krb5.conf;krb5-udppreferencelimit=1465;"
 
 		if cfg.Env == setting.Dev {
 			logger.Debug("GetEngine", "connection", cnnstr)
@@ -174,6 +184,13 @@ func generateConnectionString(dsInfo sqleng.DataSourceInfo) (string, error) {
 		dsInfo.User,
 		dsInfo.DecryptedSecureJSONData["password"],
 	)
+
+	isKrb5Enabled, krb5DriverParams := Krb5ParseAuthCredentials(addr.Host, dsInfo.Database, dsInfo.User, dsInfo.DecryptedSecureJSONData["password"])
+
+	if isKrb5Enabled {
+		connStr = krb5DriverParams
+	}
+
 	// Port number 0 means to determine the port automatically, so we can let the driver choose
 	if addr.Port != "0" {
 		connStr += fmt.Sprintf("port=%s;", addr.Port)
@@ -307,4 +324,47 @@ func (t *mssqlQueryResultTransformer) GetConverterList() []sqlutil.StringConvert
 			},
 		},
 	}
+}
+
+func Krb5ParseAuthCredentials(host string, db string, user string, pass string) (bool, string) {
+	//Custom envs that may be used as params for driver conn str
+	//More details: https://github.com/microsoft/go-mssqldb#kerberos-active-directory-authentication-outside-windows
+	enableKrb5 := os.Getenv("KRB5_MSSQL_ENABLE")
+
+	if enableKrb5 == "" {
+		return false, ""
+	}
+
+	krb5Realm := os.Getenv("KRB5_REALM")
+	krb5UdpPreferenceLimit := os.Getenv("KRB5_UDP_PREFERENCE_LIMIT")
+
+	//These are actual kerberos env vars
+	krb5Config := os.Getenv("KRB5_CONFIG")
+	krb5ClientKeytabFile := os.Getenv("KRB5_CLIENT_KTNAME")
+	krb5CacheCredsFile := os.Getenv("KRB5CCNAME")
+
+	if krb5Config == "" {
+		//if env var empty, use default
+		krb5Config = "/etc/krb5.conf"
+	}
+
+	krb5DriverParams := fmt.Sprintf("authenticator=krb5;krb5-configfile=%s;", krb5Config)
+
+	// There are 3 main connection types:
+	// - credentials cache
+	// - user, realm, keytab
+	// - realm, user, pass
+	if krb5CacheCredsFile != "" {
+		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;krb5-credcachefile=%s;", host, db, krb5CacheCredsFile)
+	} else if krb5Realm != "" && krb5ClientKeytabFile != "" {
+		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;user id=%s;krb5-realm=%s;krb5-keytabfile=%s;", host, db, user, krb5Realm, krb5ClientKeytabFile)
+	} else if krb5Realm != "" && krb5ClientKeytabFile == "" {
+		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;user id=%s;password=%s;krb5-realm=%s;", host, db, user, pass, krb5Realm)
+	}
+
+	if krb5UdpPreferenceLimit != "" {
+		krb5DriverParams += "krb5-udppreferencelimit=" + krb5UdpPreferenceLimit + ";"
+	}
+
+	return true, krb5DriverParams
 }
