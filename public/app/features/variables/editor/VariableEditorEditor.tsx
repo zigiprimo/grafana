@@ -113,10 +113,6 @@ export class VariableEditorEditorUnConnected extends PureComponent<Props, State>
 
   onHandleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!this.props.editor.isValid) {
-      return;
-    }
-
     this.props.updateOptions(toKeyedVariableIdentifier(this.props.variable));
   };
 
