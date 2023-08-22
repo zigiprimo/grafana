@@ -82,7 +82,7 @@ const UserInput = ({ item, isRegenerating, setIsRegenerating, llmReGenerate, ind
       setUserInput('');
     }
   };
-  console.log('type', type);
+
   return (
     <div className={styles.userInputWrapper}>
       <TextArea

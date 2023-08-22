@@ -5,6 +5,9 @@ import { Stack } from '@grafana/experimental';
 import { Button, Checkbox, Form, TextArea } from '@grafana/ui';
 import { DashboardModel } from 'app/features/dashboard/state';
 
+import { AiGenerate } from '../../DashGPT/AiGenerate';
+import { onGenerateTextWithAi, regenerateResponseWithFeedback, SPECIAL_DONE_TOKEN } from '../../DashGPT/utils';
+import { Diffs } from '../../VersionHistory/utils';
 import { SaveDashboardData, SaveDashboardOptions } from '../types';
 
 interface FormDTO {
@@ -20,7 +23,14 @@ export type SaveProps = {
   onSubmit?: (clone: DashboardModel, options: SaveDashboardOptions, dashboard: DashboardModel) => Promise<any>;
   options: SaveDashboardOptions;
   onOptionsChange: (opts: SaveDashboardOptions) => void;
+  diff: Diffs;
 };
+
+let llmReplyDescription = '';
+
+let enabled = false;
+
+let descriptionHistory: string[] = [];
 
 export const SaveDashboardForm = ({
   dashboard,
@@ -31,11 +41,85 @@ export const SaveDashboardForm = ({
   onCancel,
   onSuccess,
   onOptionsChange,
+  diff,
 }: SaveProps) => {
   const hasTimeChanged = useMemo(() => dashboard.hasTimeChanged(), [dashboard]);
   const hasVariableChanged = useMemo(() => dashboard.hasVariableValuesChanged(), [dashboard]);
 
   const [saving, setSaving] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
+
+  const setPanelDescription = (description: string) => {
+    const input = document.getElementById('description-text-area') as HTMLInputElement;
+    input.value = description;
+    onOptionsChange({
+      ...options,
+      message: description,
+    });
+  };
+
+  const setLlmReply = (reply: string, subject: string) => {
+    if (reply.indexOf(SPECIAL_DONE_TOKEN) >= 0) {
+      reply = reply.replace(SPECIAL_DONE_TOKEN, '');
+      reply = reply.replace(/"/g, '');
+
+      setGeneratingDescription(false);
+      setPanelDescription(reply);
+      if (descriptionHistory.indexOf(reply) === -1 && reply !== '') {
+        descriptionHistory.push(reply);
+      }
+
+      return;
+    }
+
+    reply = reply.replace(/"/g, '');
+
+    setGeneratingDescription(true);
+
+    llmReplyDescription = reply;
+    if (enabled && llmReplyDescription !== '') {
+      setPanelDescription(llmReplyDescription);
+    }
+  };
+
+  const llmGenerate = () => {
+    const payload = getGeneratePayloadForDiffDescription();
+
+    onGenerateTextWithAi(payload, 'diffChanges', setLlmReply)
+      .then((response) => {
+        enabled = response.enabled;
+      })
+      .catch((e) => console.log('error', e.message));
+  };
+
+  const llmReGenerate = async (
+    subject: string,
+    originalResponse: string,
+    feedback: string,
+    historyItemIndex: number
+  ): Promise<boolean> => {
+    const payload = getGeneratePayloadForDiffDescription();
+
+    let updatedResponse: string | { enabled: any } = await regenerateResponseWithFeedback(
+      payload,
+      subject,
+      originalResponse,
+      feedback
+    );
+
+    if (typeof updatedResponse === 'string') {
+      updatedResponse = updatedResponse.replace(SPECIAL_DONE_TOKEN, '');
+      updatedResponse = updatedResponse.replace(/"/g, '');
+
+      descriptionHistory[historyItemIndex] = updatedResponse;
+    }
+
+    return true;
+  };
+
+  function getGeneratePayloadForDiffDescription() {
+    return diff;
+  }
 
   return (
     <Form
@@ -89,8 +173,24 @@ export const SaveDashboardForm = ({
                 aria-label={selectors.pages.SaveDashboardModal.saveVariables}
               />
             )}
+            <AiGenerate
+              text={generatingDescription ? 'Generating description' : 'Generate it with AI'}
+              onClick={() => llmGenerate()}
+              history={descriptionHistory}
+              applySuggestion={(suggestion: string) => {
+                onOptionsChange({
+                  ...options,
+                  message: suggestion,
+                });
+                messageProps.onChange(suggestion);
+              }}
+              llmReGenerate={llmReGenerate}
+              type="diffChanges"
+              loading={generatingDescription}
+            />
             <TextArea
               {...messageProps}
+              id="description-text-area"
               aria-label="message"
               value={options.message}
               onChange={(e) => {

@@ -5,6 +5,7 @@ import { FolderPicker } from 'app/core/components/Select/FolderPicker';
 import { DashboardModel, PanelModel } from 'app/features/dashboard/state';
 import { validationSrv } from 'app/features/manage-dashboards/services/ValidationSrv';
 
+import { Diffs } from '../../VersionHistory/utils';
 import { SaveDashboardFormProps } from '../types';
 
 interface SaveDashboardAsFormDTO {
@@ -36,6 +37,8 @@ const getSaveAsDashboardClone = (dashboard: DashboardModel) => {
 
 export interface SaveDashboardAsFormProps extends SaveDashboardFormProps {
   isNew?: boolean;
+  // Used for generative AI description
+  diff: Diffs;
 }
 
 export const SaveDashboardAsForm = ({

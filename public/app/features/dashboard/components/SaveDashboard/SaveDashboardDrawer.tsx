@@ -81,6 +81,7 @@ export const SaveDashboardDrawer = ({ dashboard, onDismiss, onSaveSuccess, isCop
           onSuccess={onSuccess}
           onSubmit={onDashboardSave}
           isNew={isNew}
+          diff={data.diff}
         />
       );
     }
@@ -99,6 +100,7 @@ export const SaveDashboardDrawer = ({ dashboard, onDismiss, onSaveSuccess, isCop
         onSubmit={onDashboardSave}
         options={options}
         onOptionsChange={setOptions}
+        diff={data.diff}
       />
     );
   };
@@ -128,6 +130,7 @@ export const SaveDashboardDrawer = ({ dashboard, onDismiss, onSaveSuccess, isCop
 
   return (
     <Drawer
+      closeOnMaskClick={false}
       title={title}
       onClose={onDismiss}
       subtitle={dashboard.title}

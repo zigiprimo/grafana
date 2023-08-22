@@ -103,7 +103,7 @@ export function setOptionImmutably<T extends object>(options: T, path: string | 
   return { ...options, [key]: setOptionImmutably(current, splat, value) };
 }
 
-export const getGeneratePayloadForTitle = (panel: PanelModel): GeneratePayload => {
+export const getGeneratePayloadForTitle = (panel: PanelModel): GeneratePayloadForTitle => {
   const dashboard = getDashboardSrv().getCurrent();
 
   return {
@@ -124,7 +124,7 @@ export const getGeneratePayloadForPanels = (dashboard: DashboardModel) => {
   };
 };
 
-export interface GeneratePayload {
+export interface GeneratePayloadForTitle {
   dashboardTitle: string | undefined;
   dashboardDescription: string;
   panelTitles: string[];

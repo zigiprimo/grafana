@@ -25,6 +25,14 @@ const QUICK_FEEDBACK_GENERATION_STANDARD_PROMPT =
   'Return both responses separated by comma.' +
   `When you are done with the description, write "${SPECIAL_DONE_TOKEN}".`;
 
+const CHANGES_DESCRIPTION_GENERATION_STANDARD_PROMPT =
+  'You are an expert in creating Grafana Dashboards.' +
+  'Your goal is to generate a description of what have changed in a dashboard for a give JSON diff.' +
+  'The description should be organized in bullet points.' +
+  "Ignore the changes related to the paths: ['templating', 'list', '<index>', 'current', 'selected']" +
+  'The templating list is the list of variables, use that term when mentioning them.' +
+  `When you are done with the description, write "${SPECIAL_DONE_TOKEN}".`;
+
 const getContent = (subject: string) => {
   switch (subject) {
     case 'title':
@@ -33,13 +41,15 @@ const getContent = (subject: string) => {
       return DESCRIPTION_GENERATION_STANDARD_PROMPT;
     case 'quickFeedback':
       return QUICK_FEEDBACK_GENERATION_STANDARD_PROMPT;
+    case 'diffChanges':
+      return CHANGES_DESCRIPTION_GENERATION_STANDARD_PROMPT;
     default:
       return '';
   }
 };
 
 export const onGenerateTextWithAi = async (
-  payload: GeneratePayload,
+  payload: object,
   subject: string,
   setLlmReply: (response: string, subject: string) => void
 ) => {
@@ -75,7 +85,7 @@ export const onGenerateTextWithAi = async (
 };
 
 export const regenerateResponseWithFeedback = async (
-  payload: GeneratePayload,
+  payload: object,
   subject: string,
   originalResponse: string,
   feedback: string
@@ -108,7 +118,7 @@ export const regenerateResponseWithFeedback = async (
     .then((response) => response.choices[0].message.content);
 };
 
-export const generateQuickFeedback = async (payload: any, userInput: string) => {
+export const generateQuickFeedback = async (payload: object, userInput: string) => {
   // Check if the LLM plugin is enabled and configured.
   // If not, we won't be able to make requests, so return early.
   const enabled = await llms.openai.enabled();
