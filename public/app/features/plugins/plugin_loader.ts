@@ -73,7 +73,7 @@ grafanaRuntime.SystemJS.config({
   meta: {
     '/*': {
       esModule: true,
-      authorization: true,
+      authorization: config.pluginsCDNBaseURL === '',
       loader: 'plugin-loader',
     },
     '*.css': {
