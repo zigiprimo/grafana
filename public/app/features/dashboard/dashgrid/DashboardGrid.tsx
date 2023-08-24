@@ -152,6 +152,9 @@ export class DashboardGrid extends PureComponent<Props> {
     for (const panel of this.props.dashboard.panels) {
       const panelClasses = classNames({ 'react-grid-item--fullscreen': panel.isViewing });
 
+      // used to allow overflowing content to show on top of the next panel
+      const descIndex = this.props.dashboard.panels.length - panelElements.length;
+
       panelElements.push(
         <GrafanaGridItem
           key={panel.key}
@@ -159,6 +162,7 @@ export class DashboardGrid extends PureComponent<Props> {
           data-panelid={panel.id}
           gridPos={panel.gridPos}
           gridWidth={gridWidth}
+          descendingOrderIndex={descIndex}
           windowHeight={this.windowHeight}
           windowWidth={this.windowWidth}
           isViewing={panel.isViewing}
@@ -278,6 +282,7 @@ interface GrafanaGridItemProps extends React.HTMLAttributes<HTMLDivElement> {
   gridWidth?: number;
   gridPos?: GridPos;
   isViewing: boolean;
+  descendingOrderIndex?: number;
   windowHeight: number;
   windowWidth: number;
   children: any;
@@ -291,7 +296,7 @@ const GrafanaGridItem = React.forwardRef<HTMLDivElement, GrafanaGridItemProps>((
   let width = 100;
   let height = 100;
 
-  const { gridWidth, gridPos, isViewing, windowHeight, windowWidth, ...divProps } = props;
+  const { gridWidth, gridPos, isViewing, windowHeight, windowWidth, descendingOrderIndex, ...divProps } = props;
   const style: CSSProperties = props.style ?? {};
 
   if (isViewing) {
@@ -321,7 +326,7 @@ const GrafanaGridItem = React.forwardRef<HTMLDivElement, GrafanaGridItemProps>((
 
   // props.children[0] is our main children. RGL adds the drag handle at props.children[1]
   return (
-    <div {...divProps} ref={ref}>
+    <div {...divProps} style={{ ...divProps.style, zIndex: descendingOrderIndex }} ref={ref}>
       {/* Pass width and height to children as render props */}
       {[props.children[0](width, height), props.children.slice(1)]}
     </div>
