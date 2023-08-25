@@ -1,8 +1,8 @@
-import React, { PureComponent } from 'react';
+import React from 'react';
 
 import { PluginState } from '@grafana/data/src';
 import { TextDimensionConfig } from '@grafana/schema';
-import { Button } from '@grafana/ui';
+import { Button, usePanelContext } from '@grafana/ui';
 import { DimensionContext } from 'app/features/dimensions/context';
 import { TextDimensionEditor } from 'app/features/dimensions/editors/TextDimensionEditor';
 import { APIEditor, APIEditorConfig, callApi } from 'app/plugins/panel/canvas/editor/element/APIEditor';
@@ -19,22 +19,23 @@ interface ButtonConfig {
   api?: APIEditorConfig;
 }
 
-class ButtonDisplay extends PureComponent<CanvasElementProps<ButtonConfig, ButtonData>> {
-  render() {
-    const { data } = this.props;
-    const onClick = () => {
-      if (data?.api) {
-        callApi(data.api);
-      }
-    };
+const ButtonDisplay = (props: CanvasElementProps<ButtonConfig, ButtonData>) => {
+  const { data } = props;
 
-    return (
-      <Button type="submit" onClick={onClick} style={{ background: defaultBgColor }}>
-        {data?.text}
-      </Button>
-    );
-  }
-}
+  const context = usePanelContext();
+  const scene = context.instanceState?.scene;
+  const onClick = () => {
+    if (data?.api && !scene.isEditingEnabled) {
+      callApi(data.api);
+    }
+  };
+
+  return (
+    <Button type="submit" onClick={onClick} style={{ background: defaultBgColor }}>
+      {data?.text}
+    </Button>
+  );
+};
 
 export const buttonItem: CanvasElementItem<ButtonConfig, ButtonData> = {
   id: 'button',
