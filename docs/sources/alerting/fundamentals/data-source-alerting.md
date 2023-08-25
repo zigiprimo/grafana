@@ -2,9 +2,16 @@
 description: Data sources in Grafana Alerting
 title: Data sources
 weight: 100
+labels:
+  products:
+    - cloud
+    - enterprise
+    - oss
+title: Data sources and Grafana Alerting
+weight: 100
 ---
 
-# Data sources
+# Data sources and Grafana Alerting
 
 There are a number of data sources that are compatible with Grafana Alerting. Each data source is supported by a plugin. You can use one of the built-in data sources listed below, use [external data source plugins](https://grafana.com/grafana/plugins/?type=datasource), or create your own data source plugin.
 
