@@ -10,3 +10,16 @@
       - ../data/log:/var/log/grafana
     command:
       -config.file=/etc/promtail/docker-config.yaml
+
+  tempo:
+    image: grafana/tempo:latest
+    command:
+      - --config.file=/etc/tempo.yaml
+    volumes:
+      - ./docker/blocks/tempo/tempo.yaml:/etc/tempo.yaml
+      - ./docker/blocks/tempo/tempo-data:/tmp/tempo
+    ports:
+      - "14268:14268"  # jaeger ingest
+      - "3200:3200"   # tempo
+      - "4317:4317"  # otlp grpc
+      - "4318:4318"  # otlp http

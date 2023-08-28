@@ -32,7 +32,7 @@ interface LogMessageProps {
   styles: LogRowStyles;
 }
 
-const LogMessage = ({ hasAnsi, entry, highlights, styles }: LogMessageProps) => {
+export const LogMessage = ({ hasAnsi, entry, highlights, styles }: LogMessageProps) => {
   const needsHighlighter =
     highlights && highlights.length > 0 && highlights[0] && highlights[0].length > 0 && entry.length < MAX_CHARACTERS;
   const searchWords = highlights ?? [];
