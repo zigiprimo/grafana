@@ -10,8 +10,6 @@
 
 import * as common from '@grafana/schema';
 
-export const DataQueryModelVersion = Object.freeze([0, 0]);
-
 export interface MetricStat {
   /**
    * The ID of the AWS account to query for the metric, specifying `all` will query all accounts that the monitoring account is permitted to query.
@@ -65,7 +63,8 @@ export type Dimensions = Record<string, (string | Array<string>)>;
  */
 export interface CloudWatchMetricsQuery extends common.DataQuery, MetricStat {
   /**
-   * To be deprecated. Use label
+   * Deprecated: use label
+   * @deprecated use label
    */
   alias?: string;
   /**
@@ -275,6 +274,10 @@ export interface LogGroup {
 
 /**
  * Shape of a CloudWatch Annotation query
+ */
+/**
+ * TS type is CloudWatchDefaultQuery = Omit<CloudWatchLogsQuery, 'queryMode'> & CloudWatchMetricsQuery, declared in veneer
+ * #CloudWatchDefaultQuery: #CloudWatchLogsQuery & #CloudWatchMetricsQuery @cuetsy(kind="type")
  */
 export interface CloudWatchAnnotationQuery extends common.DataQuery, MetricStat {
   /**

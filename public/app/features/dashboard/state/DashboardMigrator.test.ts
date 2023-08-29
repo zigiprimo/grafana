@@ -64,6 +64,7 @@ describe('DashboardModel', () => {
           { type: 'filtering', enable: true },
           { type: 'annotations', enable: true, annotations: [{ name: 'old' }] },
         ],
+        style: 'dark',
         panels: [
           {
             type: 'graph',
@@ -88,8 +89,8 @@ describe('DashboardModel', () => {
           },
           {
             type: 'singlestat',
-            legend: true,
             // @ts-expect-error
+            legend: true,
             thresholds: '10,20,30',
             colors: ['#FF0000', 'green', 'orange'],
             aliasYAxis: { test: 2 },
@@ -130,6 +131,10 @@ describe('DashboardModel', () => {
 
     it('should have panel id', () => {
       expect(graph.id).toBe(1);
+    });
+
+    it('should not have style', () => {
+      expect(model.style).toBe(undefined);
     });
 
     it('should move time and filtering list', () => {
@@ -665,16 +670,16 @@ describe('DashboardModel', () => {
       model = new DashboardModel({
         templating: {
           list: [
+            // @ts-expect-error
             {
-              // @ts-expect-error
               multi: false,
               current: {
                 value: ['value'],
                 text: ['text'],
               },
             },
+            // @ts-expect-error
             {
-              // @ts-expect-error
               multi: true,
               current: {
                 value: ['value'],
@@ -724,8 +729,8 @@ describe('DashboardModel', () => {
             },
             {
               type: 'query',
-              // @ts-expect-error
               current: {
+                // @ts-expect-error
                 tags: [
                   {
                     selected: true,
@@ -888,52 +893,52 @@ describe('DashboardModel', () => {
       model = new DashboardModel({
         templating: {
           list: [
+            // @ts-expect-error
             {
               type: 'query',
               hide: VariableHide.dontHide,
               datasource: null,
-              // @ts-expect-error
               allFormat: '',
             },
+            // @ts-expect-error
             {
               type: 'query',
               hide: VariableHide.hideLabel,
               datasource: null,
-              // @ts-expect-error
               allFormat: '',
             },
+            // @ts-expect-error
             {
               type: 'query',
               hide: VariableHide.hideVariable,
               datasource: null,
-              // @ts-expect-error
               allFormat: '',
             },
+            // @ts-expect-error
             {
               type: 'constant',
               hide: VariableHide.dontHide,
               query: 'default value',
-              // @ts-expect-error
               current: { selected: true, text: 'A', value: 'B' },
               options: [{ selected: true, text: 'A', value: 'B' }],
               datasource: null,
               allFormat: '',
             },
+            // @ts-expect-error
             {
               type: 'constant',
               hide: VariableHide.hideLabel,
               query: 'default value',
-              // @ts-expect-error
               current: { selected: true, text: 'A', value: 'B' },
               options: [{ selected: true, text: 'A', value: 'B' }],
               datasource: null,
               allFormat: '',
             },
+            // @ts-expect-error
             {
               type: 'constant',
               hide: VariableHide.hideVariable,
               query: 'default value',
-              // @ts-expect-error
               current: { selected: true, text: 'A', value: 'B' },
               options: [{ selected: true, text: 'A', value: 'B' }],
               datasource: null,
@@ -995,96 +1000,96 @@ describe('DashboardModel', () => {
       model = new DashboardModel({
         templating: {
           list: [
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_never_refresh_with_options',
-              // @ts-expect-error
               options: [{ text: 'A', value: 'A' }],
               refresh: 0,
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_never_refresh_without_options',
-              // @ts-expect-error
               options: [],
               refresh: 0,
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_dashboard_refresh_with_options',
-              // @ts-expect-error
               options: [{ text: 'A', value: 'A' }],
               refresh: 1,
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_dashboard_refresh_without_options',
-              // @ts-expect-error
               options: [],
               refresh: 1,
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_timerange_refresh_with_options',
-              // @ts-expect-error
               options: [{ text: 'A', value: 'A' }],
               refresh: 2,
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_timerange_refresh_without_options',
-              // @ts-expect-error
               options: [],
               refresh: 2,
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_no_refresh_with_options',
-              // @ts-expect-error
               options: [{ text: 'A', value: 'A' }],
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_no_refresh_without_options',
-              // @ts-expect-error
               options: [],
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_unknown_refresh_with_options',
-              // @ts-expect-error
               options: [{ text: 'A', value: 'A' }],
               refresh: 2001,
             },
+            // @ts-expect-error
             {
               type: 'query',
               name: 'variable_with_unknown_refresh_without_options',
-              // @ts-expect-error
               options: [],
               refresh: 2001,
             },
+            // @ts-expect-error
             {
               type: 'custom',
               name: 'custom',
-              // @ts-expect-error
               options: [{ text: 'custom', value: 'custom' }],
             },
+            // @ts-expect-error
             {
               type: 'textbox',
               name: 'textbox',
-              // @ts-expect-error
               options: [{ text: 'Hello', value: 'World' }],
             },
+            // @ts-expect-error
             {
               type: 'datasource',
               name: 'datasource',
-              // @ts-expect-error
               options: [{ text: 'ds', value: 'ds' }], // fake example doesn't exist
             },
+            // @ts-expect-error
             {
               type: 'interval',
               name: 'interval',
-              // @ts-expect-error
               options: [{ text: '1m', value: '1m' }],
             },
           ],
@@ -1162,7 +1167,6 @@ describe('DashboardModel', () => {
                   steps: [
                     {
                       color: 'green',
-                      // @ts-expect-error
                       value: null,
                     },
                     {
@@ -1334,8 +1338,8 @@ describe('DashboardModel', () => {
         panels: [
           {
             type: 'singlestat',
-            legend: true,
             // @ts-expect-error
+            legend: true,
             thresholds: '10,20,30',
             colors: ['#FF0000', 'green', 'orange'],
             aliasYAxis: { test: 2 },
@@ -1396,8 +1400,8 @@ describe('DashboardModel', () => {
         panels: [
           {
             type: 'singlestat',
-            legend: true,
             // @ts-expect-error
+            legend: true,
             thresholds: '10,20,30',
             colors: ['#FF0000', 'green', 'orange'],
             aliasYAxis: { test: 2 },
@@ -2004,10 +2008,10 @@ describe('DashboardModel', () => {
       model = new DashboardModel({
         templating: {
           list: [
+            // @ts-expect-error
             {
               type: 'query',
               name: 'var',
-              // @ts-expect-error
               options: [{ text: 'A', value: 'A' }],
               refresh: 0,
               datasource: null,

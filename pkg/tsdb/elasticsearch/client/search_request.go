@@ -9,6 +9,7 @@ const (
 	HighlightPreTagsString  = "@HIGHLIGHT@"
 	HighlightPostTagsString = "@/HIGHLIGHT@"
 	HighlightFragmentSize   = 2147483647
+	DefaultGeoHashPrecision = 3
 )
 
 // SearchRequestBuilder represents a builder which can build a search request
@@ -96,6 +97,12 @@ func (b *SearchRequestBuilder) Sort(order SortOrder, field string, unmappedType 
 
 	b.sort[field] = props
 
+	return b
+}
+
+// AddTimeFieldWithStandardizedFormat adds a time field to fields with standardized time format
+func (b *SearchRequestBuilder) AddTimeFieldWithStandardizedFormat(timeField string) *SearchRequestBuilder {
+	b.customProps["fields"] = []map[string]string{{"field": timeField, "format": "strict_date_optional_time_nanos"}}
 	return b
 }
 
@@ -446,7 +453,7 @@ func (b *aggBuilderImpl) Filters(key string, fn func(a *FiltersAggregation, b Ag
 func (b *aggBuilderImpl) GeoHashGrid(key, field string, fn func(a *GeoHashGridAggregation, b AggBuilder)) AggBuilder {
 	innerAgg := &GeoHashGridAggregation{
 		Field:     field,
-		Precision: 5,
+		Precision: DefaultGeoHashPrecision,
 	}
 	aggDef := newAggDef(key, &aggContainer{
 		Type:        "geohash_grid",

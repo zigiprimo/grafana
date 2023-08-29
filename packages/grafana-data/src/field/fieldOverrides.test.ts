@@ -1,4 +1,4 @@
-import { ArrayDataFrame, MutableDataFrame, toDataFrame } from '../dataframe';
+import { ArrayDataFrame, createDataFrame, toDataFrame } from '../dataframe';
 import { rangeUtil } from '../datetime';
 import { createTheme } from '../themes';
 import { FieldMatcherID } from '../transformations';
@@ -177,11 +177,11 @@ describe('applyFieldOverrides', () => {
   };
 
   describe('given multiple data frames', () => {
-    const f0 = new MutableDataFrame({
+    const f0 = createDataFrame({
       name: 'A',
       fields: [{ name: 'message', type: FieldType.string, values: [10, 20] }],
     });
-    const f1 = new MutableDataFrame({
+    const f1 = createDataFrame({
       name: 'B',
       fields: [{ name: 'info', type: FieldType.string, values: [10, 20] }],
     });
@@ -201,6 +201,51 @@ describe('applyFieldOverrides', () => {
       expect(withOverrides[0].fields[0].state!.scopedVars?.__dataContext?.value.frame).toBe(withOverrides[0]);
       expect(withOverrides[0].fields[0].state!.scopedVars?.__dataContext?.value.frameIndex).toBe(0);
       expect(withOverrides[0].fields[0].state!.scopedVars?.__dataContext?.value.field).toBe(withOverrides[0].fields[0]);
+    });
+  });
+
+  describe('given nested data frames', () => {
+    const f0Nested = createDataFrame({
+      name: 'nested',
+      fields: [{ name: 'info', type: FieldType.string, values: [10, 20] }],
+    });
+    const f0 = createDataFrame({
+      name: 'A',
+      fields: [
+        {
+          name: 'message',
+          type: FieldType.string,
+          values: [10, 20],
+        },
+        {
+          name: 'nested',
+          type: FieldType.nestedFrames,
+          values: [[f0Nested]],
+        },
+      ],
+    });
+
+    it('should add scopedVars to fields', () => {
+      const withOverrides = applyFieldOverrides({
+        data: [f0],
+        fieldConfig: {
+          defaults: {},
+          overrides: [],
+        },
+        replaceVariables: (value) => value,
+        theme: createTheme(),
+        fieldConfigRegistry: new FieldConfigOptionsRegistry(),
+      });
+
+      expect(withOverrides[0].fields[1].values[0][0].fields[0].state!.scopedVars?.__dataContext?.value.frame).toBe(
+        withOverrides[0].fields[1].values[0][0]
+      );
+      expect(withOverrides[0].fields[1].values[0][0].fields[0].state!.scopedVars?.__dataContext?.value.frameIndex).toBe(
+        0
+      );
+      expect(withOverrides[0].fields[1].values[0][0].fields[0].state!.scopedVars?.__dataContext?.value.field).toBe(
+        withOverrides[0].fields[1].values[0][0].fields[0]
+      );
     });
   });
 
@@ -676,7 +721,7 @@ describe('getLinksSupplier', () => {
       getTimeRangeForUrl: () => ({ from: 'now-7d', to: 'now' }),
     });
 
-    const f0 = new MutableDataFrame({
+    const f0 = createDataFrame({
       name: 'A',
       fields: [
         {
@@ -712,7 +757,7 @@ describe('getLinksSupplier', () => {
     });
 
     const datasourceUid = '1234';
-    const f0 = new MutableDataFrame({
+    const f0 = createDataFrame({
       name: 'A',
       fields: [
         {
@@ -766,7 +811,7 @@ describe('getLinksSupplier', () => {
 
     const datasourceUid = '1234';
     const range = rangeUtil.relativeToTimeRange({ from: 600, to: 0 });
-    const f0 = new MutableDataFrame({
+    const f0 = createDataFrame({
       name: 'A',
       fields: [
         {
@@ -802,8 +847,8 @@ describe('getLinksSupplier', () => {
 
     const links = supplier({ valueRowIndex: 0 });
     const rangeStr = JSON.stringify({
-      from: range.from.toISOString(),
-      to: range.to.toISOString(),
+      from: range.from.valueOf().toString(),
+      to: range.to.valueOf().toString(),
     });
     const encodeURIParams = `{"range":${rangeStr},"datasource":"${datasourceUid}","queries":["12345"]}`;
     expect(links.length).toBe(1);
@@ -827,7 +872,7 @@ describe('getLinksSupplier', () => {
     it('handles link click handlers', () => {
       const onClickSpy = jest.fn();
       const replaceSpy = jest.fn();
-      const f0 = new MutableDataFrame({
+      const f0 = createDataFrame({
         name: 'A',
         fields: [
           {
@@ -838,7 +883,10 @@ describe('getLinksSupplier', () => {
               links: [
                 {
                   url: 'should not be ignored',
-                  onClick: onClickSpy,
+                  onClick: (evt) => {
+                    onClickSpy();
+                    evt.replaceVariables?.('${foo}');
+                  },
                   title: 'title to be interpolated',
                 },
                 {
@@ -850,8 +898,8 @@ describe('getLinksSupplier', () => {
           },
         ],
       });
-
-      const supplier = getLinksSupplier(f0, f0.fields[0], {}, replaceSpy);
+      const scopedVars = { foo: { text: 'bar', value: 'bar' } };
+      const supplier = getLinksSupplier(f0, f0.fields[0], scopedVars, replaceSpy);
       const links = supplier({});
 
       expect(links.length).toBe(2);
@@ -861,13 +909,16 @@ describe('getLinksSupplier', () => {
       links[0].onClick!({});
 
       expect(onClickSpy).toBeCalledTimes(1);
+      expect(replaceSpy).toBeCalledTimes(4);
+      // check that onClick variable replacer has scoped vars bound to it
+      expect(replaceSpy.mock.calls[1][1]).toHaveProperty('foo', { text: 'bar', value: 'bar' });
     });
 
     it('handles links built dynamically', () => {
       const replaceSpy = jest.fn().mockReturnValue('url interpolated 10');
       const onBuildUrlSpy = jest.fn();
-
-      const f0 = new MutableDataFrame({
+      const scopedVars = { foo: { text: 'bar', value: 'bar' } };
+      const f0 = createDataFrame({
         name: 'A',
         fields: [
           {
@@ -878,8 +929,9 @@ describe('getLinksSupplier', () => {
               links: [
                 {
                   url: 'should be ignored',
-                  onBuildUrl: () => {
+                  onBuildUrl: (evt) => {
                     onBuildUrlSpy();
+                    evt?.replaceVariables?.('${foo}');
                     return 'url to be interpolated';
                   },
                   title: 'title to be interpolated',
@@ -894,12 +946,15 @@ describe('getLinksSupplier', () => {
         ],
       });
 
-      const supplier = getLinksSupplier(f0, f0.fields[0], {}, replaceSpy);
+      const supplier = getLinksSupplier(f0, f0.fields[0], scopedVars, replaceSpy);
       const links = supplier({});
 
       expect(onBuildUrlSpy).toBeCalledTimes(1);
       expect(links.length).toBe(2);
       expect(links[0].href).toEqual('url interpolated 10');
+      expect(replaceSpy).toBeCalledTimes(5);
+      // check that onBuildUrl variable replacer has scoped vars bound to it
+      expect(replaceSpy.mock.calls[1][1]).toHaveProperty('foo', { text: 'bar', value: 'bar' });
     });
   });
 });

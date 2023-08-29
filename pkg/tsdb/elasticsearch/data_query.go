@@ -269,7 +269,7 @@ func addFiltersAgg(aggBuilder es.AggBuilder, bucketAgg *BucketAgg) es.AggBuilder
 
 func addGeoHashGridAgg(aggBuilder es.AggBuilder, bucketAgg *BucketAgg) es.AggBuilder {
 	aggBuilder.GeoHashGrid(bucketAgg.ID, bucketAgg.Field, func(a *es.GeoHashGridAggregation, b es.AggBuilder) {
-		a.Precision = bucketAgg.Settings.Get("precision").MustInt(3)
+		a.Precision = stringToIntWithDefaultValue(bucketAgg.Settings.Get("precision").MustString(), es.DefaultGeoHashPrecision)
 		aggBuilder = b
 	})
 
@@ -325,6 +325,9 @@ func processLogsQuery(q *Query, b *es.SearchRequestBuilder, from, to int64, defa
 	b.Sort(sort, defaultTimeField, "boolean")
 	b.Sort(sort, "_doc", "")
 	b.AddDocValueField(defaultTimeField)
+	// We need to add timeField as field with standardized time format to not receive
+	// invalid formats that elasticsearch can parse, but our frontend can't (e.g. yyyy_MM_dd_HH_mm_ss)
+	b.AddTimeFieldWithStandardizedFormat(defaultTimeField)
 	b.Size(stringToIntWithDefaultValue(metric.Settings.Get("limit").MustString(), defaultSize))
 	b.AddHighlight()
 

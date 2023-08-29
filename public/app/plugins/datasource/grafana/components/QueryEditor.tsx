@@ -16,7 +16,7 @@ import {
   getValueFormat,
   formattedValueToString,
 } from '@grafana/data';
-import { config, getBackendSrv, getDataSourceSrv } from '@grafana/runtime';
+import { config, getBackendSrv, getDataSourceSrv, reportInteraction } from '@grafana/runtime';
 import {
   InlineField,
   Select,
@@ -220,11 +220,11 @@ export class UnthemedQueryEditor extends PureComponent<Props, State> {
     if (e.key !== 'Enter') {
       return;
     }
-    this.checkAndUpdateValue('buffer', (e.target as any).value);
+    this.checkAndUpdateValue('buffer', e.currentTarget.value);
   };
 
   handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    this.checkAndUpdateValue('buffer', e.target.value);
+    this.checkAndUpdateValue('buffer', e.currentTarget.value);
   };
 
   renderMeasurementsQuery() {
@@ -391,6 +391,16 @@ export class UnthemedQueryEditor extends PureComponent<Props, State> {
         snapshot,
       });
       this.props.onRunQuery();
+
+      reportInteraction('grafana_datasource_drop_files', {
+        number_of_files: fileRejections.length + acceptedFiles.length,
+        accepted_files: acceptedFiles.map((a) => {
+          return { type: a.type, size: a.size };
+        }),
+        rejected_files: fileRejections.map((r) => {
+          return { type: r.file.type, size: r.file.size };
+        }),
+      });
     });
   };
 

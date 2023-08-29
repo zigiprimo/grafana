@@ -1,19 +1,8 @@
-import { css, cx } from '@emotion/css';
 import { take } from 'lodash';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
-import {
-  DateTime,
-  GrafanaTheme2,
-  InterpolateFunction,
-  PanelProps,
-  textUtil,
-  UrlQueryValue,
-  urlUtil,
-} from '@grafana/data';
-import { CustomScrollbar, stylesFactory, useStyles2 } from '@grafana/ui';
-import { Icon, IconProps } from '@grafana/ui/src/components/Icon/Icon';
-import { getFocusStyles } from '@grafana/ui/src/themes/mixins';
+import { DateTime, InterpolateFunction, PanelProps, textUtil, UrlQueryValue, urlUtil } from '@grafana/data';
+import { CustomScrollbar, useStyles2, IconButton } from '@grafana/ui';
 import { getConfig } from 'app/core/config';
 import { setStarred } from 'app/core/reducers/navBarTree';
 import { getBackendSrv } from 'app/core/services/backend_srv';
@@ -24,7 +13,7 @@ import { DashboardSearchItem } from 'app/features/search/types';
 import { getVariablesUrlParams } from 'app/features/variables/getAllVariableValuesForUrl';
 import { useDispatch } from 'app/types';
 
-import { PanelOptions } from './panelcfg.gen';
+import { Options } from './panelcfg.gen';
 import { getStyles } from './styles';
 
 type Dashboard = DashboardSearchItem & { id?: number; isSearchResult?: boolean; isRecent?: boolean };
@@ -35,7 +24,7 @@ interface DashboardGroup {
   dashboards: Dashboard[];
 }
 
-async function fetchDashboards(options: PanelOptions, replaceVars: InterpolateFunction) {
+async function fetchDashboards(options: Options, replaceVars: InterpolateFunction) {
   let starredDashboards: Promise<DashboardSearchItem[]> = Promise.resolve([]);
   if (options.showStarred) {
     const params = { limit: options.maxItems, starred: 'true' };
@@ -99,7 +88,7 @@ async function fetchDashboards(options: PanelOptions, replaceVars: InterpolateFu
   return dashMap;
 }
 
-export function DashList(props: PanelProps<PanelOptions>) {
+export function DashList(props: PanelProps<Options>) {
   const [dashboards, setDashboards] = useState(new Map<string, Dashboard>());
   const dispatch = useDispatch();
   useEffect(() => {
@@ -182,12 +171,10 @@ export function DashList(props: PanelProps<PanelOptions>) {
                 </a>
                 {dash.folderTitle && <div className={css.dashlistFolder}>{dash.folderTitle}</div>}
               </div>
-              <IconToggle
-                aria-label={`Star dashboard "${dash.title}".`}
-                className={css.dashlistStar}
-                enabled={{ name: 'favorite', type: 'mono' }}
-                disabled={{ name: 'star', type: 'default' }}
-                checked={dash.isStarred}
+              <IconButton
+                tooltip={dash.isStarred ? `Unmark "${dash.title}" as favorite` : `Mark "${dash.title}" as favorite`}
+                name={dash.isStarred ? 'favorite' : 'star'}
+                iconType={dash.isStarred ? 'mono' : 'default'}
                 onClick={(e) => toggleDashboardStar(e, dash)}
               />
             </div>
@@ -211,68 +198,3 @@ export function DashList(props: PanelProps<PanelOptions>) {
     </CustomScrollbar>
   );
 }
-
-interface IconToggleProps extends Partial<IconProps> {
-  enabled: IconProps;
-  disabled: IconProps;
-  checked: boolean;
-}
-
-function IconToggle({
-  enabled,
-  disabled,
-  checked,
-  onClick,
-  className,
-  'aria-label': ariaLabel,
-  ...otherProps
-}: IconToggleProps) {
-  const toggleCheckbox = useCallback(
-    (e: React.MouseEvent<HTMLInputElement>) => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      onClick?.(e);
-    },
-    [onClick]
-  );
-
-  const iconPropsOverride = checked ? enabled : disabled;
-  const iconProps = { ...otherProps, ...iconPropsOverride };
-  const styles = useStyles2(getCheckboxStyles);
-  return (
-    <label className={styles.wrapper}>
-      <input
-        type="checkbox"
-        defaultChecked={checked}
-        onClick={toggleCheckbox}
-        className={styles.checkBox}
-        aria-label={ariaLabel}
-      />
-      <Icon className={cx(styles.icon, className)} {...iconProps} />
-    </label>
-  );
-}
-
-export const getCheckboxStyles = stylesFactory((theme: GrafanaTheme2) => {
-  return {
-    wrapper: css({
-      display: 'flex',
-      alignSelf: 'center',
-      cursor: 'pointer',
-      zIndex: 1,
-    }),
-    checkBox: css({
-      appearance: 'none',
-      '&:focus-visible + *': {
-        ...getFocusStyles(theme),
-        borderRadius: theme.shape.borderRadius(1),
-      },
-    }),
-    icon: css({
-      marginBottom: 0,
-      verticalAlign: 'baseline',
-      display: 'flex',
-    }),
-  };
-});
