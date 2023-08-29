@@ -85,8 +85,9 @@ export const getCardContainerStyles = stylesFactory(
         "Figure Actions Secondary"`,
         width: '100%',
         padding: theme.spacing(2),
-        background: theme.colors.background.secondary,
+        background: theme.colors.background.primary,
         borderRadius: theme.shape.radius.default,
+        border: `1px solid ${theme.colors.border.weak}`,
         marginBottom: '8px',
         pointerEvents: disabled ? 'none' : 'auto',
         transition: theme.transitions.create(['background-color', 'box-shadow', 'border-color', 'color'], {
