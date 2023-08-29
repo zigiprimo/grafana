@@ -17,6 +17,8 @@ rgm_destination = "destination"
 rgm_github_token = "github_token"
 rgm_dagger_token = "dagger_token"
 
+npm_token = "npm_token"
+
 def from_secret(secret):
     return {"from_secret": secret}
 
@@ -63,6 +65,11 @@ def secrets():
             azure_tenant,
             "infra/data/ci/datasources/cpp-azure-resourcemanager-credentials",
             "tenant_id",
+        ),
+        vault_secret(
+            npm_token,
+            "infra/data/ci/grafana-release-eng/npm",
+            "token",
         ),
         # Package publishing
         vault_secret(
@@ -140,5 +147,10 @@ def secrets():
             "delivery-bot-app-private-key",
             "infra/data/ci/grafana-release-eng/grafana-delivery-bot",
             "app-private-key",
+        ),
+        vault_secret(
+            "gcr_credentials",
+            "secret/data/common/gcr",
+            "service-account",
         ),
     ]
