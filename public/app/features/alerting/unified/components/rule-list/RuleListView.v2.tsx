@@ -165,21 +165,21 @@ const AlertRuleListItem = (props: AlertRuleListItemProps) => {
         <Stack direction="row" alignItems={'center'} gap={1} flexGrow={1}>
           <Stack direction="column" gap={1}>
             <div className={styles.receiverDescriptionRow}>
-              <Stack direction="column" gap={0.5}>
+              <Stack direction="column" gap={0}>
                 <Stack direction="row" alignItems="center" gap={1}>
                   <Link href="/alerting/grafana/-amptgZVk/view">
                     <Text variant="body" color="link" weight="bold">
                       {name}
                     </Text>
                   </Link>
-                  <AlertLabels
+                  {/* <AlertLabels
                     size="sm"
                     labels={{
                       team: 'sysops',
                       type: 'network',
                       vendor: 'ubiquity',
                     }}
-                  />
+                  /> */}
                 </Stack>
                 {summary && (
                   <Text variant="bodySmall" color="secondary">
