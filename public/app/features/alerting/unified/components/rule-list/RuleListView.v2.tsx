@@ -18,14 +18,7 @@ const RuleList = () => {
       <Namespace name="Demonstrations" />
       <div className={styles.EvaluationGroupWrapper}>
         <Stack direction="column" gap={0}>
-          <EvaluationGroupHeader
-            name={'default'}
-            description={
-              <>
-                <Icon name={'history'} size="sm" /> 5 minutes ·
-              </>
-            }
-          />
+          <EvaluationGroupHeader expanded name={'default'} interval={'5 minutes'} />
           <div className={styles.AlertRulesWrapper}>
             <AlertRuleListItem
               state="normal"
@@ -37,14 +30,7 @@ const RuleList = () => {
           </div>
         </Stack>
         <Stack direction="column" gap={0}>
-          <EvaluationGroupHeader
-            name={'system metrics'}
-            description={
-              <>
-                <Icon name={'history'} size="sm" /> 1 minute ·
-              </>
-            }
-          />
+          <EvaluationGroupHeader expanded name={'system metrics'} interval={'1 minute'} />
           <div className={styles.AlertRulesWrapper}>
             <AlertRuleListItem name={'email'} summary="gilles.demey@grafana.com" />
           </div>
@@ -54,15 +40,7 @@ const RuleList = () => {
       <Namespace name="Network" />
       <div className={styles.EvaluationGroupWrapper}>
         <Stack direction="column" gap={0}>
-          <EvaluationGroupHeader
-            name={'UniFi Router'}
-            provenance={'file'}
-            description={
-              <>
-                <Icon name={'history'} size="sm" /> 2 minutes ·
-              </>
-            }
-          />
+          <EvaluationGroupHeader expanded name={'UniFi Router'} provenance={'file'} interval={'2 minutes'} />
           <div className={styles.AlertRulesWrapper}>
             <Stack direction="column" gap={0}>
               <AlertRuleListItem name={'CPU Usage'} summary="doing way too much work" isProvisioned={true} />
@@ -71,18 +49,30 @@ const RuleList = () => {
           </div>
         </Stack>
       </div>
+
+      <Namespace name="System Metrics" />
+      <div className={styles.EvaluationGroupWrapper}>
+        <Stack direction="column" gap={0}>
+          <EvaluationGroupHeader name={'eu-west-1'} interval={'2 minutes'} />
+        </Stack>
+        <Stack direction="column" gap={0}>
+          <EvaluationGroupHeader name={'us-east-0'} interval={'5 minutes'} />
+        </Stack>
+      </div>
     </Stack>
   );
 };
 
 interface EvaluationGroupHeaderProps {
   name: string;
+  expanded?: boolean;
+  interval?: string;
   provenance?: string;
   description?: ReactNode;
 }
 
 const EvaluationGroupHeader = (props: EvaluationGroupHeaderProps) => {
-  const { name, description, provenance } = props;
+  const { name, description, provenance, interval, expanded = false } = props;
 
   const styles = useStyles2(getStyles);
   const isProvisioned = Boolean(provenance);
@@ -91,12 +81,17 @@ const EvaluationGroupHeader = (props: EvaluationGroupHeaderProps) => {
     <div className={styles.headerWrapper}>
       <Stack direction="row" alignItems="center" gap={1}>
         <Stack alignItems="center" gap={1}>
-          <Icon name="angle-up" />
+          <Icon name={expanded ? 'angle-down' : 'angle-up'} />
           <Text variant="body">{name}</Text>
         </Stack>
         {isProvisioned && <Badge color="purple" text="Provisioned" />}
-        <Spacer />
         {description && <MetaText>{description}</MetaText>}
+        <Spacer />
+        <MetaText>
+          <Icon name={'history'} size="sm" />
+          {interval}
+          <span>·</span>
+        </MetaText>
         <Button
           variant="secondary"
           size="sm"
