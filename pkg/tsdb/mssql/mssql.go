@@ -28,6 +28,13 @@ import (
 
 var logger = log.New("tsdb.mssql")
 
+type KerberosLookup struct {
+	User                    string `json:"user"`
+	DBName                  string `json:"database"`
+	Address                 string `json:"address"`
+	CredentialCacheFilename string `json:"credentialCache"`
+}
+
 type Service struct {
 	im instancemgmt.InstanceManager
 }
@@ -177,7 +184,7 @@ func generateConnectionString(dsInfo sqleng.DataSourceInfo) (string, error) {
 		dsInfo.DecryptedSecureJSONData["password"],
 	)
 
-	isKrb5Enabled, krb5DriverParams := Krb5ParseAuthCredentials(addr.Host, dsInfo.Database, dsInfo.User, dsInfo.DecryptedSecureJSONData["password"])
+	isKrb5Enabled, krb5DriverParams := Krb5ParseAuthCredentials(addr.Host, addr.Port, dsInfo.Database, dsInfo.User, dsInfo.DecryptedSecureJSONData["password"])
 
 	if isKrb5Enabled {
 		connStr = krb5DriverParams
@@ -318,7 +325,7 @@ func (t *mssqlQueryResultTransformer) GetConverterList() []sqlutil.StringConvert
 	}
 }
 
-func Krb5ParseAuthCredentials(host string, db string, user string, pass string) (bool, string) {
+func Krb5ParseAuthCredentials(host string, port string, db string, user string, pass string) (bool, string) {
 	//Custom envs that may be used as params for driver conn str
 	//More details: https://github.com/microsoft/go-mssqldb#kerberos-active-directory-authentication-outside-windows
 	enableKrb5 := os.Getenv("KRB5_MSSQL_ENABLE")
@@ -329,12 +336,21 @@ func Krb5ParseAuthCredentials(host string, db string, user string, pass string) 
 
 	krb5Realm := os.Getenv("KRB5_REALM")
 	krb5UdpPreferenceLimit := os.Getenv("KRB5_UDP_PREFERENCE_LIMIT")
+	krb5CCLookupFile := os.Getenv("KRB5_CC_LOOKUP_FILE")
 	krb5DNSLookupKDC := os.Getenv("KRB5_DNS_LOOKUP_KDC")
 
 	//These are actual kerberos env vars
 	krb5Config := os.Getenv("KRB5_CONFIG")
 	krb5ClientKeytabFile := os.Getenv("KRB5_CLIENT_KTNAME")
+
+	// get the credential cache in the environment
 	krb5CacheCredsFile := os.Getenv("KRB5CCNAME")
+
+	// if there is a lookup file specified, use it to find the correct credential cache file and overwrite var
+	// getCredentialCacheFromLookup implementation taken from mysql kerberos solution - https://github.com/grafana/mysql/commit/b5e73c8d536150c054d310123643683d3b18f0da
+	if krb5CCLookupFile != "" {
+		krb5CacheCredsFile = getCredentialCacheFromLookup(krb5CCLookupFile, host, port, db, user)
+	}
 
 	if krb5Config == "" {
 		//if env var empty, use default
@@ -353,6 +369,9 @@ func Krb5ParseAuthCredentials(host string, db string, user string, pass string) 
 		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;user id=%s;krb5-realm=%s;krb5-keytabfile=%s;", host, db, user, krb5Realm, krb5ClientKeytabFile)
 	} else if krb5Realm != "" && krb5ClientKeytabFile == "" {
 		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;user id=%s;password=%s;krb5-realm=%s;", host, db, user, pass, krb5Realm)
+	} else {
+		logger.Error("invalid kerberos configuration")
+		return false, ""
 	}
 
 	if krb5UdpPreferenceLimit != "" {
@@ -363,5 +382,31 @@ func Krb5ParseAuthCredentials(host string, db string, user string, pass string) 
 		krb5DriverParams += "krb5-dnslookupkdc=" + krb5DNSLookupKDC + ";"
 	}
 
+	logger.Info(fmt.Sprintf("final krb connstr: %s", krb5DriverParams))
+
 	return true, krb5DriverParams
+}
+
+func getCredentialCacheFromLookup(lookupFile string, host string, port string, dbName string, user string) string {
+	logger.Info(fmt.Sprintf("reading credential cache lookup: %s", lookupFile))
+	content, err := os.ReadFile(lookupFile)
+	if err != nil {
+		logger.Error(fmt.Sprintf("error reading: %s, %v", lookupFile, err))
+		return ""
+	}
+	var lookups []KerberosLookup
+	err = json.Unmarshal(content, &lookups)
+	if err != nil {
+		logger.Error(fmt.Sprintf("error parsing: %s, %v", lookupFile, err))
+		return ""
+	}
+	// find cache file
+	for _, item := range lookups {
+		if item.Address == host+":"+port && item.DBName == dbName && item.User == user {
+			logger.Info(fmt.Sprintf("matched: %+v", item))
+			return item.CredentialCacheFilename
+		}
+	}
+	logger.Error(fmt.Sprintf("no match found for %s", host+":"+port))
+	return ""
 }
