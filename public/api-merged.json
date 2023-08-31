@@ -1,11 +1,13 @@
 {
   "consumes": [
     "application/json",
-    "application/xml"
+    "application/xml",
+    "text/html"
   ],
   "produces": [
     "application/json",
-    "application/xml"
+    "application/xml",
+    "text/html"
   ],
   "schemes": [
     "http",
