@@ -10,9 +10,11 @@
 //
 //	Consumes:
 //	- application/json
+//	- application/xml
 //
 //	Produces:
 //	- application/json
+//	- application/xml
 //
 //	Security:
 //	- basic:
