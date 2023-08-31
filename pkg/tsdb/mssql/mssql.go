@@ -408,5 +408,5 @@ func getCredentialCacheFromLookup(lookupFile string, host string, port string, d
 		}
 	}
 	logger.Error(fmt.Sprintf("no match found for %s", host+":"+port))
-	return ""
+	return os.Getenv("KRB5CCNAME")
 }
