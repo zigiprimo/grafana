@@ -111,9 +111,9 @@ const EvaluationGroupHeader = (props: EvaluationGroupHeaderProps) => {
         <Dropdown
           overlay={
             <Menu>
-              <Menu.Item label="Export" icon="download-alt" />
               <Menu.Item label="Re-order rules" icon="flip" disabled={isProvisioned} />
               <Menu.Divider />
+              <Menu.Item label="Export" icon="download-alt" />
               <Menu.Item label="Delete" icon="trash-alt" destructive disabled={isProvisioned} />
             </Menu>
           }
@@ -238,14 +238,13 @@ const AlertRuleListItem = (props: AlertRuleListItemProps) => {
             overlay={
               <Menu>
                 <Menu.Item label="Silence" icon="bell-slash" />
-                <Menu.Item label="Export" icon="download-alt" />
                 <Menu.Divider />
-                <Menu.Item label="Delete" icon="trash-alt" destructive />
+                <Menu.Item label="Export" disabled={isProvisioned} icon="download-alt" />
+                <Menu.Item label="Delete" disabled={isProvisioned} icon="trash-alt" destructive />
               </Menu>
             }
           >
             <Button
-              disabled={isProvisioned}
               variant="secondary"
               size="sm"
               icon="ellipsis-h"
@@ -277,23 +276,9 @@ const Namespace = ({ name }: NamespaceProps) => {
           </Link>
         </Stack>
         <Spacer />
-        <Dropdown
-          overlay={
-            <Menu>
-              <Menu.Item label="Manage permissions" icon="unlock" />
-              <Menu.Item label="Go to folder" icon="external-link-alt" />
-            </Menu>
-          }
-        >
-          <Button
-            variant="secondary"
-            size="sm"
-            icon="ellipsis-h"
-            type="button"
-            aria-label="more-actions"
-            data-testid="more-actions"
-          />
-        </Dropdown>
+        <Button variant="secondary" size="sm" icon="unlock" type="button" aria-label="edit permissions">
+          Edit permissions
+        </Button>
       </Stack>
     </div>
   );
