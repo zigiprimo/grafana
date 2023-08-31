@@ -329,6 +329,7 @@ func Krb5ParseAuthCredentials(host string, db string, user string, pass string) 
 
 	krb5Realm := os.Getenv("KRB5_REALM")
 	krb5UdpPreferenceLimit := os.Getenv("KRB5_UDP_PREFERENCE_LIMIT")
+	krb5DNSLookupKDC := os.Getenv("KRB5_DNS_LOOKUP_KDC")
 
 	//These are actual kerberos env vars
 	krb5Config := os.Getenv("KRB5_CONFIG")
@@ -356,6 +357,10 @@ func Krb5ParseAuthCredentials(host string, db string, user string, pass string) 
 
 	if krb5UdpPreferenceLimit != "" {
 		krb5DriverParams += "krb5-udppreferencelimit=" + krb5UdpPreferenceLimit + ";"
+	}
+
+	if krb5DNSLookupKDC != "" {
+		krb5DriverParams += "krb5-dnslookupkdc=" + krb5DNSLookupKDC + ";"
 	}
 
 	return true, krb5DriverParams
