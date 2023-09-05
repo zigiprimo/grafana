@@ -81,7 +81,7 @@ func getMockProvider[T http.RoundTripper]() *healthCheckProvider[T] {
 	}
 }
 
-func Test_healthcheck(t *testing.T) {
+func TestHealthcheck(t *testing.T) {
 	t.Run("should do a successful health check", func(t *testing.T) {
 		httpProvider := getMockProvider[*healthCheckSuccessRoundTripper]()
 		s := &Service{
