@@ -1,7 +1,11 @@
 package migrations
 
 import (
+	"fmt"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
+	"github.com/grafana/grafana/pkg/services/folder"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
+	"xorm.io/xorm"
 )
 
 func addFolderMigrations(mg *migrator.Migrator) {
@@ -35,6 +39,69 @@ func addFolderMigrations(mg *migrator.Migrator) {
 		Type: migrator.UniqueIndex,
 		Cols: []string{"title", "parent_uid", "org_id"},
 	}))
+
+	// add column to store folder path
+	mg.AddMigration("Add column path in folder", migrator.NewAddColumnMigration(folderv1(), &migrator.Column{
+		Name: "path", Type: migrator.DB_NVarchar, Nullable: true, Length: 360,
+	}))
+
+	// Adds folder path
+	mg.AddMigration("Add folder path", &AddFolderPathMigration{})
+}
+
+type AddFolderPathMigration struct {
+	migrator.MigrationBase
+}
+
+func (m *AddFolderPathMigration) SQL(dialect migrator.Dialect) string {
+	return "code migration"
+}
+
+func (m *AddFolderPathMigration) Exec(sess *xorm.Session, mg *migrator.Migrator) error {
+	var folders []*folder.Folder
+	err := sess.SQL("SELECT * FROM folder WHERE parent_uid IS NULL").Find(&folders)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range folders {
+		folderPath := fmt.Sprintf("/%s", f.UID)
+		res, err := sess.Exec("UPDATE folder SET path = ? WHERE uid = ?", folderPath, f.UID)
+		if affected, err := res.RowsAffected(); affected == 0 || err != nil {
+			log.DefaultLogger.Error("Nothing to update", "err", err)
+		}
+		f.Path = folderPath
+		err = updateChildrenFoldersPathRecursively(f, sess)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func updateChildrenFoldersPathRecursively(parent *folder.Folder, sess *xorm.Session) error {
+	var children []*folder.Folder
+
+	err := sess.SQL("SELECT * FROM folder WHERE parent_uid=?", parent.UID).Find(&children)
+	if err != nil {
+		return err
+	}
+
+	for _, child := range children {
+		folderPath := fmt.Sprintf("%s/%s", parent.Path, child.UID)
+		res, err := sess.Exec("UPDATE folder SET path = ? WHERE uid = ?", folderPath, child.UID)
+		if affected, err := res.RowsAffected(); affected == 0 || err != nil {
+			log.DefaultLogger.Error("Nothing to update", "err", err)
+		}
+		child.Path = folderPath
+		err = updateChildrenFoldersPathRecursively(child, sess)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func folderv1() migrator.Table {
