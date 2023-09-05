@@ -192,6 +192,30 @@ func (ss *sqlStore) GetParents(ctx context.Context, q folder.GetParentsQuery) ([
 	if q.UID == "" {
 		return []*folder.Folder{}, nil
 	}
+
+	getFolderQuery := folder.GetFolderQuery{
+		UID:   &q.UID,
+		OrgID: q.OrgID,
+	}
+
+	f, err := ss.Get(ctx, getFolderQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	parentUIDs := strings.Split(strings.TrimLeft(f.Path, "/"), "/")
+	if len(parentUIDs) < 2 {
+		return []*folder.Folder{}, nil
+	}
+	parentUIDs = parentUIDs[:len(parentUIDs)-1]
+
+	return ss.GetFolders(ctx, q.OrgID, parentUIDs)
+}
+
+func (ss *sqlStore) GetParentsOld(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
+	if q.UID == "" {
+		return []*folder.Folder{}, nil
+	}
 	var folders []*folder.Folder
 
 	recQuery := `
