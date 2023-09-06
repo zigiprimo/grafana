@@ -2,6 +2,8 @@ package folderimpl
 
 import (
 	"context"
+	"fmt"
+	"golang.org/x/exp/slices"
 	"strings"
 	"time"
 
@@ -45,19 +47,19 @@ func (ss *sqlStore) Create(ctx context.Context, cmd folder.CreateFolderCommand) 
 		var sql string
 		var args []any
 		if cmd.ParentUID == "" {
-			sql = "INSERT INTO folder(org_id, uid, title, description, created, updated) VALUES(?, ?, ?, ?, ?, ?)"
-			args = []any{cmd.OrgID, cmd.UID, cmd.Title, cmd.Description, time.Now(), time.Now()}
+			sql = "INSERT INTO folder(org_id, uid, title, description, created, updated, path) VALUES(?, ?, ?, ?, ?, ?, ?)"
+			args = []any{cmd.OrgID, cmd.UID, cmd.Title, cmd.Description, time.Now(), time.Now(), "/" + cmd.UID}
 		} else {
+			folderPath := "/" + cmd.UID
 			if cmd.ParentUID != folder.GeneralFolderUID {
-				if _, err := ss.Get(ctx, folder.GetFolderQuery{
-					UID:   &cmd.ParentUID,
-					OrgID: cmd.OrgID,
-				}); err != nil {
+				parent, err := ss.Get(ctx, folder.GetFolderQuery{UID: &cmd.ParentUID, OrgID: cmd.OrgID})
+				if err != nil {
 					return folder.ErrFolderNotFound.Errorf("parent folder does not exist")
 				}
+				folderPath = fmt.Sprintf("%s/%s", parent.Path, cmd.UID)
 			}
-			sql = "INSERT INTO folder(org_id, uid, parent_uid, title, description, created, updated) VALUES(?, ?, ?, ?, ?, ?, ?)"
-			args = []any{cmd.OrgID, cmd.UID, cmd.ParentUID, cmd.Title, cmd.Description, time.Now(), time.Now()}
+			sql = "INSERT INTO folder(org_id, uid, parent_uid, title, description, created, updated, path) VALUES(?, ?, ?, ?, ?, ?, ?, ?)"
+			args = []any{cmd.OrgID, cmd.UID, cmd.ParentUID, cmd.Title, cmd.Description, time.Now(), time.Now(), folderPath}
 		}
 
 		var err error
@@ -189,6 +191,10 @@ func (ss *sqlStore) Get(ctx context.Context, q folder.GetFolderQuery) (*folder.F
 }
 
 func (ss *sqlStore) GetParents(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
+	return ss.getParents(ctx, q)
+}
+
+func (ss *sqlStore) getParents(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
 	if q.UID == "" {
 		return []*folder.Folder{}, nil
 	}
@@ -209,10 +215,25 @@ func (ss *sqlStore) GetParents(ctx context.Context, q folder.GetParentsQuery) ([
 	}
 	parentUIDs = parentUIDs[:len(parentUIDs)-1]
 
-	return ss.GetFolders(ctx, q.OrgID, parentUIDs)
+	parents, err := ss.GetFolders(ctx, q.OrgID, parentUIDs)
+	if err != nil {
+		return nil, err
+	}
+	slices.SortFunc(parents, func(a, b *folder.Folder) bool {
+		return len(a.Path) < len(b.Path)
+	})
+
+	if err := concurrency.ForEachJob(ctx, len(parents), len(parents), func(ctx context.Context, idx int) error {
+		parents[idx].WithURL()
+		return nil
+	}); err != nil {
+		ss.log.Debug("failed to set URL to folders", "err", err)
+	}
+
+	return parents, nil
 }
 
-func (ss *sqlStore) GetParentsOld(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
+func (ss *sqlStore) getParentsOld(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
 	if q.UID == "" {
 		return []*folder.Folder{}, nil
 	}
