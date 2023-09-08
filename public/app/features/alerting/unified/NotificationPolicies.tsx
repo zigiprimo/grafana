@@ -1,11 +1,20 @@
 import { css } from '@emotion/css';
-import { intersectionBy, isEqual } from 'lodash';
+import { chunk, intersectionBy, isEqual } from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAsyncFn } from 'react-use';
 
 import { GrafanaTheme2, UrlQueryMap } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
-import { Alert, LoadingPlaceholder, Tab, TabContent, TabsBar, useStyles2, withErrorBoundary } from '@grafana/ui';
+import {
+  Alert,
+  Button,
+  LoadingPlaceholder,
+  Tab,
+  TabContent,
+  TabsBar,
+  useStyles2,
+  withErrorBoundary,
+} from '@grafana/ui';
 import { useQueryParams } from 'app/core/hooks/useQueryParams';
 import { ObjectMatcher, Route, RouteWithID } from 'app/plugins/datasource/alertmanager/types';
 import { useDispatch } from 'app/types';
@@ -55,6 +64,7 @@ const AmRoutes = () => {
   const [updatingTree, setUpdatingTree] = useState<boolean>(false);
   const [contactPointFilter, setContactPointFilter] = useState<string | undefined>();
   const [labelMatchersFilter, setLabelMatchersFilter] = useState<ObjectMatcher[]>([]);
+  const [pageIndex, setPageIndex] = useState<number>(0);
 
   const { getRouteGroupsMap } = useRouteGroupsMatcher();
   const { selectedAlertmanager } = useAlertmanager();
@@ -81,7 +91,19 @@ const AmRoutes = () => {
 
   const rootRoute = useMemo(() => {
     if (config?.route) {
-      return addUniqueIdentifierToRoute(config.route);
+      const withId = addUniqueIdentifierToRoute(config.route);
+
+      const extendedRoot: RouteWithID = {
+        ...withId,
+        routes: withId.routes?.reduce((acc = [], route) => {
+          for (let i = 0; i < 1000; i++) {
+            acc.push(route);
+          }
+          return acc;
+        }, withId.routes),
+      };
+
+      return extendedRoot;
     }
     return;
   }, [config?.route]);
@@ -198,6 +220,14 @@ const AmRoutes = () => {
   const muteTimingsTabActive = activeTab === ActiveTab.MuteTimings;
   const policyTreeTabActive = activeTab === ActiveTab.NotificationPolicies;
 
+  const childPolicyPages = chunk(rootRoute?.routes, 10);
+  const pagedRoutes: RouteWithID | undefined = rootRoute
+    ? {
+        ...rootRoute,
+        routes: childPolicyPages[pageIndex],
+      }
+    : undefined;
+
   return (
     <>
       <TabsBar>
@@ -239,23 +269,26 @@ const AmRoutes = () => {
                       onChangeReceiver={setContactPointFilter}
                     />
                   )}
-                  {rootRoute && (
-                    <Policy
-                      receivers={receivers}
-                      routeTree={rootRoute}
-                      currentRoute={rootRoute}
-                      alertGroups={alertGroups ?? []}
-                      contactPointsState={contactPointsState.receivers}
-                      readOnly={readOnlyPolicies}
-                      provisioned={isProvisioned}
-                      alertManagerSourceName={selectedAlertmanager}
-                      onAddPolicy={openAddModal}
-                      onEditPolicy={openEditModal}
-                      onDeletePolicy={openDeleteModal}
-                      onShowAlertInstances={showAlertGroupsModal}
-                      routesMatchingFilters={routesMatchingFilters}
-                      matchingInstancesPreview={{ groupsMap: routeAlertGroupsMap, enabled: !instancesPreviewError }}
-                    />
+                  {pagedRoutes && rootRoute && (
+                    <>
+                      <Policy
+                        receivers={receivers}
+                        routeTree={rootRoute}
+                        currentRoute={pagedRoutes}
+                        alertGroups={alertGroups ?? []}
+                        contactPointsState={contactPointsState.receivers}
+                        readOnly={readOnlyPolicies}
+                        provisioned={isProvisioned}
+                        alertManagerSourceName={selectedAlertmanager}
+                        onAddPolicy={openAddModal}
+                        onEditPolicy={openEditModal}
+                        onDeletePolicy={openDeleteModal}
+                        onShowAlertInstances={showAlertGroupsModal}
+                        routesMatchingFilters={routesMatchingFilters}
+                        matchingInstancesPreview={{ groupsMap: routeAlertGroupsMap, enabled: !instancesPreviewError }}
+                      />
+                      <Button onClick={() => setPageIndex((index) => index + 1)}>Show next</Button>
+                    </>
                   )}
                 </Stack>
                 {addModal}
@@ -281,6 +314,11 @@ type RouteFilters = {
 
 export const findRoutesMatchingFilters = (rootRoute: RouteWithID, filters: RouteFilters): RouteWithID[] => {
   const { contactPointFilter, labelMatchersFilter = [] } = filters;
+
+  const applyFilter = contactPointFilter || labelMatchersFilter.length;
+  if (!applyFilter) {
+    return [];
+  }
 
   let matchedRoutes: RouteWithID[][] = [];
 

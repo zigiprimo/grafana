@@ -188,6 +188,7 @@ function getInheritedProperties(
   childRoute: Route,
   propertiesParentInherited?: Partial<InhertitableProperties>
 ) {
+  console.time('getInheritedProperties');
   const fullParentProperties = merge({}, parentRoute, propertiesParentInherited);
 
   const inheritableProperties: InhertitableProperties = pick(fullParentProperties, [
@@ -228,6 +229,7 @@ function getInheritedProperties(
     },
     {}
   );
+  console.timeEnd('getInheritedProperties');
 
   return inherited;
 }
@@ -236,7 +238,8 @@ function getInheritedProperties(
  * This function will compute the full tree with inherited properties – this is mostly used for search and filtering
  */
 export function computeInheritedTree<T extends Route>(parent: T): T {
-  return {
+  console.time('computeInheritedTree');
+  const tree = {
     ...parent,
     routes: parent.routes?.map((child) => {
       const inheritedProperties = getInheritedProperties(parent, child);
@@ -247,6 +250,10 @@ export function computeInheritedTree<T extends Route>(parent: T): T {
       });
     }),
   };
+
+  console.timeEnd('computeInheritedTree');
+
+  return tree;
 }
 
 export { findMatchingAlertGroups, findMatchingRoutes, getInheritedProperties };
