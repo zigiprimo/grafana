@@ -7,6 +7,7 @@ export enum AlertingFeature {
   DetailsViewV2 = 'details-view.v2',
   ContactPointsV2 = 'contact-points.v2',
   AlertListViewV2 = 'alert-list-view.v2',
+  InsightsPage = 'insights-page',
 }
 
 const FEATURES: FeatureDescription[] = [
@@ -24,6 +25,10 @@ const FEATURES: FeatureDescription[] = [
   },
   {
     name: AlertingFeature.AlertListViewV2,
+    defaultValue: false,
+  },
+  {
+    name: AlertingFeature.InsightsPage,
     defaultValue: false,
   },
 ];
