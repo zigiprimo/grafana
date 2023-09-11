@@ -192,6 +192,7 @@ func (ss *sqlStore) Get(ctx context.Context, q folder.GetFolderQuery) (*folder.F
 
 func (ss *sqlStore) GetParents(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
 	return ss.getParents(ctx, q)
+	//return ss.getParentsOld(ctx, q)
 }
 
 func (ss *sqlStore) getParents(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {

@@ -58,9 +58,9 @@ const (
 	LEVEL2_DASHBOARD_NUM           = 5
 	TEAM_NUM                       = 50
 	TEAM_MEMBER_NUM                = 5
-	LEVEL0_FOLDER_PERMISSSIONS_NUM = 10
-	LEVEL1_FOLDER_PERMISSSIONS_NUM = 2
-	LEVEL2_FOLDER_PERMISSSIONS_NUM = 1
+	LEVEL0_FOLDER_PERMISSSIONS_NUM = 60
+	LEVEL1_FOLDER_PERMISSSIONS_NUM = 10
+	LEVEL2_FOLDER_PERMISSSIONS_NUM = 2
 
 	MAXIMUM_INT_POSTGRES = 2147483647
 )
@@ -208,8 +208,8 @@ func setupDB(b testing.TB) benchScenario {
 	signedInUser := user.SignedInUser{UserID: userIDs[0], OrgID: orgID, Permissions: map[int64]map[string][]string{
 		orgID: {
 			dashboards.ActionFoldersCreate: {},
-			dashboards.ActionFoldersWrite:  {dashboards.ScopeFoldersAll},
-			dashboards.ActionFoldersRead:   {},
+			//dashboards.ActionFoldersWrite:  {dashboards.ScopeFoldersAll},
+			dashboards.ActionFoldersRead: {},
 		},
 	}}
 
@@ -280,14 +280,14 @@ func setupDB(b testing.TB) benchScenario {
 	dashTags := make([]*dashboardTag, 0, dashsCap)
 	permissions := make([]accesscontrol.Permission, 0, foldersCap*2)
 	for i := 0; i < LEVEL0_FOLDER_NUM; i++ {
-		f0, d := addFolder(orgID, generateID(IDs), fmt.Sprintf("folder%d", i), nil)
+		f0, d := addFolder(orgID, generateID(IDs), fmt.Sprintf("folder%d", i), nil, "")
 		folders = append(folders, f0)
 		dashs = append(dashs, d)
 
-		if i < LEVEL0_FOLDER_PERMISSSIONS_NUM {
-			readPermission := signedInUser.Permissions[orgID][dashboards.ActionFoldersRead]
-			signedInUser.Permissions[orgID][dashboards.ActionFoldersRead] = append(readPermission, dashboards.ScopeFoldersPrefix+f0.UID)
-		}
+		//if i < LEVEL0_FOLDER_PERMISSSIONS_NUM {
+		//	readPermission := signedInUser.Permissions[orgID][dashboards.ActionFoldersRead]
+		//	signedInUser.Permissions[orgID][dashboards.ActionFoldersRead] = append(readPermission, dashboards.ScopeFoldersPrefix+f0.UID)
+		//}
 
 		roleID := int64(i%TEAM_NUM + 1)
 		permissions = append(permissions, accesscontrol.Permission{
@@ -329,11 +329,12 @@ func setupDB(b testing.TB) benchScenario {
 		}
 
 		for j := 0; j < LEVEL1_FOLDER_NUM; j++ {
-			f1, d1 := addFolder(orgID, generateID(IDs), fmt.Sprintf("folder%d_%d", i, j), &f0.UID)
+			f1, d1 := addFolder(orgID, generateID(IDs), fmt.Sprintf("folder%d_%d", i, j), &f0.UID, fmt.Sprintf("/folder%d", i))
 			folders = append(folders, f1)
 			dashs = append(dashs, d1)
 
-			if i < LEVEL1_FOLDER_PERMISSSIONS_NUM {
+			offset := LEVEL0_FOLDER_PERMISSSIONS_NUM / 2
+			if i > offset && i < offset+LEVEL1_FOLDER_PERMISSSIONS_NUM {
 				readPermission := signedInUser.Permissions[orgID][dashboards.ActionFoldersRead]
 				signedInUser.Permissions[orgID][dashboards.ActionFoldersRead] = append(readPermission, dashboards.ScopeFoldersPrefix+f1.UID)
 			}
@@ -361,11 +362,12 @@ func setupDB(b testing.TB) benchScenario {
 			}
 
 			for k := 0; k < LEVEL2_FOLDER_NUM; k++ {
-				f2, d2 := addFolder(orgID, generateID(IDs), fmt.Sprintf("folder%d_%d_%d", i, j, k), &f1.UID)
+				f2, d2 := addFolder(orgID, generateID(IDs), fmt.Sprintf("folder%d_%d_%d", i, j, k), &f1.UID, fmt.Sprintf("/folder%d/folder%d_%d", i, i, j))
 				folders = append(folders, f2)
 				dashs = append(dashs, d2)
 
-				if i < LEVEL2_FOLDER_PERMISSSIONS_NUM {
+				offset := LEVEL1_FOLDER_PERMISSSIONS_NUM / 2
+				if i > offset && i < offset+LEVEL2_FOLDER_PERMISSSIONS_NUM {
 					readPermission := signedInUser.Permissions[orgID][dashboards.ActionFoldersRead]
 					signedInUser.Permissions[orgID][dashboards.ActionFoldersRead] = append(readPermission, dashboards.ScopeFoldersPrefix+f2.UID)
 				}
@@ -483,6 +485,7 @@ type f struct {
 	OrgID       int64   `xorm:"org_id"`
 	UID         string  `xorm:"uid"`
 	ParentUID   *string `xorm:"parent_uid"`
+	Path        string
 	Title       string
 	Description string
 
@@ -501,7 +504,7 @@ type dashboardTag struct {
 	Term        string
 }
 
-func addFolder(orgID int64, id int64, uid string, parentUID *string) (*f, *dashboards.Dashboard) {
+func addFolder(orgID int64, id int64, uid string, parentUID *string, parentPath string) (*f, *dashboards.Dashboard) {
 	now := time.Now()
 	title := uid
 	f := &f{
@@ -512,6 +515,7 @@ func addFolder(orgID int64, id int64, uid string, parentUID *string) (*f, *dashb
 		Created:   now,
 		Updated:   now,
 		ParentUID: parentUID,
+		Path:      parentPath + "/" + uid,
 	}
 
 	d := &dashboards.Dashboard{
