@@ -378,7 +378,14 @@ export class UnthemedSpanBarRow extends React.PureComponent<SpanBarRowProps> {
       operationName,
       process: { serviceName },
     } = span;
-    const label = formatDuration(duration);
+    const component = span.tags?.find((tag: TraceKeyValuePair) => {
+      return tag.key === 'component';
+    });
+    const spanKind = span.tags?.find((tag: TraceKeyValuePair) => {
+      return tag.key === 'span.kind';
+    });
+    const label =
+      (component ? component.value + ' | ' : '') + (spanKind ? spanKind.value + ' | ' : '') + formatDuration(duration);
 
     const viewBounds = getViewedBounds(span.startTime, span.startTime + span.duration);
     const viewStart = viewBounds.start;

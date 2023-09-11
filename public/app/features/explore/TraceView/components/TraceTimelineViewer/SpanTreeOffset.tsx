@@ -75,7 +75,8 @@ export const getStyles = stylesFactory((theme: GrafanaTheme2) => {
       padding: 0.2rem;
       line-height: 0.8rem;
       font-size: 0.8rem;
-      width: 24px;
+      width: 16px;
+      height: 16px;
       text-align: center;
       background: ${theme.colors.background.primary};
     `,
@@ -165,7 +166,7 @@ export class UnthemedSpanTreeOffset extends React.PureComponent<TProps> {
           [styles.spanCountSquareFilled(color)]: !childrenVisible,
         })}
       >
-        {span.childSpanCount}
+        {/*{span.childSpanCount}*/}
       </div>
     );
     return (
