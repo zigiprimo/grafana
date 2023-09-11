@@ -83,7 +83,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       height: auto !important;
       flex: unset !important;
       display: unset !important;
-      padding: ${theme.spacing(1)};
+      //padding: ${theme.spacing(1)};
     `,
     exploreContainer: css`
       display: flex;

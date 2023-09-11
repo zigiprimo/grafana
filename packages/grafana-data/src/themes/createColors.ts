@@ -141,8 +141,8 @@ class DarkColors implements ThemeColorsBase<Partial<ThemeRichColor>> {
 
   background = {
     canvas: palette.gray05,
-    primary: palette.gray10,
-    secondary: palette.gray15,
+    primary: palette.gray05,
+    secondary: palette.gray10,
   };
 
   action = {
@@ -186,7 +186,7 @@ class LightColors implements ThemeColorsBase<Partial<ThemeRichColor>> {
   };
 
   border = {
-    weak: `rgba(${this.blackBase}, 0.12)`,
+    weak: `rgba(${this.blackBase}, 0.08)`,
     medium: `rgba(${this.blackBase}, 0.30)`,
     strong: `rgba(${this.blackBase}, 0.40)`,
   };
@@ -222,7 +222,7 @@ class LightColors implements ThemeColorsBase<Partial<ThemeRichColor>> {
   };
 
   background = {
-    canvas: palette.gray90,
+    canvas: palette.white,
     primary: palette.white,
     secondary: palette.gray100,
   };

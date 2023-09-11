@@ -57,7 +57,7 @@ $gray-7: #fbfbfb;
 
 $white: #ffffff;
 
-$layer0: #F4F5F5;
+$layer0: #FFFFFF;
 $layer1: #FFFFFF;
 $layer2: #F4F5F5;
 
@@ -93,9 +93,9 @@ $critical: #CF0E5B;
 
 // Scaffolding
 // -------------------------
-$body-bg: #F4F5F5;
-$page-bg: #F4F5F5;
-$dashboard-bg: #F4F5F5;
+$body-bg: #FFFFFF;
+$page-bg: #FFFFFF;
+$dashboard-bg: #FFFFFF;
 
 $text-color: rgba(36, 41, 46, 1);
 $text-color-strong: #000000;
@@ -128,16 +128,16 @@ $hr-border-color: $gray-4 !default;
 
 // Panel
 // -------------------------
-$panel-bg: #FFFFFF;
+$panel-bg: #F4F5F5;
 $panel-border: 1px solid rgba(36, 41, 46, 0.12);
 $panel-header-hover-bg: rgba(36, 41, 46, 0.12);
 $panel-box-shadow: none;
 $panel-corner: $panel-bg;
 
 // Page header
-$page-header-bg: #F4F5F5;
+$page-header-bg: #FFFFFF;
 $page-header-shadow: inset 0px -3px 10px $gray-6;
-$page-header-border-color: #F4F5F5;
+$page-header-border-color: #FFFFFF;
 
 $divider-border-color: $gray-2;
 

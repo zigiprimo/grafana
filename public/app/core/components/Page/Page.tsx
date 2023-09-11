@@ -99,8 +99,6 @@ const getStyles = (theme: GrafanaTheme2) => {
       label: 'page-inner',
       padding: theme.spacing(2),
       borderRadius: theme.shape.radius.default,
-      border: `1px solid ${theme.colors.border.weak}`,
-      borderBottom: 'none',
       background: theme.colors.background.primary,
       display: 'flex',
       flexDirection: 'column',
@@ -108,7 +106,6 @@ const getStyles = (theme: GrafanaTheme2) => {
       margin: theme.spacing(0, 0, 0, 0),
 
       [theme.breakpoints.up('md')]: {
-        margin: theme.spacing(2, 2, 0, 1),
         padding: theme.spacing(3),
       },
     }),

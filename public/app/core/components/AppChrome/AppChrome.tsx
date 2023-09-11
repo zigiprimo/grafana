@@ -101,7 +101,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       left: 0,
       right: 0,
       boxShadow: shadow,
-      background: theme.colors.background.primary,
+      background: theme.colors.background.secondary,
       flexDirection: 'column',
       borderBottom: `1px solid ${theme.colors.border.weak}`,
     }),
