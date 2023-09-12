@@ -296,15 +296,16 @@ func (s *Service) deduplicateAvailableFolders(ctx context.Context, folders []*fo
 		})
 
 		if !isSubfolder {
-			parents, err := s.GetParents(ctx, folder.GetParentsQuery{UID: f.UID, OrgID: f.OrgID})
+			// parents, err := s.GetParents(ctx, folder.GetParentsQuery{UID: f.UID, OrgID: f.OrgID})
+			parentsUIDs, err := s.GetParentsUIDs(ctx, folder.GetParentsQuery{UID: f.UID, OrgID: f.OrgID})
 			if err != nil {
 				s.log.Error("failed to fetch folder parents", "uid", f.UID, "error", err)
 				continue
 			}
 
-			for _, parent := range parents {
+			for _, parentUID := range parentsUIDs {
 				contains := slices.ContainsFunc(folders, func(f *folder.Folder) bool {
-					return f.UID == parent.UID
+					return f.UID == parentUID
 				})
 				if contains {
 					isSubfolder = true
@@ -325,6 +326,13 @@ func (s *Service) GetParents(ctx context.Context, q folder.GetParentsQuery) ([]*
 		return nil, nil
 	}
 	return s.store.GetParents(ctx, q)
+}
+
+func (s *Service) GetParentsUIDs(ctx context.Context, q folder.GetParentsQuery) ([]string, error) {
+	if !s.features.IsEnabled(featuremgmt.FlagNestedFolders) {
+		return nil, nil
+	}
+	return s.store.GetParentsUIDs(ctx, q)
 }
 
 func (s *Service) getFolderByID(ctx context.Context, id int64, orgID int64) (*folder.Folder, error) {

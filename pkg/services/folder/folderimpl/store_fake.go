@@ -10,6 +10,7 @@ type fakeStore struct {
 	ExpectedChildFolders  []*folder.Folder
 	ExpectedParentFolders []*folder.Folder
 	ExpectedFolders       []*folder.Folder
+	ExpectedParentUIDs    []string
 	ExpectedFolder        *folder.Folder
 	ExpectedError         error
 	ExpectedFolderHeight  int
@@ -47,6 +48,10 @@ func (f *fakeStore) Get(ctx context.Context, cmd folder.GetFolderQuery) (*folder
 
 func (f *fakeStore) GetParents(ctx context.Context, cmd folder.GetParentsQuery) ([]*folder.Folder, error) {
 	return f.ExpectedParentFolders, f.ExpectedError
+}
+
+func (f *fakeStore) GetParentsUIDs(ctx context.Context, cmd folder.GetParentsQuery) ([]string, error) {
+	return f.ExpectedParentUIDs, f.ExpectedError
 }
 
 func (f *fakeStore) GetChildren(ctx context.Context, cmd folder.GetChildrenQuery) ([]*folder.Folder, error) {

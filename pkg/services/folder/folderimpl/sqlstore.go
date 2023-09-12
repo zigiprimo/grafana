@@ -3,9 +3,10 @@ package folderimpl
 import (
 	"context"
 	"fmt"
-	"golang.org/x/exp/slices"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/slices"
 
 	"github.com/grafana/dskit/concurrency"
 
@@ -192,7 +193,7 @@ func (ss *sqlStore) Get(ctx context.Context, q folder.GetFolderQuery) (*folder.F
 
 func (ss *sqlStore) GetParents(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
 	return ss.getParents(ctx, q)
-	//return ss.getParentsOld(ctx, q)
+	// return ss.getParentsOld(ctx, q)
 }
 
 func (ss *sqlStore) getParents(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
@@ -200,21 +201,13 @@ func (ss *sqlStore) getParents(ctx context.Context, q folder.GetParentsQuery) ([
 		return []*folder.Folder{}, nil
 	}
 
-	getFolderQuery := folder.GetFolderQuery{
-		UID:   &q.UID,
-		OrgID: q.OrgID,
-	}
-
-	f, err := ss.Get(ctx, getFolderQuery)
+	parentUIDs, err := ss.GetParentsUIDs(ctx, q)
 	if err != nil {
 		return nil, err
 	}
-
-	parentUIDs := strings.Split(strings.TrimLeft(f.Path, "/"), "/")
-	if len(parentUIDs) < 2 {
+	if len(parentUIDs) == 0 {
 		return []*folder.Folder{}, nil
 	}
-	parentUIDs = parentUIDs[:len(parentUIDs)-1]
 
 	parents, err := ss.GetFolders(ctx, q.OrgID, parentUIDs)
 	if err != nil {
@@ -232,6 +225,29 @@ func (ss *sqlStore) getParents(ctx context.Context, q folder.GetParentsQuery) ([
 	}
 
 	return parents, nil
+}
+
+func (ss *sqlStore) GetParentsUIDs(ctx context.Context, q folder.GetParentsQuery) ([]string, error) {
+	if q.UID == "" {
+		return []string{}, nil
+	}
+
+	getFolderQuery := folder.GetFolderQuery{
+		UID:   &q.UID,
+		OrgID: q.OrgID,
+	}
+
+	f, err := ss.Get(ctx, getFolderQuery)
+	if err != nil {
+		return nil, err
+	}
+
+	parentUIDs := strings.Split(strings.TrimLeft(f.Path, "/"), "/")
+	if len(parentUIDs) < 2 {
+		return []string{}, nil
+	}
+	parentUIDs = parentUIDs[:len(parentUIDs)-1]
+	return parentUIDs, nil
 }
 
 func (ss *sqlStore) getParentsOld(ctx context.Context, q folder.GetParentsQuery) ([]*folder.Folder, error) {
