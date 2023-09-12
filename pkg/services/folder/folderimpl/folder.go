@@ -297,6 +297,10 @@ func (s *Service) deduplicateAvailableFolders(ctx context.Context, folders []*fo
 
 		if !isSubfolder {
 			// parents, err := s.GetParents(ctx, folder.GetParentsQuery{UID: f.UID, OrgID: f.OrgID})
+			// parentsUIDs := make([]string, len(parents))
+			// for _, p := range parents {
+			// 	parentsUIDs = append(parentsUIDs, p.UID)
+			// }
 			parentsUIDs, err := s.GetParentsUIDs(ctx, folder.GetParentsQuery{UID: f.UID, OrgID: f.OrgID})
 			if err != nil {
 				s.log.Error("failed to fetch folder parents", "uid", f.UID, "error", err)
