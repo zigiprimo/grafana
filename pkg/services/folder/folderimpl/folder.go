@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/grafana/tempo/pkg/util/math"
 	"strings"
 	"sync"
 
@@ -268,9 +269,18 @@ func (s *Service) getAvailableNonRootFolders(ctx context.Context, orgID int64, u
 		return nonRootFolders, nil
 	}
 
-	dashFolders, err := s.store.GetFolders(ctx, orgID, folderUids)
-	if err != nil {
-		return nil, folder.ErrInternal.Errorf("failed to fetch subfolders: %w", err)
+	dashFolders := make([]*folder.Folder, 0, len(folderUids))
+	batchSize := 500
+	batchNum := len(folderUids)/batchSize + 1
+	for i := 0; i < batchNum; i++ {
+		left := i * batchSize
+		right := math.Min((i+1)*batchSize, len(folderUids))
+		batchUIDs := folderUids[left:right]
+		folders, err := s.store.GetFolders(ctx, orgID, batchUIDs)
+		if err != nil {
+			return nil, folder.ErrInternal.Errorf("failed to fetch subfolders: %w", err)
+		}
+		dashFolders = append(dashFolders, folders...)
 	}
 
 	for _, f := range dashFolders {
@@ -279,7 +289,8 @@ func (s *Service) getAvailableNonRootFolders(ctx context.Context, orgID int64, u
 		}
 	}
 
-	return nonRootFolders, nil
+	nonRootFoldersDedup := s.deduplicateAvailableFolders(ctx, nonRootFolders)
+	return nonRootFoldersDedup, nil
 }
 
 func (s *Service) deduplicateAvailableFolders(ctx context.Context, folders []*folder.Folder) []*folder.Folder {
