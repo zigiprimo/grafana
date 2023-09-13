@@ -8,7 +8,6 @@ import (
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/localcache"
 	"github.com/grafana/grafana/pkg/infra/tracing"
-	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/accesscontrol/acimpl"
 	acdb "github.com/grafana/grafana/pkg/services/accesscontrol/database"
 	"github.com/grafana/grafana/pkg/services/accesscontrol/ossaccesscontrol"
@@ -37,10 +36,11 @@ import (
 )
 
 const (
-	LEVEL0_FOLDER_NUM = 300
-	LEVEL1_FOLDER_NUM = 30
-	LEVEL2_FOLDER_NUM = 5
-	LEVEL3_FOLDER_NUM = 5
+	LEVEL0_FOLDER_NUM      = 300
+	LEVEL1_FOLDER_NUM      = 30
+	LEVEL2_FOLDER_NUM      = 5
+	LEVEL3_FOLDER_NUM      = 5
+	FOLDER_PERMISSIONS_NUM = 100
 
 	TEAM_MEMBER_NUM = 1
 
@@ -52,7 +52,7 @@ const (
 )
 
 var FOLDER_NUMS = []int{
-	300,
+	100,
 	10,
 	5,
 	5,
@@ -167,13 +167,6 @@ func setupDB(b testing.TB) benchScenario {
 	userSvc, err := userimpl.ProvideService(db, orgService, cfg, teamSvc, cache, &quotatest.FakeQuotaService{}, bundleregistry.ProvideService())
 	require.NoError(b, err)
 
-	origNewGuardian := guardian.New
-	//guardian.MockDashboardGuardian(&guardian.FakeDashboardGuardian{CanSaveValue: true, CanViewValue: true})
-
-	b.Cleanup(func() {
-		guardian.New = origNewGuardian
-	})
-
 	var orgID int64 = 1
 
 	userIDs := make([]int64, 0, TEAM_MEMBER_NUM)
@@ -197,10 +190,11 @@ func setupDB(b testing.TB) benchScenario {
 	foldersCap := LEVEL0_FOLDER_NUM + LEVEL0_FOLDER_NUM*LEVEL1_FOLDER_NUM + LEVEL0_FOLDER_NUM*LEVEL1_FOLDER_NUM*LEVEL2_FOLDER_NUM + LEVEL0_FOLDER_NUM*LEVEL1_FOLDER_NUM*LEVEL2_FOLDER_NUM*LEVEL2_FOLDER_NUM
 	folders := make([]*f, 0, foldersCap)
 	dashs := make([]*dashboards.Dashboard, 0, foldersCap)
-	permissions := make([]accesscontrol.Permission, 0, foldersCap*2)
+	//permissions := make([]accesscontrol.Permission, 0, foldersCap*2)
 
 	b.Log("start generating folders")
 	generateFolders(&folders, &dashs, &signedInUser, 0, FOLDER_NUMS[0], nil, IDs, len(FOLDER_NUMS)-1)
+	generatePermissions(folders, &signedInUser)
 	b.Log(fmt.Sprintf("%d folders generated", len(folders)))
 
 	err = db.WithDbSession(context.Background(), func(sess *sqlstore.DBSession) error {
@@ -214,9 +208,9 @@ func setupDB(b testing.TB) benchScenario {
 		require.EqualValues(b, len(dashs), count)
 		require.NoError(b, err)
 
-		count, err = sess.BulkInsert("permission", permissions, opts)
-		require.EqualValues(b, len(permissions), count)
-		require.NoError(b, err)
+		//count, err = sess.BulkInsert("permission", permissions, opts)
+		//require.EqualValues(b, len(permissions), count)
+		//require.NoError(b, err)
 
 		return err
 	})
@@ -228,6 +222,17 @@ func setupDB(b testing.TB) benchScenario {
 		signedInUser: &signedInUser,
 		teamSvc:      teamSvc,
 		userSvc:      userSvc,
+	}
+}
+
+func generatePermissions(folders []*f, signedInUser *user.SignedInUser) {
+	permissionsCount := 0
+	for _, f := range folders {
+		if rand.Float64() < 0.8 && permissionsCount < FOLDER_PERMISSIONS_NUM {
+			readPermission := signedInUser.Permissions[orgID][dashboards.ActionFoldersRead]
+			signedInUser.Permissions[orgID][dashboards.ActionFoldersRead] = append(readPermission, dashboards.ScopeFoldersPrefix+f.UID)
+			permissionsCount++
+		}
 	}
 }
 
@@ -244,14 +249,6 @@ func generateFolders(folders *[]*f, dashs *[]*dashboards.Dashboard, signedInUser
 		folder, dash := addFolder(orgID, folderId, folderUid, parentUID, parentPath)
 		*folders = append(*folders, folder)
 		*dashs = append(*dashs, dash)
-
-		if level == 0 && i < 10 {
-			readPermission := signedInUser.Permissions[orgID][dashboards.ActionFoldersRead]
-			signedInUser.Permissions[orgID][dashboards.ActionFoldersRead] = append(readPermission, dashboards.ScopeFoldersPrefix+folderUid)
-		} else if rand.Float32() < 0.001 {
-			readPermission := signedInUser.Permissions[orgID][dashboards.ActionFoldersRead]
-			signedInUser.Permissions[orgID][dashboards.ActionFoldersRead] = append(readPermission, dashboards.ScopeFoldersPrefix+folderUid)
-		}
 
 		if level < maxLevel-1 {
 			generateFolders(folders, dashs, signedInUser, level+1, FOLDER_NUMS[level+1], folder, IDs, maxLevel)
