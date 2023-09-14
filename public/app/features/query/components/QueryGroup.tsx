@@ -376,6 +376,16 @@ export class QueryGroup extends PureComponent<Props, State> {
             Add query
           </Button>
         )}
+        {showAddButton && (
+          <Button
+            icon="plus"
+            onClick={() => {}}
+            variant="secondary"
+            // data-testid={selectors.components.QueryTab.addQuery}
+          >
+            Add Transformation
+          </Button>
+        )}
         {config.expressionsEnabled && this.isExpressionsSupported(dsSettings) && (
           <Button
             icon="plus"
