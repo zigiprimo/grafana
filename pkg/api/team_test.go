@@ -41,7 +41,7 @@ func TestTeamAPIEndpoint_CreateTeam(t *testing.T) {
 	input := strings.NewReader(fmt.Sprintf(teamCmd, 1))
 	t.Run("Access control allows creating teams with the correct permissions", func(t *testing.T) {
 		req := server.NewPostRequest(createTeamURL, input)
-		req = webtest.RequestWithSignedInUser(req, userWithPermissions(1, []accesscontrol.Permission{{Action: accesscontrol.ActionTeamsCreate}}))
+		req = webtest.RequestWithSignedInUser(req, authedUserWithPermissions(1, 1, []accesscontrol.Permission{{Action: accesscontrol.ActionTeamsCreate}}))
 		res, err := server.SendJSON(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusOK, res.StatusCode)
@@ -51,7 +51,7 @@ func TestTeamAPIEndpoint_CreateTeam(t *testing.T) {
 	input = strings.NewReader(fmt.Sprintf(teamCmd, 2))
 	t.Run("Access control prevents creating teams with the incorrect permissions", func(t *testing.T) {
 		req := server.NewPostRequest(createTeamURL, input)
-		req = webtest.RequestWithSignedInUser(req, userWithPermissions(1, []accesscontrol.Permission{}))
+		req = webtest.RequestWithSignedInUser(req, authedUserWithPermissions(1, 11, []accesscontrol.Permission{}))
 		res, err := server.SendJSON(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusForbidden, res.StatusCode)
@@ -67,7 +67,7 @@ func TestTeamAPIEndpoint_SearchTeams(t *testing.T) {
 
 	t.Run("Access control prevents searching for teams with the incorrect permissions", func(t *testing.T) {
 		req := server.NewGetRequest(searchTeamsURL)
-		req = webtest.RequestWithSignedInUser(req, userWithPermissions(1, []accesscontrol.Permission{}))
+		req = webtest.RequestWithSignedInUser(req, authedUserWithPermissions(1, 1, []accesscontrol.Permission{}))
 		res, err := server.Send(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusForbidden, res.StatusCode)
@@ -76,7 +76,7 @@ func TestTeamAPIEndpoint_SearchTeams(t *testing.T) {
 
 	t.Run("Access control allows searching for teams with the correct permissions", func(t *testing.T) {
 		req := server.NewGetRequest(searchTeamsURL)
-		req = webtest.RequestWithSignedInUser(req, userWithPermissions(1, []accesscontrol.Permission{
+		req = webtest.RequestWithSignedInUser(req, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsRead, Scope: accesscontrol.ScopeTeamsAll},
 		}))
 		res, err := server.Send(req)
@@ -96,7 +96,7 @@ func TestTeamAPIEndpoint_GetTeamByID(t *testing.T) {
 
 	t.Run("Access control prevents getting a team when missing permissions", func(t *testing.T) {
 		req := server.NewGetRequest(url)
-		req = webtest.RequestWithSignedInUser(req, userWithPermissions(1, []accesscontrol.Permission{}))
+		req = webtest.RequestWithSignedInUser(req, authedUserWithPermissions(1, 1, []accesscontrol.Permission{}))
 		res, err := server.Send(req)
 		require.NoError(t, err)
 		assert.Equal(t, http.StatusForbidden, res.StatusCode)
@@ -105,7 +105,7 @@ func TestTeamAPIEndpoint_GetTeamByID(t *testing.T) {
 
 	t.Run("Access control allows getting a team with the correct permissions", func(t *testing.T) {
 		req := server.NewGetRequest(url)
-		req = webtest.RequestWithSignedInUser(req, userWithPermissions(1, []accesscontrol.Permission{
+		req = webtest.RequestWithSignedInUser(req, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsRead, Scope: "teams:id:1"},
 		}))
 		res, err := server.Send(req)
@@ -116,7 +116,7 @@ func TestTeamAPIEndpoint_GetTeamByID(t *testing.T) {
 
 	t.Run("Access control allows getting a team with wildcard scope", func(t *testing.T) {
 		req := server.NewGetRequest(url)
-		req = webtest.RequestWithSignedInUser(req, userWithPermissions(1, []accesscontrol.Permission{
+		req = webtest.RequestWithSignedInUser(req, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsRead, Scope: "teams:id:*"},
 		}))
 		res, err := server.Send(req)
@@ -142,7 +142,7 @@ func TestTeamAPIEndpoint_UpdateTeam(t *testing.T) {
 	}
 
 	t.Run("Access control allows updating team with the correct permissions", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsWrite, Scope: "teams:id:1"},
 		}))
 		require.NoError(t, err)
@@ -151,7 +151,7 @@ func TestTeamAPIEndpoint_UpdateTeam(t *testing.T) {
 	})
 
 	t.Run("Access control allows updating teams with the wildcard scope", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsWrite, Scope: "teams:*"},
 		}))
 		require.NoError(t, err)
@@ -160,7 +160,7 @@ func TestTeamAPIEndpoint_UpdateTeam(t *testing.T) {
 	})
 
 	t.Run("Access control prevent updating a team with wrong scope", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsWrite, Scope: "teams:id:2"},
 		}))
 		require.NoError(t, err)
@@ -185,7 +185,7 @@ func TestTeamAPIEndpoint_DeleteTeam(t *testing.T) {
 	}
 
 	t.Run("Access control prevents deleting teams with the incorrect permissions", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsDelete, Scope: "teams:id:2"},
 		}))
 		require.NoError(t, err)
@@ -194,7 +194,7 @@ func TestTeamAPIEndpoint_DeleteTeam(t *testing.T) {
 	})
 
 	t.Run("Access control allows deleting teams with the correct permissions", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsDelete, Scope: "teams:id:1"},
 		}))
 		require.NoError(t, err)
@@ -219,7 +219,7 @@ func TestTeamAPIEndpoint_GetTeamPreferences(t *testing.T) {
 	}
 
 	t.Run("Access control allows getting team preferences with the correct permissions", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsRead, Scope: "teams:id:1"},
 		}))
 		require.NoError(t, err)
@@ -228,7 +228,7 @@ func TestTeamAPIEndpoint_GetTeamPreferences(t *testing.T) {
 	})
 
 	t.Run("Access control prevents getting team preferences with the incorrect permissions", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsRead, Scope: "teams:id:2"},
 		}))
 		require.NoError(t, err)
@@ -253,7 +253,7 @@ func TestTeamAPIEndpoint_UpdateTeamPreferences(t *testing.T) {
 	}
 
 	t.Run("Access control allows updating team preferences with the correct permissions", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsWrite, Scope: "teams:id:1"},
 		}))
 		require.NoError(t, err)
@@ -262,7 +262,7 @@ func TestTeamAPIEndpoint_UpdateTeamPreferences(t *testing.T) {
 	})
 
 	t.Run("Access control prevents updating team preferences with the incorrect permissions", func(t *testing.T) {
-		res, err := request(1, userWithPermissions(1, []accesscontrol.Permission{
+		res, err := request(1, authedUserWithPermissions(1, 1, []accesscontrol.Permission{
 			{Action: accesscontrol.ActionTeamsWrite, Scope: "teams:id:2"},
 		}))
 		require.NoError(t, err)
