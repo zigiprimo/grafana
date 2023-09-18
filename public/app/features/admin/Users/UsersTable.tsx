@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Row } from 'react-table';
 
 import { GrafanaTheme2 } from '@grafana/data';
@@ -17,9 +17,10 @@ interface UsersTableProps {
   users: UserDTO[];
   showPaging?: boolean;
   perPage?: number;
+  changePage: Function;
 }
 
-export const UsersTable = ({ users, showPaging, perPage }: UsersTableProps) => {
+export const UsersTable = ({ users, showPaging, perPage, changePage }: UsersTableProps) => {
   const showLicensedRole = useMemo(() => users.some((user) => user.licensedRole), [users]);
   const columns = useMemo(
     () => [
@@ -101,12 +102,21 @@ export const UsersTable = ({ users, showPaging, perPage }: UsersTableProps) => {
     ],
     [showLicensedRole]
   );
+
+  const onFetchData = useCallback(({ pageIndex }: { pageIndex: number }) => {
+    console.log('changgggg', pageIndex);
+    if (pageIndex > 0) {
+      changePage(pageIndex);
+    }
+  }, []);
   return (
     <InteractiveTable
       columns={columns}
       data={users}
       getRowId={(user) => String(user.id)}
-      pageSize={showPaging ? perPage : 0}
+      pageSize={5}
+      pageCount={2}
+      onFetchData={onFetchData}
     />
   );
 };

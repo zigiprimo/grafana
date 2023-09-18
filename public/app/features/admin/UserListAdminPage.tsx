@@ -58,9 +58,9 @@ const UserListAdminPageUnConnected = ({
   changeFilter,
   filters,
   isLoading,
+  changePage,
 }: Props) => {
   const styles = useStyles2(getStyles);
-
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
@@ -94,7 +94,11 @@ const UserListAdminPageUnConnected = ({
           </LinkButton>
         )}
       </div>
-      {isLoading ? <PageLoader /> : <UsersTable users={users} showPaging={showPaging} perPage={perPage} />}
+      {isLoading ? (
+        <PageLoader />
+      ) : (
+        <UsersTable users={users} showPaging={showPaging} perPage={perPage} changePage={changePage} />
+      )}
     </Page.Contents>
   );
 };

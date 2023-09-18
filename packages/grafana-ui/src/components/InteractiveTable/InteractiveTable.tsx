@@ -5,6 +5,7 @@ import {
   HeaderGroup,
   PluginHook,
   Row,
+  SortingRule,
   TableOptions,
   useExpanded,
   usePagination,
@@ -142,6 +143,16 @@ interface Props<TableData extends object> {
    * Render function for the expanded row. if not provided, the tables rows will not be expandable.
    */
   renderExpandedRow?: (row: TableData) => ReactNode;
+  pageCount?: number;
+  onFetchData?: ({
+    pageIndex,
+    pageSize,
+    sortBy,
+  }: {
+    pageIndex: number;
+    pageSize: number;
+    sortBy: Array<SortingRule<TableData>>;
+  }) => void;
 }
 
 /** @alpha */
@@ -152,7 +163,9 @@ export function InteractiveTable<TableData extends object>({
   getRowId,
   headerTooltips,
   pageSize = 0,
+  pageCount = 1,
   renderExpandedRow,
+  onFetchData,
 }: Props<TableData>) {
   const styles = useStyles2(getStyles);
   const tableColumns = useMemo(() => {
@@ -181,8 +194,11 @@ export function InteractiveTable<TableData extends object>({
       autoResetExpanded: false,
       autoResetSortBy: false,
       disableMultiSort: true,
+      manualPagination: !!onFetchData,
+      pageCount,
       getRowId,
       initialState: {
+        pageIndex: 0,
         hiddenColumns: [
           !renderExpandedRow && EXPANDER_CELL_ID,
           ...tableColumns
@@ -196,6 +212,15 @@ export function InteractiveTable<TableData extends object>({
   );
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow } = tableInstance;
+  const { sortBy, pageIndex, pageSize: perPage } = tableInstance.state;
+  console.log('ps', perPage, pageIndex);
+  // When these table states change, fetch new data!
+  useEffect(() => {
+    if (onFetchData) {
+      console.log('calling', pageIndex, perPage);
+      onFetchData({ pageIndex, pageSize: perPage, sortBy });
+    }
+  }, [onFetchData, pageIndex, perPage, sortBy]);
 
   useEffect(() => {
     if (paginationEnabled) {
@@ -267,12 +292,16 @@ export function InteractiveTable<TableData extends object>({
           })}
         </tbody>
       </table>
+      x
       {paginationEnabled && (
         <span>
           <Pagination
-            currentPage={tableInstance.state.pageIndex + 1}
-            numberOfPages={tableInstance.pageOptions.length}
-            onNavigate={(toPage) => tableInstance.gotoPage(toPage - 1)}
+            currentPage={tableInstance.state.pageIndex}
+            numberOfPages={pageCount}
+            onNavigate={(toPage) => {
+              console.log('P', toPage);
+              tableInstance.gotoPage(toPage - 1);
+            }}
           />
         </span>
       )}
