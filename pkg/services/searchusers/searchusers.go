@@ -75,7 +75,7 @@ func (s *OSSService) SearchUser(c *contextmodel.ReqContext) (*user.SearchUserQue
 	page := c.QueryInt("page")
 
 	if page < 1 {
-		page = 1
+		page = 0
 	}
 
 	searchQuery := c.Query("query")

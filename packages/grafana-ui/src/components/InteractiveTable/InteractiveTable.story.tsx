@@ -1,5 +1,5 @@
 import { Meta, StoryFn } from '@storybook/react';
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 
 import { InteractiveTable, Column, CellProps, LinkButton } from '@grafana/ui';
 
@@ -271,6 +271,43 @@ export const WithHeaderTooltips: StoryFn<typeof InteractiveTable> = (args) => {
       data={pageableData.slice(0, 10)}
       getRowId={(r) => r.id}
       headerTooltips={headerTooltips}
+    />
+  );
+};
+
+export const WithBackendPagination: StoryFn<typeof InteractiveTable> = (args) => {
+  const pageSize = 15;
+  const [data, setData] = useState(pageableData.slice(0, pageSize));
+  const [pageCount, setPageCount] = useState(5);
+  const columns: Array<Column<WithPaginationData>> = [
+    { id: 'firstName', header: 'First name' },
+    { id: 'lastName', header: 'Last name' },
+    { id: 'car', header: 'Car', sortType: 'string' },
+    { id: 'age', header: 'Age', sortType: 'number' },
+  ];
+  const fetchIdRef = React.useRef(0);
+
+  const fetchData = useCallback(({ pageIndex }: { pageIndex: number }) => {
+    const fetchId = ++fetchIdRef.current;
+    setTimeout(() => {
+      // Only update the data if this is the latest fetch
+      if (fetchId === fetchIdRef.current) {
+        const startRow = pageSize * pageIndex;
+        const endRow = startRow + pageSize;
+        setData(pageableData.slice(startRow, endRow));
+        setPageCount(Math.ceil(pageableData.length / pageSize));
+      }
+    }, 1000);
+  }, []);
+
+  return (
+    <InteractiveTable
+      columns={columns}
+      data={data}
+      getRowId={(r) => r.id}
+      pageSize={15}
+      onFetchData={fetchData}
+      pageCount={pageCount}
     />
   );
 };

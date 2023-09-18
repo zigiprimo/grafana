@@ -312,10 +312,13 @@ export function changeFilter(filter: UserFilter): ThunkResult<void> {
 }
 
 export function changePage(page: number): ThunkResult<void> {
-  return async (dispatch) => {
-    console.log('changing', page);
-    dispatch(usersFetchBegin());
-    dispatch(pageChanged(page));
-    dispatch(fetchUsers());
+  return async (dispatch, getState) => {
+    const { page: currentPage } = getState().userListAdmin;
+    console.log('pages', currentPage, page);
+    if (currentPage !== page) {
+      dispatch(usersFetchBegin());
+      dispatch(pageChanged(page));
+      fetchUsersWithDebounce(dispatch);
+    }
   };
 }

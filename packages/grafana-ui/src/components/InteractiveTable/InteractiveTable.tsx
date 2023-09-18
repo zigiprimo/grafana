@@ -144,15 +144,8 @@ interface Props<TableData extends object> {
    */
   renderExpandedRow?: (row: TableData) => ReactNode;
   pageCount?: number;
-  onFetchData?: ({
-    pageIndex,
-    pageSize,
-    sortBy,
-  }: {
-    pageIndex: number;
-    pageSize: number;
-    sortBy: Array<SortingRule<TableData>>;
-  }) => void;
+  loading?: boolean;
+  onFetchData?: ({ pageIndex, sortBy }: { pageIndex: number; sortBy: Array<SortingRule<TableData>> }) => void;
 }
 
 /** @alpha */
@@ -180,7 +173,6 @@ export function InteractiveTable<TableData extends object>({
   );
 
   const tableHooks: Array<PluginHook<TableData>> = [useSortBy, useExpanded];
-
   const paginationEnabled = pageSize > 0;
 
   if (paginationEnabled) {
@@ -195,7 +187,7 @@ export function InteractiveTable<TableData extends object>({
       autoResetSortBy: false,
       disableMultiSort: true,
       manualPagination: !!onFetchData,
-      pageCount,
+      pageCount: !!onFetchData ? pageCount : undefined,
       getRowId,
       initialState: {
         pageIndex: 0,
@@ -212,15 +204,16 @@ export function InteractiveTable<TableData extends object>({
   );
 
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow } = tableInstance;
-  const { sortBy, pageIndex, pageSize: perPage } = tableInstance.state;
-  console.log('ps', perPage, pageIndex);
+  const { pageIndex } = tableInstance.state;
+
+  console.log('state', tableInstance.state);
+
   // When these table states change, fetch new data!
   useEffect(() => {
     if (onFetchData) {
-      console.log('calling', pageIndex, perPage);
-      onFetchData({ pageIndex, pageSize: perPage, sortBy });
+      onFetchData({ pageIndex });
     }
-  }, [onFetchData, pageIndex, perPage, sortBy]);
+  }, [onFetchData, pageIndex]);
 
   useEffect(() => {
     if (paginationEnabled) {
@@ -292,14 +285,13 @@ export function InteractiveTable<TableData extends object>({
           })}
         </tbody>
       </table>
-      x
       {paginationEnabled && (
         <span>
           <Pagination
             currentPage={tableInstance.state.pageIndex}
-            numberOfPages={pageCount}
+            numberOfPages={!!onFetchData ? pageCount : tableInstance.pageOptions.length}
             onNavigate={(toPage) => {
-              console.log('P', toPage);
+              console.log('page', toPage);
               tableInstance.gotoPage(toPage - 1);
             }}
           />

@@ -105,6 +105,7 @@ const UserListAdminPageUnConnected = ({
           totalPages={totalPages}
           onChangePage={changePage}
           currentPage={page}
+          isLoading={isLoading}
         />
       )}
     </Page.Contents>

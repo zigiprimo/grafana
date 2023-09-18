@@ -29,10 +29,10 @@ interface UsersTableProps {
   totalPages: number;
   onChangePage: (page: number) => void;
   currentPage: number;
-  changePage: Function;
+  isLoading: boolean;
 }
 
-export const UsersTable = ({ users, showPaging, totalPages, onChangePage, currentPage }: UsersTableProps) => {
+export const UsersTable = React.memo(({ users, onChangePage, totalPages, isLoading }: UsersTableProps) => {
   const showLicensedRole = useMemo(() => users.some((user) => user.licensedRole), [users]);
   const columns: Array<Column<UserDTO>> = useMemo(
     () => [
@@ -116,22 +116,30 @@ export const UsersTable = ({ users, showPaging, totalPages, onChangePage, curren
   );
 
   const onFetchData = useCallback(({ pageIndex }: { pageIndex: number }) => {
-    console.log('changgggg', pageIndex);
-    if (pageIndex > 0) {
-      changePage(pageIndex);
-    }
+    //console.log('Index', pageIndex);
+    // if (pageIndex > 0) {
+    onChangePage(pageIndex);
+    // }
   }, []);
   return (
     <VerticalGroup spacing={'md'}>
-      <InteractiveTable columns={columns} data={users} getRowId={(user) => String(user.id)} />
-      {showPaging && (
-        <HorizontalGroup justify={'flex-end'}>
-          <Pagination numberOfPages={totalPages} currentPage={currentPage} onNavigate={onChangePage} />
-        </HorizontalGroup>
-      )}
+      <InteractiveTable
+        columns={columns}
+        data={users}
+        getRowId={(user) => String(user.id)}
+        onFetchData={onFetchData}
+        pageSize={5}
+        pageCount={totalPages}
+        loading={isLoading}
+      />
+      {/*{showPaging && (*/}
+      {/*  <HorizontalGroup justify={'flex-end'}>*/}
+      {/*    <Pagination numberOfPages={totalPages} currentPage={currentPage} onNavigate={onChangePage} />*/}
+      {/*  </HorizontalGroup>*/}
+      {/*)}*/}
     </VerticalGroup>
   );
-};
+});
 
 const OrgUnitsCell = ({ cell: { value, row } }: Cell<'orgs'>) => {
   const styles = useStyles2(getStyles);
