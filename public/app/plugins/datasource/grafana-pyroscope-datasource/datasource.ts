@@ -56,16 +56,18 @@ export class PhlareDataSource extends DataSourceWithBackend<Query, PhlareDataSou
   }
 
   async getLabelNames(query: string, start: number, end: number): Promise<string[]> {
-    return await this.getResource('labelNames', { query: this.templateSrv.replace(query), start, end });
+    return (await this.getResource('labelNames', { query: this.templateSrv.replace(query), start, end })) || [];
   }
 
   async getLabelValues(query: string, label: string, start: number, end: number): Promise<string[]> {
-    return await this.getResource('labelValues', {
-      label: this.templateSrv.replace(label),
-      query: this.templateSrv.replace(query),
-      start,
-      end,
-    });
+    return (
+      (await this.getResource('labelValues', {
+        label: this.templateSrv.replace(label),
+        query: this.templateSrv.replace(query),
+        start,
+        end,
+      })) || []
+    );
   }
 
   // We need the URL here because it may not be saved on the backend yet when used from config page.
