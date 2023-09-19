@@ -556,6 +556,8 @@ export interface QueryFix {
 export interface QueryFixAction {
   type: string;
   query?: string;
+  frame?: DataFrame;
+  frameIndex?: number;
   preventSubmit?: boolean;
   options?: KeyValue<string>;
 }

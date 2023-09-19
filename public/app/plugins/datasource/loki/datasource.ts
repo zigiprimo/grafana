@@ -622,10 +622,20 @@ export class LokiDatasource
         if (filter.options?.key && filter.options?.value) {
           const value = escapeLabelValueInSelector(filter.options.value);
 
+          let forceLabelFilter = false;
+          if (filter.frame && filter.frameIndex !== undefined) {
+            const structuredMetadata = filter.frame.fields.find((field) => field.name === 'structuredMetadataLabels')
+              ?.values[filter.frameIndex];
+            if (structuredMetadata) {
+              const metadataKeys = Object.keys(structuredMetadata);
+              forceLabelFilter = metadataKeys.includes(filter.options.key);
+            }
+          }
+
           // This gives the user the ability to toggle a filter on and off.
           expression = queryHasFilter(expression, filter.options.key, '=', value)
             ? removeLabelFromQuery(expression, filter.options.key, '=', value)
-            : addLabelToQuery(expression, filter.options.key, '=', value);
+            : addLabelToQuery(expression, filter.options.key, '=', value, forceLabelFilter);
         }
         break;
       }

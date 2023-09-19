@@ -45,6 +45,34 @@ function processStreamFrame(
 
   const newFrame = setFrameMeta(frame, meta);
   const derivedFields = getDerivedFields(newFrame, derivedFieldConfigs);
+  const labelsField = newFrame.fields.find((field) => field.name === 'labels');
+  const parsedLabelsField = newFrame.fields.find((field) => field.name === 'parsedLabels');
+  const structuredLabelsField = newFrame.fields.find((field) => field.name === 'structuredMetadataLabels');
+  if (labelsField && parsedLabelsField && structuredLabelsField) {
+    labelsField.name = 'original_labels';
+    labelsField.config = {
+      ...labelsField.config,
+      custom: {
+        ...labelsField.config.custom,
+        hidden: true,
+      },
+    };
+    const mergedValues = labelsField.values.map((value, index) => {
+      const parsedLabels = parsedLabelsField.values[index];
+      const structuredLabels = structuredLabelsField.values[index];
+      return {
+        ...value,
+        ...parsedLabels,
+        ...structuredLabels,
+      };
+    });
+    newFrame.fields.push({
+      name: 'labels',
+      values: mergedValues,
+      type: FieldType.other,
+      config: {},
+    });
+  }
   return {
     ...newFrame,
     fields: [...newFrame.fields, ...derivedFields],
