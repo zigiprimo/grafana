@@ -34,21 +34,33 @@ node_modules: package.json yarn.lock ## Install node modules.
 	YARN_ENABLE_PROGRESS_BARS=false yarn install --immutable
 
 ##@ Swagger
+# location of the swagger OSS spec
 SPEC_TARGET = public/api-spec.json
+# location of the swagger enterprise spec
 ENTERPRISE_SPEC_TARGET = public/api-enterprise-spec.json
+# location of the mixin of the swagger OSS, enterprise and alerting stable specs
 MERGED_SPEC_TARGET = public/api-merged.json
+# location of the alerting stable spec
 NGALERT_SPEC_TARGET = pkg/services/ngalert/api/tooling/api.json
+# this file only exists if enterprise is enabled
 ENTERPRISE_EXT_FILE = pkg/extensions/ext.go
+# find any modified OSS files that contain swagger annotations (except the Makefile)
 SWAGGER_OSS_FILES ?= $(shell git diff main...HEAD --name-only . ':(exclude)Makefile' | xargs grep -H swagger: | cut -d: -f1 )
+# find any modified enteprise files that contain swagger annotations (except the Makefile)
+# assumes that the enterprise repo is checked out in ../grafana-enterprise
 SWAGGER_ENTERPRISE_FILES ?= $(shell cd ../grafana-enterprise && git diff main...HEAD --name-only | xargs grep -H swagger: | cut -d: -f1 )
 
+# triggers generation of the alerting stable spec
 $(NGALERT_SPEC_TARGET):
 	+$(MAKE) -C pkg/services/ngalert/api/tooling api.json
 
+# triggers generation of the final spec (mixin of the swagger OSS, enterprise and alerting stable specs)
 $(MERGED_SPEC_TARGET): swagger-oss-gen swagger-enterprise-gen $(NGALERT_SPEC_TARGET) $(SWAGGER) ## Merge generated and ngalert API specs
 	# known conflicts DsPermissionType, AddApiKeyCommand, Json, Duration (identical models referenced by both specs)
 	$(SWAGGER) mixin $(SPEC_TARGET) $(ENTERPRISE_SPEC_TARGET) $(NGALERT_SPEC_TARGET) --ignore-conflicts -o $(MERGED_SPEC_TARGET)
 
+# triggers generation of the swagger OSS spec
+# if there are any modified OSS files that contain swagger annotations
 ifneq ($(SWAGGER_OSS_FILES),)
 swagger-oss-gen: $(SWAGGER) ## Generate API Swagger specification
 	@echo "re-generating swagger for OSS"
@@ -65,6 +77,8 @@ swagger-oss-gen: $(SWAGGER) ## Generate API Swagger specification
 	@echo "skipping re-generating swagger for OSS"
 endif
 
+# triggers generation of the swagger enterprise spec
+# if enterprise is enabled and there are any modified enterprise files that contain swagger annotations
 ifeq ("$(wildcard $(ENTERPRISE_EXT_FILE))","") ## if enterprise is enabled
 swagger-enterprise-gen:
 	@echo "skipping re-generating swagger for enterprise: not enabled"
@@ -85,17 +99,20 @@ swagger-enterprise-gen: $(SWAGGER) ## Generate API Swagger specification
 endif
 endif
 
+# triggers generation and validation of the final spec
 swagger-gen: gen-go $(MERGED_SPEC_TARGET) swagger-validate
 
 swagger-validate: $(MERGED_SPEC_TARGET) $(SWAGGER) ## Validate API spec
 	$(SWAGGER) validate $(<)
 
+# deletes all generated swagger and OpenAPI files
 swagger-clean:
 	rm -f $(SPEC_TARGET) $(MERGED_SPEC_TARGET) $(OAPI_SPEC_TARGET)
 
 ##@ OpenAPI 3
 OAPI_SPEC_TARGET = public/openapi3.json
 
+# triggers generation of the OpenAPI 3 spec from the Swagger 2 spec:
 openapi3-gen: swagger-gen ## Generates OpenApi 3 specs from the Swagger 2 already generated
 	$(GO) run scripts/openapi3/openapi3conv.go $(MERGED_SPEC_TARGET) $(OAPI_SPEC_TARGET)
 
