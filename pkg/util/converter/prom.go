@@ -933,8 +933,11 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 	labelsField := data.NewFieldFromFieldType(data.FieldTypeJSON, 0)
 	labelsField.Name = "__labels" // avoid automatically spreading this by labels
 
-	categorizedLabelsField := data.NewFieldFromFieldType(data.FieldTypeJSON, 0)
-	categorizedLabelsField.Name = "__categorizedLabels" // avoid automatically spreading this by labels
+	parsedLabelsField := data.NewFieldFromFieldType(data.FieldTypeJSON, 0)
+	parsedLabelsField.Name = "__parsedLabels" // avoid automatically spreading this by labels
+
+	metadataLabelsField := data.NewFieldFromFieldType(data.FieldTypeJSON, 0)
+	metadataLabelsField.Name = "__metadataLabels" // avoid automatically spreading this by labels
 
 	timeField := data.NewFieldFromFieldType(data.FieldTypeTime, 0)
 	timeField.Name = "Time"
@@ -948,12 +951,6 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 
 	labels := data.Labels{}
 	labelJson, err := labelsToRawJson(labels)
-	if err != nil {
-		return backend.DataResponse{Error: err}
-	}
-
-	clabels := categorizedLabels{}
-	clabelJson, err := categorizedLabelsToRawJson(clabels)
 	if err != nil {
 		return backend.DataResponse{Error: err}
 	}
@@ -972,53 +969,13 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 			case "stream":
 				// we need to clear `labels`, because `iter.ReadVal`
 				// only appends to it
-				clabels := categorizedLabels{}
-			streamField:
-				for streamField, err := iter.ReadObject(); ; streamField, err = iter.ReadObject() {
-					if err != nil {
-						return rspErr(err)
-					}
-					switch streamField {
-					case "stream":
-						if err = iter.ReadVal(&clabels.Stream); err != nil {
-							return rspErr(err)
-						}
-					case "parsed":
-						if err = iter.ReadVal(&clabels.Parsed); err != nil {
-							return rspErr(err)
-						}
-					case "structuredMetadata":
-						if err = iter.ReadVal(&clabels.StructuredMetadata); err != nil {
-							return rspErr(err)
-						}
-					case "":
-						if err != nil {
-							return rspErr(err)
-						}
+				labels := data.Labels{}
+				if err = iter.ReadVal(&labels); err != nil {
+					return rspErr(err)
+				}
 
-						if clabelJson, err = categorizedLabelsToRawJson(clabels); err != nil {
-							return rspErr(err)
-						}
-						allLabels := data.Labels{}
-						for k, v := range clabels.Stream {
-							allLabels[k] = v
-						}
-						for k, v := range clabels.Parsed {
-							allLabels[k] = v
-						}
-						for k, v := range clabels.StructuredMetadata {
-							allLabels[k] = v
-						}
-
-						if labelJson, err = labelsToRawJson(allLabels); err != nil {
-							return rspErr(err)
-						}
-						if err != nil {
-							return rspErr(err)
-						}
-
-						break streamField
-					}
+				if labelJson, err = labelsToRawJson(labels); err != nil {
+					return rspErr(err)
 				}
 
 			case "values":
@@ -1050,13 +1007,50 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 						return rspErr(err)
 					}
 
+					plabels := data.Labels{}
+					clabels := data.Labels{}
+					var plabelsJson json.RawMessage
+					var clabelsJson json.RawMessage
+				streamField:
+					for streamField, err := iter.ReadObject(); ; streamField, err = iter.ReadObject() {
+						if err != nil {
+							return rspErr(err)
+						}
+						switch streamField {
+						case "parsed":
+							if err = iter.ReadVal(&plabels); err != nil {
+								return rspErr(err)
+							}
+						case "structuredMetadata":
+							if err = iter.ReadVal(&clabels); err != nil {
+								return rspErr(err)
+							}
+						case "":
+							if err != nil {
+								return rspErr(err)
+							}
+							if plabelsJson, err = labelsToRawJson(plabels); err != nil {
+								return rspErr(err)
+							}
+							if clabelsJson, err = labelsToRawJson(clabels); err != nil {
+								return rspErr(err)
+							}
+							break streamField
+						}
+					}
+
+					if _, err = iter.ReadArray(); err != nil {
+						return rspErr(err)
+					}
+
 					t, err := timeFromLokiString(ts)
 					if err != nil {
 						return rspErr(err)
 					}
 
 					labelsField.Append(labelJson)
-					categorizedLabelsField.Append(clabelJson)
+					parsedLabelsField.Append(plabelsJson)
+					metadataLabelsField.Append(clabelsJson)
 					timeField.Append(t)
 					lineField.Append(line)
 					tsField.Append(ts)
@@ -1070,7 +1064,7 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 		}
 	}
 
-	frame := data.NewFrame("", labelsField, timeField, lineField, tsField, categorizedLabelsField)
+	frame := data.NewFrame("", labelsField, timeField, lineField, tsField, parsedLabelsField, metadataLabelsField)
 	frame.Meta = &data.FrameMeta{}
 	rsp.Frames = append(rsp.Frames, frame)
 

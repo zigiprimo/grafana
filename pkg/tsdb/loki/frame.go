@@ -93,18 +93,26 @@ func adjustLogsFrame(frame *data.Frame, query *lokiQuery, dataplane bool) error 
 func adjustLegacyLogsFrame(frame *data.Frame, query *lokiQuery) error {
 	// we check if the fields are of correct type and length
 	fields := frame.Fields
-	if len(fields) != 4 && len(fields) != 5 {
-		return fmt.Errorf("invalid field length in logs frame. expected 4, got %d", len(fields))
+	if len(fields) != 4 && len(fields) != 6 {
+		return fmt.Errorf("invalid field length in logs frame. expected 4 or 6, got %d", len(fields))
 	}
 
 	labelsField := fields[0]
 	timeField := fields[1]
 	lineField := fields[2]
 	stringTimeField := fields[3]
-	if len(fields) == 5 {
-		categorizedLabelsField := fields[4]
-		categorizedLabelsField.Name = "categorizedLabels"
-		categorizedLabelsField.Config = &data.FieldConfig{
+	if len(fields) == 6 {
+		parsedLabelsField := fields[4]
+		parsedLabelsField.Name = "parsedLabels"
+		parsedLabelsField.Config = &data.FieldConfig{
+			Custom: map[string]interface{}{
+				"hidden": true,
+			},
+		}
+
+		structuredMetadataLabelsField := fields[5]
+		structuredMetadataLabelsField.Name = "structuredMetadataLabels"
+		structuredMetadataLabelsField.Config = &data.FieldConfig{
 			Custom: map[string]interface{}{
 				"hidden": true,
 			},
