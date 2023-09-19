@@ -461,6 +461,7 @@ export default class LokiLanguageProvider extends LanguageProvider {
 
   async getParserAndLabelKeys(selector: string): Promise<{
     extractedLabelKeys: string[];
+    structuredMetadataKeys: string[];
     hasJSON: boolean;
     hasLogfmt: boolean;
     hasPack: boolean;
@@ -469,13 +470,21 @@ export default class LokiLanguageProvider extends LanguageProvider {
     const series = await this.datasource.getDataSamples({ expr: selector, refId: 'data-samples' });
 
     if (!series.length) {
-      return { extractedLabelKeys: [], unwrapLabelKeys: [], hasJSON: false, hasLogfmt: false, hasPack: false };
+      return {
+        extractedLabelKeys: [],
+        structuredMetadataKeys: [],
+        unwrapLabelKeys: [],
+        hasJSON: false,
+        hasLogfmt: false,
+        hasPack: false,
+      };
     }
 
     const { hasLogfmt, hasJSON, hasPack } = extractLogParserFromDataFrame(series[0]);
 
     return {
       extractedLabelKeys: extractLabelKeysFromDataFrame(series[0]),
+      structuredMetadataKeys: extractLabelKeysFromDataFrame(series[0], 'structuredMetadataLabels'),
       unwrapLabelKeys: extractUnwrapLabelKeysFromDataFrame(series[0]),
       hasJSON,
       hasPack,

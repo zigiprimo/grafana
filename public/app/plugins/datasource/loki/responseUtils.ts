@@ -54,9 +54,9 @@ export function extractLogParserFromDataFrame(frame: DataFrame): {
   return { hasLogfmt, hasJSON, hasPack };
 }
 
-export function extractLabelKeysFromDataFrame(frame: DataFrame): string[] {
+export function extractLabelKeysFromDataFrame(frame: DataFrame, fieldName = 'labels'): string[] {
   const labelsArray: Array<{ [key: string]: string }> | undefined =
-    frame?.fields?.find((field) => field.name === 'labels')?.values ?? [];
+    frame?.fields?.find((field) => field.name === fieldName)?.values ?? [];
 
   if (!labelsArray?.length) {
     return [];

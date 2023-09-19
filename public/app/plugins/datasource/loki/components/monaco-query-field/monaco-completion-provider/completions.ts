@@ -243,17 +243,23 @@ export async function getAfterSelectorCompletions(
     query = trimEnd(logQuery, '| ');
   }
 
-  const { extractedLabelKeys, hasJSON, hasLogfmt, hasPack } = await dataProvider.getParserAndLabelKeys(query);
+  const { extractedLabelKeys, structuredMetadataKeys, hasJSON, hasLogfmt, hasPack } =
+    await dataProvider.getParserAndLabelKeys(query);
   const hasQueryParser = isQueryWithParser(query).queryWithParser;
 
   const prefix = `${hasSpace ? '' : ' '}${afterPipe ? '' : '| '}`;
-  const completions: Completion[] = await getParserCompletions(
-    prefix,
-    hasJSON,
-    hasLogfmt,
-    hasPack,
-    extractedLabelKeys,
-    hasQueryParser
+
+  const completions: Completion[] = structuredMetadataKeys.map((key) => {
+    return {
+      type: 'LABEL_NAME',
+      label: `${key} (detected)`,
+      insertText: `${prefix}${key}`,
+      documentation: `"${key}" was suggested based on the content of your log lines for the label filter expression.`,
+    };
+  });
+
+  completions.push(
+    ...(await getParserCompletions(prefix, hasJSON, hasLogfmt, hasPack, extractedLabelKeys, hasQueryParser))
   );
 
   completions.push({
