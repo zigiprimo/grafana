@@ -1,12 +1,19 @@
 import { css } from '@emotion/css';
-import React, { PropsWithChildren, ReactNode } from 'react';
-import { useToggle } from 'react-use';
+import { chain, flatMap } from 'lodash';
+import React, { PropsWithChildren, ReactNode, useEffect, useMemo } from 'react';
+import { useAsyncFn, useInterval, useToggle } from 'react-use';
 
 import { GrafanaTheme2, IconName } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
 import { Badge, Button, Dropdown, Icon, Link, Menu, Text, Tooltip, useStyles2 } from '@grafana/ui';
-
 // import { AlertLabels } from '../AlertLabels';
+import { dispatch } from 'app/store/store';
+
+import { useCombinedRuleNamespaces } from '../../hooks/useCombinedRuleNamespaces';
+import { useUnifiedAlertingSelector } from '../../hooks/useUnifiedAlertingSelector';
+import { fetchAllPromAndRulerRulesAction } from '../../state/actions';
+import { RULE_LIST_POLL_INTERVAL_MS } from '../../utils/constants';
+import { getAllRulesSourceNames } from '../../utils/datasource';
 import { MetaText } from '../MetaText';
 import { Spacer } from '../Spacer';
 import { Strong } from '../Strong';
@@ -14,9 +21,25 @@ import { Strong } from '../Strong';
 const RuleList = () => {
   const styles = useStyles2(getStyles);
 
+  // 1. fetch all alerting data sources
+  // 2. perform feature discovery for each
+  // 3. fetch all rules for each discovered DS
+
+  const { data, isLoading, refetch } = useFetchAllNamespacesAndGroups();
+  useInterval(refetch, RULE_LIST_POLL_INTERVAL_MS);
+
+  console.log('isLoading', isLoading, 'data', data);
+
   return (
     <ul className={styles.rulesTree} role="tree">
-      <Namespace name="Demonstrations">
+      {data.map(([namespace, groups], index) => (
+        <Namespace key={namespace + index} name={namespace}>
+          {groups.map((group, index) => (
+            <EvaluationGroup key={group + index} name={group} />
+          ))}
+        </Namespace>
+      ))}
+      {/* <Namespace name="Demonstrations">
         <EvaluationGroup name={'default'} interval={'5 minutes'}>
           <AlertRuleListItem
             state="normal"
@@ -25,7 +48,7 @@ const RuleList = () => {
           />
           <AlertRuleListItem state="pending" name={'Memory Usage'} summary="Memory Usage too high" />
           <AlertRuleListItem state="firing" name={'Network Usage'} summary="network congested" />
-        </EvaluationGroup>
+        </EvaluationGroPup>
 
         <EvaluationGroup name={'system metrics'} interval={'1 minute'}>
           <AlertRuleListItem name={'email'} summary="gilles.demey@grafana.com" />
@@ -43,9 +66,59 @@ const RuleList = () => {
         <EvaluationGroup name={'eu-west-1'} interval={'2 minutes'} />
         <EvaluationGroup name={'us-east-0'} interval={'5 minutes'} />
       </Namespace>
+
+      <Namespace icon="prometheus" name=" dev-us-central-0">
+        <EvaluationGroup name={'access_grafanacom'} interval={'1 minute'} />
+        <EvaluationGroup name={'access_stackstateservice'} interval={'1 minute'} />
+      </Namespace> */}
     </ul>
   );
 };
+
+function useFetchAllNamespacesAndGroups() {
+  const rulesDataSourceNames = useMemo(getAllRulesSourceNames, []);
+
+  const promRuleRequests = useUnifiedAlertingSelector((state) => state.promRules);
+  const rulerRuleRequests = useUnifiedAlertingSelector((state) => state.rulerRules);
+
+  const combinedNamespaces = useCombinedRuleNamespaces();
+
+  const loading = rulesDataSourceNames.some(
+    (name) => promRuleRequests[name]?.loading || rulerRuleRequests[name]?.loading
+  );
+
+  const promRequests = Object.entries(promRuleRequests);
+  const allPromLoaded = promRequests.every(
+    ([_, state]) => state.dispatched && (state?.result !== undefined || state?.error !== undefined)
+  );
+  const allPromEmpty = promRequests.every(([_, state]) => state.dispatched && state?.result?.length === 0);
+
+  // Trigger data refresh only when the RULE_LIST_POLL_INTERVAL_MS elapsed since the previous load FINISHED
+  const [_, fetchRules] = useAsyncFn(async () => {
+    if (!loading) {
+      dispatch(fetchAllPromAndRulerRulesAction(false, { limitAlerts: 15 }));
+    }
+  }, [loading, dispatch]);
+
+  // fetch rules, then poll every RULE_LIST_POLL_INTERVAL_MS
+  useEffect(() => {
+    dispatch(fetchAllPromAndRulerRulesAction(false, { limitAlerts: 15 }));
+  }, []);
+
+  // TODO don't merge namespaces from different data sources
+  const data = chain(combinedNamespaces)
+    .groupBy((ns) => ns.name)
+    .mapValues((ns) => flatMap(ns, (group) => flatMap(group.groups, (group) => group.name)))
+    .entries()
+    .value();
+
+  return {
+    isLoading: !allPromLoaded,
+    isEmpty: allPromEmpty,
+    data,
+    refetch: fetchRules,
+  };
+}
 
 interface EvaluationGroupProps extends PropsWithChildren {
   name: string;
@@ -265,10 +338,11 @@ const AlertRuleListItem = (props: AlertRuleListItemProps) => {
 
 interface NamespaceProps extends PropsWithChildren {
   name: string;
+  icon?: 'prometheus'; // TODO add support for loki, mimir, etc
 }
 
 // TODO hook up buttons
-const Namespace = ({ children, name }: NamespaceProps) => {
+const Namespace = ({ children, name, icon }: NamespaceProps) => {
   const styles = useStyles2(getStyles);
   const [isOpen] = useToggle(true);
 
@@ -277,7 +351,15 @@ const Namespace = ({ children, name }: NamespaceProps) => {
       <div className={styles.namespaceTitle}>
         <Stack alignItems={'center'}>
           <Stack alignItems={'center'} gap={1}>
-            <Icon name={isOpen ? 'folder-open' : 'folder'} />
+            {icon === 'prometheus' && (
+              <img
+                width={16}
+                height={16}
+                src="/public/app/plugins/datasource/prometheus/img/prometheus_logo.svg"
+                alt="Prometheus"
+              />
+            )}
+            {!icon && <Icon name={isOpen ? 'folder-open' : 'folder'} />}
             <Link href="/dashboards/f/lG5pfeRVk/demonstrations">
               <Text color="link">{name}</Text>
             </Link>
