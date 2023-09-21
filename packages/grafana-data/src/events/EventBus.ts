@@ -56,6 +56,7 @@ export class EventBusSrv implements EventBus, LegacyEmitter {
    * Legacy functions
    */
   emit<T>(event: AppEvent<T> | string, payload?: T | any): void {
+    console;
     // console.log(`Deprecated emitter function used (emit), use $emit`);
 
     if (typeof event === 'string') {

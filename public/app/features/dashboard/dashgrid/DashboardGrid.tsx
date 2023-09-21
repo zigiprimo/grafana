@@ -17,6 +17,8 @@ import { GridPos } from '../state/PanelModel';
 
 import DashboardEmpty from './DashboardEmpty';
 import { DashboardPanel } from './DashboardPanel';
+import { TextBoxVariableModel, VariablesChanged } from 'app/features/variables/types';
+import appEvents from 'app/core/app_events';
 
 export interface Props {
   dashboard: DashboardModel;
@@ -25,7 +27,11 @@ export interface Props {
   viewPanel: PanelModel | null;
   hidePanelMenus?: boolean;
 }
-export class DashboardGrid extends PureComponent<Props> {
+
+interface State {
+  panelsFilter?: string;
+}
+export class DashboardGrid extends PureComponent<Props, State> {
   private panelMap: { [key: string]: PanelModel } = {};
   private eventSubs = new Subscription();
   private windowHeight = 1200;
@@ -37,11 +43,41 @@ export class DashboardGrid extends PureComponent<Props> {
 
   constructor(props: Props) {
     super(props);
+    this.state = {
+      panelsFilter: undefined,
+    };
   }
 
   componentDidMount() {
     const { dashboard } = this.props;
     this.eventSubs.add(dashboard.events.subscribe(DashboardPanelsChangedEvent, this.triggerForceUpdate));
+    this.eventSubs.add(
+      appEvents.subscribe(VariablesChanged, (e) => {
+        if (e.payload.variable.id === 'systemPanelFilterVar') {
+          console.log('query0', e.payload.variable);
+          this.setState({
+            panelsFilter: (e.payload.variable as TextBoxVariableModel).current.value,
+          });
+        }
+      })
+    );
+  }
+
+  filterPanels() {
+    const { dashboard } = this.props;
+    const panels = dashboard.panels;
+    const panelsToHide = [];
+    for (const panel of panels) {
+      if (panel.type === 'row') {
+        continue;
+      }
+      const query = panel.targets[0].rawQuery;
+      if (query && query.indexOf('$query0') > -1) {
+        panelsToHide.push(panel);
+      }
+    }
+    dashboard.panels = dashboard.panels.filter((panel) => !panelsToHide.includes(panel));
+    this.forceUpdate();
   }
 
   componentWillUnmount() {
@@ -51,6 +87,7 @@ export class DashboardGrid extends PureComponent<Props> {
   buildLayout() {
     const layout: ReactGridLayout.Layout[] = [];
     this.panelMap = {};
+    const { panelsFilter } = this.state;
 
     for (const panel of this.props.dashboard.panels) {
       if (!panel.key) {
@@ -78,13 +115,24 @@ export class DashboardGrid extends PureComponent<Props> {
         panelPos.isDraggable = panel.collapsed;
       }
 
-      layout.push(panelPos);
+      if (!panelsFilter) {
+        layout.push(panelPos);
+      } else {
+        if (panelsFilter.slice() !== '' && panel.title && panel.title.indexOf(panelsFilter) > -1) {
+          layout.push(panelPos);
+        }
+      }
     }
+
+    console.log(layout);
 
     return layout;
   }
 
   onLayoutChange = (newLayout: ReactGridLayout.Layout[]) => {
+    if (this.state.panelsFilter) {
+      return;
+    }
     for (const newPos of newLayout) {
       this.panelMap[newPos.i!].updateGridPos(newPos, this.isLayoutInitialized);
     }
@@ -136,6 +184,7 @@ export class DashboardGrid extends PureComponent<Props> {
   }
 
   renderPanels(gridWidth: number, isDashboardDraggable: boolean) {
+    const { panelsFilter } = this.state;
     const panelElements = [];
 
     // Reset last panel bottom
@@ -151,8 +200,7 @@ export class DashboardGrid extends PureComponent<Props> {
 
     for (const panel of this.props.dashboard.panels) {
       const panelClasses = classNames({ 'react-grid-item--fullscreen': panel.isViewing });
-
-      panelElements.push(
+      const p = (
         <GrafanaGridItem
           key={panel.key}
           className={panelClasses}
@@ -168,8 +216,17 @@ export class DashboardGrid extends PureComponent<Props> {
           }}
         </GrafanaGridItem>
       );
+
+      if (!panelsFilter) {
+        panelElements.push(p);
+      } else {
+        if (panelsFilter.slice() !== '' && panel.title && panel.title.indexOf(panelsFilter) > -1) {
+          panelElements.push(p);
+        }
+      }
     }
 
+    // console.log(panelElements);
     return panelElements;
   }
 
