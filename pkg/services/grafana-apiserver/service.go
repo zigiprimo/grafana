@@ -28,8 +28,9 @@ import (
 	"k8s.io/klog/v2"
 
 	"github.com/grafana/grafana/pkg/apis"
-	playlistv1 "github.com/grafana/grafana/pkg/apis/playlist/v1"
-	"github.com/grafana/grafana/pkg/modules"
+	"github.com/grafana/grafana/pkg/registry"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
+	"github.com/grafana/grafana/pkg/setting"
 )
 
 const (
@@ -39,6 +40,7 @@ const (
 var (
 	_ Service            = (*service)(nil)
 	_ RestConfigProvider = (*service)(nil)
+	_ K8sAPIServer       = (*service)(nil)
 )
 
 var (
@@ -67,33 +69,60 @@ type Service interface {
 	services.NamedService
 }
 
+// Used for wire dependencies
+type K8sAPIServer interface {
+	registry.BackgroundService
+	registry.CanBeDisabled
+}
+
 type RestConfigProvider interface {
 	GetRestConfig() *clientrest.Config
 }
 
 type service struct {
-	*services.BasicService
+	*services.BasicService // Will eventually be used for isolated starting
 
 	restConfig *clientrest.Config
 
 	dataPath  string
 	stopCh    chan struct{}
 	stoppedCh chan error
+
+	// Added through wire
+	apibuilders apis.GroupBuilderCollection
+	disabled    bool
 }
 
-func New(dataPath string) (*service, error) {
+func ProvideService(cfg *setting.Cfg, apibuilders apis.GroupBuilderCollection) K8sAPIServer {
 	s := &service{
-		dataPath: dataPath,
-		stopCh:   make(chan struct{}),
+		apibuilders: apibuilders,
+		stopCh:      make(chan struct{}),
+		dataPath:    path.Join(s.cfg.DataPath, "k8s"),
+		disabled:    !cfg.IsFeatureToggleEnabled(featuremgmt.FlagGrafanaAPIServer),
 	}
 
-	s.BasicService = services.NewBasicService(s.start, s.running, nil).WithName(modules.GrafanaAPIServer)
+	// Only used when starting as dskit module!
+	//
+	// s.BasicService = services.NewBasicService(s.start, s.running, nil).
+	// 	WithName(modules.GrafanaAPIServer)
 
-	return s, nil
+	return s
 }
 
 func (s *service) GetRestConfig() *clientrest.Config {
 	return s.restConfig
+}
+
+func (s *service) IsDisabled() bool {
+	return s.disabled
+}
+
+func (s *service) Run(ctx context.Context) error {
+	if s.IsDisabled() {
+		//s.log.Debug("apiserver feature is disabled")
+		return nil
+	}
+	return s.start(ctx) // nothing, but required
 }
 
 func (s *service) start(ctx context.Context) error {
@@ -153,9 +182,7 @@ func (s *service) start(ctx context.Context) error {
 	serverConfig.Authentication.Authenticator = authenticator
 
 	// Get the list of groups the server will support
-	builders := []apis.APIGroupBuilder{
-		playlistv1.GetAPIGroupBuilder(),
-	}
+	builders := s.apibuilders.GetAPIs()
 
 	// Install schemas
 	for _, b := range builders {

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"github.com/grafana/grafana/pkg/apis"
+	"github.com/grafana/grafana/pkg/services/playlist"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -17,11 +18,18 @@ const GroupName = "playlist.x.grafana.com"
 const VersionID = "v0-alpha" //
 const APIVersion = GroupName + "/" + VersionID
 
-type builder struct{}
+// This is used just so wire has something unique to return
+type PlaylistDummyService struct{}
 
-// TODO.. this will have wire dependencies
-func GetAPIGroupBuilder() apis.APIGroupBuilder {
-	return &builder{}
+func RegisterAPIService(c apis.GroupBuilderCollection, p playlist.Service) *PlaylistDummyService {
+	c.AddAPI(&builder{
+		service: p,
+	})
+	return &PlaylistDummyService{}
+}
+
+type builder struct {
+	service playlist.Service
 }
 
 func (b *builder) InstallSchema(scheme *runtime.Scheme) error {
@@ -39,7 +47,7 @@ func (b *builder) GetAPIGroupInfo(
 	apiGroupInfo := genericapiserver.NewDefaultAPIGroupInfo(GroupName, scheme, metav1.ParameterCodec, codecs)
 	storage := map[string]rest.Storage{}
 	storage["playlists"] = &handler{
-		service: nil, // TODO!!!!!
+		service: b.service,
 	}
 
 	apiGroupInfo.VersionedResourcesStorageMap[VersionID] = storage
