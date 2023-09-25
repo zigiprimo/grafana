@@ -20,6 +20,7 @@ import {
 } from '../../../types/unified-alerting-dto';
 
 import { cloneRuleDefinition, CloneRuleEditor } from './CloneRuleEditor';
+import { GRAFANA_MANAGED_BUILDINFO } from './api/buildInfo';
 import { ExpressionEditorProps } from './components/rule-editor/ExpressionEditor';
 import {
   mockDataSource,
@@ -95,6 +96,7 @@ function getProvidersWrapper() {
             dataSourceName: 'grafana',
             apiVersion: 'legacy',
           },
+          buildInfo: GRAFANA_MANAGED_BUILDINFO,
         },
       };
       store.unifiedAlerting.dataSources['my-prom-ds'] = {
@@ -107,6 +109,7 @@ function getProvidersWrapper() {
             dataSourceName: 'my-prom-ds',
             apiVersion: 'config',
           },
+          buildInfo: GRAFANA_MANAGED_BUILDINFO,
         },
       };
     });

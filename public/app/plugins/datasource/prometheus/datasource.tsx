@@ -40,7 +40,7 @@ import { safeStringifyValue } from 'app/core/utils/explore';
 import { discoverDataSourceFeatures } from 'app/features/alerting/unified/api/buildInfo';
 import { getTimeSrv, TimeSrv } from 'app/features/dashboard/services/TimeSrv';
 import { getTemplateSrv, TemplateSrv } from 'app/features/templating/template_srv';
-import { PromApiFeatures, PromApplication } from 'app/types/unified-alerting-dto';
+import { DiscoveredAPIFeatures, PromApplication } from 'app/types/unified-alerting-dto';
 
 import config from '../../../core/config';
 
@@ -1007,7 +1007,12 @@ export class PrometheusDatasource
     }
   }
 
-  getBuildInfoMessage(buildInfo: PromApiFeatures) {
+  getBuildInfoMessage(buildInfo: DiscoveredAPIFeatures) {
+    if (buildInfo.application === 'Grafana') {
+      // Grafana managed rules don't have a data source
+      return null;
+    }
+
     const enabled = <Badge color="green" icon="check" text="Ruler API enabled" />;
     const disabled = <Badge color="orange" icon="exclamation-triangle" text="Ruler API not enabled" />;
     const unsupported = (

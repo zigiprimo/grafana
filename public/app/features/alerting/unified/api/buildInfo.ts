@@ -3,7 +3,7 @@ import { lastValueFrom } from 'rxjs';
 import { getBackendSrv, isFetchError } from '@grafana/runtime';
 import {
   AlertmanagerApiFeatures,
-  PromApiFeatures,
+  DiscoveredAPIFeatures,
   PromApplication,
   PromBuildInfoResponse,
 } from 'app/types/unified-alerting-dto';
@@ -14,16 +14,19 @@ import { getDataSourceByName, GRAFANA_RULES_SOURCE_NAME } from '../utils/datasou
 import { fetchRules } from './prometheus';
 import { fetchTestRulerRulesGroup } from './ruler';
 
+export const GRAFANA_MANAGED_BUILDINFO: DiscoveredAPIFeatures = {
+  application: 'Grafana',
+  features: {
+    rulerApiEnabled: true,
+  },
+};
+
 /**
  * Attempt to fetch buildinfo from our component
  */
-export async function discoverFeatures(dataSourceName: string): Promise<PromApiFeatures> {
+export async function discoverFeatures(dataSourceName: string): Promise<DiscoveredAPIFeatures> {
   if (dataSourceName === GRAFANA_RULES_SOURCE_NAME) {
-    return {
-      features: {
-        rulerApiEnabled: true,
-      },
-    };
+    return GRAFANA_MANAGED_BUILDINFO;
   }
 
   const dsConfig = getDataSourceByName(dataSourceName);
@@ -55,7 +58,7 @@ export async function discoverDataSourceFeatures(dsSettings: {
   url: string;
   name: string;
   type: 'prometheus' | 'loki';
-}): Promise<PromApiFeatures> {
+}): Promise<DiscoveredAPIFeatures> {
   const { url, name, type } = dsSettings;
 
   // The current implementation of Loki's build info endpoint is useless

@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 import { contextSrv } from 'app/core/services/context_srv';
 import { AccessControlAction, FolderDTO, StoreState } from 'app/types';
 
+import { GRAFANA_MANAGED_BUILDINFO } from '../api/buildInfo';
 import {
   disableRBAC,
   enableRBAC,
@@ -187,6 +188,7 @@ function getMockedDataSources(): StoreState['unifiedAlerting']['dataSources'] {
         id: 'grafana',
         name: 'grafana',
         rulerConfig: { dataSourceName: 'grafana', apiVersion: 'legacy' },
+        buildInfo: GRAFANA_MANAGED_BUILDINFO,
       },
     },
     cortex: {
@@ -196,6 +198,7 @@ function getMockedDataSources(): StoreState['unifiedAlerting']['dataSources'] {
         id: 'cortex',
         name: 'Cortex',
         rulerConfig: { dataSourceName: 'cortex', apiVersion: 'legacy' },
+        buildInfo: GRAFANA_MANAGED_BUILDINFO,
       },
     },
   };

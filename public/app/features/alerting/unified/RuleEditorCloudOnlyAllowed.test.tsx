@@ -6,7 +6,7 @@ import { byRole, byText } from 'testing-library-selector';
 
 import { setDataSourceSrv } from '@grafana/runtime';
 import { contextSrv } from 'app/core/services/context_srv';
-import { PromApiFeatures, PromApplication } from 'app/types/unified-alerting-dto';
+import { DiscoveredAPIFeatures, PromApplication } from 'app/types/unified-alerting-dto';
 
 import { searchFolders } from '../../manage-dashboards/state/actions';
 
@@ -121,7 +121,7 @@ const mocks = {
   },
 };
 
-function getDiscoverFeaturesMock(application: PromApplication, features?: Partial<PromApiFeatures['features']>) {
+function getDiscoverFeaturesMock(application: PromApplication, features?: Partial<DiscoveredAPIFeatures['features']>) {
   return {
     application: application,
     features: {

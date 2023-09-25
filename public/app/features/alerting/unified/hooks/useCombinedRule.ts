@@ -221,6 +221,7 @@ export function useCombinedRule({ ruleIdentifier }: { ruleIdentifier: RuleIdenti
       });
     } else if (isGrafanaRuleIdentifier(ruleIdentifier)) {
       // TODO Fetch a single group for Grafana managed rules, we're currently still fetching all rules for Grafana managed
+      // we do this because neither the rule identifier nor the URL params contain the namespace or group
       fetchRulerRules({ rulerConfig: dsFeatures.rulerConfig });
     }
   }, [dsFeatures, fetchRulerRuleGroup, fetchRulerRules, ruleIdentifier]);

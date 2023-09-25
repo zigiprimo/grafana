@@ -9,6 +9,7 @@ import {
   Labels,
   mapStateWithReasonToBaseState,
   PromAlertingRuleState,
+  DiscoveredAPIFeatures,
   PromRuleType,
   RulerRuleDTO,
   RulerRuleGroupDTO,
@@ -222,10 +223,12 @@ export interface RulerDataSourceConfig {
   apiVersion: 'legacy' | 'config';
 }
 
-export interface PromBasedDataSource {
+// AlertRuleSource is a Grafana data source with discovered buildinfo
+export interface AlertRuleSource {
   name: string;
   id: string | number;
   rulerConfig?: RulerDataSourceConfig;
+  buildInfo: DiscoveredAPIFeatures;
 }
 
 export interface PaginationProps {

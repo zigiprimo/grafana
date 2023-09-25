@@ -84,8 +84,8 @@ export interface PromBuildInfoResponse {
   status: 'success';
 }
 
-export interface PromApiFeatures {
-  application?: PromApplication;
+export interface DiscoveredAPIFeatures {
+  application?: PromApplication | 'Grafana';
   features: {
     rulerApiEnabled: boolean;
   };

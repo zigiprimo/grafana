@@ -18,7 +18,7 @@ import { FolderDTO, NotifierDTO, StoreState, ThunkResult } from 'app/types';
 import {
   CombinedRuleGroup,
   CombinedRuleNamespace,
-  PromBasedDataSource,
+  AlertRuleSource,
   RuleIdentifier,
   RuleNamespace,
   RulerDataSourceConfig,
@@ -26,6 +26,7 @@ import {
   StateHistoryItem,
 } from 'app/types/unified-alerting';
 import {
+  DiscoveredAPIFeatures,
   PostableRulerRuleGroupDTO,
   PromApplication,
   RulerRuleDTO,
@@ -49,7 +50,7 @@ import {
 } from '../api/alertmanager';
 import { alertmanagerApi } from '../api/alertmanagerApi';
 import { fetchAnnotations } from '../api/annotations';
-import { discoverFeatures } from '../api/buildInfo';
+import { discoverFeatures, GRAFANA_MANAGED_BUILDINFO } from '../api/buildInfo';
 import { fetchNotifiers } from '../api/grafana';
 import { FetchPromRulesFilter, fetchRules } from '../api/prometheus';
 import {
@@ -233,59 +234,66 @@ export function fetchAllPromBuildInfoAction(): ThunkResult<Promise<void>> {
   };
 }
 
+export const fetchRulesSourceBuildInfo = async (rulesSourceName: string): Promise<AlertRuleSource> => {
+  if (rulesSourceName === GRAFANA_RULES_SOURCE_NAME) {
+    return {
+      name: GRAFANA_RULES_SOURCE_NAME,
+      id: GRAFANA_RULES_SOURCE_NAME,
+      rulerConfig: {
+        dataSourceName: GRAFANA_RULES_SOURCE_NAME,
+        apiVersion: 'legacy',
+      },
+      buildInfo: GRAFANA_MANAGED_BUILDINFO,
+    };
+  }
+
+  const ds = getRulesDataSource(rulesSourceName);
+  if (!ds) {
+    throw new Error(`Missing data source configuration for ${rulesSourceName}`);
+  }
+
+  const { id, name } = ds;
+
+  const discoverFeaturesWithLogging = withPerformanceLogging(
+    discoverFeatures,
+    `[${rulesSourceName}] Rules source features discovered`,
+    {
+      dataSourceName: rulesSourceName,
+      thunk: 'unifiedalerting/fetchPromBuildinfo',
+    }
+  );
+
+  const buildInfo = await discoverFeaturesWithLogging(name);
+  const rulerConfig = buildInfoToRulerConfig(name, buildInfo);
+
+  return {
+    name: name,
+    id: id,
+    buildInfo,
+    rulerConfig,
+  };
+};
+
+function buildInfoToRulerConfig(
+  dataSourceName: string,
+  buildInfo: DiscoveredAPIFeatures
+): RulerDataSourceConfig | undefined {
+  return buildInfo.features.rulerApiEnabled
+    ? {
+        dataSourceName,
+        apiVersion: buildInfo.application === PromApplication.Cortex ? 'legacy' : 'config',
+      }
+    : undefined;
+}
+
 export const fetchRulesSourceBuildInfoAction = createAsyncThunk(
   'unifiedalerting/fetchPromBuildinfo',
-  async ({ rulesSourceName }: { rulesSourceName: string }): Promise<PromBasedDataSource> => {
-    return withSerializedError<PromBasedDataSource>(
-      (async (): Promise<PromBasedDataSource> => {
-        if (rulesSourceName === GRAFANA_RULES_SOURCE_NAME) {
-          return {
-            name: GRAFANA_RULES_SOURCE_NAME,
-            id: GRAFANA_RULES_SOURCE_NAME,
-            rulerConfig: {
-              dataSourceName: GRAFANA_RULES_SOURCE_NAME,
-              apiVersion: 'legacy',
-            },
-          };
-        }
-
-        const ds = getRulesDataSource(rulesSourceName);
-        if (!ds) {
-          throw new Error(`Missing data source configuration for ${rulesSourceName}`);
-        }
-
-        const { id, name } = ds;
-
-        const discoverFeaturesWithLogging = withPerformanceLogging(
-          discoverFeatures,
-          `[${rulesSourceName}] Rules source features discovered`,
-          {
-            dataSourceName: rulesSourceName,
-            thunk: 'unifiedalerting/fetchPromBuildinfo',
-          }
-        );
-
-        const buildInfo = await discoverFeaturesWithLogging(name);
-
-        const rulerConfig: RulerDataSourceConfig | undefined = buildInfo.features.rulerApiEnabled
-          ? {
-              dataSourceName: name,
-              apiVersion: buildInfo.application === PromApplication.Cortex ? 'legacy' : 'config',
-            }
-          : undefined;
-
-        return {
-          name: name,
-          id: id,
-          rulerConfig,
-        };
-      })()
-    );
+  async ({ rulesSourceName }: { rulesSourceName: string }): Promise<AlertRuleSource> => {
+    return withSerializedError<AlertRuleSource>((async () => fetchRulesSourceBuildInfo(rulesSourceName))());
   },
   {
     condition: ({ rulesSourceName }, { getState }) => {
-      const dataSources: AsyncRequestMapSlice<PromBasedDataSource> = (getState() as StoreState).unifiedAlerting
-        .dataSources;
+      const dataSources: AsyncRequestMapSlice<AlertRuleSource> = (getState() as StoreState).unifiedAlerting.dataSources;
       const hasLoaded = Boolean(dataSources[rulesSourceName]?.result);
       const hasError = Boolean(dataSources[rulesSourceName]?.error);
 

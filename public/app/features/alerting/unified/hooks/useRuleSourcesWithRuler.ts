@@ -1,5 +1,5 @@
 import { DataSourceInstanceSettings } from '@grafana/data';
-import { PromBasedDataSource } from 'app/types/unified-alerting';
+import { AlertRuleSource } from 'app/types/unified-alerting';
 
 import { getDataSourceByName } from '../utils/datasource';
 
@@ -10,7 +10,7 @@ export function useRulesSourcesWithRuler(): DataSourceInstanceSettings[] {
 
   const dataSourcesWithRuler = Object.values(dataSources)
     .map((ds) => ds.result)
-    .filter((ds): ds is PromBasedDataSource => Boolean(ds?.rulerConfig));
+    .filter((ds): ds is AlertRuleSource => Boolean(ds?.rulerConfig));
   // try fetching rules for each prometheus to see if it has ruler
 
   return dataSourcesWithRuler
