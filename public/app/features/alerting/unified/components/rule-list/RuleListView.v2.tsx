@@ -7,11 +7,25 @@ import AutoSizer from 'react-virtualized-auto-sizer';
 
 import { GrafanaTheme2, IconName } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
-import { Alert, Badge, Button, Dropdown, Icon, Link, LoadingBar, Menu, Text, Tooltip, useStyles2 } from '@grafana/ui';
+import {
+  Alert,
+  Badge,
+  Button,
+  Dropdown,
+  Icon,
+  Link,
+  LoadingBar,
+  Menu,
+  Pagination,
+  Text,
+  Tooltip,
+  useStyles2,
+} from '@grafana/ui';
 import { AlertRuleSource, RulerDataSourceConfig } from 'app/types/unified-alerting';
 
 import { alertRuleApi } from '../../api/alertRuleApi';
 import { fetchRulerRules } from '../../api/ruler';
+import { usePagination } from '../../hooks/usePagination';
 import { fetchRulesSourceBuildInfo } from '../../state/actions';
 import { getAllRulesSourceNames } from '../../utils/datasource';
 import { isAlertingRulerRule, isGrafanaRulerRule, isRecordingRulerRule } from '../../utils/rules';
@@ -46,7 +60,7 @@ const RuleList = () => {
         {namespaces.map((namespace) => (
           <Namespace key={namespace.name + namespace.rulesSource.id} name={namespace.name}>
             {namespace.groups.map((group) => (
-              <EvaluationGroup
+              <EvaluationGroupLoader
                 key={group}
                 name={group}
                 namespace={namespace.name}
@@ -56,7 +70,7 @@ const RuleList = () => {
           </Namespace>
         ))}
         {/* <Namespace name="Demonstrations">
-          <EvaluationGroup name={'default'} interval={'5 minutes'}>
+          <EvaluationGroup name={'default'} interval={'5 minutes'} isOpen onToggle={() => {}}>
             <AlertRuleListItem
               state="normal"
               name={'CPU Usage'}
@@ -64,9 +78,18 @@ const RuleList = () => {
             />
             <AlertRuleListItem state="pending" name={'Memory Usage'} summary="Memory Usage too high" />
             <AlertRuleListItem state="firing" name={'Network Usage'} summary="network congested" />
-          </EvaluationGroPup>
+            <div className={styles.alertListItemContainer}>
+              <Pagination
+                hideWhenSinglePage
+                currentPage={1}
+                numberOfPages={5}
+                onNavigate={() => {}}
+                className={styles.clearFloat}
+              />
+            </div>
+          </EvaluationGroup>
 
-          <EvaluationGroup name={'system metrics'} interval={'1 minute'}>
+          <EvaluationGroup name={'system metrics'} interval={'1 minute'} onToggle={() => {}}>
             <AlertRuleListItem name={'email'} summary="gilles.demey@grafana.com" />
           </EvaluationGroup>
         </Namespace>
@@ -156,7 +179,7 @@ function useFetchAllNamespacesAndGroups() {
 
 const sortCaseInsensitive = (a: string, b: string) => a.localeCompare(b);
 
-interface EvaluationGroupProps extends PropsWithChildren {
+interface EvaluationGroupLoaderProps {
   name: string;
   interval?: string;
   provenance?: string;
@@ -165,14 +188,28 @@ interface EvaluationGroupProps extends PropsWithChildren {
   rulerConfig?: RulerDataSourceConfig;
 }
 
-// TODO toggling the namespace makes it forget what groups were toggled, hoist state?
-const EvaluationGroup = ({ name, provenance, interval, namespace, rulerConfig }: EvaluationGroupProps) => {
+const ALERT_RULE_PAGE_SIZE = 15;
+
+const EvaluationGroupLoader = ({
+  name,
+  description,
+  provenance,
+  interval,
+  namespace,
+  rulerConfig,
+}: EvaluationGroupLoaderProps) => {
   const styles = useStyles2(getStyles);
   const [isOpen, toggle] = useToggle(false);
 
   // TODO fetch the state of the rule
   const [fetchRulerRuleGroup, { currentData: rulerRuleGroup, isLoading, error }] =
     alertRuleApi.endpoints.rulerRuleGroup.useLazyQuery();
+
+  const { page, pageItems, onPageChange, numberOfPages } = usePagination(
+    rulerRuleGroup?.rules ?? [],
+    1,
+    ALERT_RULE_PAGE_SIZE
+  );
 
   useEffect(() => {
     if (isOpen && rulerConfig) {
@@ -185,56 +222,101 @@ const EvaluationGroup = ({ name, provenance, interval, namespace, rulerConfig }:
   }, [fetchRulerRuleGroup, isOpen, name, namespace, rulerConfig]);
 
   return (
+    <EvaluationGroup
+      name={name}
+      description={description}
+      interval={interval}
+      provenance={provenance}
+      isOpen={isOpen}
+      onToggle={toggle}
+    >
+      <>
+        {error && (
+          <div className={styles.alertListItemContainer}>
+            <Alert title="Something went wrong when trying to fetch group details">{String(error)}</Alert>
+          </div>
+        )}
+        {isLoading ? (
+          <GroupLoadingIndicator />
+        ) : (
+          pageItems.map((rule, index) => {
+            if (isAlertingRulerRule(rule)) {
+              return (
+                <AlertRuleListItem
+                  key={index}
+                  state="normal"
+                  name={rule.alert}
+                  summary={rule.annotations?.['summary']}
+                />
+              );
+            }
+
+            if (isRecordingRulerRule(rule)) {
+              return <RecordingRuleListItem key={index} name={rule.record} />;
+            }
+
+            if (isGrafanaRulerRule(rule)) {
+              return (
+                <AlertRuleListItem
+                  key={index}
+                  name={rule.grafana_alert.title}
+                  summary={rule.annotations?.['summary']}
+                  isProvisioned={Boolean(rule.grafana_alert.provenance)}
+                />
+              );
+            }
+
+            return null;
+          })
+        )}
+        {numberOfPages > 1 && (
+          <div className={styles.alertListItemContainer}>
+            <Pagination
+              currentPage={page}
+              numberOfPages={numberOfPages}
+              onNavigate={onPageChange}
+              className={styles.clearFloat}
+            />
+          </div>
+        )}
+      </>
+    </EvaluationGroup>
+  );
+};
+
+interface EvaluationGroupProps extends PropsWithChildren {
+  name: string;
+  description?: ReactNode;
+  interval?: string;
+  provenance?: string;
+  isOpen?: boolean;
+  onToggle: () => void;
+}
+
+const EvaluationGroup = ({
+  name,
+  description,
+  provenance,
+  interval,
+  onToggle,
+  isOpen = false,
+  children,
+}: EvaluationGroupProps) => {
+  const styles = useStyles2(getStyles);
+
+  return (
     <div className={styles.groupWrapper} role="treeitem" aria-expanded={isOpen} aria-selected="false">
       <EvaluationGroupHeader
-        onToggle={toggle}
+        onToggle={onToggle}
         provenance={provenance}
-        expanded={isOpen}
+        isOpen={isOpen}
+        description={description}
         name={name}
         interval={interval}
       />
       {isOpen && (
         <div role="group" className={styles.alertItemsWrapper}>
-          <>
-            {error && (
-              <div className={styles.alertListItemContainer}>
-                <Alert title="Something went wrong when trying to fetch group details">{String(error)}</Alert>
-              </div>
-            )}
-            {isLoading ? (
-              <GroupLoadingIndicator />
-            ) : (
-              rulerRuleGroup?.rules.map((rule, index) => {
-                if (isAlertingRulerRule(rule)) {
-                  return (
-                    <AlertRuleListItem
-                      key={index}
-                      state="normal"
-                      name={rule.alert}
-                      summary={rule.annotations?.['summary']}
-                    />
-                  );
-                }
-
-                if (isRecordingRulerRule(rule)) {
-                  return <RecordingRuleListItem key={index} name={rule.record} />;
-                }
-
-                if (isGrafanaRulerRule(rule)) {
-                  return (
-                    <AlertRuleListItem
-                      key={index}
-                      name={rule.grafana_alert.title}
-                      summary={rule.annotations?.['summary']}
-                      isProvisioned={Boolean(rule.grafana_alert.provenance)}
-                    />
-                  );
-                }
-
-                return null;
-              })
-            )}
-          </>
+          {children}
         </div>
       )}
     </div>
@@ -274,13 +356,8 @@ const SkeletonListItem = () => {
   );
 };
 
-interface EvaluationGroupHeaderProps extends Omit<EvaluationGroupProps, 'namespace'> {
-  expanded?: boolean;
-  onToggle: () => void;
-}
-
-const EvaluationGroupHeader = (props: EvaluationGroupHeaderProps) => {
-  const { name, description, provenance, interval, expanded = false, onToggle } = props;
+const EvaluationGroupHeader = (props: EvaluationGroupProps) => {
+  const { name, description, provenance, interval, isOpen = false, onToggle } = props;
 
   const styles = useStyles2(getStyles);
   const isProvisioned = Boolean(provenance);
@@ -290,7 +367,7 @@ const EvaluationGroupHeader = (props: EvaluationGroupHeaderProps) => {
       <Stack direction="row" alignItems="center" gap={1}>
         <button className={styles.hiddenButton} type="button" onClick={onToggle}>
           <Stack alignItems="center" gap={1}>
-            <Icon name={expanded ? 'angle-down' : 'angle-up'} />
+            <Icon name={isOpen ? 'angle-down' : 'angle-up'} />
             <Text truncate variant="body">
               {name}
             </Text>
@@ -670,6 +747,9 @@ const getStyles = (theme: GrafanaTheme2) => ({
     border: none;
     background: transparent;
   `,
+  clearFloat: css({
+    float: 'none',
+  }),
 });
 
 export default RuleList;
