@@ -1,5 +1,6 @@
 import { css } from '@emotion/css';
 import { produce } from 'immer';
+import { groupBy } from 'lodash';
 import React, { PropsWithChildren, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
 import { useToggle } from 'react-use';
@@ -33,6 +34,8 @@ import { MetaText } from '../MetaText';
 import { Spacer } from '../Spacer';
 import { Strong } from '../Strong';
 
+const GROUPS_PAGE_SIZE = 30;
+
 const RuleList = () => {
   const styles = useStyles2(getStyles);
 
@@ -45,26 +48,43 @@ const RuleList = () => {
 
   useEffect(() => fetch(), [fetch]);
 
-  console.log('isLoading', isLoading, 'data', data);
-  console.count('render');
-
-  const namespaces = Object.values(data)
+  // in order to do decent pagination we have to flatten all of the groups again for the namespaces.
+  const groups = Object.values(data)
     .flatMap((ns) => ns)
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .flatMap((namespace) =>
+      namespace.groups.map((group) => ({
+        group,
+        namespace: namespace.name,
+        rulesSource: namespace.rulesSource,
+      }))
+    );
+
+  const { pageItems, numberOfPages, onPageChange, page } = usePagination(groups, 1, GROUPS_PAGE_SIZE);
 
   // TODO figure out how to get the interval for a group, make separate HTTP calls?
+  const paginatedNamespaces = groupBy(pageItems, (item) => item.namespace);
 
   return (
     <>
+      {/* {isLoading && ( */}
+      <AutoSizer disableHeight>
+        {({ width }) => (
+          <div style={{ width, overflow: 'hidden' }}>
+            <LoadingBar width={400} />
+          </div>
+        )}
+      </AutoSizer>
+      {/* )} */}
       <ul className={styles.rulesTree} role="tree">
-        {namespaces.map((namespace) => (
-          <Namespace key={namespace.name + namespace.rulesSource.id} name={namespace.name}>
-            {namespace.groups.map((group) => (
+        {Object.entries(paginatedNamespaces).map(([namespace, groups]) => (
+          <Namespace key={namespace + groups[0].rulesSource.id} name={namespace}>
+            {groups.map(({ group, namespace, rulesSource }) => (
               <EvaluationGroupLoader
-                key={group}
+                key={namespace + group + rulesSource.id}
                 name={group}
-                namespace={namespace.name}
-                rulerConfig={namespace.rulesSource.rulerConfig}
+                namespace={namespace}
+                rulerConfig={rulesSource.rulerConfig}
               />
             ))}
           </Namespace>
@@ -111,6 +131,7 @@ const RuleList = () => {
           <EvaluationGroup name={'access_stackstateservice'} interval={'1 minute'} />
         </Namespace> */}
       </ul>
+      <Pagination numberOfPages={numberOfPages} currentPage={page} onNavigate={onPageChange} hideWhenSinglePage />
     </>
   );
 };
@@ -127,9 +148,10 @@ interface RulesSourceNamespace {
  *
  * This way we can show duplicate namespace names and keep track of where we discovered them.
  */
+type NamespacesByDataSource = Record<string, RulesSourceNamespace[]>;
 function useFetchAllNamespacesAndGroups() {
   const [isLoading, setLoading] = useState(false);
-  const [namespaces, setNamespaces] = useState<Record<string | number, RulesSourceNamespace[]>>({});
+  const [namespaces, setNamespaces] = useState<NamespacesByDataSource>({});
 
   const alertRuleSources = useMemo(getAllRulesSourceNames, []);
 
@@ -165,7 +187,9 @@ function useFetchAllNamespacesAndGroups() {
   const fetch = useCallback(() => {
     setLoading(true);
 
-    Promise.all(triggers.map((promise) => promise())).finally(() => {
+    const fetchAll = triggers.map((fn) => fn());
+    Promise.allSettled(fetchAll).finally(() => {
+      console.log('all done');
       setLoading(false);
     });
   }, [setLoading, triggers]);
@@ -314,11 +338,7 @@ const EvaluationGroup = ({
         name={name}
         interval={interval}
       />
-      {isOpen && (
-        <div role="group" className={styles.alertItemsWrapper}>
-          {children}
-        </div>
-      )}
+      {isOpen && <div role="group">{children}</div>}
     </div>
   );
 };
@@ -680,9 +700,6 @@ const Namespace = ({ children, name, icon }: NamespaceProps) => {
 };
 
 const getStyles = (theme: GrafanaTheme2) => ({
-  alertItemsWrapper: css`
-    overflow: hidden;
-  `,
   rulesTree: css`
     display: flex;
     flex-direction: column;
