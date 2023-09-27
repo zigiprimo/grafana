@@ -8,8 +8,8 @@ load(
     "golang_version",
 )
 
-# rgm_package_step will create a tar.gz for use in e2e tests or other PR testing related activities..
-def rgm_package_step(distros = "linux/amd64,linux/arm64", file = "packages.txt"):
+# rgm_package_step will create a tar.gz and deb for use in e2e tests or other PR testing related activities..
+def rgm_package_step(distros = "linux/amd64,linux/arm64", file = "packages.txt", version = ""):
     return {
         "name": "rgm-package",
         "image": "grafana/grafana-build:main",
@@ -18,9 +18,12 @@ def rgm_package_step(distros = "linux/amd64,linux/arm64", file = "packages.txt")
         "commands": [
             "/src/grafana-build package --distro={} ".format(distros) +
             "--go-version={} ".format(golang_version) +
+            "--version={} ".format(version) +
             "--yarn-cache=$$YARN_CACHE_FOLDER " +
             "--build-id=$$DRONE_BUILD_NUMBER " +
             "--grafana-dir=$$PWD > {}".format(file),
+            "/src/grafana-build deb " +
+            "$(cat {} | grep tar.gz | grep -v docker | grep -v arm-6 | grep -v sha256 | awk '{{print \"--package=\" $0}}') >> {}".format(file, file),
         ],
         "volumes": [{"name": "docker", "path": "/var/run/docker.sock"}],
     }

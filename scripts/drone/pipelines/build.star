@@ -80,9 +80,16 @@ def build_e2e(trigger, ver_mode):
             build_frontend_package_step(depends_on = ["update-package-json-version"]),
         ])
 
+    package_step = rgm_package_step(distros = "linux/amd64,linux/arm64,linux/arm/v7", file = "packages.txt")
+    if ver_mode == "main":
+        package_step = rgm_package_step(
+            distros = "linux/amd64,linux/arm64,linux/arm/v7",
+            file = "packages.txt",
+            version = "$(cat package.json | jq -r .version | sed s/pre/${DRONE_BUILD_NUMBER}/g)",
+        )
     build_steps.extend(
         [
-            rgm_package_step(distros = "linux/amd64,linux/arm64,linux/arm/v7", file = "packages.txt"),
+            package_step,
             grafana_server_step(),
             e2e_tests_step("dashboards-suite"),
             e2e_tests_step("smoke-tests-suite"),
