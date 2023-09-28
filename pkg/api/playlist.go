@@ -10,7 +10,7 @@ import (
 	"github.com/grafana/grafana/pkg/web"
 )
 
-func (hs *HTTPServer) ValidateOrgPlaylist(c *contextmodel.ReqContext) {
+func (hs *HTTPServer) validateOrgPlaylist(c *contextmodel.ReqContext) {
 	uid := web.Params(c.Req)[":uid"]
 	query := playlist.GetPlaylistByUidQuery{UID: uid, OrgId: c.OrgID}
 	p, err := hs.playlistService.GetWithoutItems(c.Req.Context(), &query)
