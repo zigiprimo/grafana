@@ -3,8 +3,7 @@ import { produce } from 'immer';
 import { groupBy } from 'lodash';
 import React, { PropsWithChildren, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
-import { useInterval, useToggle } from 'react-use';
-import AutoSizer from 'react-virtualized-auto-sizer';
+import { useInterval, useMeasure, useToggle } from 'react-use';
 
 import { GrafanaTheme2, IconName } from '@grafana/data';
 import { Stack } from '@grafana/experimental';
@@ -39,6 +38,7 @@ const REFETCH_INTERVAL = 20 * 1000;
 
 const RuleList = () => {
   const styles = useStyles2(getStyles);
+  const [measureRef, { width }] = useMeasure<HTMLDivElement>();
 
   // 1. fetch all alerting data sources
   // 2. perform feature discovery for each
@@ -68,9 +68,7 @@ const RuleList = () => {
 
   return (
     <>
-      {isLoading && (
-        <AutoSizer disableHeight>{({ width }) => <div style={{ width, overflow: 'hidden' }}></div>}</AutoSizer>
-      )}
+      <div ref={measureRef}>{isLoading && <LoadingBar width={width} />}</div>
       <ul className={styles.rulesTree} role="tree">
         {Object.entries(paginatedNamespaces).map(([namespace, groups]) => (
           <Namespace key={namespace + groups[0].rulesSource.id} name={namespace}>
@@ -338,16 +336,16 @@ const EvaluationGroup = ({
   );
 };
 
-const GroupLoadingIndicator = () => (
-  <AutoSizer disableHeight>
-    {({ width }) => (
-      <div style={{ width }}>
-        <LoadingBar width={width} />
-        <SkeletonListItem />
-      </div>
-    )}
-  </AutoSizer>
-);
+const GroupLoadingIndicator = () => {
+  const [ref, { width }] = useMeasure<HTMLDivElement>();
+
+  return (
+    <div ref={ref}>
+      <LoadingBar width={width} />
+      <SkeletonListItem />
+    </div>
+  );
+};
 
 const SkeletonListItem = () => {
   const styles = useStyles2(getStyles);
