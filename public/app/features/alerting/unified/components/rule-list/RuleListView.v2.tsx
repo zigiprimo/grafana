@@ -3,7 +3,7 @@ import { produce } from 'immer';
 import { groupBy } from 'lodash';
 import React, { PropsWithChildren, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import Skeleton from 'react-loading-skeleton';
-import { useToggle } from 'react-use';
+import { useInterval, useToggle } from 'react-use';
 import AutoSizer from 'react-virtualized-auto-sizer';
 
 import { GrafanaTheme2, IconName } from '@grafana/data';
@@ -35,6 +35,7 @@ import { Spacer } from '../Spacer';
 import { Strong } from '../Strong';
 
 const GROUPS_PAGE_SIZE = 30;
+const REFETCH_INTERVAL = 20 * 1000;
 
 const RuleList = () => {
   const styles = useStyles2(getStyles);
@@ -44,7 +45,7 @@ const RuleList = () => {
   // 3. fetch all rules for each discovered DS
 
   const { data, isLoading, fetch } = useFetchAllNamespacesAndGroups();
-  // useInterval(fetch, 5000);
+  useInterval(fetch, REFETCH_INTERVAL);
 
   useEffect(() => fetch(), [fetch]);
 
@@ -67,15 +68,9 @@ const RuleList = () => {
 
   return (
     <>
-      {/* {isLoading && ( */}
-      <AutoSizer disableHeight>
-        {({ width }) => (
-          <div style={{ width, overflow: 'hidden' }}>
-            <LoadingBar width={400} />
-          </div>
-        )}
-      </AutoSizer>
-      {/* )} */}
+      {isLoading && (
+        <AutoSizer disableHeight>{({ width }) => <div style={{ width, overflow: 'hidden' }}></div>}</AutoSizer>
+      )}
       <ul className={styles.rulesTree} role="tree">
         {Object.entries(paginatedNamespaces).map(([namespace, groups]) => (
           <Namespace key={namespace + groups[0].rulesSource.id} name={namespace}>
@@ -700,70 +695,70 @@ const Namespace = ({ children, name, icon }: NamespaceProps) => {
 };
 
 const getStyles = (theme: GrafanaTheme2) => ({
-  rulesTree: css`
-    display: flex;
-    flex-direction: column;
-    gap: ${theme.spacing(1.5)};
-  `,
-  groupWrapper: css`
-    display: flex;
-    flex-direction: column;
-  `,
-  groupItemsWrapper: css`
-    position: relative;
-    border-radius: ${theme.shape.radius.default};
-    border: solid 1px ${theme.colors.border.weak};
-    border-bottom: none;
+  rulesTree: css({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: theme.spacing(1.5),
+  }),
+  groupWrapper: css({
+    display: 'flex',
+    flexDirection: 'column',
+  }),
+  groupItemsWrapper: css({
+    position: 'relative',
+    borderRadius: theme.shape.radius.default,
+    border: `solid 1px ${theme.colors.border.weak}`,
+    borderBottom: 'none',
 
-    margin-left: ${theme.spacing(3)};
+    marginLeft: theme.spacing(3),
 
-    &:before {
-      content: '';
-      position: absolute;
-      height: 100%;
+    '&:before': {
+      content: "''",
+      position: 'absolute',
+      height: '100%',
 
-      border-left: solid 1px ${theme.colors.border.weak};
+      borderLeft: `solid 1px ${theme.colors.border.weak}`,
 
-      margin-top: 0;
-      margin-left: -${theme.spacing(2.5)};
-    }
-  `,
-  alertListItemContainer: css`
-    position: relative;
-    list-style: none;
-    background: ${theme.colors.background.primary};
+      marginTop: 0,
+      marginLeft: `-${theme.spacing(2.5)}`,
+    },
+  }),
+  alertListItemContainer: css({
+    position: 'relative',
+    listStyle: 'none',
+    background: theme.colors.background.primary,
 
-    border-bottom: solid 1px ${theme.colors.border.weak};
-    padding: ${theme.spacing(1)} ${theme.spacing(1.5)};
-  `,
-  headerWrapper: css`
-    padding: ${theme.spacing(1)} ${theme.spacing(1.5)};
+    borderBottom: `solid 1px ${theme.colors.border.weak}`,
+    padding: `${theme.spacing(1)} ${theme.spacing(1.5)}`,
+  }),
+  headerWrapper: css({
+    padding: `${theme.spacing(1)} ${theme.spacing(1.5)}`,
 
-    background: ${theme.colors.background.secondary};
+    background: theme.colors.background.secondary,
 
-    border: none;
-    border-bottom: solid 1px ${theme.colors.border.weak};
-    border-top-left-radius: ${theme.shape.radius.default};
-    border-top-right-radius: ${theme.shape.radius.default};
-  `,
-  namespaceWrapper: css`
-    display: flex;
-    flex-direction: column;
+    border: 'none',
+    borderBottom: `solid 1px ${theme.colors.border.weak}`,
+    borderTopLeftRadius: theme.shape.radius.default,
+    borderTopRightRadius: theme.shape.radius.default,
+  }),
+  namespaceWrapper: css({
+    display: 'flex',
+    flexDirection: 'column',
 
-    gap: ${theme.spacing(1.5)};
-  `,
-  namespaceTitle: css`
-    padding: ${theme.spacing(1)} ${theme.spacing(1.5)};
+    gap: theme.spacing(1.5),
+  }),
+  namespaceTitle: css({
+    padding: `${theme.spacing(1)} ${theme.spacing(1.5)}`,
 
-    background: ${theme.colors.background.secondary};
+    background: theme.colors.background.secondary,
 
-    border: solid 1px ${theme.colors.border.weak};
-    border-radius: ${theme.shape.radius.default};
-  `,
-  hiddenButton: css`
-    border: none;
-    background: transparent;
-  `,
+    border: `solid 1px ${theme.colors.border.weak}`,
+    borderRadius: theme.shape.radius.default,
+  }),
+  hiddenButton: css({
+    border: 'none',
+    background: 'transparent',
+  }),
   clearFloat: css({
     float: 'none',
   }),
