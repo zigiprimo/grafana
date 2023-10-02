@@ -27,6 +27,7 @@ type Playlist struct {
 	OrgId    int64  `json:"-" db:"org_id"`
 
 	// Added for kubernetes migration + synchronization
+	ItemJSON  []byte    `json:"-" db:"item_json"`
 	CreatedAt time.Time `json:"createdAt,omitempty" db:"created_at"`
 	UpdatedAt time.Time `json:"updatedAt,omitempty" db:"updated_at"`
 }
@@ -36,12 +37,12 @@ type PlaylistItemDTO = playlist.Item
 type PlaylistItemType = playlist.ItemType
 
 type PlaylistItem struct {
-	Id         int64  `db:"id"`
-	PlaylistId int64  `db:"playlist_id"`
+	Id         int64  `json:"-" db:"id"`
+	PlaylistId int64  `json:"-" db:"playlist_id"`
 	Type       string `json:"type" db:"type"`
 	Value      string `json:"value" db:"value"`
-	Order      int    `json:"order" db:"order"`
-	Title      string `json:"title" db:"title"`
+	Order      int    `json:"-" db:"order"`
+	Title      string `json:"title,omitempty" db:"title"`
 }
 
 type Playlists []*Playlist
@@ -99,7 +100,7 @@ func ConvertToK8sResource(v *Playlist, items []PlaylistItemDTO) *playlist.Playli
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:              v.UID,
-			UID:               types.UID(v.UID),
+			UID:               types.UID(v.UID), // required for k8s update function
 			ResourceVersion:   fmt.Sprintf("%d", v.UpdatedAt.UnixMilli()),
 			CreationTimestamp: metav1.NewTime(v.CreatedAt),
 			Namespace:         fmt.Sprintf("org-%d", v.OrgId),
