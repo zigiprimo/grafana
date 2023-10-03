@@ -140,6 +140,7 @@ const FlameGraphContainer = ({
 
   return (
     <div ref={sizeRef} className={styles.container}>
+      {!showFlameGraphOnly && (
         <FlameGraphHeader
           search={search}
           setSearch={setSearch}
