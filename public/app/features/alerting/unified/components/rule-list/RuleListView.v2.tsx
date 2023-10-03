@@ -22,6 +22,7 @@ import {
   useStyles2,
 } from '@grafana/ui';
 import { AlertRuleSource, RulerDataSourceConfig } from 'app/types/unified-alerting';
+import { PromApplication } from 'app/types/unified-alerting-dto';
 
 import { alertRuleApi } from '../../api/alertRuleApi';
 import { fetchRulerRules } from '../../api/ruler';
@@ -70,18 +71,23 @@ const RuleList = () => {
     <>
       <div ref={measureRef}>{isLoading && <LoadingBar width={width} />}</div>
       <ul className={styles.rulesTree} role="tree">
-        {Object.entries(paginatedNamespaces).map(([namespace, groups]) => (
-          <Namespace key={namespace + groups[0].rulesSource.id} name={namespace}>
-            {groups.map(({ group, namespace, rulesSource }) => (
-              <EvaluationGroupLoader
-                key={namespace + group + rulesSource.id}
-                name={group}
-                namespace={namespace}
-                rulerConfig={rulesSource.rulerConfig}
-              />
-            ))}
-          </Namespace>
-        ))}
+        {Object.entries(paginatedNamespaces).map(([namespace, groups]) => {
+          const rulesSource = groups[0].rulesSource; // each group in the namespace is from the same source
+          const prometheusFlavour = rulesSource.buildInfo.application;
+
+          return (
+            <Namespace key={namespace + rulesSource.id} name={namespace} application={prometheusFlavour}>
+              {groups.map(({ group, namespace, rulesSource }) => (
+                <EvaluationGroupLoader
+                  key={namespace + group + rulesSource.id}
+                  name={group}
+                  namespace={namespace}
+                  rulerConfig={rulesSource.rulerConfig}
+                />
+              ))}
+            </Namespace>
+          );
+        })}
         {/* <Namespace name="Demonstrations">
           <EvaluationGroup name={'default'} interval={'5 minutes'} isOpen onToggle={() => {}}>
             <AlertRuleListItem
@@ -380,7 +386,7 @@ const EvaluationGroupHeader = (props: EvaluationGroupProps) => {
       <Stack direction="row" alignItems="center" gap={1}>
         <button className={styles.hiddenButton} type="button" onClick={onToggle}>
           <Stack alignItems="center" gap={1}>
-            <Icon name={isOpen ? 'angle-down' : 'angle-up'} />
+            <Icon name={isOpen ? 'angle-down' : 'angle-right'} />
             <Text truncate variant="body">
               {name}
             </Text>
@@ -399,7 +405,7 @@ const EvaluationGroupHeader = (props: EvaluationGroupProps) => {
         <Button
           variant="secondary"
           size="sm"
-          icon="edit"
+          icon="pen"
           type="button"
           disabled={isProvisioned}
           aria-label="edit-group-action"
@@ -420,11 +426,15 @@ const EvaluationGroupHeader = (props: EvaluationGroupProps) => {
           <Button
             variant="secondary"
             size="sm"
-            icon="ellipsis-h"
             type="button"
             aria-label="more-group-actions"
             data-testid="more-group-actions"
-          />
+          >
+            <Stack alignItems="baseline" gap={0}>
+              More
+              <Icon name="angle-down" />
+            </Stack>
+          </Button>
         </Dropdown>
       </Stack>
     </div>
@@ -531,8 +541,8 @@ const AlertRuleListItem = (props: AlertRuleListItemProps) => {
   const styles = useStyles2(getStyles);
 
   const icons: Record<'normal' | 'pending' | 'firing', IconName> = {
-    normal: 'check-circle',
-    pending: 'circle',
+    normal: 'check',
+    pending: 'hourglass',
     firing: 'exclamation-circle',
   };
 
@@ -649,20 +659,22 @@ const AlertRuleListItem = (props: AlertRuleListItemProps) => {
 
 interface NamespaceProps extends PropsWithChildren {
   name: string;
-  icon?: 'prometheus'; // TODO add support for loki, mimir, etc
+  application?: PromApplication | 'Grafana';
 }
 
 // TODO hook up buttons
-const Namespace = ({ children, name, icon }: NamespaceProps) => {
+const Namespace = ({ children, name, application }: NamespaceProps) => {
   const styles = useStyles2(getStyles);
   const [isOpen] = useToggle(true);
+
+  const genericApplicationIcon = !application || application === 'Grafana';
 
   return (
     <li className={styles.namespaceWrapper} role="treeitem" aria-expanded={isOpen} aria-selected="false">
       <div className={styles.namespaceTitle}>
         <Stack alignItems={'center'}>
           <Stack alignItems={'center'} gap={1}>
-            {icon === 'prometheus' && (
+            {application === PromApplication.Prometheus && (
               <img
                 width={16}
                 height={16}
@@ -670,7 +682,15 @@ const Namespace = ({ children, name, icon }: NamespaceProps) => {
                 alt="Prometheus"
               />
             )}
-            {!icon && <Icon name={isOpen ? 'folder-open' : 'folder'} />}
+            {application === PromApplication.Mimir && (
+              <img
+                width={16}
+                height={16}
+                src="/public/app/plugins/datasource/prometheus/img/mimir_logo.svg"
+                alt="Mimir"
+              />
+            )}
+            {genericApplicationIcon && <Icon name={isOpen ? 'folder-open' : 'folder'} />}
             <Link href="/dashboards/f/lG5pfeRVk/demonstrations">
               <Text truncate color="link">
                 {name}
