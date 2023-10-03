@@ -15,8 +15,9 @@
 import { css } from '@emotion/css';
 import React, { RefObject } from 'react';
 
-import { GrafanaTheme2, LinkModel, TimeZone } from '@grafana/data';
+import { DataQueryRequest, GrafanaTheme2, LinkModel, TimeZone } from '@grafana/data';
 import { config, reportInteraction } from '@grafana/runtime';
+import { DataQuery } from '@grafana/schema';
 import { stylesFactory, withTheme2 } from '@grafana/ui';
 
 import { autoColor } from '../Theme';
@@ -70,6 +71,7 @@ export type TProps = {
   findMatchesIDs: Set<string> | TNil;
   traceTimeline: TTraceTimeline;
   trace: Trace;
+  request: DataQueryRequest<DataQuery> | undefined;
   datasourceType: string;
   spanBarOptions: SpanBarOptions | undefined;
   updateNextViewRangeTime: (update: ViewRangeTimeUpdate) => void;

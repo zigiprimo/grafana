@@ -15,11 +15,17 @@
 import { css } from '@emotion/css';
 import { SpanStatusCode } from '@opentelemetry/api';
 import cx from 'classnames';
-import React from 'react';
+import React, { useEffect } from 'react';
+import { lastValueFrom } from 'rxjs';
 
-import { dateTimeFormat, GrafanaTheme2, LinkModel, TimeZone } from '@grafana/data';
+import { DataFrame, DataQueryRequest, dateTimeFormat, GrafanaTheme2, LinkModel, TimeZone } from '@grafana/data';
 import { config, locationService, reportInteraction } from '@grafana/runtime';
+import { DataQuery } from '@grafana/schema';
 import { DataLinkButton, Icon, TextArea, useStyles2 } from '@grafana/ui';
+import { getDatasourceSrv } from 'app/features/plugins/datasource_srv';
+import { PyroscopeQueryType } from 'app/plugins/datasource/grafana-pyroscope-datasource/dataquery.gen';
+import { PyroscopeDataSource } from 'app/plugins/datasource/grafana-pyroscope-datasource/datasource';
+import { Query } from 'app/plugins/datasource/grafana-pyroscope-datasource/types';
 
 import { autoColor } from '../../Theme';
 import { Divider } from '../../common/Divider';
@@ -113,6 +119,7 @@ export type SpanDetailProps = {
   logsToggle: (spanID: string) => void;
   processToggle: (spanID: string) => void;
   span: TraceSpan;
+  request: DataQueryRequest<DataQuery> | undefined;
   timeZone: TimeZone;
   tagsToggle: (spanID: string) => void;
   traceStartTime: number;
@@ -135,6 +142,7 @@ export default function SpanDetail(props: SpanDetailProps) {
     logsToggle,
     processToggle,
     span,
+    request,
     tagsToggle,
     traceStartTime,
     warningsToggle,
@@ -195,6 +203,43 @@ export default function SpanDetail(props: SpanDetailProps) {
         ]
       : []),
   ];
+
+  const [flameGraphFrame, setFlameGraphFrame] = React.useState<DataFrame>();
+
+  useEffect(() => {
+    if (request) {
+      const pyroDs = getDatasourceSrv()
+        .getList()
+        .filter((x) => x.type === 'grafana-pyroscope-datasource')[0];
+      const pyroRequest = {
+        ...request,
+        targets: [
+          {
+            groupBy: [],
+            labelSelector: '{}',
+            queryType: 'profile' as PyroscopeQueryType,
+            refId: 'flamegraph-in-span',
+            datasource: {
+              type: pyroDs.type,
+              uid: pyroDs.uid,
+            },
+            profileTypeId: 'process_cpu:cpu:nanoseconds:cpu:nanoseconds',
+          },
+        ],
+      };
+      queryPyroscope(pyroRequest, pyroDs.uid);
+    }
+
+    async function queryPyroscope(request: DataQueryRequest<Query>, datasourceUid: string) {
+      const ds = await getDatasourceSrv().get(datasourceUid);
+      const result = await lastValueFrom((ds as PyroscopeDataSource).query(request));
+      setFlameGraphFrame(
+        result.data.filter((x: DataFrame) => {
+          return x.name === 'response';
+        })[0]
+      );
+    }
+  }, [request]);
 
   if (span.kind) {
     overviewItems.push({
@@ -291,7 +336,11 @@ export default function SpanDetail(props: SpanDetailProps) {
       <div>
         <div>
           <AccordianKeyValues
-            data={tags}
+            data={tags.concat({
+              key: 'flameGraph',
+              type: 'flameGraph',
+              value: flameGraphFrame,
+            })}
             label="Span Attributes"
             linksGetter={linksGetter}
             isOpen={isTagsOpen}

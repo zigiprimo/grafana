@@ -121,3 +121,8 @@
       options:
         loki-url: 'http://localhost:3100/api/prom/push'
         labels: namespace
+
+  pyroscope:
+    image: 'grafana/pyroscope:latest'
+    ports:
+      - '4040:4040'

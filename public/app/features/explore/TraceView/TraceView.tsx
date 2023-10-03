@@ -6,13 +6,13 @@ import {
   CoreApp,
   DataFrame,
   DataLink,
+  DataQueryRequest,
   DataSourceApi,
   DataSourceJsonData,
   Field,
   GrafanaTheme2,
   LinkModel,
   mapInternalLinkToExplore,
-  PanelData,
   SplitOpen,
 } from '@grafana/data';
 import { getTemplateSrv } from '@grafana/runtime';
@@ -55,14 +55,14 @@ type Props = {
   scrollElement?: Element;
   scrollElementClass?: string;
   traceProp: Trace;
-  queryResponse: PanelData;
+  request: DataQueryRequest<DataQuery> | undefined;
   datasource: DataSourceApi<DataQuery, DataSourceJsonData, {}> | undefined;
   topOfViewRef: RefObject<HTMLDivElement>;
   topOfViewRefType: TopOfViewRefType;
 };
 
 export function TraceView(props: Props) {
-  const { traceProp, datasource, topOfViewRef, topOfViewRefType, exploreId } = props;
+  const { traceProp, datasource, topOfViewRef, topOfViewRefType, exploreId, request } = props;
 
   const {
     detailStates,
@@ -163,6 +163,7 @@ export function TraceView(props: Props) {
           <TraceTimelineViewer
             findMatchesIDs={spanFilterMatches}
             trace={traceProp}
+            request={request}
             datasourceType={datasourceType}
             spanBarOptions={spanBarOptions?.spanBar}
             traceTimeline={traceTimeline}

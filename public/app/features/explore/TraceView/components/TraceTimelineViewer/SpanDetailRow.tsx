@@ -16,7 +16,8 @@ import { css } from '@emotion/css';
 import classNames from 'classnames';
 import React from 'react';
 
-import { GrafanaTheme2, LinkModel, TimeZone } from '@grafana/data';
+import { DataQueryRequest, GrafanaTheme2, LinkModel, TimeZone } from '@grafana/data';
+import { DataQuery } from '@grafana/schema';
 import { Button, clearButtonStyles, stylesFactory, withTheme2 } from '@grafana/ui';
 
 import { autoColor } from '../Theme';
@@ -85,6 +86,7 @@ export type SpanDetailRowProps = {
   warningsToggle: (spanID: string) => void;
   stackTracesToggle: (spanID: string) => void;
   span: TraceSpan;
+  request: DataQueryRequest<DataQuery> | undefined;
   timeZone: TimeZone;
   tagsToggle: (spanID: string) => void;
   traceStartTime: number;
@@ -122,6 +124,7 @@ export class UnthemedSpanDetailRow extends React.PureComponent<SpanDetailRowProp
       warningsToggle,
       stackTracesToggle,
       span,
+      request,
       timeZone,
       tagsToggle,
       traceStartTime,
@@ -167,6 +170,7 @@ export class UnthemedSpanDetailRow extends React.PureComponent<SpanDetailRowProp
               warningsToggle={warningsToggle}
               stackTracesToggle={stackTracesToggle}
               span={span}
+              request={request}
               timeZone={timeZone}
               tagsToggle={tagsToggle}
               traceStartTime={traceStartTime}

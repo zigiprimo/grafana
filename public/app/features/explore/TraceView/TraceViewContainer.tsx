@@ -1,6 +1,6 @@
 import React, { RefObject, useMemo } from 'react';
 
-import { DataFrame, SplitOpen, PanelData } from '@grafana/data';
+import { DataFrame, SplitOpen, DataQueryRequest, DataQuery } from '@grafana/data';
 import { PanelChrome } from '@grafana/ui/src/components/PanelChrome/PanelChrome';
 import { StoreState, useSelector } from 'app/types';
 
@@ -13,14 +13,14 @@ interface Props {
   splitOpenFn: SplitOpen;
   exploreId: string;
   scrollElement?: Element;
-  queryResponse: PanelData;
+  request: DataQueryRequest<DataQuery> | undefined;
   topOfViewRef: RefObject<HTMLDivElement>;
 }
 
 export function TraceViewContainer(props: Props) {
   // At this point we only show single trace
   const frame = props.dataFrames[0];
-  const { dataFrames, splitOpenFn, exploreId, scrollElement, topOfViewRef, queryResponse } = props;
+  const { dataFrames, splitOpenFn, exploreId, scrollElement, topOfViewRef, request } = props;
   const traceProp = useMemo(() => transformDataFrames(frame), [frame]);
   const datasource = useSelector(
     (state: StoreState) => state.explore.panes[props.exploreId]?.datasourceInstance ?? undefined
@@ -38,7 +38,7 @@ export function TraceViewContainer(props: Props) {
         splitOpenFn={splitOpenFn}
         scrollElement={scrollElement}
         traceProp={traceProp}
-        queryResponse={queryResponse}
+        request={request}
         datasource={datasource}
         topOfViewRef={topOfViewRef}
         topOfViewRefType={TopOfViewRefType.Explore}
