@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useId } from 'react';
+import Highlighter from 'react-highlight-words';
 import { useForm } from 'react-hook-form';
 
-import { ExploreCorrelationHelperData, SupportedTransformationType } from '@grafana/data';
-import { Collapse, Alert, Field, Input, Select } from '@grafana/ui';
+import { ExploreCorrelationHelperData, ScopedVars, SupportedTransformationType } from '@grafana/data';
+import { Collapse, Alert, Field, Input, Select, InputControl } from '@grafana/ui';
 import { useDispatch, useSelector } from 'app/types';
 
 import { getSupportedTransTypeDetails, getTransformOptions } from '../correlations/Forms/types';
@@ -23,7 +24,7 @@ interface Transformation {
 }
 
 // only one transformation is in the form at a time
-interface FormValues {
+interface FormDTO {
   label: string;
   description: string;
   transformation: Transformation;
@@ -37,10 +38,11 @@ interface TransformationHelper {
 
 export const CorrelationHelper = ({ correlations }: Props) => {
   const dispatch = useDispatch();
-  const { register, watch, getValues } = useForm<FormValues>();
+  const { register, watch, getValues, control } = useForm<FormDTO>();
   const [isLabelDescOpen, setIsLabelDescOpen] = useState(false);
   const [isTransformationsOpen, setIsTransformationsOpen] = useState(false);
   const [transformationHelper, setTransformationHelper] = useState<TransformationHelper | undefined>(undefined);
+  const [transformationVars, setTransformationVars] = useState<ScopedVars>();
   //const [transformationsList, setTransformationsList] = useState<Transformation[]>([]);
   const correlationDetails = useSelector(selectCorrelationDetails);
   const id = useId();
@@ -51,7 +53,7 @@ export const CorrelationHelper = ({ correlations }: Props) => {
 
       if (!correlationDetails?.dirty && (value.label !== '' || value.description !== '')) {
         dirty = true;
-      } else if (correlationDetails?.dirty && value.label.trim() === '' && value.description.trim() === '') {
+      } else if (correlationDetails?.dirty && value?.label.trim() === '' && value?.description.trim() === '') {
         dirty = false;
       }
       dispatch(changeCorrelationEditorDetails({ label: value.label, description: value.description, dirty: dirty }));
@@ -67,6 +69,33 @@ export const CorrelationHelper = ({ correlations }: Props) => {
       dispatch(changeCorrelationEditorDetails({ canSave: false }));
     };
   }, [dispatch]);
+
+  const calcTransformationVars = () => {
+    const transformationType = getValues('transformation.type');
+    setTransformationVars(undefined);
+    if (transformationType !== undefined && transformationHelper !== undefined) {
+      const transformationDetails = getSupportedTransTypeDetails(transformationType as SupportedTransformationType);
+      setTransformationHelper({
+        exampleValue: transformationHelper.exampleValue,
+        showExpression: transformationDetails.showExpression || false,
+        showMapValue: transformationDetails.showMapValue || false,
+      });
+
+      const transformationVars = getTransformationVars(
+        {
+          type: transformationType as SupportedTransformationType,
+          expression: getValues('transformation.expression'),
+          mapValue: getValues('transformation.mapValue'),
+        },
+        transformationHelper.exampleValue || '',
+        getValues('transformation.field')
+      );
+
+      if (Object.keys(transformationVars).length > 0) {
+        setTransformationVars({ ...transformationVars });
+      }
+    }
+  };
 
   return (
     <Alert title="Correlation details" severity="info">
@@ -115,41 +144,58 @@ export const CorrelationHelper = ({ correlations }: Props) => {
         </Field>
         {transformationHelper?.exampleValue && (
           <>
-            <pre>{transformationHelper?.exampleValue}</pre>
-            <Field label="Type" htmlFor={`${id}-type`}>
-              <Select
-                id={`${id}-type`}
-                options={getTransformOptions()}
-                onChange={(value) => {
-                  if (value.value) {
-                    const transformationDetails = getSupportedTransTypeDetails(
-                      value.value as SupportedTransformationType
-                    );
-                    setTransformationHelper({
-                      ...transformationHelper,
-                      showExpression: transformationDetails.showExpression,
-                      showMapValue: transformationDetails.showMapValue,
-                    });
+            <pre>
+              <Highlighter
+                textToHighlight={transformationHelper?.exampleValue}
+                searchWords={[getValues('transformation.expression') ?? '']}
+                autoEscape={false}
+              />
+            </pre>
 
-                    const wat = getTransformationVars(
-                      { type: value.value as SupportedTransformationType },
-                      transformationHelper.exampleValue,
-                      getValues('transformation.field')
-                    );
-                    console.log(wat);
-                  }
-                }}
+            <Field label="Type">
+              <InputControl
+                control={control}
+                render={({ field: { onChange, ref, ...field } }) => (
+                  <Select
+                    {...field}
+                    onChange={(value) => {
+                      onChange(value.value);
+                      calcTransformationVars();
+                    }}
+                    options={getTransformOptions()}
+                    aria-label="type"
+                  />
+                )}
+                name={`transformation.type` as const}
               />
             </Field>
             {transformationHelper.showExpression && (
-              <Field label="Expression" htmlFor={`${id}-expression`}>
-                <Input id={`${id}-expression`} />
+              <Field label="Expression" htmlFor={`${id}-expression`} required>
+                <Input
+                  {...register('transformation.expression')}
+                  id={`${id}-expression`}
+                  onKeyUp={calcTransformationVars}
+                />
               </Field>
             )}
             {transformationHelper.showMapValue && (
-              <Field label="Map Value" htmlFor={`${id}-mapValue`}>
-                <Input id={`${id}-mapValue`} />
+              <Field label="Map Value" htmlFor={`${id}-mapValue`} required>
+                <Input
+                  {...register('transformation.mapValue')}
+                  id={`${id}-mapValue`}
+                  onKeyUp={calcTransformationVars}
+                />
               </Field>
+            )}
+            {transformationVars !== undefined && (
+              <>
+                This transformation will add the following variables:
+                <pre>
+                  {Object.entries(transformationVars).map((entry) => {
+                    return `\$\{${entry[0]}\} = ${entry[1]?.value}\n`;
+                  })}
+                </pre>
+              </>
             )}
           </>
         )}
