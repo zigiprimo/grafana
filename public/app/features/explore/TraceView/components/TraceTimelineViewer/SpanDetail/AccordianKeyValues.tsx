@@ -110,7 +110,8 @@ export function KeyValuesSummary(props: { data?: TraceKeyValuePair[] }) {
         <li className={styles.summaryItem} key={`${item.key}-${i}`}>
           <span className={styles.summaryLabel}>{item.key}</span>
           <span className={styles.summaryDelim}>=</span>
-          {String(item.value)}
+          {item.type === 'flameGraph' && (item.value ? item.value.refId : '')}
+          {item.type !== 'flameGraph' && String(item.value)}
         </li>
       ))}
     </ul>
