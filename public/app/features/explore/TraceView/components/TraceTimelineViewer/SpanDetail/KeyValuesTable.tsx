@@ -74,7 +74,7 @@ export const getStyles = (theme: GrafanaTheme2) => {
     `,
     flameGraph: css`
       label: KeyValueTable--flameGraph;
-      margin-top: 10px;
+      margin: 10px 0;
     `,
   };
 };
@@ -136,7 +136,7 @@ export default function KeyValuesTable(props: KeyValuesTableProps) {
             } else if (row.type === 'flameGraph') {
               valueMarkup = (
                 <div className={styles.flameGraph}>
-                  <FlameGraph data={row.value} getTheme={() => config.theme2} />
+                  <FlameGraph data={row.value} getTheme={() => config.theme2} showFlameGraphOnly={true} />
                 </div>
               );
             } else {
