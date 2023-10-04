@@ -23,9 +23,10 @@ import {
   ConfirmModal,
   Container,
   CustomScrollbar,
+  Drawer,
   FilterPill,
   Themeable,
-  VerticalGroup,
+  // VerticalGroup,
   withTheme,
   Input,
   Icon,
@@ -419,7 +420,7 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
                 </div>
               </>
             )}
-            <VerticalGroup>
+            <Drawer onClose={() => {}}>
               {!config.featureToggles.transformationsRedesign && (
                 <Input
                   data-testid={selectors.components.Transforms.searchInput}
@@ -491,7 +492,7 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
                   }}
                 />
               )}
-            </VerticalGroup>
+            </Drawer>
           </>
         ) : (
           <Button
