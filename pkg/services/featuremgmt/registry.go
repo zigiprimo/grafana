@@ -830,5 +830,12 @@ var (
 			Stage:        FeatureStageExperimental,
 			Owner:        grafanaBiSquad,
 		},
+		{
+			Name:         "transformationsDrawerAdd",
+			Description:  "Use a Drawer in the UI for adding transformations.",
+			FrontendOnly: true,
+			Stage:        FeatureStageExperimental,
+			Owner:        grafanaBiSquad,
+		},
 	}
 )

@@ -482,4 +482,8 @@ const (
 	// FlagTransformationsVariableSupport
 	// Allows using variables in transformations
 	FlagTransformationsVariableSupport = "transformationsVariableSupport"
+
+	// FlagTransformationsDrawerAdd
+	// Use a Drawer in the UI for adding transformations.
+	FlagTransformationsDrawerAdd = "transformationsDrawerAdd"
 )
