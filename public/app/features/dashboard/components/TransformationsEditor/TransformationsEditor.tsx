@@ -26,7 +26,7 @@ import {
   Drawer,
   FilterPill,
   Themeable,
-  // VerticalGroup,
+  VerticalGroup,
   withTheme,
   Input,
   Icon,
@@ -351,6 +351,93 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
       );
     }
 
+    const transformationList = <>{!config.featureToggles.transformationsRedesign && (
+      <Input
+        data-testid={selectors.components.Transforms.searchInput}
+        value={search ?? ''}
+        autoFocus={!noTransforms}
+        placeholder="Search for transformation"
+        onChange={this.onSearchChange}
+        onKeyDown={this.onSearchKeyDown}
+        suffix={suffix}
+      />
+      )}
+
+      {!config.featureToggles.transformationsRedesign &&
+        xforms.map((t) => {
+          return (
+            <TransformationCard
+              key={t.name}
+              transform={t}
+              onClick={() => {
+                this.onTransformationAdd({ value: t.id });
+              }}
+            />
+          );
+        })}
+
+      {config.featureToggles.transformationsRedesign && (
+        <div className={styles.searchWrapper}>
+          <Input
+            data-testid={selectors.components.Transforms.searchInput}
+            className={styles.searchInput}
+            value={search ?? ''}
+            autoFocus={!noTransforms}
+            placeholder="Search for transformation"
+            onChange={this.onSearchChange}
+            onKeyDown={this.onSearchKeyDown}
+            suffix={suffix}
+          />
+          <div className={styles.showImages}>
+            <span className={styles.illustationSwitchLabel}>Show images</span>{' '}
+            <Switch
+              value={this.state.showIllustrations}
+              onChange={() => this.setState({ showIllustrations: !this.state.showIllustrations })}
+            />
+          </div>
+        </div>
+      )}
+
+      {config.featureToggles.transformationsRedesign && (
+        <div className={styles.filterWrapper}>
+          {filterCategoriesLabels.map(([slug, label]) => {
+            return (
+              <FilterPill
+                key={slug}
+                onClick={() => this.setState({ selectedFilter: slug })}
+                label={label}
+                selected={this.state.selectedFilter === slug}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {config.featureToggles.transformationsRedesign && (
+        <TransformationsGrid
+          showIllustrations={this.state.showIllustrations}
+          transformations={xforms}
+          onClick={(id) => {
+            this.onTransformationAdd({ value: id });
+          }}
+        />
+      )}
+    </>;
+
+    let transformationAdder = null
+    if (config.featureToggles.transformationsDrawerAdd) {
+      transformationAdder = 
+        <Drawer onClose={() => {}}>
+          {transformationList}
+        </Drawer>;
+    }
+    else {
+      transformationAdder = 
+        <VerticalGroup>
+          {transformationList}
+        </VerticalGroup>
+    }
+
     return (
       <>
         {noTransforms && !config.featureToggles.transformationsRedesign && (
@@ -420,79 +507,7 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
                 </div>
               </>
             )}
-            <Drawer onClose={() => {}}>
-              {!config.featureToggles.transformationsRedesign && (
-                <Input
-                  data-testid={selectors.components.Transforms.searchInput}
-                  value={search ?? ''}
-                  autoFocus={!noTransforms}
-                  placeholder="Search for transformation"
-                  onChange={this.onSearchChange}
-                  onKeyDown={this.onSearchKeyDown}
-                  suffix={suffix}
-                />
-              )}
-
-              {!config.featureToggles.transformationsRedesign &&
-                xforms.map((t) => {
-                  return (
-                    <TransformationCard
-                      key={t.name}
-                      transform={t}
-                      onClick={() => {
-                        this.onTransformationAdd({ value: t.id });
-                      }}
-                    />
-                  );
-                })}
-
-              {config.featureToggles.transformationsRedesign && (
-                <div className={styles.searchWrapper}>
-                  <Input
-                    data-testid={selectors.components.Transforms.searchInput}
-                    className={styles.searchInput}
-                    value={search ?? ''}
-                    autoFocus={!noTransforms}
-                    placeholder="Search for transformation"
-                    onChange={this.onSearchChange}
-                    onKeyDown={this.onSearchKeyDown}
-                    suffix={suffix}
-                  />
-                  <div className={styles.showImages}>
-                    <span className={styles.illustationSwitchLabel}>Show images</span>{' '}
-                    <Switch
-                      value={this.state.showIllustrations}
-                      onChange={() => this.setState({ showIllustrations: !this.state.showIllustrations })}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {config.featureToggles.transformationsRedesign && (
-                <div className={styles.filterWrapper}>
-                  {filterCategoriesLabels.map(([slug, label]) => {
-                    return (
-                      <FilterPill
-                        key={slug}
-                        onClick={() => this.setState({ selectedFilter: slug })}
-                        label={label}
-                        selected={this.state.selectedFilter === slug}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-
-              {config.featureToggles.transformationsRedesign && (
-                <TransformationsGrid
-                  showIllustrations={this.state.showIllustrations}
-                  transformations={xforms}
-                  onClick={(id) => {
-                    this.onTransformationAdd({ value: id });
-                  }}
-                />
-              )}
-            </Drawer>
+            {transformationAdder}
           </>
         ) : (
           <Button
