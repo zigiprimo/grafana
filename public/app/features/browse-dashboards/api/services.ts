@@ -4,6 +4,9 @@ import { getGrafanaSearcher, NestedFolderDTO } from 'app/features/search/service
 import { queryResultToViewItem } from 'app/features/search/service/utils';
 import { DashboardViewItem } from 'app/features/search/types';
 
+import { contextSrv } from '../../../core/core';
+import { AccessControlAction } from '../../../types';
+
 export const PAGE_SIZE = 50;
 
 export async function listFolders(
@@ -17,6 +20,10 @@ export async function listFolders(
   }
 
   const backendSrv = getBackendSrv();
+
+  if (!contextSrv.hasPermission(AccessControlAction.FoldersRead)) {
+    return [];
+  }
 
   const folders = await backendSrv.get<NestedFolderDTO[]>('/api/folders', {
     parentUid: parentUID,
@@ -36,6 +43,10 @@ export async function listFolders(
 
 export async function listDashboards(parentUID?: string, page = 1, pageSize = PAGE_SIZE): Promise<DashboardViewItem[]> {
   const searcher = getGrafanaSearcher();
+
+  if (!contextSrv.hasPermission(AccessControlAction.DashboardsRead)) {
+    return [];
+  }
 
   const dashboardsResults = await searcher.search({
     kind: ['dashboard'],
