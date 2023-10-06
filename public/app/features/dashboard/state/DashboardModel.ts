@@ -147,6 +147,7 @@ export class DashboardModel implements TimeModel {
       autoMigrateOldPanels?: boolean;
     }
   ) {
+    data = deepFreeze(data);
     this.getVariablesFromState = options?.getVariablesFromState ?? getVariablesByKey;
     this.events = new EventBusSrv();
     this.id = data.id || null;
