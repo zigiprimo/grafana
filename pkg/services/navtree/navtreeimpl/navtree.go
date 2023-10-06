@@ -129,6 +129,18 @@ func (s *ServiceImpl) GetNavTree(c *contextmodel.ReqContext, prefs *pref.Prefere
 		treeRoot.AddSection(s.getProfileNode(c))
 	}
 
+	if s.features.IsEnabled(featuremgmt.FlagGrafanaAPIServer) {
+		treeRoot.AddSection(&navtree.NavLink{
+			Text:         "API",
+			Id:           "api",
+			SubTitle:     "Explore the grafana API",
+			Icon:         "compass",
+			SortWeight:   1000,
+			Url:          s.cfg.AppSubURL + "/api",
+			HideFromTabs: true,
+		})
+	}
+
 	_, uaIsDisabledForOrg := s.cfg.UnifiedAlerting.DisabledOrgs[c.OrgID]
 	uaVisibleForOrg := s.cfg.UnifiedAlerting.IsEnabled() && !uaIsDisabledForOrg
 

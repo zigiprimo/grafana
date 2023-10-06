@@ -10,6 +10,7 @@ import { contextSrv } from 'app/core/services/context_srv';
 import UserAdminPage from 'app/features/admin/UserAdminPage';
 import LdapPage from 'app/features/admin/ldap/LdapPage';
 import { getAlertingRoutes } from 'app/features/alerting/routes';
+import { APIPage } from 'app/features/api/APIPage';
 import { newBrowseDashboardsEnabled } from 'app/features/browse-dashboards/featureFlag';
 import { ConnectionsRedirectNotice } from 'app/features/connections/components/ConnectionsRedirectNotice';
 import { ROUTES as CONNECTIONS_ROUTES } from 'app/features/connections/constants';
@@ -492,6 +493,13 @@ export function getAppRoutes(): RouteDescriptor[] {
       component: SafeDynamicImport(
         () => import(/* webpackChunkName: "NotificationsPage"*/ 'app/features/notifications/NotificationsPage')
       ),
+    },
+    {
+      path: '/api',
+      component: () => <APIPage />,
+      // component: SafeDynamicImport(
+      //   () => import(/* webpackChunkName: "DashboardListPage"*/ 'app/features/api/APIPage')
+      // ),
     },
     ...getDynamicDashboardRoutes(),
     ...getPluginCatalogRoutes(),
