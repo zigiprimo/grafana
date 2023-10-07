@@ -61,8 +61,8 @@ $layer0: #FFFFFF;
 $layer1: #FFFFFF;
 $layer2: #F4F5F5;
 
-$divider: rgba(36, 41, 46, 0.12);
-$border0: rgba(36, 41, 46, 0.12);
+$divider: rgba(36, 41, 46, 0.08);
+$border0: rgba(36, 41, 46, 0.08);
 $border1: rgba(36, 41, 46, 0.30);
 
 // Accent colors
@@ -129,7 +129,7 @@ $hr-border-color: $gray-4 !default;
 // Panel
 // -------------------------
 $panel-bg: #F4F5F5;
-$panel-border: 1px solid rgba(36, 41, 46, 0.12);
+$panel-border: 1px solid rgba(36, 41, 46, 0.08);
 $panel-header-hover-bg: rgba(36, 41, 46, 0.12);
 $panel-box-shadow: none;
 $panel-corner: $panel-bg;
@@ -230,9 +230,9 @@ $typeahead-selected-color: $yellow;
 // Dropdowns
 // -------------------------
 $dropdownBackground: #FFFFFF;
-$dropdownBorder: rgba(36, 41, 46, 0.12);
-$dropdownDividerTop: rgba(36, 41, 46, 0.12);
-$dropdownDividerBottom: rgba(36, 41, 46, 0.12);
+$dropdownBorder: rgba(36, 41, 46, 0.08);
+$dropdownDividerTop: rgba(36, 41, 46, 0.08);
+$dropdownDividerBottom: rgba(36, 41, 46, 0.08);
 $dropdownShadow: 0px 13px 20px 1px rgba(24, 26, 27, 0.18);
 
 $dropdownLinkColor: $dark-2;
@@ -291,7 +291,7 @@ $tooltipShadow: 0px 4px 8px rgba(24, 26, 27, 0.2);
 
 $popover-bg: #FFFFFF;
 $popover-color: rgba(36, 41, 46, 1);
-$popover-border-color: rgba(36, 41, 46, 0.12);
+$popover-border-color: rgba(36, 41, 46, 0.08);
 $popover-header-bg: #F4F5F5;
 $popover-shadow: 0px 13px 20px 1px rgba(24, 26, 27, 0.18);
 
