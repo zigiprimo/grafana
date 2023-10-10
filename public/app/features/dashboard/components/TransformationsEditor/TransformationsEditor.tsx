@@ -67,6 +67,7 @@ const filterCategoriesLabels: Array<[FilterCategory, string]> = [
 interface State {
   data: DataFrame[];
   transformations: TransformationsEditorTransformation[];
+  deletedTransformations: TransformationsEditorTransformation[];
   search: string;
   showPicker?: boolean;
   scrollTop?: number;
@@ -88,6 +89,7 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
         transformation: t,
         id: ids[i],
       })),
+      deletedTransformations: {},
       data: [],
       search: '',
       selectedFilter: viewAllValue,
@@ -169,8 +171,8 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
     }
   }
 
-  onChange(transformations: TransformationsEditorTransformation[]) {
-    this.setState({ transformations });
+  onChange(transformations: TransformationsEditorTransformation[], deletedTransformations?: TransformationsEditorTransformation[]) {
+    deletedTransformations ? this.setState({ transformations, deletedTransformations}) : this.setState({ transformations });
     this.props.panel.setTransformations(transformations.map((t) => t.transformation));
   }
 
@@ -231,8 +233,9 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
   };
 
   onTransformationRemove = (idx: number) => {
-    const { transformations } = this.state;
+    const { transformations, deletedTransformations } = this.state;
     const next = Array.from(transformations);
+    const nextDeleted = Array.from(deletedTransformations);
     let eventName = 'panel_editor_tabs_transformations_management';
     if (config.featureToggles.transformationsRedesign) {
       eventName = 'transformations_redesign_' + eventName;
@@ -242,8 +245,11 @@ class UnThemedTransformationsEditor extends React.PureComponent<TransformationsE
       action: 'remove',
       transformationId: next[idx].transformation.id,
     });
-    next.splice(idx, 1);
-    this.onChange(next);
+    
+    const deleted = next.splice(idx, 1);
+    nextDeleted.push(deleted[0]);
+
+    this.onChange(next, nextDeleted);
   };
 
   onTransformationRemoveAll = () => {
