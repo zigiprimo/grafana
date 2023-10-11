@@ -953,11 +953,8 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 	labelsField := data.NewFieldFromFieldType(data.FieldTypeJSON, 0)
 	labelsField.Name = "__labels" // avoid automatically spreading this by labels
 
-	parsedLabelsField := data.NewFieldFromFieldType(data.FieldTypeJSON, 0)
-	parsedLabelsField.Name = "__parsedLabels" // avoid automatically spreading this by labels
-
-	metadataLabelsField := data.NewFieldFromFieldType(data.FieldTypeJSON, 0)
-	metadataLabelsField.Name = "__metadataLabels" // avoid automatically spreading this by labels
+	labelTypesField := data.NewFieldFromFieldType(data.FieldTypeJSON, 0)
+	labelTypesField.Name = "__labelTypes" // avoid automatically spreading this by labels
 
 	timeField := data.NewFieldFromFieldType(data.FieldTypeTime, 0)
 	timeField.Name = "Time"
@@ -970,7 +967,7 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 	tsField.Name = "TS"
 
 	labels := data.Labels{}
-	labelJson, err := labelsToRawJson(labels)
+	labelMap, err := labelsToMap(labels)
 	if err != nil {
 		return backend.DataResponse{Error: err}
 	}
@@ -994,7 +991,7 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 					return rspErr(err)
 				}
 
-				if labelJson, err = labelsToRawJson(labels); err != nil {
+				if labelMap, err = labelsToMap(labels); err != nil {
 					return rspErr(err)
 				}
 
@@ -1027,7 +1024,7 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 						return rspErr(err)
 					}
 
-					plabelsJson, clabelsJson, err := readCategorizedStreamField(iter)
+					plabelsMap, clabelsMap, err := readCategorizedStreamField(iter)
 					if err != nil {
 						return rspErr(err)
 					}
@@ -1041,9 +1038,36 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 						return rspErr(err)
 					}
 
+					typeMap := map[string]string{}
+
+					for k := range labelMap {
+						typeMap[k] = "I"
+					}
+
+					// then, merge the clabelMap into the labelMap
+					for k, v := range clabelsMap {
+						labelMap[k] = v
+						typeMap[k] = "S"
+					}
+
+					// then, merge the plabelMap into the labelMap
+					for k, v := range plabelsMap {
+						labelMap[k] = v
+						typeMap[k] = "P"
+					}
+
+					labelJson, err := mapToRawJson(labelMap)
+					if err != nil {
+						return rspErr(err)
+					}
+
+					labelTypesJson, err := mapToRawJson(typeMap)
+					if err != nil {
+						return rspErr(err)
+					}
+
 					labelsField.Append(labelJson)
-					parsedLabelsField.Append(plabelsJson)
-					metadataLabelsField.Append(clabelsJson)
+					labelTypesField.Append(labelTypesJson)
 					timeField.Append(t)
 					lineField.Append(line)
 					tsField.Append(ts)
@@ -1057,18 +1081,18 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 		}
 	}
 
-	frame := data.NewFrame("", labelsField, timeField, lineField, tsField, parsedLabelsField, metadataLabelsField)
+	frame := data.NewFrame("", labelsField, timeField, lineField, tsField, labelTypesField)
 	frame.Meta = &data.FrameMeta{}
 	rsp.Frames = append(rsp.Frames, frame)
 
 	return rsp
 }
 
-func readCategorizedStreamField(iter *jsonitere.Iterator) (json.RawMessage, json.RawMessage, error) {
+func readCategorizedStreamField(iter *jsonitere.Iterator) (map[string]interface{}, map[string]interface{}, error) {
 	plabels := data.Labels{}
 	clabels := data.Labels{}
-	var plabelsJson json.RawMessage
-	var clabelsJson json.RawMessage
+	var plabelsMap map[string]interface{}
+	var clabelsMap map[string]interface{}
 streamField:
 	for streamField, err := iter.ReadObject(); ; streamField, err = iter.ReadObject() {
 		if err != nil {
@@ -1087,16 +1111,16 @@ streamField:
 			if err != nil {
 				return nil, nil, err
 			}
-			if plabelsJson, err = labelsToRawJson(plabels); err != nil {
+			if plabelsMap, err = labelsToMap(plabels); err != nil {
 				return nil, nil, err
 			}
-			if clabelsJson, err = labelsToRawJson(clabels); err != nil {
+			if clabelsMap, err = labelsToMap(clabels); err != nil {
 				return nil, nil, err
 			}
 			break streamField
 		}
 	}
-	return plabelsJson, clabelsJson, nil
+	return plabelsMap, clabelsMap, nil
 }
 
 func resultTypeToCustomMeta(resultType string) map[string]string {
@@ -1136,4 +1160,30 @@ func labelsToRawJson(labels data.Labels) (json.RawMessage, error) {
 	}
 
 	return json.RawMessage(bytes), nil
+}
+
+func mapToRawJson(labelMap any) (json.RawMessage, error) {
+	// data.Labels when converted to JSON keep the fields sorted
+	bytes, err := jsoniter.Marshal(labelMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.RawMessage(bytes), nil
+}
+
+func labelsToMap(labels data.Labels) (map[string]interface{}, error) {
+	// data.Labels when converted to JSON keep the fields sorted
+	labelJson, err := labelsToRawJson(labels)
+	if err != nil {
+		return nil, err
+	}
+
+	var labelMap map[string]interface{}
+	err = jsoniter.Unmarshal(labelJson, &labelMap)
+	if err != nil {
+		return nil, err
+	}
+
+	return labelMap, nil
 }
