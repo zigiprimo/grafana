@@ -7,7 +7,6 @@ import { byRole, byTestId, byText } from 'testing-library-selector';
 
 import { DataSourceSrv, locationService, logInfo, setBackendSrv, setDataSourceSrv } from '@grafana/runtime';
 import { backendSrv } from 'app/core/services/backend_srv';
-import { contextSrv } from 'app/core/services/context_srv';
 import * as ruleActionButtons from 'app/features/alerting/unified/components/rules/RuleActionsButtons';
 import * as actions from 'app/features/alerting/unified/state/actions';
 import { AccessControlAction } from 'app/types';
@@ -19,8 +18,6 @@ import { discoverFeatures } from './api/buildInfo';
 import { fetchRules } from './api/prometheus';
 import { deleteNamespace, deleteRulerRulesGroup, fetchRulerRules, setRulerRuleGroup } from './api/ruler';
 import {
-  disableRBAC,
-  enableRBAC,
   grantUserPermissions,
   mockDataSource,
   MockDataSourceSrv,
@@ -119,7 +116,9 @@ const ui = {
   editCloudGroupIcon: byTestId('edit-group'),
   newRuleButton: byRole('link', { name: 'New alert rule' }),
   moreButton: byRole('button', { name: 'More' }),
-  exportButton: byRole('link', { name: /export/i }),
+  exportButton: byRole('menuitem', {
+    name: /export all grafana\-managed rules/i,
+  }),
   editGroupModal: {
     dialog: byRole('dialog'),
     namespaceInput: byRole('textbox', { name: /^Namespace/ }),
@@ -137,7 +136,12 @@ beforeAll(() => {
 
 describe('RuleList', () => {
   beforeEach(() => {
-    contextSrv.isEditor = true;
+    grantUserPermissions([
+      AccessControlAction.AlertingRuleRead,
+      AccessControlAction.AlertingRuleUpdate,
+      AccessControlAction.AlertingRuleExternalRead,
+      AccessControlAction.AlertingRuleExternalWrite,
+    ]);
     mocks.rulesInSameGroupHaveInvalidForMock.mockReturnValue([]);
   });
 
@@ -147,7 +151,6 @@ describe('RuleList', () => {
   });
 
   it('load & show rule groups from multiple cloud data sources', async () => {
-    disableRBAC();
     mocks.getAllDataSourcesMock.mockReturnValue(Object.values(dataSources));
 
     setDataSourceSrv(new MockDataSourceSrv(dataSources));
@@ -682,8 +685,6 @@ describe('RuleList', () => {
   describe('RBAC Enabled', () => {
     describe('Export button', () => {
       it('Export button should be visible when the user has alert provisioning read permissions', async () => {
-        enableRBAC();
-
         grantUserPermissions([AccessControlAction.AlertingProvisioningRead]);
 
         mocks.getAllDataSourcesMock.mockReturnValue([]);
@@ -697,8 +698,6 @@ describe('RuleList', () => {
         expect(ui.exportButton.get()).toBeInTheDocument();
       });
       it('Export button should be visible when the user has alert provisioning read secrets permissions', async () => {
-        enableRBAC();
-
         grantUserPermissions([AccessControlAction.AlertingProvisioningReadSecrets]);
 
         mocks.getAllDataSourcesMock.mockReturnValue([]);
@@ -712,8 +711,6 @@ describe('RuleList', () => {
         expect(ui.exportButton.get()).toBeInTheDocument();
       });
       it('Export button should not be visible when the user has no alert provisioning read permissions', async () => {
-        enableRBAC();
-
         grantUserPermissions([AccessControlAction.AlertingRuleCreate, AccessControlAction.FoldersRead]);
 
         mocks.getAllDataSourcesMock.mockReturnValue([]);
@@ -729,8 +726,6 @@ describe('RuleList', () => {
     });
     describe('Grafana Managed Alerts', () => {
       it('New alert button should be visible when the user has alert rule create and folder read permissions and no rules exists', async () => {
-        enableRBAC();
-
         grantUserPermissions([
           AccessControlAction.FoldersRead,
           AccessControlAction.AlertingRuleCreate,
@@ -749,8 +744,6 @@ describe('RuleList', () => {
       });
 
       it('New alert button should be visible when the user has alert rule create and folder read permissions and rules already exists', async () => {
-        enableRBAC();
-
         grantUserPermissions([
           AccessControlAction.FoldersRead,
           AccessControlAction.AlertingRuleCreate,
@@ -771,8 +764,6 @@ describe('RuleList', () => {
 
     describe('Cloud Alerts', () => {
       it('New alert button should be visible when the user has the alert rule external write and datasource read permissions and no rules exists', async () => {
-        enableRBAC();
-
         grantUserPermissions([
           // AccessControlAction.AlertingRuleRead,
           AccessControlAction.DataSourcesRead,
@@ -799,8 +790,6 @@ describe('RuleList', () => {
       });
 
       it('New alert button should be visible when the user has the alert rule external write and data source read permissions and rules already exists', async () => {
-        enableRBAC();
-
         grantUserPermissions([
           AccessControlAction.DataSourcesRead,
           AccessControlAction.AlertingRuleExternalRead,
@@ -829,8 +818,6 @@ describe('RuleList', () => {
 
   describe('Analytics', () => {
     it('Sends log info when creating an alert rule from a scratch', async () => {
-      enableRBAC();
-
       grantUserPermissions([
         AccessControlAction.FoldersRead,
         AccessControlAction.AlertingRuleCreate,

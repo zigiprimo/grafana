@@ -539,8 +539,8 @@ describe('Tempo service graph view', () => {
 
     expect(response.data[0].fields[6].config.links[0].url).toBe('');
     expect(response.data[0].fields[6].config.links[0].title).toBe('Tempo');
-    expect(response.data[0].fields[6].config.links[0].internal.query.queryType).toBe('nativeSearch');
-    expect(response.data[0].fields[6].config.links[0].internal.query.spanName).toBe('${__data.fields[0]}');
+    expect(response.data[0].fields[6].config.links[0].internal.query.queryType).toBe('traceqlSearch');
+    expect(response.data[0].fields[6].config.links[0].internal.query.filters[0].value).toBe('${__data.fields[0]}');
 
     // Service graph
     expect(response.data[1].name).toBe('Nodes');
@@ -683,8 +683,109 @@ describe('Tempo service graph view', () => {
           title: 'View traces',
           internal: {
             query: {
-              queryType: 'nativeSearch',
-              serviceName: '${__data.fields.target}',
+              refId: 'A',
+              queryType: 'traceqlSearch',
+              filters: [
+                {
+                  id: 'service-name',
+                  operator: '=',
+                  scope: 'resource',
+                  tag: 'service.name',
+                  value: '${__data.fields.target}',
+                  valueType: 'string',
+                },
+              ],
+            },
+            datasourceUid: 'EbPO1fYnz',
+            datasourceName: '',
+          },
+        },
+      ],
+    };
+    expect(fieldConfig).toStrictEqual(resultObj);
+  });
+
+  it('should get field config correctly when namespaces are present', () => {
+    let datasourceUid = 's4Jvz8Qnk';
+    let tempoDatasourceUid = 'EbPO1fYnz';
+    let targetField = '__data.fields.targetName';
+    let tempoField = '__data.fields.target';
+    let sourceField = '__data.fields.sourceName';
+    let namespaceFields = {
+      targetNamespace: '__data.fields.targetNamespace',
+      sourceNamespace: '__data.fields.sourceNamespace',
+    };
+
+    let fieldConfig = getFieldConfig(
+      datasourceUid,
+      tempoDatasourceUid,
+      targetField,
+      tempoField,
+      sourceField,
+      namespaceFields
+    );
+
+    let resultObj = {
+      links: [
+        {
+          url: '',
+          title: 'Request rate',
+          internal: {
+            query: {
+              expr: 'sum by (client, server, server_service_namespace, client_service_namespace)(rate(traces_service_graph_request_total{client="${__data.fields.sourceName}",client_service_namespace="${__data.fields.sourceNamespace}",server="${__data.fields.targetName}",server_service_namespace="${__data.fields.targetNamespace}"}[$__rate_interval]))',
+              range: true,
+              exemplar: true,
+              instant: false,
+            },
+            datasourceUid: 's4Jvz8Qnk',
+            datasourceName: '',
+          },
+        },
+        {
+          url: '',
+          title: 'Request histogram',
+          internal: {
+            query: {
+              expr: 'histogram_quantile(0.9, sum(rate(traces_service_graph_request_server_seconds_bucket{client="${__data.fields.sourceName}",client_service_namespace="${__data.fields.sourceNamespace}",server="${__data.fields.targetName}",server_service_namespace="${__data.fields.targetNamespace}"}[$__rate_interval])) by (le, client, server, server_service_namespace, client_service_namespace))',
+              range: true,
+              exemplar: true,
+              instant: false,
+            },
+            datasourceUid: 's4Jvz8Qnk',
+            datasourceName: '',
+          },
+        },
+        {
+          url: '',
+          title: 'Failed request rate',
+          internal: {
+            query: {
+              expr: 'sum by (client, server, server_service_namespace, client_service_namespace)(rate(traces_service_graph_request_failed_total{client="${__data.fields.sourceName}",client_service_namespace="${__data.fields.sourceNamespace}",server="${__data.fields.targetName}",server_service_namespace="${__data.fields.targetNamespace}"}[$__rate_interval]))',
+              range: true,
+              exemplar: true,
+              instant: false,
+            },
+            datasourceUid: 's4Jvz8Qnk',
+            datasourceName: '',
+          },
+        },
+        {
+          url: '',
+          title: 'View traces',
+          internal: {
+            query: {
+              queryType: 'traceqlSearch',
+              refId: 'A',
+              filters: [
+                {
+                  id: 'service-name',
+                  operator: '=',
+                  scope: 'resource',
+                  tag: 'service.name',
+                  value: '${__data.fields.target}',
+                  valueType: 'string',
+                },
+              ],
             },
             datasourceUid: 'EbPO1fYnz',
             datasourceName: '',
@@ -761,8 +862,18 @@ describe('Tempo service graph view', () => {
       title: 'Tempo',
       internal: {
         query: {
-          queryType: 'nativeSearch',
-          spanName: '"${__data.fields[0]}"',
+          queryType: 'traceqlSearch',
+          refId: 'A',
+          filters: [
+            {
+              id: 'span-name',
+              operator: '=',
+              scope: 'span',
+              tag: 'name',
+              value: '"${__data.fields[0]}"',
+              valueType: 'string',
+            },
+          ],
         },
         datasourceUid: 'gdev-tempo',
         datasourceName: 'Tempo',
@@ -876,7 +987,15 @@ const backendSrvWithPrometheus = {
       return {
         query() {
           return of({
-            data: [rateMetric, errorRateMetric, durationMetric, totalsPromMetric, secondsPromMetric, failedPromMetric],
+            data: [
+              rateMetric,
+              errorRateMetric,
+              durationMetric,
+              emptyDurationMetric,
+              totalsPromMetric,
+              secondsPromMetric,
+              failedPromMetric,
+            ],
           });
         },
       };
@@ -966,6 +1085,12 @@ const durationMetric = createDataFrame({
       values: [0.12003505696757232],
     },
   ],
+});
+
+const emptyDurationMetric = createDataFrame({
+  refId:
+    'histogram_quantile(.9, sum(rate(traces_spanmetrics_latency_bucket{span_name=~"HTTP GET - root"}[$__range])) by (le))',
+  fields: [],
 });
 
 const totalsPromMetric = createDataFrame({
@@ -1088,8 +1213,18 @@ const serviceGraphLinks = [
     title: 'View traces',
     internal: {
       query: {
-        queryType: 'nativeSearch',
-        serviceName: '${__data.fields[0]}',
+        refId: 'A',
+        queryType: 'traceqlSearch',
+        filters: [
+          {
+            id: 'service-name',
+            operator: '=',
+            scope: 'resource',
+            tag: 'service.name',
+            value: '${__data.fields[0]}',
+            valueType: 'string',
+          },
+        ],
       } as TempoQuery,
       datasourceUid: 'gdev-tempo',
       datasourceName: 'Tempo',

@@ -17,7 +17,6 @@ export const LogMessages = {
   cancelSavingAlertRule: 'user canceled alert rule creation',
   successSavingAlertRule: 'alert rule saved successfully',
   unknownMessageFromError: 'unknown messageFromError',
-  errorGettingLokiHistory: 'error getting Loki history',
 };
 
 // logInfo from '@grafana/runtime' should be used, but it doesn't handle Grafana JS Agent correctly
@@ -103,6 +102,15 @@ export const trackNewAlerRuleFormError = async (props: AlertRuleTrackingProps & 
     return;
   }
   reportInteraction('grafana_alerting_rule_form_error', props);
+};
+
+export const trackInsightsFeedback = async (props: { useful: boolean; panel: string }) => {
+  const defaults = {
+    grafana_version: config.buildInfo.version,
+    org_id: contextSrv.user.orgId,
+    user_id: contextSrv.user.id,
+  };
+  reportInteraction('grafana_alerting_insights', { ...defaults, ...props });
 };
 
 export type AlertRuleTrackingProps = {

@@ -92,7 +92,7 @@ func (ss *sqlStore) Update(ctx context.Context, cmd folder.UpdateFolderCommand) 
 
 	var foldr *folder.Folder
 
-	if cmd.NewDescription == nil && cmd.NewTitle == nil && cmd.NewUID == nil && cmd.NewParentUID == nil {
+	if cmd.NewDescription == nil && cmd.NewTitle == nil && cmd.NewParentUID == nil {
 		return nil, folder.ErrBadRequest.Errorf("nothing to update")
 	}
 	err := ss.db.WithDbSession(ctx, func(sess *db.Session) error {
@@ -108,12 +108,6 @@ func (ss *sqlStore) Update(ctx context.Context, cmd folder.UpdateFolderCommand) 
 		if cmd.NewTitle != nil {
 			columnsToUpdate = append(columnsToUpdate, "title = ?")
 			args = append(args, *cmd.NewTitle)
-		}
-
-		if cmd.NewUID != nil {
-			columnsToUpdate = append(columnsToUpdate, "uid = ?")
-			uid = *cmd.NewUID
-			args = append(args, *cmd.NewUID)
 		}
 
 		if cmd.NewParentUID != nil {
@@ -172,7 +166,15 @@ func (ss *sqlStore) Get(ctx context.Context, q folder.GetFolderQuery) (*folder.F
 		case q.ID != nil:
 			exists, err = sess.SQL("SELECT * FROM folder WHERE id = ?", q.ID).Get(foldr)
 		case q.Title != nil:
-			exists, err = sess.SQL("SELECT * FROM folder WHERE title = ? AND org_id = ?", q.Title, q.OrgID).Get(foldr)
+			args := []any{*q.Title, q.OrgID}
+			s := "SELECT * FROM folder WHERE title = ? AND org_id = ?"
+			if q.ParentUID != nil {
+				s = s + " AND parent_uid = ?"
+				args = append(args, *q.ParentUID)
+			} else {
+				s = s + " AND parent_uid IS NULL"
+			}
+			exists, err = sess.SQL(s, args...).Get(foldr)
 		default:
 			return folder.ErrBadRequest.Errorf("one of ID, UID, or Title must be included in the command")
 		}

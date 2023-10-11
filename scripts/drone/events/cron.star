@@ -2,15 +2,11 @@
 This module provides functions for cronjob pipelines and steps used within.
 """
 
-load("scripts/drone/vault.star", "from_secret")
-load(
-    "scripts/drone/steps/lib.star",
-    "compile_build_cmd",
-)
 load(
     "scripts/drone/utils/images.star",
     "images",
 )
+load("scripts/drone/vault.star", "from_secret")
 
 aquasec_trivy_image = "aquasec/trivy:0.21.0"
 
@@ -21,7 +17,6 @@ def cronjobs():
         scan_docker_image_pipeline("latest-ubuntu"),
         scan_docker_image_pipeline("main-ubuntu"),
         scan_build_test_publish_docker_image_pipeline(),
-        grafana_com_nightly_pipeline(),
     ]
 
 def authenticate_gcr_step():
@@ -160,7 +155,7 @@ def scan_docker_image_high_critical_vulnerabilities_step(docker_image):
 def slack_job_failed_step(channel, image):
     return {
         "name": "slack-notify-failure",
-        "image": images["plugins_slack_image"],
+        "image": images["plugins_slack"],
         "settings": {
             "webhook": from_secret("slack_webhook_backend"),
             "channel": channel,
@@ -174,7 +169,7 @@ def slack_job_failed_step(channel, image):
 def post_to_grafana_com_step():
     return {
         "name": "post-to-grafana-com",
-        "image": images["publish_image"],
+        "image": images["publish"],
         "environment": {
             "GRAFANA_COM_API_KEY": from_secret("grafana_api_key"),
             "GCP_KEY": from_secret("gcp_key"),
@@ -182,13 +177,3 @@ def post_to_grafana_com_step():
         "depends_on": ["compile-build-cmd"],
         "commands": ["./bin/build publish grafana-com --edition oss"],
     }
-
-def grafana_com_nightly_pipeline():
-    return cron_job_pipeline(
-        cronName = "grafana-com-nightly",
-        name = "grafana-com-nightly",
-        steps = [
-            compile_build_cmd(),
-            post_to_grafana_com_step(),
-        ],
-    )

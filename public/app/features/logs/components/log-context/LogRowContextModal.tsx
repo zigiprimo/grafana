@@ -14,9 +14,10 @@ import {
   LogsSortOrder,
   dateTime,
   TimeRange,
+  LoadingState,
 } from '@grafana/data';
 import { config, reportInteraction } from '@grafana/runtime';
-import { DataQuery, LoadingState, TimeZone } from '@grafana/schema';
+import { DataQuery, TimeZone } from '@grafana/schema';
 import { Button, Modal, useTheme2 } from '@grafana/ui';
 import store from 'app/core/store';
 import { SETTINGS_KEYS } from 'app/features/explore/Logs/utils/logs';
@@ -552,6 +553,7 @@ export const LogRowContextModal: React.FunctionComponent<LogRowContextModalProps
                   onUnpinLine={() => setSticky(false)}
                   onPinLine={() => setSticky(true)}
                   pinnedRowId={sticky ? row.uid : undefined}
+                  overflowingContent={true}
                 />
               </td>
             </tr>

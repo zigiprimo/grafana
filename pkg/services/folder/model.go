@@ -6,7 +6,6 @@ import (
 
 	"github.com/grafana/grafana/pkg/infra/slugify"
 	"github.com/grafana/grafana/pkg/services/auth/identity"
-	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util/errutil"
 )
@@ -82,7 +81,7 @@ type CreateFolderCommand struct {
 	Description string `json:"description"`
 	ParentUID   string `json:"parentUid"`
 
-	SignedInUser *user.SignedInUser `json:"-"`
+	SignedInUser identity.Requester `json:"-"`
 }
 
 // UpdateFolderCommand captures the information required by the folder service
@@ -90,10 +89,6 @@ type CreateFolderCommand struct {
 type UpdateFolderCommand struct {
 	UID   string `json:"-"`
 	OrgID int64  `json:"-"`
-	// NewUID it's an optional parameter used for overriding the existing folder UID
-	// Starting with 10.0, this is deprecated. It will be removed in a future release.
-	// Please avoid using it because it can result in folder loosing its permissions.
-	NewUID *string `json:"uid"` // keep same json tag with the legacy command for not breaking the existing APIs
 	// NewTitle it's an optional parameter used for overriding the existing folder title
 	NewTitle *string `json:"title"` // keep same json tag with the legacy command for not breaking the existing APIs
 	// NewDescription it's an optional parameter used for overriding the existing folder description
@@ -105,7 +100,7 @@ type UpdateFolderCommand struct {
 	// Overwrite only used by the legacy folder implementation
 	Overwrite bool `json:"overwrite"`
 
-	SignedInUser *user.SignedInUser `json:"-"`
+	SignedInUser identity.Requester `json:"-"`
 }
 
 // MoveFolderCommand captures the information required by the folder service
@@ -115,7 +110,7 @@ type MoveFolderCommand struct {
 	NewParentUID string `json:"parentUid"`
 	OrgID        int64  `json:"-"`
 
-	SignedInUser *user.SignedInUser `json:"-"`
+	SignedInUser identity.Requester `json:"-"`
 }
 
 // DeleteFolderCommand captures the information required by the folder service
@@ -125,18 +120,20 @@ type DeleteFolderCommand struct {
 	OrgID            int64  `json:"orgId" xorm:"org_id"`
 	ForceDeleteRules bool   `json:"forceDeleteRules"`
 
-	SignedInUser *user.SignedInUser `json:"-"`
+	SignedInUser identity.Requester `json:"-"`
 }
 
 // GetFolderQuery is used for all folder Get requests. Only one of UID, ID, or
 // Title should be set; if multiple fields are set by the caller the dashboard
-// service will select the field with the most specificity, in order: ID, UID,
-// Title.
+// service will select the field with the most specificity, in order: UID, ID
+// Title. If Title is set, it will fetch the folder in the root folder.
+// Callers can additionally set the ParentUID field to fetch a folder by title under a specific folder.
 type GetFolderQuery struct {
-	UID   *string
-	ID    *int64
-	Title *string
-	OrgID int64
+	UID       *string
+	ParentUID *string
+	ID        *int64
+	Title     *string
+	OrgID     int64
 
 	SignedInUser identity.Requester `json:"-"`
 }
@@ -160,15 +157,15 @@ type GetChildrenQuery struct {
 	Limit int64
 	Page  int64
 
-	SignedInUser *user.SignedInUser `json:"-"`
+	SignedInUser identity.Requester `json:"-"`
 }
 
 type HasEditPermissionInFoldersQuery struct {
-	SignedInUser *user.SignedInUser
+	SignedInUser identity.Requester
 }
 
 type HasAdminPermissionInDashboardsOrFoldersQuery struct {
-	SignedInUser *user.SignedInUser
+	SignedInUser identity.Requester
 }
 
 // GetDescendantCountsQuery captures the information required by the folder service
@@ -177,7 +174,7 @@ type GetDescendantCountsQuery struct {
 	UID   *string
 	OrgID int64
 
-	SignedInUser *user.SignedInUser `json:"-"`
+	SignedInUser identity.Requester `json:"-"`
 }
 
 type DescendantCounts map[string]int64

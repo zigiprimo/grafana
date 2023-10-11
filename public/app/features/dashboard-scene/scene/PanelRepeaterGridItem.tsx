@@ -14,10 +14,11 @@ import {
   SceneGridItemLike,
   sceneGraph,
   MultiValueVariable,
-  VariableValueSingle,
   LocalValueVariable,
 } from '@grafana/scenes';
 import { GRID_CELL_HEIGHT, GRID_CELL_VMARGIN } from 'app/core/constants';
+
+import { getMultiVariableValues } from '../utils/utils';
 
 interface PanelRepeaterGridItemState extends SceneGridItemStateLike {
   source: VizPanel;
@@ -106,7 +107,7 @@ export class PanelRepeaterGridItem extends SceneObjectBase<PanelRepeaterGridItem
     }
 
     const panelToRepeat = this.state.source;
-    const { values, texts } = this.getVariableValues(variable);
+    const { values, texts } = getMultiVariableValues(variable);
     const repeatedPanels: VizPanel[] = [];
 
     // Loop through variable values and create repeates
@@ -126,6 +127,7 @@ export class PanelRepeaterGridItem extends SceneObjectBase<PanelRepeaterGridItem
     const direction = this.getRepeatDirection();
     const stateChange: Partial<PanelRepeaterGridItemState> = { repeatedPanels: repeatedPanels };
     const itemHeight = this.state.itemHeight ?? 10;
+    const prevHeight = this.state.height;
     const maxPerRow = this.getMaxPerRow();
 
     if (direction === 'h') {
@@ -138,28 +140,12 @@ export class PanelRepeaterGridItem extends SceneObjectBase<PanelRepeaterGridItem
     this.setState(stateChange);
 
     // In case we updated our height the grid layout needs to be update
-    if (this.parent instanceof SceneGridLayout) {
-      this.parent!.forceRender();
+    if (prevHeight !== this.state.height) {
+      const layout = sceneGraph.getLayout(this);
+      if (layout instanceof SceneGridLayout) {
+        layout.forceRender();
+      }
     }
-  }
-
-  private getVariableValues(variable: MultiValueVariable): {
-    values: VariableValueSingle[];
-    texts: VariableValueSingle[];
-  } {
-    const { value, text, options } = variable.state;
-
-    if (variable.hasAllValue()) {
-      return {
-        values: options.map((o) => o.value),
-        texts: options.map((o) => o.label),
-      };
-    }
-
-    return {
-      values: Array.isArray(value) ? value : [value],
-      texts: Array.isArray(text) ? text : [text],
-    };
   }
 
   private getMaxPerRow(): number {

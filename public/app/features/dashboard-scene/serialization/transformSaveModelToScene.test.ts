@@ -1,10 +1,14 @@
+import { LoadingState } from '@grafana/data';
 import { getPanelPlugin } from '@grafana/data/test/__mocks__/pluginMocks';
 import { config } from '@grafana/runtime';
 import {
+  AdHocFilterSet,
   behaviors,
   CustomVariable,
   DataSourceVariable,
   QueryVariable,
+  SceneDataLayerControls,
+  SceneDataLayers,
   SceneDataTransformer,
   SceneGridItem,
   SceneGridLayout,
@@ -12,7 +16,7 @@ import {
   SceneQueryRunner,
   VizPanel,
 } from '@grafana/scenes';
-import { DashboardCursorSync, defaultDashboard, LoadingState, Panel, RowPanel, VariableType } from '@grafana/schema';
+import { DashboardCursorSync, defaultDashboard, Panel, RowPanel, VariableType } from '@grafana/schema';
 import { DashboardModel, PanelModel } from 'app/features/dashboard/state';
 import { createPanelJSONFixture } from 'app/features/dashboard/state/__fixtures__/dashboardFixtures';
 import { SHARED_DASHBOARD_QUERY } from 'app/plugins/datasource/dashboard';
@@ -20,15 +24,19 @@ import { DASHBOARD_DATASOURCE_PLUGIN_ID } from 'app/plugins/datasource/dashboard
 
 import { PanelRepeaterGridItem } from '../scene/PanelRepeaterGridItem';
 import { PanelTimeRange } from '../scene/PanelTimeRange';
+import { RowRepeaterBehavior } from '../scene/RowRepeaterBehavior';
 import { ShareQueryDataProvider } from '../scene/ShareQueryDataProvider';
 
+import dashboard_to_load1 from './testfiles/dashboard_to_load1.json';
+import repeatingRowsAndPanelsDashboardJson from './testfiles/repeating_rows_and_panels.json';
 import {
   createDashboardSceneFromDashboardModel,
   buildGridItemForPanel,
   createSceneVariableFromVariableModel,
+  transformSaveModelToScene,
 } from './transformSaveModelToScene';
 
-describe('DashboardLoader', () => {
+describe('transformSaveModelToScene', () => {
   describe('when creating dashboard scene', () => {
     it('should initialize the DashboardScene with the model state', () => {
       const dash = {
@@ -36,6 +44,9 @@ describe('DashboardLoader', () => {
         title: 'test',
         uid: 'test-uid',
         time: { from: 'now-10h', to: 'now' },
+        weekStart: 'saturday',
+        fiscalYearStartMonth: 2,
+        timezone: 'America/New_York',
         templating: {
           list: [
             {
@@ -43,7 +54,6 @@ describe('DashboardLoader', () => {
               name: 'constant',
               skipUrlSync: false,
               type: 'constant' as VariableType,
-              rootStateKey: 'N4XLmH5Vz',
               query: 'test',
               id: 'constant',
               global: false,
@@ -52,6 +62,19 @@ describe('DashboardLoader', () => {
               error: null,
               description: '',
               datasource: null,
+            },
+            {
+              hide: 2,
+              name: 'CoolFilters',
+              type: 'adhoc' as VariableType,
+              datasource: { uid: 'gdev-prometheus', type: 'prometheus' },
+              id: 'adhoc',
+              global: false,
+              skipUrlSync: false,
+              index: 3,
+              state: LoadingState.Done,
+              error: null,
+              description: '',
             },
           ],
         },
@@ -63,8 +86,13 @@ describe('DashboardLoader', () => {
       expect(scene.state.title).toBe('test');
       expect(scene.state.uid).toBe('test-uid');
       expect(scene.state?.$timeRange?.state.value.raw).toEqual(dash.time);
+      expect(scene.state?.$timeRange?.state.fiscalYearStartMonth).toEqual(2);
+      expect(scene.state?.$timeRange?.state.timeZone).toEqual('America/New_York');
+      expect(scene.state?.$timeRange?.state.weekStart).toEqual('saturday');
       expect(scene.state?.$variables?.state.variables).toHaveLength(1);
       expect(scene.state.controls).toBeDefined();
+      expect(scene.state.controls![2]).toBeInstanceOf(AdHocFilterSet);
+      expect((scene.state.controls![2] as AdHocFilterSet).state.name).toBe('CoolFilters');
     });
 
     it('should apply cursor sync behavior', () => {
@@ -130,6 +158,7 @@ describe('DashboardLoader', () => {
       const rowWithPanel = createPanelJSONFixture({
         title: 'Row with panel',
         type: 'row',
+        id: 10,
         collapsed: false,
         gridPos: {
           h: 1,
@@ -182,6 +211,7 @@ describe('DashboardLoader', () => {
       expect(body.state.children[1]).toBeInstanceOf(SceneGridRow);
       const rowWithPanelsScene = body.state.children[1] as SceneGridRow;
       expect(rowWithPanelsScene.state.title).toBe(rowWithPanel.title);
+      expect(rowWithPanelsScene.state.key).toBe('panel-10');
       expect(rowWithPanelsScene.state.children).toHaveLength(1);
       // Panel within row
       expect(rowWithPanelsScene.state.children[0]).toBeInstanceOf(SceneGridItem);
@@ -410,6 +440,7 @@ describe('DashboardLoader', () => {
         hide: 0,
       });
     });
+
     it('should migrate query variable', () => {
       const variable = {
         allValue: null,
@@ -606,13 +637,56 @@ describe('DashboardLoader', () => {
       });
     });
 
-    it.each(['adhoc', 'interval', 'textbox', 'system'])('should throw for unsupported (yet) variables', (type) => {
+    it.each(['interval', 'textbox', 'system'])('should throw for unsupported (yet) variables', (type) => {
       const variable = {
         name: 'query0',
         type: type as VariableType,
       };
 
       expect(() => createSceneVariableFromVariableModel(variable)).toThrow();
+    });
+  });
+
+  describe('Repeating rows', () => {
+    it('Should build correct scene model', () => {
+      const scene = transformSaveModelToScene({ dashboard: repeatingRowsAndPanelsDashboardJson as any, meta: {} });
+      const body = scene.state.body as SceneGridLayout;
+      const row2 = body.state.children[1] as SceneGridRow;
+
+      expect(row2.state.$behaviors?.[0]).toBeInstanceOf(RowRepeaterBehavior);
+
+      const repeatBehavior = row2.state.$behaviors?.[0] as RowRepeaterBehavior;
+      expect(repeatBehavior.state.variableName).toBe('server');
+
+      const lastRow = body.state.children[body.state.children.length - 1] as SceneGridRow;
+      expect(lastRow.state.isCollapsed).toBe(true);
+    });
+  });
+
+  describe('Annotation queries', () => {
+    it('Should build correct scene model', () => {
+      const scene = transformSaveModelToScene({ dashboard: dashboard_to_load1 as any, meta: {} });
+
+      expect(scene.state.$data).toBeInstanceOf(SceneDataLayers);
+      expect(scene.state.controls![0]).toBeInstanceOf(SceneDataLayerControls);
+
+      const dataLayers = scene.state.$data as SceneDataLayers;
+      expect(dataLayers.state.layers).toHaveLength(4);
+      expect(dataLayers.state.layers[0].state.name).toBe('Annotations & Alerts');
+      expect(dataLayers.state.layers[0].state.isEnabled).toBe(true);
+      expect(dataLayers.state.layers[0].state.isHidden).toBe(false);
+
+      expect(dataLayers.state.layers[1].state.name).toBe('Enabled');
+      expect(dataLayers.state.layers[1].state.isEnabled).toBe(true);
+      expect(dataLayers.state.layers[1].state.isHidden).toBe(false);
+
+      expect(dataLayers.state.layers[2].state.name).toBe('Disabled');
+      expect(dataLayers.state.layers[2].state.isEnabled).toBe(false);
+      expect(dataLayers.state.layers[2].state.isHidden).toBe(false);
+
+      expect(dataLayers.state.layers[3].state.name).toBe('Hidden');
+      expect(dataLayers.state.layers[3].state.isEnabled).toBe(true);
+      expect(dataLayers.state.layers[3].state.isHidden).toBe(true);
     });
   });
 });

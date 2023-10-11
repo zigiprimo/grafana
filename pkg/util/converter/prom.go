@@ -8,9 +8,10 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
-	"github.com/grafana/grafana/pkg/util/converter/jsonitere"
 	jsoniter "github.com/json-iterator/go"
 	"k8s.io/utils/strings/slices"
+
+	"github.com/grafana/grafana/pkg/util/converter/jsonitere"
 )
 
 // helpful while debugging all the options that may appear
@@ -154,6 +155,9 @@ func readPrometheusData(iter *jsonitere.Iterator, opt Options) backend.DataRespo
 	}
 
 	resultType := ""
+	resultTypeFound := false
+	var resultBytes []byte
+
 	encodingFlags := make([]string, 0)
 
 l1Fields:
@@ -181,40 +185,22 @@ l1Fields:
 			if err != nil {
 				return rspErr(err)
 			}
+			resultTypeFound = true
+
+			// if we have saved resultBytes we will parse them here
+			// we saved them because when we had them we don't know the resultType
+			if len(resultBytes) > 0 {
+				ji := jsonitere.NewIterator(jsoniter.ParseBytes(jsoniter.ConfigDefault, resultBytes))
+				rsp = readResult(resultType, rsp, ji, opt, encodingFlags)
+			}
 		case "result":
-			switch resultType {
-			case "matrix", "vector":
-				rsp = readMatrixOrVectorMulti(iter, resultType, opt)
-				if rsp.Error != nil {
-					return rsp
-				}
-			case "streams":
-				if slices.Contains(encodingFlags, "categorize-labels") {
-					// read new style
-					rsp = readCategorizedStream(iter)
-				} else {
-					rsp = readStream(iter)
-				}
-				if rsp.Error != nil {
-					return rsp
-				}
-			case "string":
-				rsp = readString(iter)
-				if rsp.Error != nil {
-					return rsp
-				}
-			case "scalar":
-				rsp = readScalar(iter)
-				if rsp.Error != nil {
-					return rsp
-				}
-			default:
-				if err = iter.Skip(); err != nil {
-					return rspErr(err)
-				}
-				rsp = backend.DataResponse{
-					Error: fmt.Errorf("unknown result type: %s", resultType),
-				}
+			// for some rare cases resultType is coming after the result.
+			// when that happens we save the bytes and parse them after reading resultType
+			// see: https://github.com/grafana/grafana/issues/64693
+			if resultTypeFound {
+				rsp = readResult(resultType, rsp, iter, opt, encodingFlags)
+			} else {
+				resultBytes = iter.SkipAndReturnBytes()
 			}
 
 		case "stats":
@@ -237,6 +223,9 @@ l1Fields:
 			if err != nil {
 				return rspErr(err)
 			}
+			if !resultTypeFound {
+				return rspErr(fmt.Errorf("no resultType found"))
+			}
 			break l1Fields
 
 		default:
@@ -248,6 +237,44 @@ l1Fields:
 		}
 	}
 
+	return rsp
+}
+
+// will read the result object based on the resultType and return a DataResponse
+func readResult(resultType string, rsp backend.DataResponse, iter *jsonitere.Iterator, opt Options, encodingFlags []string) backend.DataResponse {
+	switch resultType {
+	case "matrix", "vector":
+		rsp = readMatrixOrVectorMulti(iter, resultType, opt)
+		if rsp.Error != nil {
+			return rsp
+		}
+		if slices.Contains(encodingFlags, "categorize-labels") {
+			// read new style
+			rsp = readCategorizedStream(iter)
+		} else {
+			rsp = readStream(iter)
+		}
+		if rsp.Error != nil {
+			return rsp
+		}
+	case "string":
+		rsp = readString(iter)
+		if rsp.Error != nil {
+			return rsp
+		}
+	case "scalar":
+		rsp = readScalar(iter)
+		if rsp.Error != nil {
+			return rsp
+		}
+	default:
+		if err := iter.Skip(); err != nil {
+			return rspErr(err)
+		}
+		rsp = backend.DataResponse{
+			Error: fmt.Errorf("unknown result type: %s", resultType),
+		}
+	}
 	return rsp
 }
 
@@ -381,6 +408,7 @@ l1Fields:
 			frame.Meta = &data.FrameMeta{
 				Custom: resultTypeToCustomMeta("exemplar"),
 			}
+			exCount := 0
 			for more, err := iter.ReadArray(); more; more, err = iter.ReadArray() {
 				if err != nil {
 					return nil, nil, err
@@ -411,7 +439,6 @@ l1Fields:
 						timeField.Append(ts)
 
 					case "labels":
-						max := 0
 						pairs, err := readLabelsAsPairs(iter)
 						if err != nil {
 							return nil, nil, err
@@ -421,20 +448,17 @@ l1Fields:
 							v := pair[1]
 							f, ok := lookup[k]
 							if !ok {
-								f = data.NewFieldFromFieldType(data.FieldTypeString, 0)
+								f = data.NewFieldFromFieldType(data.FieldTypeString, exCount)
 								f.Name = k
 								lookup[k] = f
 								frame.Fields = append(frame.Fields, f)
 							}
 							f.Append(v)
-							if f.Len() > max {
-								max = f.Len()
-							}
 						}
 
 						// Make sure all fields have equal length
 						for _, f := range lookup {
-							diff := max - f.Len()
+							diff := exCount + 1 - f.Len()
 							if diff > 0 {
 								f.Extend(diff)
 							}
@@ -451,6 +475,7 @@ l1Fields:
 						})
 					}
 				}
+				exCount++
 			}
 		case "":
 			if err != nil {
