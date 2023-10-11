@@ -9,7 +9,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
 	jsoniter "github.com/json-iterator/go"
-	"k8s.io/utils/strings/slices"
+	"golang.org/x/exp/slices"
 
 	"github.com/grafana/grafana/pkg/util/converter/jsonitere"
 )
@@ -248,6 +248,7 @@ func readResult(resultType string, rsp backend.DataResponse, iter *jsonitere.Ite
 		if rsp.Error != nil {
 			return rsp
 		}
+	case "streams":
 		if slices.Contains(encodingFlags, "categorize-labels") {
 			// read new style
 			rsp = readCategorizedStream(iter)
@@ -946,12 +947,6 @@ func readStream(iter *jsonitere.Iterator) backend.DataResponse {
 	return rsp
 }
 
-type categorizedLabels struct {
-	Stream             data.Labels `json:"stream"`
-	Parsed             data.Labels `json:"parsed"`
-	StructuredMetadata data.Labels `json:"structuredMetadata"`
-}
-
 func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 	rsp := backend.DataResponse{}
 
@@ -1126,16 +1121,6 @@ func timeFromLokiString(str string) (time.Time, error) {
 }
 
 func labelsToRawJson(labels data.Labels) (json.RawMessage, error) {
-	// data.Labels when converted to JSON keep the fields sorted
-	bytes, err := jsoniter.Marshal(labels)
-	if err != nil {
-		return nil, err
-	}
-
-	return json.RawMessage(bytes), nil
-}
-
-func categorizedLabelsToRawJson(labels categorizedLabels) (json.RawMessage, error) {
 	// data.Labels when converted to JSON keep the fields sorted
 	bytes, err := jsoniter.Marshal(labels)
 	if err != nil {
