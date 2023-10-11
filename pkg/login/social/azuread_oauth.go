@@ -58,6 +58,13 @@ type keySetJWKS struct {
 	jose.JSONWebKeySet
 }
 
+var _ OAuthConfigValidator = (*SocialAzureAD)(nil)
+
+func (s *SocialAzureAD) Validate() (bool, error) {
+	result, err := s.SocialBase.Validate()
+	return result, err
+}
+
 func (s *SocialAzureAD) UserInfo(ctx context.Context, client *http.Client, token *oauth2.Token) (*BasicUserInfo, error) {
 	idToken := token.Extra("id_token")
 	if idToken == nil {

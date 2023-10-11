@@ -78,7 +78,7 @@ func ProvideService(cfg *setting.Cfg,
 	features *featuremgmt.FeatureManager,
 	usageStats usagestats.Service,
 	bundleRegistry supportbundles.Service,
-	cache remotecache.CacheStorage,
+	cache remotecache.CacheStorage, settingsProvider setting.Provider,
 ) *SocialService {
 	ss := &SocialService{
 		cfg:           cfg,
@@ -90,40 +90,40 @@ func ProvideService(cfg *setting.Cfg,
 	usageStats.RegisterMetricsFunc(ss.getUsageStats)
 
 	for _, name := range allOauthes {
-		sec := cfg.Raw.Section("auth." + name)
+		sec := settingsProvider.Section("auth." + name)
 
 		info := &OAuthInfo{
-			ClientId:                sec.Key("client_id").String(),
-			ClientSecret:            sec.Key("client_secret").String(),
-			Scopes:                  util.SplitString(sec.Key("scopes").String()),
-			AuthUrl:                 sec.Key("auth_url").String(),
-			TokenUrl:                sec.Key("token_url").String(),
-			ApiUrl:                  sec.Key("api_url").String(),
-			TeamsUrl:                sec.Key("teams_url").String(),
-			Enabled:                 sec.Key("enabled").MustBool(),
-			EmailAttributeName:      sec.Key("email_attribute_name").String(),
-			EmailAttributePath:      sec.Key("email_attribute_path").String(),
-			RoleAttributePath:       sec.Key("role_attribute_path").String(),
-			RoleAttributeStrict:     sec.Key("role_attribute_strict").MustBool(),
-			GroupsAttributePath:     sec.Key("groups_attribute_path").String(),
-			TeamIdsAttributePath:    sec.Key("team_ids_attribute_path").String(),
-			AllowedDomains:          util.SplitString(sec.Key("allowed_domains").String()),
-			HostedDomain:            sec.Key("hosted_domain").String(),
-			AllowSignup:             sec.Key("allow_sign_up").MustBool(),
-			Name:                    sec.Key("name").MustString(name),
-			Icon:                    sec.Key("icon").String(),
-			TlsClientCert:           sec.Key("tls_client_cert").String(),
-			TlsClientKey:            sec.Key("tls_client_key").String(),
-			TlsClientCa:             sec.Key("tls_client_ca").String(),
-			TlsSkipVerify:           sec.Key("tls_skip_verify_insecure").MustBool(),
-			UsePKCE:                 sec.Key("use_pkce").MustBool(),
-			UseRefreshToken:         sec.Key("use_refresh_token").MustBool(false),
-			AllowAssignGrafanaAdmin: sec.Key("allow_assign_grafana_admin").MustBool(false),
-			AutoLogin:               sec.Key("auto_login").MustBool(false),
+			ClientId:                sec.KeyValue("client_id").Value(),
+			ClientSecret:            sec.KeyValue("client_secret").Value(),
+			Scopes:                  util.SplitString(sec.KeyValue("scopes").Value()),
+			AuthUrl:                 sec.KeyValue("auth_url").Value(),
+			TokenUrl:                sec.KeyValue("token_url").Value(),
+			ApiUrl:                  sec.KeyValue("api_url").Value(),
+			TeamsUrl:                sec.KeyValue("teams_url").Value(),
+			Enabled:                 sec.KeyValue("enabled").MustBool(false),
+			EmailAttributeName:      sec.KeyValue("email_attribute_name").Value(),
+			EmailAttributePath:      sec.KeyValue("email_attribute_path").Value(),
+			RoleAttributePath:       sec.KeyValue("role_attribute_path").Value(),
+			RoleAttributeStrict:     sec.KeyValue("role_attribute_strict").MustBool(false),
+			GroupsAttributePath:     sec.KeyValue("groups_attribute_path").Value(),
+			TeamIdsAttributePath:    sec.KeyValue("team_ids_attribute_path").Value(),
+			AllowedDomains:          util.SplitString(sec.KeyValue("allowed_domains").Value()),
+			HostedDomain:            sec.KeyValue("hosted_domain").Value(),
+			AllowSignup:             sec.KeyValue("allow_sign_up").MustBool(true),
+			Name:                    sec.KeyValue("name").MustString(name),
+			Icon:                    sec.KeyValue("icon").Value(),
+			TlsClientCert:           sec.KeyValue("tls_client_cert").Value(),
+			TlsClientKey:            sec.KeyValue("tls_client_key").Value(),
+			TlsClientCa:             sec.KeyValue("tls_client_ca").Value(),
+			TlsSkipVerify:           sec.KeyValue("tls_skip_verify_insecure").MustBool(false),
+			UsePKCE:                 sec.KeyValue("use_pkce").MustBool(true),
+			UseRefreshToken:         sec.KeyValue("use_refresh_token").MustBool(false),
+			AllowAssignGrafanaAdmin: sec.KeyValue("allow_assign_grafana_admin").MustBool(false),
+			AutoLogin:               sec.KeyValue("auto_login").MustBool(false),
 		}
 
 		// when empty_scopes parameter exists and is true, overwrite scope with empty value
-		if sec.Key("empty_scopes").MustBool() {
+		if sec.KeyValue("empty_scopes").MustBool(false) {
 			info.Scopes = []string{}
 		}
 
@@ -138,7 +138,7 @@ func ProvideService(cfg *setting.Cfg,
 		ss.oAuthProvider[name] = info
 
 		var authStyle oauth2.AuthStyle
-		switch strings.ToLower(sec.Key("auth_style").String()) {
+		switch strings.ToLower(sec.KeyValue("auth_style").Value()) {
 		case "inparams":
 			authStyle = oauth2.AuthStyleInParams
 		case "inheader":
@@ -146,7 +146,7 @@ func ProvideService(cfg *setting.Cfg,
 		case "autodetect", "":
 			authStyle = oauth2.AuthStyleAutoDetect
 		default:
-			ss.log.Warn("Invalid auth style specified, defaulting to auth style AutoDetect", "auth_style", sec.Key("auth_style").String())
+			ss.log.Warn("Invalid auth style specified, defaulting to auth style AutoDetect", "auth_style", sec.KeyValue("auth_style").Value())
 			authStyle = oauth2.AuthStyleAutoDetect
 		}
 
@@ -165,10 +165,11 @@ func ProvideService(cfg *setting.Cfg,
 		// GitHub.
 		if name == "github" {
 			ss.socialMap["github"] = &SocialGithub{
-				SocialBase:           newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
-				apiUrl:               info.ApiUrl,
-				teamIds:              sec.Key("team_ids").Ints(","),
-				allowedOrganizations: util.SplitString(sec.Key("allowed_organizations").String()),
+				SocialBase: newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
+				apiUrl:     info.ApiUrl,
+				// FIXME: implement Ints
+				//teamIds:              sec.KeyValue("team_ids").Value().Ints(","),
+				allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations").Value()),
 				skipOrgRoleSync:      cfg.GitHubSkipOrgRoleSync,
 			}
 		}
@@ -178,7 +179,7 @@ func ProvideService(cfg *setting.Cfg,
 			ss.socialMap["gitlab"] = &SocialGitlab{
 				SocialBase:      newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 				apiUrl:          info.ApiUrl,
-				allowedGroups:   util.SplitString(sec.Key("allowed_groups").String()),
+				allowedGroups:   util.SplitString(sec.KeyValue("allowed_groups").Value()),
 				skipOrgRoleSync: cfg.GitLabSkipOrgRoleSync,
 			}
 		}
@@ -201,9 +202,9 @@ func ProvideService(cfg *setting.Cfg,
 			ss.socialMap["azuread"] = &SocialAzureAD{
 				SocialBase:           newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 				cache:                cache,
-				allowedOrganizations: util.SplitString(sec.Key("allowed_organizations").String()),
-				allowedGroups:        util.SplitString(sec.Key("allowed_groups").String()),
-				forceUseGraphAPI:     sec.Key("force_use_graph_api").MustBool(false),
+				allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations").Value()),
+				allowedGroups:        util.SplitString(sec.KeyValue("allowed_groups").Value()),
+				forceUseGraphAPI:     sec.KeyValue("force_use_graph_api").MustBool(false),
 				skipOrgRoleSync:      cfg.AzureADSkipOrgRoleSync,
 			}
 			if info.UseRefreshToken && features.IsEnabled(featuremgmt.FlagAccessTokenExpirationCheck) {
@@ -216,7 +217,7 @@ func ProvideService(cfg *setting.Cfg,
 			ss.socialMap["okta"] = &SocialOkta{
 				SocialBase:      newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 				apiUrl:          info.ApiUrl,
-				allowedGroups:   util.SplitString(sec.Key("allowed_groups").String()),
+				allowedGroups:   util.SplitString(sec.KeyValue("allowed_groups").Value()),
 				skipOrgRoleSync: cfg.OktaSkipOrgRoleSync,
 			}
 			if info.UseRefreshToken && features.IsEnabled(featuremgmt.FlagAccessTokenExpirationCheck) {
@@ -232,14 +233,15 @@ func ProvideService(cfg *setting.Cfg,
 				teamsUrl:             info.TeamsUrl,
 				emailAttributeName:   info.EmailAttributeName,
 				emailAttributePath:   info.EmailAttributePath,
-				nameAttributePath:    sec.Key("name_attribute_path").String(),
+				nameAttributePath:    sec.KeyValue("name_attribute_path").Value(),
 				groupsAttributePath:  info.GroupsAttributePath,
-				loginAttributePath:   sec.Key("login_attribute_path").String(),
-				idTokenAttributeName: sec.Key("id_token_attribute_name").String(),
-				teamIdsAttributePath: sec.Key("team_ids_attribute_path").String(),
-				teamIds:              sec.Key("team_ids").Strings(","),
-				allowedOrganizations: util.SplitString(sec.Key("allowed_organizations").String()),
-				allowedGroups:        util.SplitString(sec.Key("allowed_groups").String()),
+				loginAttributePath:   sec.KeyValue("login_attribute_path").Value(),
+				idTokenAttributeName: sec.KeyValue("id_token_attribute_name").Value(),
+				teamIdsAttributePath: sec.KeyValue("team_ids_attribute_path").Value(),
+				// TEST this
+				teamIds:              util.SplitString(sec.KeyValue("team_ids").Value()),
+				allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations").Value()),
+				allowedGroups:        util.SplitString(sec.KeyValue("allowed_groups").Value()),
 				skipOrgRoleSync:      cfg.GenericOAuthSkipOrgRoleSync,
 			}
 		}
@@ -260,7 +262,7 @@ func ProvideService(cfg *setting.Cfg,
 			ss.socialMap[grafanaCom] = &SocialGrafanaCom{
 				SocialBase:           newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 				url:                  cfg.GrafanaComURL,
-				allowedOrganizations: util.SplitString(sec.Key("allowed_organizations").String()),
+				allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations").Value()),
 				skipOrgRoleSync:      cfg.GrafanaComSkipOrgRoleSync,
 			}
 		}
@@ -367,6 +369,10 @@ func newSocialBase(name string,
 
 type groupStruct struct {
 	Groups []string `json:"groups"`
+}
+
+func (s *SocialBase) Validate() (bool, error) {
+	return true, nil
 }
 
 func (s *SocialBase) SupportBundleContent(bf *bytes.Buffer) error {
