@@ -1027,36 +1027,9 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 						return rspErr(err)
 					}
 
-					plabels := data.Labels{}
-					clabels := data.Labels{}
-					var plabelsJson json.RawMessage
-					var clabelsJson json.RawMessage
-				streamField:
-					for streamField, err := iter.ReadObject(); ; streamField, err = iter.ReadObject() {
-						if err != nil {
-							return rspErr(err)
-						}
-						switch streamField {
-						case "parsed":
-							if err = iter.ReadVal(&plabels); err != nil {
-								return rspErr(err)
-							}
-						case "structuredMetadata":
-							if err = iter.ReadVal(&clabels); err != nil {
-								return rspErr(err)
-							}
-						case "":
-							if err != nil {
-								return rspErr(err)
-							}
-							if plabelsJson, err = labelsToRawJson(plabels); err != nil {
-								return rspErr(err)
-							}
-							if clabelsJson, err = labelsToRawJson(clabels); err != nil {
-								return rspErr(err)
-							}
-							break streamField
-						}
+					plabelsJson, clabelsJson, err := readCategorizedStreamField(iter)
+					if err != nil {
+						return rspErr(err)
 					}
 
 					if _, err = iter.ReadArray(); err != nil {
@@ -1089,6 +1062,41 @@ func readCategorizedStream(iter *jsonitere.Iterator) backend.DataResponse {
 	rsp.Frames = append(rsp.Frames, frame)
 
 	return rsp
+}
+
+func readCategorizedStreamField(iter *jsonitere.Iterator) (json.RawMessage, json.RawMessage, error) {
+	plabels := data.Labels{}
+	clabels := data.Labels{}
+	var plabelsJson json.RawMessage
+	var clabelsJson json.RawMessage
+streamField:
+	for streamField, err := iter.ReadObject(); ; streamField, err = iter.ReadObject() {
+		if err != nil {
+			return nil, nil, err
+		}
+		switch streamField {
+		case "parsed":
+			if err = iter.ReadVal(&plabels); err != nil {
+				return nil, nil, err
+			}
+		case "structuredMetadata":
+			if err = iter.ReadVal(&clabels); err != nil {
+				return nil, nil, err
+			}
+		case "":
+			if err != nil {
+				return nil, nil, err
+			}
+			if plabelsJson, err = labelsToRawJson(plabels); err != nil {
+				return nil, nil, err
+			}
+			if clabelsJson, err = labelsToRawJson(clabels); err != nil {
+				return nil, nil, err
+			}
+			break streamField
+		}
+	}
+	return plabelsJson, clabelsJson, nil
 }
 
 func resultTypeToCustomMeta(resultType string) map[string]string {
