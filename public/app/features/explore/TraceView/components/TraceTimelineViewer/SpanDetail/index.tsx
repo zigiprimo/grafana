@@ -217,7 +217,8 @@ export default function SpanDetail(props: SpanDetailProps) {
           {
             groupBy: [],
             labelSelector: '{}',
-            queryType: 'profile' as PyroscopeQueryType,
+            spanSelector: [spanID],
+            queryType: 'spanProfile' as PyroscopeQueryType,
             refId: 'flamegraph-in-span',
             datasource: {
               type: pyroDs.type,
@@ -239,7 +240,7 @@ export default function SpanDetail(props: SpanDetailProps) {
         })[0]
       );
     }
-  }, [request]);
+  }, [request, spanID]);
 
   if (span.kind) {
     overviewItems.push({
