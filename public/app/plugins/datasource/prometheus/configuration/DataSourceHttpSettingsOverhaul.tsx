@@ -130,7 +130,7 @@ export const DataSourcehttpSettingsOverhaul = (props: Props) => {
         {...newAuthProps}
         customMethods={customMethods}
         onAuthMethodSelect={(method) => {
-          // sigV4Id
+          // sigV4Id auth
           if (sigV4AuthToggleEnabled) {
             setSigV4Selected(method === sigV4Id);
           }
