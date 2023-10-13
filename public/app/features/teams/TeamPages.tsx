@@ -12,6 +12,7 @@ import { getNavModel } from 'app/core/selectors/navModel';
 import { contextSrv } from 'app/core/services/context_srv';
 import { AccessControlAction, StoreState } from 'app/types';
 
+import TeamDatasources from './TeamDatasources';
 import TeamGroupSync, { TeamSyncUpgradeContent } from './TeamGroupSync';
 import TeamPermissions from './TeamPermissions';
 import TeamSettings from './TeamSettings';
@@ -35,6 +36,7 @@ enum PageTypes {
   Members = 'members',
   Settings = 'settings',
   GroupSync = 'groupsync',
+  Datasources = 'datasources',
 }
 
 function mapStateToProps(state: StoreState, props: OwnProps) {
@@ -88,7 +90,7 @@ export class TeamPages extends PureComponent<Props, State> {
   }
 
   getCurrentPage() {
-    const pages = ['members', 'settings', 'groupsync'];
+    const pages = Object.values(PageTypes);
     const currentPage = this.props.pageName;
     return includes(pages, currentPage) ? currentPage : pages[0];
   }
@@ -140,6 +142,8 @@ export class TeamPages extends PureComponent<Props, State> {
             </>
           );
         }
+      case PageTypes.Datasources:
+        return canReadTeam && <TeamDatasources team={team!} />;
     }
 
     return null;

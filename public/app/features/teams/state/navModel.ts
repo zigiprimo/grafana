@@ -35,6 +35,13 @@ export function buildNavModel(team: Team): NavModelItem {
         text: 'Settings',
         url: `org/teams/edit/${team.id}/settings`,
       },
+      {
+        active: false,
+        icon: 'adjust-circle',
+        id: `team-datasources-${team.id}`,
+        text: 'Data sources',
+        url: `org/teams/edit/${team.id}/datasources`,
+      },
     ],
   };
 
