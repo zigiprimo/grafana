@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect, ConnectedProps } from 'react-redux';
 
-import { DataSourceInstanceSettings } from '@grafana/data/src/types/datasource';
+import { DataSourceSettings } from '@grafana/data/src/types/datasource';
 import { getBackendSrv } from '@grafana/runtime';
 import { Icon, Tooltip } from '@grafana/ui';
 import EmptyListCTA from 'app/core/components/EmptyListCTA/EmptyListCTA';
@@ -18,18 +18,14 @@ interface OwnProps {
 export type Props = ConnectedProps<typeof connector> & OwnProps;
 
 export const TeamDatasources = ({ team }: Props) => {
-  const datasources: DataSourceInstanceSettings[] = [
-    {
-      id: 1,
-      name: 'Prometheus',
-      type: 'prometheus',
-      uid: 'prometheus',
-      meta: { id: 'prometheus', name: 'Prometheus', uid: 'prometheus', info: { logos: { small: '', large: '' } } },
-      jsonData: {},
-      secureJsonFields: {},
-      version: 1,
-    },
-  ];
+  const [datasources, setDatasources] = React.useState<DataSourceSettings[]>([]);
+
+  React.useEffect(() => {
+    getDatasources(team).then((datasources) => {
+      setDatasources(datasources);
+    });
+  }, [team]);
+
   return (
     <>
       {datasources.length === 0 && (
@@ -64,16 +60,10 @@ export const TeamDatasources = ({ team }: Props) => {
   );
 };
 
-function renderDatasource(datasource: DataSourceInstanceSettings) {
+function renderDatasource(datasource: DataSourceSettings) {
   return (
     <tr key={datasource.id}>
-      <td style={{ width: '1%' }}>
-        <img
-          className="filter-table__avatar"
-          src={datasource.meta.info.logos.small}
-          alt={`${datasource.meta.name} Logo`}
-        />
-      </td>
+      <td style={{ width: '1%' }}></td>
       <td>{datasource.name}</td>
       <td style={{ width: '1%' }}>
         <a
@@ -89,6 +79,6 @@ function renderDatasource(datasource: DataSourceInstanceSettings) {
   );
 }
 
-const getDatasources = (team: Team): Promise<DataSourceInstanceSettings[]> => getBackendSrv().get(`/api/datasources`);
+const getDatasources = (team: Team): Promise<DataSourceSettings[]> => getBackendSrv().get(`/api/datasources`);
 
 export default connector(TeamDatasources);
