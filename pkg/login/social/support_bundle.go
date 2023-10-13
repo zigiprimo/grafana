@@ -13,14 +13,14 @@ import (
 )
 
 func (ss *SocialService) registerSupportBundleCollectors(bundleRegistry supportbundles.Service) {
-	for name := range ss.oAuthProvider {
+	for name := range ss.socialMap {
 		bundleRegistry.RegisterSupportItemCollector(supportbundles.Collector{
 			UID:               "oauth-" + name,
 			DisplayName:       "OAuth " + strings.Title(strings.ReplaceAll(name, "_", " ")),
 			Description:       "OAuth configuration and healthchecks for " + name,
 			IncludedByDefault: false,
 			Default:           false,
-			Fn:                ss.supportBundleCollectorFn(name, ss.socialMap[name], ss.oAuthProvider[name]),
+			Fn:                ss.supportBundleCollectorFn(name, ss.socialMap[name], ss.socialMap[name].GetOAuthInfo()),
 		})
 	}
 }

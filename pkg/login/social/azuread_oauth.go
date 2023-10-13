@@ -16,7 +16,10 @@ import (
 
 	"github.com/grafana/grafana/pkg/infra/remotecache"
 	"github.com/grafana/grafana/pkg/models/roletype"
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/org"
+	"github.com/grafana/grafana/pkg/setting"
+	"github.com/grafana/grafana/pkg/util"
 )
 
 type SocialAzureAD struct {
@@ -57,11 +60,63 @@ type keySetJWKS struct {
 	jose.JSONWebKeySet
 }
 
-var _ OAuthConfigValidator = (*SocialAzureAD)(nil)
+var _ setting.ReloadHandler = (*SocialAzureAD)(nil)
 
-func (s *SocialAzureAD) Validate() (bool, error) {
-	result, err := s.SocialBase.Validate()
-	return result, err
+func (s *SocialAzureAD) Reload(section setting.Section) error {
+	info := LoadOAuthInfo(section, "azuread")
+	config := CreateConfig(section, info, s.Cfg, info.Name)
+	s.SocialBase.Config = &config
+	s.SocialBase.Info = info
+	// s.SocialBase = newSocialBase(info.Name, &config, info, s.Cfg.AutoAssignOrgRole, s.Cfg.OAuthSkipOrgRoleUpdateSync, *s.Features)
+	return nil
+}
+
+func (s *SocialAzureAD) Validate(section setting.Section) error {
+	if err := s.SocialBase.Validate(section); err != nil {
+		return err
+	}
+
+	// if section.Enabled && section.IsSet("allowed_organizatdions") {
+	// 	s.allowedOrganizations = strings.Split(section["allowed_organizations"], ",")
+	// }
+
+	// if section.Enabled && section.IsSet("force_use_graph_api") {
+	// 	s.forceUseGraphAPI = section["force_use_graph_api"] == "true"
+	// }
+
+	// if section.Enabled && section.IsSet("skip_org_role_sync") {
+	// 	s.skipOrgRoleSync = section["skip_org_role_sync"] == "true"
+	// }
+
+	return nil
+}
+
+func NewAzureADProvider(settingsProvider setting.Provider, cfg *setting.Cfg, features *featuremgmt.FeatureManager, cache remotecache.CacheStorage) *SocialAzureAD {
+	sectionName := "auth.azuread"
+	section := settingsProvider.Section(sectionName)
+	info := LoadOAuthInfo(section, sectionName)
+	config := CreateConfig(section, info, cfg, info.Name)
+	provider := &SocialAzureAD{
+		SocialBase:           newSocialBase(info.Name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
+		cache:                cache,
+		allowedOrganizations: util.SplitString(section.KeyValue("allowed_organizations").Value()),
+		forceUseGraphAPI:     section.KeyValue("force_use_graph_api").MustBool(false),
+		skipOrgRoleSync:      cfg.AzureADSkipOrgRoleSync,
+	}
+	provider.Cfg = cfg
+	provider.Features = features
+
+	if info.UseRefreshToken && features.IsEnabled(featuremgmt.FlagAccessTokenExpirationCheck) {
+		appendUniqueScope(&config, OfflineAccessScope)
+	}
+
+	settingsProvider.RegisterReloadHandler(sectionName, provider)
+
+	return provider
+}
+
+func (s *SocialAzureAD) GetOAuthInfo() *OAuthInfo {
+	return s.Info
 }
 
 func (s *SocialAzureAD) UserInfo(ctx context.Context, client *http.Client, token *oauth2.Token) (*BasicUserInfo, error) {

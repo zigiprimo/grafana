@@ -586,6 +586,11 @@ func (hs *HTTPServer) registerRoutes() {
 
 	// admin api
 	r.Group("/api/admin", func(adminRoute routing.RouteRegister) {
+		adminRoute.Group("/auth-providers", func(authProviderRoute routing.RouteRegister) {
+			// scope := ac.Scope("settings", "id", ac.Parameter(":id"))
+			// authProviderRoute.Get("/", routing.Wrap(hs.GetAuthProviders))
+			authProviderRoute.Put("/:key", reqGrafanaAdmin, routing.Wrap(hs.UpdateAuthProvider))
+		})
 		// There is additional filter which will ensure that user sees only settings that they are allowed to see, so we don't need provide additional scope here for ActionSettingsRead.
 		adminRoute.Get("/settings", authorize(ac.EvalPermission(ac.ActionSettingsRead)), routing.Wrap(hs.AdminGetSettings))
 		adminRoute.Get("/settings-verbose", authorize(ac.EvalPermission(ac.ActionSettingsRead)), routing.Wrap(hs.AdminGetVerboseSettings))

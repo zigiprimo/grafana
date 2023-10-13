@@ -16,10 +16,6 @@ var (
 	errMissingGroupMembership = &Error{"user not a member of one of the required groups"}
 )
 
-type OAuthConfigValidator interface {
-	Validate() (bool, error)
-}
-
 type httpGetResponse struct {
 	Body    []byte
 	Headers http.Header
