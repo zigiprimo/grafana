@@ -58,21 +58,25 @@ var _ authn.RedirectClient = new(OAuth)
 func ProvideOAuth(
 	name string, cfg *setting.Cfg, oauthCfg *social.OAuthInfo,
 	connector social.SocialConnector, httpClient *http.Client,
+	socialService social.Service,
 ) *OAuth {
+	providerName := strings.TrimPrefix(name, "auth.client.")
 	return &OAuth{
-		name, fmt.Sprintf("oauth_%s", strings.TrimPrefix(name, "auth.client.")),
-		log.New(name), cfg, oauthCfg, connector, httpClient,
+		name, fmt.Sprintf("oauth_%s", providerName), providerName,
+		log.New(name), cfg, socialService,
 	}
 }
 
 type OAuth struct {
-	name       string
-	moduleName string
-	log        log.Logger
-	cfg        *setting.Cfg
-	oauthCfg   *social.OAuthInfo
-	connector  social.SocialConnector
-	httpClient *http.Client
+	name         string
+	moduleName   string
+	providerName string
+	log          log.Logger
+	cfg          *setting.Cfg
+	// oauthCfg       *social.OAuthInfo
+	// connector     social.SocialConnector
+	// httpClient    *http.Client
+	socialService social.Service
 }
 
 func (c *OAuth) Name() string {
@@ -91,8 +95,10 @@ func (c *OAuth) Authenticate(ctx context.Context, r *authn.Request) (*authn.Iden
 		return nil, errOAuthMissingState.Errorf("missing state value in state cookie")
 	}
 
+	oauthCfg := c.socialService.GetOAuthInfoProvider(c.providerName)
+
 	// get state returned by the idp and hash it
-	stateQuery := hashOAuthState(r.HTTPRequest.URL.Query().Get(oauthStateQueryName), c.cfg.SecretKey, c.oauthCfg.ClientSecret)
+	stateQuery := hashOAuthState(r.HTTPRequest.URL.Query().Get(oauthStateQueryName), c.cfg.SecretKey, oauthCfg.ClientSecret)
 	// compare the state returned by idp against the one we stored in cookie
 	if stateQuery != stateCookie.Value {
 		return nil, errOAuthInvalidState.Errorf("provided state did not match stored state")
@@ -100,7 +106,7 @@ func (c *OAuth) Authenticate(ctx context.Context, r *authn.Request) (*authn.Iden
 
 	var opts []oauth2.AuthCodeOption
 	// if pkce is enabled for client validate we have the cookie and set it as url param
-	if c.oauthCfg.UsePKCE {
+	if oauthCfg.UsePKCE {
 		pkceCookie, err := r.HTTPRequest.Cookie(oauthPKCECookieName)
 		if err != nil {
 			return nil, errOAuthMissingPKCE.Errorf("no pkce cookie found: %w", err)
@@ -108,15 +114,21 @@ func (c *OAuth) Authenticate(ctx context.Context, r *authn.Request) (*authn.Iden
 		opts = append(opts, oauth2.SetAuthURLParam(codeVerifierParamName, pkceCookie.Value))
 	}
 
-	clientCtx := context.WithValue(ctx, oauth2.HTTPClient, c.httpClient)
+	connector, errConnector := c.socialService.GetConnector(c.providerName)
+	httpClient, errHTTPClient := c.socialService.GetOAuthHttpClient(c.providerName)
+	if errConnector != nil || errHTTPClient != nil {
+		c.log.Error("Failed to configure oauth client", "client", c.name, "err", errors.Join(errConnector, errHTTPClient))
+		return nil, errConnector
+	}
+	clientCtx := context.WithValue(ctx, oauth2.HTTPClient, httpClient)
 	// exchange auth code to a valid token
-	token, err := c.connector.Exchange(clientCtx, r.HTTPRequest.URL.Query().Get("code"), opts...)
+	token, err := connector.Exchange(clientCtx, r.HTTPRequest.URL.Query().Get("code"), opts...)
 	if err != nil {
 		return nil, errOAuthTokenExchange.Errorf("failed to exchange code to token: %w", err)
 	}
 	token.TokenType = "Bearer"
 
-	userInfo, err := c.connector.UserInfo(ctx, c.connector.Client(clientCtx, token), token)
+	userInfo, err := connector.UserInfo(ctx, connector.Client(clientCtx, token), token)
 	if err != nil {
 		var sErr *social.Error
 		if errors.As(err, &sErr) {
@@ -129,7 +141,7 @@ func (c *OAuth) Authenticate(ctx context.Context, r *authn.Request) (*authn.Iden
 		return nil, errOAuthMissingRequiredEmail.Errorf("required attribute email was not provided")
 	}
 
-	if !c.connector.IsEmailAllowed(userInfo.Email) {
+	if !connector.IsEmailAllowed(userInfo.Email) {
 		return nil, errOAuthEmailNotAllowed.Errorf("provided email is not allowed")
 	}
 
@@ -160,7 +172,7 @@ func (c *OAuth) Authenticate(ctx context.Context, r *authn.Request) (*authn.Iden
 			SyncTeams:       true,
 			FetchSyncedUser: true,
 			SyncPermissions: true,
-			AllowSignUp:     c.connector.IsSignupAllowed(),
+			AllowSignUp:     connector.IsSignupAllowed(),
 			// skip org role flag is checked and handled in the connector. For now we can skip the hook if no roles are passed
 			SyncOrgRoles: len(orgRoles) > 0,
 			LookUpParams: lookupParams,
@@ -171,12 +183,14 @@ func (c *OAuth) Authenticate(ctx context.Context, r *authn.Request) (*authn.Iden
 func (c *OAuth) RedirectURL(ctx context.Context, r *authn.Request) (*authn.Redirect, error) {
 	var opts []oauth2.AuthCodeOption
 
-	if c.oauthCfg.HostedDomain != "" {
-		opts = append(opts, oauth2.SetAuthURLParam(hostedDomainParamName, c.oauthCfg.HostedDomain))
+	oauthCfg := c.socialService.GetOAuthInfoProvider(c.providerName)
+
+	if oauthCfg.HostedDomain != "" {
+		opts = append(opts, oauth2.SetAuthURLParam(hostedDomainParamName, oauthCfg.HostedDomain))
 	}
 
 	var plainPKCE string
-	if c.oauthCfg.UsePKCE {
+	if oauthCfg.UsePKCE {
 		pkce, hashedPKCE, err := genPKCECode()
 		if err != nil {
 			return nil, errOAuthGenPKCE.Errorf("failed to generate pkce: %w", err)
@@ -189,13 +203,15 @@ func (c *OAuth) RedirectURL(ctx context.Context, r *authn.Request) (*authn.Redir
 		)
 	}
 
-	state, hashedSate, err := genOAuthState(c.cfg.SecretKey, c.oauthCfg.ClientSecret)
+	state, hashedSate, err := genOAuthState(c.cfg.SecretKey, oauthCfg.ClientSecret)
 	if err != nil {
 		return nil, errOAuthGenState.Errorf("failed to generate state: %w", err)
 	}
 
+	connector, _ := c.socialService.GetConnector(c.providerName)
+
 	return &authn.Redirect{
-		URL: c.connector.AuthCodeURL(state, opts...),
+		URL: connector.AuthCodeURL(state, opts...),
 		Extra: map[string]string{
 			authn.KeyOAuthState: hashedSate,
 			authn.KeyOAuthPKCE:  plainPKCE,

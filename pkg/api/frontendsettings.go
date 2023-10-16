@@ -618,9 +618,11 @@ func (hs *HTTPServer) pluginSettings(ctx context.Context, orgID int64) (map[stri
 func (hs *HTTPServer) getEnabledOAuthProviders() map[string]any {
 	providers := make(map[string]any)
 	for key, oauth := range hs.SocialService.GetOAuthInfoProviders() {
-		providers[key] = map[string]string{
-			"name": oauth.Name,
-			"icon": oauth.Icon,
+		if oauth.Enabled {
+			providers[key] = map[string]string{
+				"name": oauth.Name,
+				"icon": oauth.Icon,
+			}
 		}
 	}
 	return providers

@@ -64,10 +64,9 @@ var _ setting.ReloadHandler = (*SocialAzureAD)(nil)
 
 func (s *SocialAzureAD) Reload(section setting.Section) error {
 	info := LoadOAuthInfo(section, "azuread")
-	config := CreateConfig(section, info, s.Cfg, info.Name)
+	config := CreateConfig(section, info, s.Cfg, "azuread")
 	s.SocialBase.Config = &config
 	s.SocialBase.Info = info
-	// s.SocialBase = newSocialBase(info.Name, &config, info, s.Cfg.AutoAssignOrgRole, s.Cfg.OAuthSkipOrgRoleUpdateSync, *s.Features)
 	return nil
 }
 
@@ -95,7 +94,7 @@ func NewAzureADProvider(settingsProvider setting.Provider, cfg *setting.Cfg, fea
 	sectionName := "auth.azuread"
 	section := settingsProvider.Section(sectionName)
 	info := LoadOAuthInfo(section, sectionName)
-	config := CreateConfig(section, info, cfg, info.Name)
+	config := CreateConfig(section, info, cfg, "azuread")
 	provider := &SocialAzureAD{
 		SocialBase:           newSocialBase(info.Name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 		cache:                cache,

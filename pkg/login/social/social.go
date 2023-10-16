@@ -540,10 +540,10 @@ func (ss *SocialService) GetOAuthInfoProvider(name string) *OAuthInfo {
 func (ss *SocialService) GetOAuthInfoProviders() map[string]*OAuthInfo {
 	result := map[string]*OAuthInfo{}
 	for name, connector := range ss.socialMap {
-		info := connector.GetOAuthInfo()
-		if info.Enabled {
-			result[name] = connector.GetOAuthInfo()
-		}
+		result[name] = connector.GetOAuthInfo()
+		// if info.Enabled {
+		//result[name] = connector.GetOAuthInfo()
+		// }
 	}
 	return result
 }

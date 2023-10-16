@@ -138,7 +138,7 @@ func ProvideService(
 
 	for name := range socialService.GetOAuthProviders() {
 		oauthCfg := socialService.GetOAuthInfoProvider(name)
-		if oauthCfg != nil && oauthCfg.Enabled {
+		if oauthCfg != nil /*&& oauthCfg.Enabled*/ {
 			clientName := authn.ClientWithPrefix(name)
 
 			connector, errConnector := socialService.GetConnector(name)
@@ -146,7 +146,7 @@ func ProvideService(
 			if errConnector != nil || errHTTPClient != nil {
 				s.log.Error("Failed to configure oauth client", "client", clientName, "err", errors.Join(errConnector, errHTTPClient))
 			} else {
-				s.RegisterClient(clients.ProvideOAuth(clientName, cfg, oauthCfg, connector, httpClient))
+				s.RegisterClient(clients.ProvideOAuth(clientName, cfg, oauthCfg, connector, httpClient, socialService))
 			}
 		}
 	}
