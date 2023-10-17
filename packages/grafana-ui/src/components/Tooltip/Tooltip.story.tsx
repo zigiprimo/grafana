@@ -57,7 +57,7 @@ const meta: Meta<typeof Tooltip> = {
 export const Basic: StoryFn<typeof Tooltip> = ({ content, ...args }) => {
   return (
     <Tooltip content={content} {...args}>
-      <Button>Hover me for Tooltip </Button>
+      <button>🚮</button>
     </Tooltip>
   );
 };
