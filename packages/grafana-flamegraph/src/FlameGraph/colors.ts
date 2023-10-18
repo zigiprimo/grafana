@@ -112,18 +112,18 @@ export function getBarColorByDiff(
 // the language from the backend and use the right regex but right now we just try all of them from most to least
 // specific.
 const matchers = [
-  ['phpspy', /^(?<packageName>([^\/]*\/)*)(?<filename>.*\.php+)(?<line_info>.*)$/],
+  // ['phpspy', /^(?<packageName>([^\/]*\/)*)(?<filename>.*\.php+)(?<line_info>.*)$/],
   ['pyspy', /^(?<packageName>([^\/]*\/)*)(?<filename>.*\.py+)(?<line_info>.*)$/],
   ['rbspy', /^(?<packageName>([^\/]*\/)*)(?<filename>.*\.rb+)(?<line_info>.*)$/],
+  ['dotnetspy', /^(?<packageName>[a-zA-Z0-9!._]+(?:\.[a-zA-Z0-9!._]+)*(?=\.[a-zA-Z0-9!._]+\())/],
+  ['pyroscope-rs', /^(?<packageName>[a-zA-Z0-9_]+)(?:::[a-zA-Z0-9_]+)*::/],
+  ['gospy', /^(?<packageName>.*?\/.*?\.|.*?\.|.+)(?<functionName>.*)$/], // also 'scrape'
+  ['javaspy', /^(?<packageName>.+\/)(?<filename>.+\.)(?<functionName>.+)$/],
+  ['tracing', /^(?<packageName>.+?):.*$/],
   [
     'nodespy',
     /^(\.\/node_modules\/)?(?<packageName>[^/]*)(?<filename>.*\.?(jsx?|tsx?)?):(?<functionName>.*):(?<line_info>.*)$/,
   ],
-  ['gospy', /^(?<packageName>.*?\/.*?\.|.*?\.|.+)(?<functionName>.*)$/], // also 'scrape'
-  ['javaspy', /^(?<packageName>.+\/)(?<filename>.+\.)(?<functionName>.+)$/],
-  ['dotnetspy', /^(?<packageName>.+)\.(.+)\.(.+)\(.*\)$/],
-  ['tracing', /^(?<packageName>.+?):.*$/],
-  ['pyroscope-rs', /^(?<packageName>[^::]+)/],
   ['ebpfspy', /^(?<packageName>.+)$/],
   ['unknown', /^(?<packageName>.+)$/],
 ];
@@ -132,11 +132,37 @@ const matchers = [
  * Get the package name from the symbol. Try matchers from the list and return first one that matches.
  */
 export function getPackageName(name: string): string | undefined {
-  for (const [_, matcher] of matchers) {
+  // Log the string that's being checked
+  console.log(`Checking string: ${name}`);
+
+  for (const [spy, matcher] of matchers) {
     const match = name.match(matcher);
     if (match) {
+      // Log the spy that got matched
+      console.log(`Matched spy: ${spy}`);
+      
       return match.groups?.packageName || '';
     }
   }
   return undefined;
 }
+
+
+/**
+ * Get the spy from the symbol. Try matchers from the list and return the first one that matches.
+ */
+export function getSpy(name: string): string | undefined {
+  // Log the string that's being checked
+  console.log(`Checking string: ${name}`);
+
+  for (const [spy, matcher] of matchers) {
+    const match = name.match(matcher);
+    if (match) {
+      // Log the spy that got matched
+      console.log(`Matched spy: ${spy}`);
+      return spy;
+    }
+  }
+  return undefined;
+}
+

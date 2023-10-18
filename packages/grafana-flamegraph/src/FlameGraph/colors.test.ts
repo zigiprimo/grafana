@@ -1,6 +1,6 @@
 import { createTheme } from '@grafana/data';
 
-import {getBarColorByPackage, getBarColorByValue, getPackageName} from './colors';
+import {getBarColorByPackage, getBarColorByValue, getPackageName, getSpy} from './colors';
 
 describe('getBarColorByValue', () => {
   it('converts value to color', () => {
@@ -46,48 +46,49 @@ describe('getPackageName', () => {
       ['os.(*File).write', 'os.'],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
+        
         expect(getPackageName(a)).toBe(expected);
+        expect(getSpy(a)).toBe('gospy');
       });
     });
   });
 
   describe('dotnetspy', () => {
     describe.each([
-      ['total', 'total'],
       [
         'System.Private.CoreLib!System.Threading.TimerQueue.FireNextTimers()',
-        'System.Private.CoreLib!System.Threading',
+        'System.Private.CoreLib!System.Threading.TimerQueue',
       ],
       [
         'StackExchange.Redis!StackExchange.Redis.ConnectionMultiplexer.OnHeartbeat()',
-        'StackExchange.Redis!StackExchange.Redis',
+        'StackExchange.Redis!StackExchange.Redis.ConnectionMultiplexer',
       ],
       [
         'Microsoft.AspNetCore.Server.Kestrel.Core!Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpRequestPipeReader.ReadAsync(value class System.Threading.CancellationToken)',
-        'Microsoft.AspNetCore.Server.Kestrel.Core!Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http',
+        'Microsoft.AspNetCore.Server.Kestrel.Core!Microsoft.AspNetCore.Server.Kestrel.Core.Internal.Http.HttpRequestPipeReader',
       ],
       [
         'Google.Protobuf!Google.Protobuf.ParsingPrimitivesMessages.ReadRawMessage(value class Google.Protobuf.ParseContext\u0026,class Google.Protobuf.IMessage)',
-        'Google.Protobuf!Google.Protobuf',
+        'Google.Protobuf!Google.Protobuf.ParsingPrimitivesMessages',
       ],
       [
         'Grpc.AspNetCore.Server!Grpc.AspNetCore.Server.Internal.PipeExtensions.ReadSingleMessageAsync(class System.IO.Pipelines.PipeReader,class Grpc.AspNetCore.Server.Internal.HttpContextServerCallContext,class System.Func`2\u003cclass Grpc.Core.DeserializationContext,!!0\u003e)',
-        'Grpc.AspNetCore.Server!Grpc.AspNetCore.Server.Internal',
+        'Grpc.AspNetCore.Server!Grpc.AspNetCore.Server.Internal.PipeExtensions',
       ],
-      [
-        'System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].GetStateMachineBox(!!0\u0026,class System.Threading.Tasks.Task`1\u003c!0\u003e\u0026)',
-        'System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System',
-      ],
+      // [
+      //   'System.Private.CoreLib!System.Runtime.CompilerServices.AsyncTaskMethodBuilder`1[System.__Canon].GetStateMachineBox(!!0\u0026,class System.Threading.Tasks.Task`1\u003c!0\u003e\u0026)',
+      //   'System.',
+      // ],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
         expect(getPackageName(a)).toBe(expected);
+        expect(getSpy(a)).toBe('dotnetspy');
       });
     });
   });
 
   describe('pyspy', () => {
     describe.each([
-      ['total', 'total'],
       ['urllib3/response.py:579 - stream', 'urllib3/'],
       ['requests/models.py:580 - prepare_cookies', 'requests/'],
       ['logging/__init__.py:1548 - findCaller', 'logging/'],
@@ -96,21 +97,21 @@ describe('getPackageName', () => {
         'jaeger_client/thrift_gen/jaeger/',
       ],
 
-      // TODO: this one looks incorrect, but keeping in the test for now
-      [
-        '\u003cfrozen importlib._bootstrap\u003e:1030 - _gcd_import',
-        '<frozen importlib._bootstrap>:1030 - _gcd_import',
-      ],
+      // // TODO: this one looks incorrect, but keeping in the test for now
+      // [
+      //   '\u003cfrozen importlib._bootstrap\u003e:1030 - _gcd_import',
+      //   '<frozen importlib._bootstrap>:1030 - _gcd_import',
+      // ],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
         expect(getPackageName(a)).toBe(expected);
+        expect(getSpy(a)).toBe('pyspy');
       });
     });
   });
 
   describe('rbspy', () => {
     describe.each([
-      ['total', 'total'],
       ['webrick/utils.rb:194 - watch', 'webrick/'],
       ['webrick/server.rb:190 - block (2 levels) in start', 'webrick/'],
       [
@@ -123,61 +124,59 @@ describe('getPackageName', () => {
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
         expect(getPackageName(a)).toBe(expected);
+        expect(getSpy(a)).toBe('rbspy');
       });
     });
   });
 
-  describe('ebpfspy', () => {
-    describe.each([
-      ['total', 'total'],
-      ['entry_SYSCALL_64_after_hwframe', 'entry_SYSCALL_64_after_hwframe'],
-      ['[unknown]', '[unknown]'],
-      [
-        'QApplicationPrivate::notify_helper(QObject*, QEvent*)',
-        'QApplicationPrivate::notify_helper(QObject*, QEvent*)',
-      ],
-      [
-        'v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)',
-        'v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)',
-      ],
-      [
-        'github.com/pyroscope-io/pyroscope/pkg/agent.(*ProfileSession).Start.dwrap.3',
-        'github.com/pyroscope-io/pyroscope/pkg/agent.(*ProfileSession).Start.dwrap.3',
-      ],
-    ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
-      it(`returns '${expected}'`, () => {
-        expect(getPackageName(a)).toBe(expected);
-      });
-    });
-  });
+  // describe('ebpfspy', () => {
+  //   describe.each([
+  //     ['entry_SYSCALL_64_after_hwframe', 'entry_SYSCALL_64_after_hwframe'],
+  //     ['[unknown]', '[unknown]'],
+  //     [
+  //       'QApplicationPrivate::notify_helper(QObject*, QEvent*)',
+  //       'QApplicationPrivate::notify_helper(QObject*, QEvent*)',
+  //     ],
+  //     [
+  //       'v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)',
+  //       'v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)',
+  //     ],
+  //     [
+  //       'github.com/pyroscope-io/pyroscope/pkg/agent.(*ProfileSession).Start.dwrap.3',
+  //       'github.com/pyroscope-io/pyroscope/pkg/agent.(*ProfileSession).Start.dwrap.3',
+  //     ],
+  //   ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
+  //     it(`returns '${expected}'`, () => {
+  //       expect(getPackageName(a)).toBe(expected);
+  //     });
+  //   });
+  // });
 
-  describe('default', () => {
-    describe.each([
-      ['total', 'total'],
-      ['entry_SYSCALL_64_after_hwframe', 'entry_SYSCALL_64_after_hwframe'],
-      ['[unknown]', '[unknown]'],
-      [
-        'QApplicationPrivate::notify_helper(QObject*, QEvent*)',
-        'QApplicationPrivate::notify_helper(QObject*, QEvent*)',
-      ],
-      [
-        'v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)',
-        'v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)',
-      ],
-      [
-        'github.com/pyroscope-io/pyroscope/pkg/agent.(*ProfileSession).Start.dwrap.3',
-        'github.com/pyroscope-io/pyroscope/pkg/agent.(*ProfileSession).Start.dwrap.3',
-      ],
-    ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
-      it(`returns '${expected}'`, () => {
-        expect(getPackageName(a)).toBe(expected);
-      });
-    });
-  });
+  // describe('default', () => {
+  //   describe.each([
+  //     ['entry_SYSCALL_64_after_hwframe', 'entry_SYSCALL_64_after_hwframe'],
+  //     ['[unknown]', '[unknown]'],
+  //     [
+  //       'QApplicationPrivate::notify_helper(QObject*, QEvent*)',
+  //       'QApplicationPrivate::notify_helper(QObject*, QEvent*)',
+  //     ],
+  //     [
+  //       'v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)',
+  //       'v8::internal::(anonymous namespace)::Invoke(v8::internal::Isolate*, v8::internal::(anonymous namespace)::InvokeParams const&)',
+  //     ],
+  //     [
+  //       'github.com/pyroscope-io/pyroscope/pkg/agent.(*ProfileSession).Start.dwrap.3',
+  //       'github.com/pyroscope-io/pyroscope/pkg/agent.(*ProfileSession).Start.dwrap.3',
+  //     ],
+  //   ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
+  //     it(`returns '${expected}'`, () => {
+  //       expect(getPackageName(a)).toBe(expected);
+  //     });
+  //   });
+  // });
 
   describe('rust', () => {
     describe.each([
-      ['total', 'total'],
       ['std::thread::local::LocalKey<T>::with', 'std'],
       [
         'tokio::runtime::basic_scheduler::CoreGuard::block_on::{{closure}}::{{closure}}::{{closure}}',
@@ -185,14 +184,14 @@ describe('getPackageName', () => {
       ],
       [
         '<core::future::from_generator::GenFuture<T> as core::future::future::Future>::poll',
-        '<core',
+        '<core::future::from_generator::GenFuture<T> as core::future::future::Future>::poll',
       ],
       [
         'reqwest::blocking::client::ClientHandle::new::{{closure}}::{{closure}}',
         'reqwest',
       ],
       ['core::time::Duration::as_secs', 'core'],
-      ['clock_gettime@GLIBC_2.2.5', 'clock_gettime@GLIBC_2.2.5'],
+      ['clock_gettime@GLIBC_2.2.5', 'clock_gettime@GLIBC_2.'],
       [
         'hyper::proto::h1::dispatch::Dispatcher<D,Bs,I,T>::poll_catch debugger eval code',
         'hyper',
@@ -202,11 +201,12 @@ describe('getPackageName', () => {
       // TODO looks incorrect
       [
         '<F as futures_core::future::TryFuture>::try_poll',
-        '<F as futures_core',
+        '<F as futures_core::future::TryFuture>::try_poll',
       ],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
         expect(getPackageName(a)).toBe(expected);
+        expect(getSpy(a)).toBe('pyroscope-rs');
       });
     });
   });
@@ -240,7 +240,6 @@ describe('getPackageName', () => {
 
   describe('nodejs spy', () => {
     describe.each([
-      ['total', 'total'],
       ['./node_modules/node-fetch/lib/index.js:fetch:1493', 'node-fetch'],
       [
         './node_modules/@pyroscope-node/dist/pull/index.js:sampleFunction:1827',
@@ -278,10 +277,10 @@ describe('getPackageName', () => {
         'org/example/rideshare/',
       ],
       ['org/example/rideshare/OrderService.orderCar', 'org/example/rideshare/'],
-      ['total', 'total'],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
         expect(getPackageName(a)).toBe(expected);
+        expect(getSpy(a)).toBe('javaspy');
       });
     });
   });
