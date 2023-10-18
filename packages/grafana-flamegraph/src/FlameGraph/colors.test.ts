@@ -46,9 +46,8 @@ describe('getPackageName', () => {
       ['os.(*File).write', 'os.'],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
-        
+        expect(getSpy(a)).toBe('gospy');        
         expect(getPackageName(a)).toBe(expected);
-        expect(getSpy(a)).toBe('gospy');
       });
     });
   });
@@ -81,8 +80,8 @@ describe('getPackageName', () => {
       // ],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
-        expect(getPackageName(a)).toBe(expected);
         expect(getSpy(a)).toBe('dotnetspy');
+        expect(getPackageName(a)).toBe(expected);
       });
     });
   });
@@ -104,8 +103,8 @@ describe('getPackageName', () => {
       // ],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
-        expect(getPackageName(a)).toBe(expected);
         expect(getSpy(a)).toBe('pyspy');
+        expect(getPackageName(a)).toBe(expected);
       });
     });
   });
@@ -123,8 +122,8 @@ describe('getPackageName', () => {
       ['net/protocol.rb:299 - block in write0', 'net/'],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
-        expect(getPackageName(a)).toBe(expected);
         expect(getSpy(a)).toBe('rbspy');
+        expect(getPackageName(a)).toBe(expected);
       });
     });
   });
@@ -205,8 +204,8 @@ describe('getPackageName', () => {
       ],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
-        expect(getPackageName(a)).toBe(expected);
         expect(getSpy(a)).toBe('pyroscope-rs');
+        expect(getPackageName(a)).toBe(expected);
       });
     });
   });
@@ -233,7 +232,9 @@ describe('getPackageName', () => {
       ['os.(*File).write', 'os.'],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
+        expect(getSpy(a)).toBe('gospy');
         expect(getPackageName(a)).toBe(expected);
+
       });
     });
   });
@@ -249,6 +250,7 @@ describe('getPackageName', () => {
       [':(idle):0', ''],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
+        expect(getSpy(a)).toBe('nodespy');
         expect(getPackageName(a)).toBe(expected);
       });
     });
@@ -279,8 +281,10 @@ describe('getPackageName', () => {
       ['org/example/rideshare/OrderService.orderCar', 'org/example/rideshare/'],
     ])(`.getPackageNameFromStackTrace('%s')`, (a, expected) => {
       it(`returns '${expected}'`, () => {
-        expect(getPackageName(a)).toBe(expected);
+        console.log('testing....')
+        console.log(`asdfasdf${getSpy(a)}`);
         expect(getSpy(a)).toBe('javaspy');
+        expect(getPackageName(a)).toBe(expected);
       });
     });
   });

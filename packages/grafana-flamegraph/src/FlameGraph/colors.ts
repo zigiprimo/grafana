@@ -118,7 +118,7 @@ const matchers = [
   ['dotnetspy', /^(?<packageName>[a-zA-Z0-9!._]+(?:\.[a-zA-Z0-9!._]+)*(?=\.[a-zA-Z0-9!._]+\())/],
   ['pyroscope-rs', /^(?<packageName>[a-zA-Z0-9_]+)(?:::[a-zA-Z0-9_]+)*::/],
   ['gospy', /^(?<packageName>.*?\/.*?\.|.*?\.|.+)(?<functionName>.*)$/], // also 'scrape'
-  ['javaspy', /^(?<packageName>.+\/)(?<filename>.+\.)(?<functionName>.+)$/],
+  ['javaspy', /^(?<packageName>.+\/)(?=[^\/]+\.[a-zA-Z]+)/],
   ['tracing', /^(?<packageName>.+?):.*$/],
   [
     'nodespy',
