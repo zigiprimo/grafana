@@ -18,6 +18,17 @@ weight: -37
 
 Welcome to Grafana Cloud! Read on to learn about the newest changes to Grafana Cloud.
 
+## CloudWatch data source: Allow multiple Metric Insight queries to be run in one panel
+
+<!-- Isabella Siu -->
+<!-- OSS, Enterprise -->
+
+_Available in public preview in Grafana Cloud_
+
+Previously, a panel could not be created with multiple CloudWatch Metric Insights queries, as CloudWatch does not allow multiple Metric Insights queries to be run as one batch. This feature enables CloudWatch Metrics queries to be run as separate batches, allowing multiple Metrics Insights queries in one panel. It will still return an error if the panel contains a Math Expression query that references multiple Metric Insight queries.
+
+To use this feature, enable the `cloudWatchBatchQueries` feature toggle. If you’re using Grafana Cloud and would like to enable this feature, please contact customer support.
+
 ## Export alert rules and notification resources to Terraform
 
 <!-- Yuri Tseretyan -->
