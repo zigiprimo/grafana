@@ -44,6 +44,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/anonymous/anonimpl/anonstore"
 	"github.com/grafana/grafana/pkg/services/apikey/apikeyimpl"
 	"github.com/grafana/grafana/pkg/services/auth"
+	"github.com/grafana/grafana/pkg/services/auth/authimpl"
 	"github.com/grafana/grafana/pkg/services/auth/idimpl"
 	"github.com/grafana/grafana/pkg/services/auth/jwt"
 	"github.com/grafana/grafana/pkg/services/authn/authnimpl"
@@ -255,6 +256,7 @@ var wireBasicSet = wire.NewSet(
 	opentsdb.ProvideService,
 	social.ProvideService,
 	influxdb.ProvideService,
+	authimpl.ProvideAuthSettings,
 	wire.Bind(new(social.Service), new(*social.SocialService)),
 	tempo.ProvideService,
 	loki.ProvideService,

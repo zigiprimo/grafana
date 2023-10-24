@@ -12,23 +12,37 @@ import (
 
 	jose "github.com/go-jose/go-jose/v3"
 	"github.com/go-jose/go-jose/v3/jwt"
+	"github.com/mitchellh/mapstructure"
 	"golang.org/x/oauth2"
 
 	"github.com/grafana/grafana/pkg/infra/remotecache"
 	"github.com/grafana/grafana/pkg/models/roletype"
+	"github.com/grafana/grafana/pkg/services/auth"
+	"github.com/grafana/grafana/pkg/services/auth/authimpl"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util"
 )
 
+type SocialAzureADConfig struct {
+	allowedOrganizations []string `mapstructure:"allowed_organizations"`
+	forceUseGraphAPI     bool     `mapstructure:"force_use_graph_api"`
+	skipOrgRoleSync      bool     `mapstructure:"skip_org_role_sync"`
+}
+
 type SocialAzureAD struct {
 	*SocialBase
-	cache                remotecache.CacheStorage
-	allowedOrganizations []string
-	forceUseGraphAPI     bool
-	skipOrgRoleSync      bool
+	SocialAzureADConfig
+	cache                   remotecache.CacheStorage
+	authSettingsProvider    auth.AuthSettingsService
+	settingFallbackStrategy auth.FallbackStrategy
+	// allowedOrganizations    []string
+	// forceUseGraphAPI        bool
+	// skipOrgRoleSync         bool
 }
+
+var _ SocialConnector = (*SocialAzureAD)(nil)
 
 type azureClaims struct {
 	Audience          string                 `json:"aud"`
@@ -60,19 +74,34 @@ type keySetJWKS struct {
 	jose.JSONWebKeySet
 }
 
-var _ setting.ReloadHandler = (*SocialAzureAD)(nil)
+var _ auth.Reloadable = (*SocialAzureAD)(nil)
+var _ auth.Validateable[*OAuthInfo] = (*SocialAzureAD)(nil)
 
-func (s *SocialAzureAD) Reload(section setting.Section) error {
-	info := LoadOAuthInfo(section, "azuread")
-	config := CreateConfig(section, info, s.Cfg, "azuread")
+func (s *SocialAzureAD) Reload() error {
+	rawSettings, _ := s.authSettingsProvider.GetAuthSettingsForProvider("azuread", s.settingFallbackStrategy)
+	info := LoadOAuthInfoWithDefaults(rawSettings, "azuread")
+	config := CreateConfig(rawSettings["auth_style"].(string), info, s.Cfg, "azuread")
 	s.SocialBase.Config = &config
 	s.SocialBase.Info = info
 	return nil
 }
 
-func (s *SocialAzureAD) Validate(section setting.Section) error {
-	if err := s.SocialBase.Validate(section); err != nil {
-		return err
+func (s *SocialAzureAD) Validate(info *OAuthInfo) error {
+	if info.ClientId == "" {
+		return fmt.Errorf("AzureAD OAuth: missing client id")
+	}
+
+	if info.ClientSecret == "" {
+		return fmt.Errorf("AzureAD OAuth: missing client secret")
+	}
+
+	var azureADConfig SocialAzureADConfig
+	if err := mapstructure.Decode(info.Extra, &azureADConfig); err != nil {
+		return fmt.Errorf("AzureAD OAuth: failed to decode extra config: %w", err)
+	}
+
+	if len(azureADConfig.allowedOrganizations) == 0 {
+		return fmt.Errorf("AzureAD OAuth: missing allowed organizations")
 	}
 
 	// if section.Enabled && section.IsSet("allowed_organizatdions") {
@@ -90,17 +119,22 @@ func (s *SocialAzureAD) Validate(section setting.Section) error {
 	return nil
 }
 
-func NewAzureADProvider(settingsProvider setting.Provider, cfg *setting.Cfg, features *featuremgmt.FeatureManager, cache remotecache.CacheStorage) *SocialAzureAD {
-	sectionName := "auth.azuread"
-	section := settingsProvider.Section(sectionName)
-	info := LoadOAuthInfo(section, sectionName)
-	config := CreateConfig(section, info, cfg, "azuread")
+func NewAzureADProvider(authSettingsProvider auth.AuthSettingsService, cfg *setting.Cfg, features *featuremgmt.FeatureManager, cache remotecache.CacheStorage) *SocialAzureAD {
+	fallbackStrategy := authimpl.NewOAuthStrategy("azuread", "Azure AD", cfg)
+	rawSettings, _ := authSettingsProvider.GetAuthSettingsForProvider("azuread", fallbackStrategy)
+
+	info := LoadOAuthInfoWithDefaults(rawSettings, "azuread")
+	config := CreateConfig(mustString(rawSettings["auth_style"]), info, cfg, "azuread")
 	provider := &SocialAzureAD{
 		SocialBase:           newSocialBase(info.Name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 		cache:                cache,
-		allowedOrganizations: util.SplitString(section.KeyValue("allowed_organizations").Value()),
-		forceUseGraphAPI:     section.KeyValue("force_use_graph_api").MustBool(false),
-		skipOrgRoleSync:      cfg.AzureADSkipOrgRoleSync,
+		authSettingsProvider: authSettingsProvider,
+		SocialAzureADConfig: SocialAzureADConfig{
+			allowedOrganizations: util.SplitString(mustString(rawSettings["allowed_organizations"])),
+			forceUseGraphAPI:     mustBool(rawSettings["force_use_graph_api"], false),
+			skipOrgRoleSync:      cfg.AzureADSkipOrgRoleSync,
+		},
+		settingFallbackStrategy: fallbackStrategy,
 	}
 	provider.Cfg = cfg
 	provider.Features = features
@@ -109,7 +143,8 @@ func NewAzureADProvider(settingsProvider setting.Provider, cfg *setting.Cfg, fea
 		appendUniqueScope(&config, OfflineAccessScope)
 	}
 
-	settingsProvider.RegisterReloadHandler(sectionName, provider)
+	// settingsProvider.RegisterReloadHandler(sectionName, provider)
+	authSettingsProvider.RegisterReloadable("azuread", provider)
 
 	return provider
 }
@@ -142,7 +177,7 @@ func (s *SocialAzureAD) UserInfo(ctx context.Context, client *http.Client, token
 	// setting the role, grafanaAdmin to empty to reflect that we are not syncronizing with the external provider
 	var role roletype.RoleType
 	var grafanaAdmin bool
-	if !s.skipOrgRoleSync {
+	if !s.SocialAzureADConfig.skipOrgRoleSync {
 		role, grafanaAdmin, err = s.extractRoleAndAdmin(claims)
 		if err != nil {
 			return nil, err
@@ -168,7 +203,7 @@ func (s *SocialAzureAD) UserInfo(ctx context.Context, client *http.Client, token
 		isGrafanaAdmin = &grafanaAdmin
 	}
 
-	if s.allowAssignGrafanaAdmin && s.skipOrgRoleSync {
+	if s.allowAssignGrafanaAdmin && s.SocialAzureADConfig.skipOrgRoleSync {
 		s.log.Debug("AllowAssignGrafanaAdmin and skipOrgRoleSync are both set, Grafana Admin role will not be synced, consider setting one or the other")
 	}
 

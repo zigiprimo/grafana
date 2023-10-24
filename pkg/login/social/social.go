@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -25,11 +26,13 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/remotecache"
 	"github.com/grafana/grafana/pkg/infra/usagestats"
+	"github.com/grafana/grafana/pkg/services/auth"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/supportbundles"
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/util"
+	"github.com/mitchellh/mapstructure"
 )
 
 const (
@@ -37,42 +40,44 @@ const (
 )
 
 type SocialService struct {
-	cfg *setting.Cfg
+	cfg             *setting.Cfg
+	authSettingsSvc auth.AuthSettingsService
 
 	socialMap map[string]SocialConnector
 	log       log.Logger
 }
 
 type OAuthInfo struct {
-	ApiUrl                  string   `toml:"api_url"`
-	AuthStyle               string   `toml:"auth_style"`
-	AuthUrl                 string   `toml:"auth_url"`
-	ClientId                string   `toml:"client_id"`
-	ClientSecret            string   `toml:"-"`
-	EmailAttributeName      string   `toml:"email_attribute_name"`
-	EmailAttributePath      string   `toml:"email_attribute_path"`
-	GroupsAttributePath     string   `toml:"groups_attribute_path"`
-	HostedDomain            string   `toml:"hosted_domain"`
-	Icon                    string   `toml:"icon"`
-	Name                    string   `toml:"name"`
-	RoleAttributePath       string   `toml:"role_attribute_path"`
-	TeamIdsAttributePath    string   `toml:"team_ids_attribute_path"`
-	TeamsUrl                string   `toml:"teams_url"`
-	TlsClientCa             string   `toml:"tls_client_ca"`
-	TlsClientCert           string   `toml:"tls_client_cert"`
-	TlsClientKey            string   `toml:"tls_client_key"`
-	TokenUrl                string   `toml:"token_url"`
-	AllowedDomains          []string `toml:"allowed_domains"`
-	AllowedGroups           []string `toml:"allowed_groups"`
-	Scopes                  []string `toml:"scopes"`
-	AllowAssignGrafanaAdmin bool     `toml:"allow_assign_grafana_admin"`
-	AllowSignup             bool     `toml:"allow_signup"`
-	AutoLogin               bool     `toml:"auto_login"`
-	Enabled                 bool     `toml:"enabled"`
-	RoleAttributeStrict     bool     `toml:"role_attribute_strict"`
-	TlsSkipVerify           bool     `toml:"tls_skip_verify"`
-	UsePKCE                 bool     `toml:"use_pkce"`
-	UseRefreshToken         bool     `toml:"use_refresh_token"`
+	ApiUrl                  string                 `toml:"api_url" json:"api_url" mapstructure:"api_url"`
+	AuthStyle               string                 `toml:"auth_style" json:"auth_style" mapstructure:"auth_style"`
+	AuthUrl                 string                 `toml:"auth_url" json:"auth_url" mapstructure:"auth_url"`
+	ClientId                string                 `toml:"client_id" json:"client_id" mapstructure:"client_id"`
+	ClientSecret            string                 `toml:"client_secret" json:"client_secret" mapstructure:"client_secret"`
+	EmailAttributeName      string                 `toml:"email_attribute_name" json:"email_attribute_name" mapstructure:"email_attribute_name"`
+	EmailAttributePath      string                 `toml:"email_attribute_path" json:"email_attribute_path" mapstructure:"email_attribute_path"`
+	GroupsAttributePath     string                 `toml:"groups_attribute_path" json:"groups_attribute_path" mapstructure:"groups_attribute_path"`
+	HostedDomain            string                 `toml:"hosted_domain" json:"hosted_domain" mapstructure:"hosted_domain"`
+	Icon                    string                 `toml:"icon" json:"icon" mapstructure:"icon"`
+	Name                    string                 `toml:"name" json:"name" mapstructure:"name"`
+	RoleAttributePath       string                 `toml:"role_attribute_path" json:"role_attribute_path" mapstructure:"role_attribute_path"`
+	TeamIdsAttributePath    string                 `toml:"team_ids_attribute_path" json:"team_ids_attribute_path" mapstructure:"team_ids_attribute_path"`
+	TeamsUrl                string                 `toml:"teams_url" json:"teams_url" mapstructure:"teams_url"`
+	TlsClientCa             string                 `toml:"tls_client_ca" json:"tls_client_ca" mapstructure:"tls_client_ca"`
+	TlsClientCert           string                 `toml:"tls_client_cert" json:"tls_client_cert" mapstructure:"tls_client_cert"`
+	TlsClientKey            string                 `toml:"tls_client_key" json:"tls_client_key" mapstructure:"tls_client_key"`
+	TokenUrl                string                 `toml:"token_url" json:"token_url" mapstructure:"token_url"`
+	AllowedDomains          []string               `toml:"allowed_domains" json:"allowed_domains" mapstructure:"allowed_domains"`
+	AllowedGroups           []string               `toml:"allowed_groups" json:"allowed_groups" mapstructure:"allowed_groups"`
+	Scopes                  []string               `toml:"scopes" json:"scopes" mapstructure:"scopes"`
+	AllowAssignGrafanaAdmin bool                   `toml:"allow_assign_grafana_admin" json:"allow_assign_grafana_admin" mapstructure:"allow_assign_grafana_admin"`
+	AllowSignup             bool                   `toml:"allow_signup" json:"allow_signup" mapstructure:"allow_signup"`
+	AutoLogin               bool                   `toml:"auto_login" json:"auto_login" mapstructure:"auto_login"`
+	Enabled                 bool                   `toml:"enabled" json:"enabled" mapstructure:"enabled"`
+	RoleAttributeStrict     bool                   `toml:"role_attribute_strict" json:"role_attribute_strict" mapstructure:"role_attribute_strict"`
+	TlsSkipVerify           bool                   `toml:"tls_skip_verify" json:"tls_skip_verify" mapstructure:"tls_skip_verify"`
+	UsePKCE                 bool                   `toml:"use_pkce" json:"use_pkce" mapstructure:"use_pkce"`
+	UseRefreshToken         bool                   `toml:"use_refresh_token" json:"use_refresh_token" mapstructure:"use_refresh_token"`
+	Extra                   map[string]interface{} `json:"extra" mapstructure:",remain"`
 }
 
 func ProvideService(cfg *setting.Cfg,
@@ -80,11 +85,13 @@ func ProvideService(cfg *setting.Cfg,
 	usageStats usagestats.Service,
 	bundleRegistry supportbundles.Service,
 	cache remotecache.CacheStorage, settingsProvider setting.Provider,
+	authSettingsProvider auth.AuthSettingsService,
 ) *SocialService {
 	ss := &SocialService{
-		cfg:       cfg,
-		socialMap: make(map[string]SocialConnector),
-		log:       log.New("login.social"),
+		cfg:             cfg,
+		socialMap:       make(map[string]SocialConnector),
+		log:             log.New("login.social"),
+		authSettingsSvc: authSettingsProvider,
 	}
 
 	usageStats.RegisterMetricsFunc(ss.getUsageStats)
@@ -114,8 +121,8 @@ func ProvideService(cfg *setting.Cfg,
 		// 		SocialBase: newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 		// 		apiUrl:     info.ApiUrl,
 		// 		// FIXME: implement Ints
-		// 		//teamIds:              sec.KeyValue("team_ids").Value().Ints(","),
-		// 		allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations").Value()),
+		// 		//teamIds:              sec.KeyValue("team_ids"].Ints(","),
+		// 		allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations"]),
 		// 		skipOrgRoleSync:      cfg.GitHubSkipOrgRoleSync,
 		// 	}
 		// }
@@ -142,9 +149,13 @@ func ProvideService(cfg *setting.Cfg,
 		// 	}
 		// }
 
+		// settings, err := authSettingsProvider.GetAuthSettingsForProvider("azuread")
+		// if err != nil {
+		// 	ss.log.Error("Failed to get auth settings for provider", "provider", "azuread", "error", err)
+		// }
 		// AzureAD.
 		if name == "azuread" {
-			ss.socialMap["azuread"] = NewAzureADProvider(settingsProvider, cfg, features, cache)
+			ss.socialMap["azuread"] = NewAzureADProvider(authSettingsProvider, cfg, features, cache)
 		}
 
 		// // Okta
@@ -152,7 +163,7 @@ func ProvideService(cfg *setting.Cfg,
 		// 	ss.socialMap["okta"] = &SocialOkta{
 		// 		SocialBase:      newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 		// 		apiUrl:          info.ApiUrl,
-		// 		allowedGroups:   util.SplitString(sec.KeyValue("allowed_groups").Value()),
+		// 		allowedGroups:   util.SplitString(sec.KeyValue("allowed_groups"]),
 		// 		skipOrgRoleSync: cfg.OktaSkipOrgRoleSync,
 		// 	}
 		// 	if info.UseRefreshToken && features.IsEnabled(featuremgmt.FlagAccessTokenExpirationCheck) {
@@ -168,15 +179,15 @@ func ProvideService(cfg *setting.Cfg,
 		// 		teamsUrl:             info.TeamsUrl,
 		// 		emailAttributeName:   info.EmailAttributeName,
 		// 		emailAttributePath:   info.EmailAttributePath,
-		// 		nameAttributePath:    sec.KeyValue("name_attribute_path").Value(),
+		// 		nameAttributePath:    sec.KeyValue("name_attribute_path"].(string),
 		// 		groupsAttributePath:  info.GroupsAttributePath,
-		// 		loginAttributePath:   sec.KeyValue("login_attribute_path").Value(),
-		// 		idTokenAttributeName: sec.KeyValue("id_token_attribute_name").Value(),
-		// 		teamIdsAttributePath: sec.KeyValue("team_ids_attribute_path").Value(),
+		// 		loginAttributePath:   sec.KeyValue("login_attribute_path"].(string),
+		// 		idTokenAttributeName: sec.KeyValue("id_token_attribute_name"].(string),
+		// 		teamIdsAttributePath: sec.KeyValue("team_ids_attribute_path"].(string),
 		// 		// TEST this
-		// 		teamIds:              util.SplitString(sec.KeyValue("team_ids").Value()),
-		// 		allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations").Value()),
-		// 		allowedGroups:        util.SplitString(sec.KeyValue("allowed_groups").Value()),
+		// 		teamIds:              util.SplitString(sec.KeyValue("team_ids"]),
+		// 		allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations"]),
+		// 		allowedGroups:        util.SplitString(sec.KeyValue("allowed_groups"]),
 		// 		skipOrgRoleSync:      cfg.GenericOAuthSkipOrgRoleSync,
 		// 	}
 		// }
@@ -197,7 +208,7 @@ func ProvideService(cfg *setting.Cfg,
 		// 	ss.socialMap[grafanaCom] = &SocialGrafanaCom{
 		// 		SocialBase:           newSocialBase(name, &config, info, cfg.AutoAssignOrgRole, cfg.OAuthSkipOrgRoleUpdateSync, *features),
 		// 		url:                  cfg.GrafanaComURL,
-		// 		allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations").Value()),
+		// 		allowedOrganizations: util.SplitString(sec.KeyValue("allowed_organizations"]),
 		// 		skipOrgRoleSync:      cfg.GrafanaComSkipOrgRoleSync,
 		// 	}
 		// }
@@ -225,8 +236,7 @@ func (b *BasicUserInfo) String() string {
 
 //go:generate mockery --name SocialConnector --structname MockSocialConnector --outpkg socialtest --filename social_connector_mock.go --output ../socialtest/
 type SocialConnector interface {
-	Reload(setting.Section) error
-	Validate(setting.Section) error
+	Validate(inputData *OAuthInfo) error
 	GetOAuthInfo() *OAuthInfo
 
 	UserInfo(ctx context.Context, client *http.Client, token *oauth2.Token) (*BasicUserInfo, error)
@@ -267,9 +277,9 @@ func (e Error) Error() string {
 	return e.s
 }
 
-func CreateConfig(sec setting.Section, info *OAuthInfo, cfg *setting.Cfg, name string) oauth2.Config {
+func CreateConfig(authStyleSetting string, info *OAuthInfo, cfg *setting.Cfg, name string) oauth2.Config {
 	var authStyle oauth2.AuthStyle
-	switch strings.ToLower(sec.KeyValue("auth_style").Value()) {
+	switch strings.ToLower(authStyleSetting) {
 	case "inparams":
 		authStyle = oauth2.AuthStyleInParams
 	case "inheader":
@@ -277,7 +287,7 @@ func CreateConfig(sec setting.Section, info *OAuthInfo, cfg *setting.Cfg, name s
 	case "autodetect", "":
 		authStyle = oauth2.AuthStyleAutoDetect
 	default:
-		// ss.log.Warn("Invalid auth style specified, defaulting to auth style AutoDetect", "auth_style", sec.KeyValue("auth_style").Value())
+		// ss.log.Warn("Invalid auth style specified, defaulting to auth style AutoDetect", "auth_style", sec.KeyValue("auth_style"])
 		authStyle = oauth2.AuthStyleAutoDetect
 	}
 
@@ -313,6 +323,8 @@ type Service interface {
 	GetConnector(string) (SocialConnector, error)
 	GetOAuthInfoProvider(string) *OAuthInfo
 	GetOAuthInfoProviders() map[string]*OAuthInfo
+
+	UpdateProvider(string, *OAuthInfo) error
 }
 
 func newSocialBase(name string,
@@ -343,14 +355,6 @@ func newSocialBase(name string,
 
 type groupStruct struct {
 	Groups []string `json:"groups"`
-}
-
-func (s *SocialBase) Validate(section setting.Section) error {
-	return nil
-}
-
-func (s *SocialBase) Reload(section setting.Section) error {
-	return nil
 }
 
 func (s *SocialBase) SupportBundleContent(bf *bytes.Buffer) error {
@@ -440,6 +444,15 @@ func getRoleFromSearch(role string) (org.RoleType, bool) {
 	}
 
 	return org.RoleType(cases.Title(language.Und).String(role)), false
+}
+
+func (ss *SocialService) UpdateProvider(provider string, data *OAuthInfo) error {
+	var kvs map[string]interface{}
+	err := mapstructure.Decode(data, &kvs)
+	if err != nil {
+		return err
+	}
+	return ss.authSettingsSvc.Update(provider, kvs)
 }
 
 // GetOAuthProviders returns available oauth providers and if they're enabled or not
@@ -646,41 +659,88 @@ func appendUniqueScope(config *oauth2.Config, scope string) {
 	}
 }
 
-func LoadOAuthInfo(section setting.Section, name string) *OAuthInfo {
+func LoadOAuthInfoWithDefaults(settings map[string]interface{}, name string) *OAuthInfo {
+	if settings["name"] == nil {
+		settings["name"] = name
+	}
+
 	info := &OAuthInfo{
-		ClientId:                section.KeyValue("client_id").Value(),
-		ClientSecret:            section.KeyValue("client_secret").Value(),
-		Scopes:                  util.SplitString(section.KeyValue("scopes").Value()),
-		AuthUrl:                 section.KeyValue("auth_url").Value(),
-		TokenUrl:                section.KeyValue("token_url").Value(),
-		ApiUrl:                  section.KeyValue("api_url").Value(),
-		TeamsUrl:                section.KeyValue("teams_url").Value(),
-		Enabled:                 section.KeyValue("enabled").MustBool(false),
-		EmailAttributeName:      section.KeyValue("email_attribute_name").Value(),
-		EmailAttributePath:      section.KeyValue("email_attribute_path").Value(),
-		RoleAttributePath:       section.KeyValue("role_attribute_path").Value(),
-		RoleAttributeStrict:     section.KeyValue("role_attribute_strict").MustBool(false),
-		GroupsAttributePath:     section.KeyValue("groups_attribute_path").Value(),
-		TeamIdsAttributePath:    section.KeyValue("team_ids_attribute_path").Value(),
-		AllowedDomains:          util.SplitString(section.KeyValue("allowed_domains").Value()),
-		HostedDomain:            section.KeyValue("hosted_domain").Value(),
-		AllowSignup:             section.KeyValue("allow_sign_up").MustBool(true),
-		Name:                    section.KeyValue("name").MustString(name),
-		Icon:                    section.KeyValue("icon").Value(),
-		TlsClientCert:           section.KeyValue("tls_client_cert").Value(),
-		TlsClientKey:            section.KeyValue("tls_client_key").Value(),
-		TlsClientCa:             section.KeyValue("tls_client_ca").Value(),
-		TlsSkipVerify:           section.KeyValue("tls_skip_verify_insecure").MustBool(false),
-		UsePKCE:                 section.KeyValue("use_pkce").MustBool(true),
-		UseRefreshToken:         section.KeyValue("use_refresh_token").MustBool(false),
-		AllowAssignGrafanaAdmin: section.KeyValue("allow_assign_grafana_admin").MustBool(false),
-		AutoLogin:               section.KeyValue("auto_login").MustBool(false),
-		AllowedGroups:           util.SplitString(section.KeyValue("allowed_groups").Value()),
+		ClientId:     mustString(settings["client_id"]),
+		ClientSecret: mustString(settings["client_secret"]),
+		// Scopes:                  util.SplitString(mustString(settings["scopes"])),
+		AuthUrl:                 mustString(settings["auth_url"]),
+		TokenUrl:                mustString(settings["token_url"]),
+		ApiUrl:                  mustString(settings["api_url"]),
+		TeamsUrl:                mustString(settings["teams_url"]),
+		Enabled:                 mustBool(settings["enabled"], false),
+		EmailAttributeName:      mustString(settings["email_attribute_name"]),
+		EmailAttributePath:      mustString(settings["email_attribute_path"]),
+		RoleAttributePath:       mustString(settings["role_attribute_path"]),
+		RoleAttributeStrict:     mustBool(settings["role_attribute_strict"], false),
+		GroupsAttributePath:     mustString(settings["groups_attribute_path"]),
+		TeamIdsAttributePath:    mustString(settings["team_ids_attribute_path"]),
+		AllowedDomains:          util.SplitString(mustString(settings["allowed_domains"])),
+		HostedDomain:            mustString(settings["hosted_domain"]),
+		AllowSignup:             mustBool(settings["allow_sign_up"], true),
+		Name:                    mustString(settings["name"]),
+		Icon:                    mustString(settings["icon"]),
+		TlsClientCert:           mustString(settings["tls_client_cert"]),
+		TlsClientKey:            mustString(settings["tls_client_key"]),
+		TlsClientCa:             mustString(settings["tls_client_ca"]),
+		TlsSkipVerify:           mustBool(settings["tls_skip_verify_insecure"], false),
+		UsePKCE:                 mustBool(settings["use_pkce"], true),
+		UseRefreshToken:         mustBool(settings["use_refresh_token"], false),
+		AllowAssignGrafanaAdmin: mustBool(settings["allow_assign_grafana_admin"], false),
+		AutoLogin:               mustBool(settings["auto_login"], false),
+		AllowedGroups:           util.SplitString(mustString(settings["allowed_groups"])),
+	}
+
+	switch settings["scopes"].(type) {
+	case []string:
+		info.Scopes = settings["scopes"].([]string)
+	case string:
+		info.Scopes = util.SplitString(mustString(settings["scopes"]))
 	}
 
 	// when empty_scopes parameter exists and is true, overwrite scope with empty value
-	if section.KeyValue("empty_scopes").MustBool(false) {
+	if mustBool(settings["empty_scopes"], false) {
 		info.Scopes = []string{}
 	}
+
 	return info
+}
+
+func mustBool(value interface{}, defaultValue bool) bool {
+	if value == nil {
+		return defaultValue
+	}
+
+	str, ok := value.(string)
+	if ok {
+		result, err := strconv.ParseBool(str)
+		if err != nil {
+			return defaultValue
+		}
+		return result
+	}
+
+	result, ok := value.(bool)
+	if !ok {
+		return defaultValue
+	}
+
+	return result
+}
+
+func mustString(value interface{}) string {
+	if value == nil {
+		return ""
+	}
+
+	result, ok := value.(string)
+	if !ok {
+		return ""
+	}
+
+	return result
 }
