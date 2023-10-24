@@ -26,6 +26,12 @@ const meta: Meta = {
   },
 };
 
+export const IframeTest = () => {
+  return (
+    <iframe title="title" width="600" height="600" src="http://localhost:3000/grafana" />
+  )
+}
+
 export const Basic: StoryFn<typeof Alert> = (args) => {
   return (
     <div>
