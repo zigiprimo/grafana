@@ -64,9 +64,11 @@ func (b *PlaylistAPIBuilder) GetAPIGroupInfo(
 	storage := map[string]rest.Storage{}
 
 	legacyStore := &legacyStorage{
-		service:        b.service,
-		namespacer:     b.namespacer,
-		tableConverter: rest.NewDefaultTableConvertor(b.gv.WithResource("playlists").GroupResource()),
+		service:    b.service,
+		namespacer: b.namespacer,
+		tableConverter: playlistTableConvertor{
+			defaultQualifiedResource: b.gv.WithResource("playlists").GroupResource(),
+		},
 	}
 	storage["playlists"] = legacyStore
 
