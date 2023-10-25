@@ -6304,7 +6304,7 @@
           "$ref": "#/definitions/Json"
         },
         "folderId": {
-          "description": "Deprecated: use FolderUID instead",
+          "description": "Deprecated: true",
           "type": "integer",
           "format": "int64"
         },

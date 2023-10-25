@@ -8991,7 +8991,7 @@
             "$ref": "#/components/schemas/Json"
           },
           "folderId": {
-            "description": "Deprecated: use FolderUID instead",
+            "description": "Deprecated: true",
             "format": "int64",
             "type": "integer"
           },
