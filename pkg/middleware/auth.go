@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"crypto/subtle"
 	"errors"
 	"net/http"
 	"net/url"
@@ -188,4 +189,32 @@ func shouldForceLogin(c *contextmodel.ReqContext) bool {
 	}
 
 	return forceLogin
+}
+
+// MetricsEndpointBasicAuth creates a middleware that requires basic authentication.
+func MetricsEndpointBasicAuth(cfg *setting.Cfg) web.Handler {
+	return func(c *contextmodel.ReqContext) {
+		if metricsEndpointBasicAuthEnabled(cfg) && !BasicAuthenticatedRequest(c.Req, cfg.MetricsEndpointBasicAuthUsername, cfg.MetricsEndpointBasicAuthPassword) {
+			c.Resp.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+	}
+}
+
+// BasicAuthenticatedRequest parses the provided HTTP request for basic authentication credentials
+// and returns true if the provided credentials match the expected username and password.
+// Returns false if the request is unauthenticated.
+// Uses constant-time comparison in order to mitigate timing attacks.
+// originally copied from api/http_server.go to avoid dependency cycle
+func BasicAuthenticatedRequest(req *http.Request, expectedUser, expectedPass string) bool {
+	user, pass, ok := req.BasicAuth()
+	if !ok || subtle.ConstantTimeCompare([]byte(user), []byte(expectedUser)) != 1 || subtle.ConstantTimeCompare([]byte(pass), []byte(expectedPass)) != 1 {
+		return false
+	}
+
+	return true
+}
+
+func metricsEndpointBasicAuthEnabled(cfg *setting.Cfg) bool {
+	return cfg.MetricsEndpointBasicAuthUsername != "" && cfg.MetricsEndpointBasicAuthPassword != ""
 }

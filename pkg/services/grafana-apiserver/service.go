@@ -28,7 +28,6 @@ import (
 
 	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/infra/appcontext"
-	"github.com/grafana/grafana/pkg/middleware"
 	"github.com/grafana/grafana/pkg/modules"
 	"github.com/grafana/grafana/pkg/registry"
 	contextmodel "github.com/grafana/grafana/pkg/services/contexthandler/model"
@@ -108,30 +107,9 @@ func ProvideService(
 	// This will be used when running as a dskit service
 	s.BasicService = services.NewBasicService(s.start, s.running, nil).WithName(modules.GrafanaAPIServer)
 
-	// TODO: this is very hacky
-	// We need to register the routes in ProvideService to make sure
-	// the routes are registered before the Grafana HTTP server starts.
-	proxyHandler := func(k8sRoute routing.RouteRegister) {
-		handler := func(c *contextmodel.ReqContext) {
-			if s.handler == nil {
-				c.Resp.WriteHeader(404)
-				_, _ = c.Resp.Write([]byte("Not found"))
-				return
-			}
-
-			if handle, ok := s.handler.(func(c *contextmodel.ReqContext)); ok {
-				handle(c)
-				return
-			}
-		}
-		k8sRoute.Any("/", middleware.ReqSignedIn, handler)
-		k8sRoute.Any("/*", middleware.ReqSignedIn, handler)
-	}
-
-	s.rr.Group("/apis", proxyHandler)
-	s.rr.Group("/apiserver-metrics", proxyHandler)
-	s.rr.Group("/openapi", proxyHandler)
-
+	// Make sure the routes are registered in ProvideService, before the Grafana
+	// HTTP server starts.
+	s.registerRoutes(cfg)
 	return s, nil
 }
 
