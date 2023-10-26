@@ -8,7 +8,7 @@ import { LogRowStyles } from './getLogRowStyles';
 interface Props {
   logText: string;
   row: LogRowModel;
-  showContextToggle?: (row?: LogRowModel) => boolean;
+  showContextToggle?: () => boolean;
   onOpenContext: (row: LogRowModel) => void;
   onPermalinkClick?: (row: LogRowModel) => Promise<void>;
   onPinLine?: (row: LogRowModel) => void;
@@ -33,7 +33,7 @@ export const LogRowMenuCell = React.memo(
     mouseIsOver,
     onBlur,
   }: Props) => {
-    const shouldShowContextToggle = showContextToggle ? showContextToggle(row) : false;
+    const shouldShowContextToggle = showContextToggle ? showContextToggle() : false;
     const onLogRowClick = useCallback((e: SyntheticEvent) => {
       e.stopPropagation();
     }, []);

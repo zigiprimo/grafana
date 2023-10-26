@@ -80,7 +80,7 @@ interface Props extends Themeable2 {
   logsVolumeData: DataQueryResponse | undefined;
   onSetLogsVolumeEnabled: (enabled: boolean) => void;
   loadLogsVolumeData: () => void;
-  showContextToggle?: (row?: LogRowModel) => boolean;
+  showContextToggle?: () => boolean;
   onChangeTime: (range: AbsoluteTimeRange) => void;
   onClickFilterLabel?: (key: string, value: string, refId?: string) => void;
   onClickFilterOutLabel?: (key: string, value: string, refId?: string) => void;
