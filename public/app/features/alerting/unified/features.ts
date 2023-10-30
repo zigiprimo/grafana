@@ -15,10 +15,6 @@ const FEATURES: FeatureDescription[] = [
     defaultValue: config.featureToggles.alertingNotificationsPoliciesMatchingInstances,
   },
   {
-    name: AlertingFeature.ContactPointsV2,
-    defaultValue: false,
-  },
-  {
     name: AlertingFeature.DetailsViewV2,
     defaultValue: false,
   },
