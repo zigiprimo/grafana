@@ -22,20 +22,22 @@ import {
   useStyles2,
 } from '@grafana/ui';
 import { AlertRuleSource, RulerDataSourceConfig } from 'app/types/unified-alerting';
-import { PromApplication } from 'app/types/unified-alerting-dto';
+import { PromApplication, RulerRuleGroupDTO } from 'app/types/unified-alerting-dto';
 
 import { alertRuleApi } from '../../api/alertRuleApi';
 import { fetchRulerRules } from '../../api/ruler';
 import { usePagination } from '../../hooks/usePagination';
 import { fetchRulesSourceBuildInfo } from '../../state/actions';
+import { RULE_LIST_POLL_INTERVAL_MS } from '../../utils/constants';
 import { getAllRulesSourceNames } from '../../utils/datasource';
+import { makeFolderLink } from '../../utils/misc';
 import { isAlertingRulerRule, isGrafanaRulerRule, isRecordingRulerRule } from '../../utils/rules';
 import { MetaText } from '../MetaText';
+import MoreButton from '../MoreButton';
 import { Spacer } from '../Spacer';
 import { Strong } from '../Strong';
 
 const GROUPS_PAGE_SIZE = 30;
-const REFETCH_INTERVAL = 20 * 1000;
 
 const RuleList = () => {
   const styles = useStyles2(getStyles);
@@ -46,7 +48,7 @@ const RuleList = () => {
   // 3. fetch all rules for each discovered DS
 
   const { data, isLoading, fetch } = useFetchAllNamespacesAndGroups();
-  useInterval(fetch, REFETCH_INTERVAL);
+  useInterval(fetch, RULE_LIST_POLL_INTERVAL_MS);
 
   useEffect(() => fetch(), [fetch]);
 
@@ -72,15 +74,25 @@ const RuleList = () => {
       <div ref={measureRef}>{isLoading && <LoadingBar width={width} />}</div>
       <ul className={styles.rulesTree} role="tree">
         {Object.entries(paginatedNamespaces).map(([namespace, groups]) => {
-          const rulesSource = groups[0].rulesSource; // each group in the namespace is from the same source
+          // each group in the namespace is from the same source
+          const rulesSource = groups[0].rulesSource;
+
           const prometheusFlavour = rulesSource.buildInfo.application;
 
+          // each rule in the groups is from the same namespace
+          const folderUid = isGrafanaRulerRule(groups[0].group.rules[0])
+            ? groups[0].group.rules[0]?.grafana_alert.namespace_uid
+            : undefined;
+
+          const href = folderUid ? makeFolderLink(folderUid) : undefined;
+
           return (
-            <Namespace key={namespace + rulesSource.id} name={namespace} application={prometheusFlavour}>
+            <Namespace key={namespace + rulesSource.id} name={namespace} application={prometheusFlavour} href={href}>
               {groups.map(({ group, namespace, rulesSource }) => (
                 <EvaluationGroupLoader
-                  key={namespace + group + rulesSource.id}
-                  name={group}
+                  key={namespace + group.name + rulesSource.id}
+                  name={group.name}
+                  interval={group.interval}
                   namespace={namespace}
                   rulerConfig={rulesSource.rulerConfig}
                 />
@@ -137,7 +149,7 @@ const RuleList = () => {
 
 interface RulesSourceNamespace {
   name: string;
-  groups: string[];
+  groups: RulerRuleGroupDTO[];
   rulesSource: AlertRuleSource;
 }
 
@@ -169,7 +181,7 @@ function useFetchAllNamespacesAndGroups() {
       const namespacesFromSource = Object.entries(namespacesAndGroups).map(([name, groups]) => {
         return {
           name,
-          groups: groups.map((group) => group.name).sort(sortCaseInsensitive),
+          groups: groups.sort((a, b) => sortCaseInsensitive(a.name, b.name)),
           rulesSource: buildInfo,
         };
       });
@@ -269,13 +281,14 @@ const EvaluationGroupLoader = ({
                   key={index}
                   state="normal"
                   name={rule.alert}
+                  href={'/'}
                   summary={rule.annotations?.['summary']}
                 />
               );
             }
 
             if (isRecordingRulerRule(rule)) {
-              return <RecordingRuleListItem key={index} name={rule.record} />;
+              return <RecordingRuleListItem key={index} name={rule.record} href={'/'} />;
             }
 
             if (isGrafanaRulerRule(rule)) {
@@ -283,6 +296,7 @@ const EvaluationGroupLoader = ({
                 <AlertRuleListItem
                   key={index}
                   name={rule.grafana_alert.title}
+                  href={'/'}
                   summary={rule.annotations?.['summary']}
                   isProvisioned={Boolean(rule.grafana_alert.provenance)}
                 />
@@ -423,18 +437,7 @@ const EvaluationGroupHeader = (props: EvaluationGroupProps) => {
             </Menu>
           }
         >
-          <Button
-            variant="secondary"
-            size="sm"
-            type="button"
-            aria-label="more-group-actions"
-            data-testid="more-group-actions"
-          >
-            <Stack alignItems="baseline" gap={0}>
-              More
-              <Icon name="angle-down" />
-            </Stack>
-          </Button>
+          <MoreButton />
         </Dropdown>
       </Stack>
     </div>
@@ -443,11 +446,12 @@ const EvaluationGroupHeader = (props: EvaluationGroupProps) => {
 
 interface RecordingRuleListItemProps {
   name: string;
+  href: string;
   error?: string;
   isProvisioned?: boolean;
 }
 
-const RecordingRuleListItem = ({ name, error, isProvisioned }: RecordingRuleListItemProps) => {
+const RecordingRuleListItem = ({ name, error, isProvisioned, href }: RecordingRuleListItemProps) => {
   const styles = useStyles2(getStyles);
 
   return (
@@ -459,7 +463,7 @@ const RecordingRuleListItem = ({ name, error, isProvisioned }: RecordingRuleList
             <div>
               <Stack direction="column" gap={0}>
                 <Stack direction="row" alignItems="center" gap={1}>
-                  <Link href="/alerting/grafana/-amptgZVk/view">
+                  <Link href={href}>
                     <Text truncate variant="body" color="link" weight="bold">
                       {name}
                     </Text>
@@ -530,6 +534,7 @@ const RecordingRuleListItem = ({ name, error, isProvisioned }: RecordingRuleList
 
 interface AlertRuleListItemProps {
   name: string;
+  href: string;
   summary?: string;
   error?: string;
   state?: 'normal' | 'pending' | 'firing';
@@ -537,7 +542,7 @@ interface AlertRuleListItemProps {
 }
 
 const AlertRuleListItem = (props: AlertRuleListItemProps) => {
-  const { name, summary, state, error, isProvisioned } = props;
+  const { name, summary, state, error, href, isProvisioned } = props;
   const styles = useStyles2(getStyles);
 
   const icons: Record<'normal' | 'pending' | 'firing', IconName> = {
@@ -563,7 +568,7 @@ const AlertRuleListItem = (props: AlertRuleListItemProps) => {
             <div>
               <Stack direction="column" gap={0}>
                 <Stack direction="row" alignItems="center" gap={1}>
-                  <Link href="/alerting/grafana/-amptgZVk/view">
+                  <Link href={href}>
                     <Text truncate variant="body" color="link" weight="bold">
                       {name}
                     </Text>
@@ -659,18 +664,18 @@ const AlertRuleListItem = (props: AlertRuleListItemProps) => {
 
 interface NamespaceProps extends PropsWithChildren {
   name: string;
+  href?: string;
   application?: PromApplication | 'Grafana';
 }
 
 // TODO hook up buttons
-const Namespace = ({ children, name, application }: NamespaceProps) => {
+const Namespace = ({ children, name, href, application }: NamespaceProps) => {
   const styles = useStyles2(getStyles);
-  const [isOpen] = useToggle(true);
 
   const genericApplicationIcon = !application || application === 'Grafana';
 
   return (
-    <li className={styles.namespaceWrapper} role="treeitem" aria-expanded={isOpen} aria-selected="false">
+    <li className={styles.namespaceWrapper} role="treeitem" aria-selected="false">
       <div className={styles.namespaceTitle}>
         <Stack alignItems={'center'}>
           <Stack alignItems={'center'} gap={1}>
@@ -690,12 +695,16 @@ const Namespace = ({ children, name, application }: NamespaceProps) => {
                 alt="Mimir"
               />
             )}
-            {genericApplicationIcon && <Icon name={isOpen ? 'folder-open' : 'folder'} />}
-            <Link href="/dashboards/f/lG5pfeRVk/demonstrations">
-              <Text truncate color="link">
-                {name}
-              </Text>
-            </Link>
+            {genericApplicationIcon && <Icon name="folder" />}
+            {href ? (
+              <Link href={href}>
+                <Text truncate color="link">
+                  {name}
+                </Text>
+              </Link>
+            ) : (
+              name
+            )}
           </Stack>
           <Spacer />
           <Button variant="secondary" size="sm" icon="unlock" type="button" aria-label="edit permissions">
@@ -703,7 +712,7 @@ const Namespace = ({ children, name, application }: NamespaceProps) => {
           </Button>
         </Stack>
       </div>
-      {children && isOpen && (
+      {children && (
         <ul role="group" className={styles.groupItemsWrapper}>
           {children}
         </ul>
