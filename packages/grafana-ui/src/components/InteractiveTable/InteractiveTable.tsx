@@ -1,6 +1,6 @@
 import { css, cx } from '@emotion/css';
 import { uniqueId } from 'lodash';
-import React, { Fragment, ReactNode, useCallback, useEffect, useMemo } from 'react';
+import React, { Fragment, ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   HeaderGroup,
   PluginHook,
@@ -121,7 +121,8 @@ export function InteractiveTable<TableData extends object>({
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow } = tableInstance;
 
   const { sortBy } = tableInstance.state;
-  const prevSort = React.useRef(sortBy);
+  // Save the previous sort value to prevent fetching data when the sort hasn't changed
+  const prevSort = useRef(sortBy);
 
   useEffect(() => {
     if (fetchData && sortBy !== prevSort.current) {
