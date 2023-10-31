@@ -23,96 +23,6 @@ import { PopoverContent, Tooltip } from '../Tooltip';
 import { Column } from './types';
 import { EXPANDER_CELL_ID, getColumns } from './utils';
 
-const getStyles = (theme: GrafanaTheme2) => {
-  const rowHoverBg = theme.colors.emphasize(theme.colors.background.primary, 0.03);
-
-  return {
-    container: css({
-      display: 'flex',
-      gap: theme.spacing(2),
-      flexDirection: 'column',
-      width: '100%',
-      overflowX: 'auto',
-    }),
-    table: css({
-      borderRadius: theme.shape.radius.default,
-      width: '100%',
-
-      td: {
-        padding: theme.spacing(1),
-      },
-
-      'td, th': {
-        minWidth: theme.spacing(3),
-      },
-    }),
-    disableGrow: css({
-      width: 0,
-    }),
-    header: css({
-      borderBottom: `1px solid ${theme.colors.border.weak}`,
-      '&, & > button': {
-        position: 'relative',
-        whiteSpace: 'nowrap',
-        padding: theme.spacing(1),
-      },
-      '& > button': {
-        '&:after': {
-          content: '"\\00a0"',
-        },
-        width: '100%',
-        height: '100%',
-        background: 'none',
-        border: 'none',
-        paddingRight: theme.spacing(2.5),
-        textAlign: 'left',
-        fontWeight: theme.typography.fontWeightMedium,
-      },
-    }),
-    row: css({
-      label: 'row',
-      borderBottom: `1px solid ${theme.colors.border.weak}`,
-
-      '&:hover': {
-        backgroundColor: rowHoverBg,
-      },
-
-      '&:last-child': {
-        borderBottom: 0,
-      },
-    }),
-    expandedRow: css({
-      label: 'expanded-row-content',
-      borderBottom: 'none',
-    }),
-    expandedContentRow: css({
-      label: 'expanded-row-content',
-
-      td: {
-        borderBottom: `1px solid ${theme.colors.border.weak}`,
-        position: 'relative',
-        padding: theme.spacing(2, 2, 2, 5),
-
-        '&:before': {
-          content: '""',
-          position: 'absolute',
-          width: '1px',
-          top: 0,
-          left: '16px',
-          bottom: theme.spacing(2),
-          background: theme.colors.border.medium,
-        },
-      },
-    }),
-    sortableHeader: css({
-      /* increases selector's specificity so that it always takes precedence over default styles  */
-      '&&': {
-        padding: 0,
-      },
-    }),
-  };
-};
-
 export type InteractiveTableHeaderTooltip = {
   content: PopoverContent;
   iconName?: IconName;
@@ -131,9 +41,9 @@ interface Props<TableData extends object> {
    */
   data: TableData[];
   /**
-   * Must return a unique id for each row
+   * This optional function is used to derive a unique ID for any given row. If not provided the rows index is used.
    */
-  getRowId: TableOptions<TableData>['getRowId'];
+  getRowId?: TableOptions<TableData>['getRowId'];
   /**
    * Optional tooltips for the table headers. The key must match the column id.
    */
@@ -357,3 +267,93 @@ function ColumnHeader<T extends object>({
 
   return children;
 }
+
+const getStyles = (theme: GrafanaTheme2) => {
+  const rowHoverBg = theme.colors.emphasize(theme.colors.background.primary, 0.03);
+
+  return {
+    container: css({
+      display: 'flex',
+      gap: theme.spacing(2),
+      flexDirection: 'column',
+      width: '100%',
+      overflowX: 'auto',
+    }),
+    table: css({
+      borderRadius: theme.shape.radius.default,
+      width: '100%',
+
+      td: {
+        padding: theme.spacing(1),
+      },
+
+      'td, th': {
+        minWidth: theme.spacing(3),
+      },
+    }),
+    disableGrow: css({
+      width: 0,
+    }),
+    header: css({
+      borderBottom: `1px solid ${theme.colors.border.weak}`,
+      '&, & > button': {
+        position: 'relative',
+        whiteSpace: 'nowrap',
+        padding: theme.spacing(1),
+      },
+      '& > button': {
+        '&:after': {
+          content: '"\\00a0"',
+        },
+        width: '100%',
+        height: '100%',
+        background: 'none',
+        border: 'none',
+        paddingRight: theme.spacing(2.5),
+        textAlign: 'left',
+        fontWeight: theme.typography.fontWeightMedium,
+      },
+    }),
+    row: css({
+      label: 'row',
+      borderBottom: `1px solid ${theme.colors.border.weak}`,
+
+      '&:hover': {
+        backgroundColor: rowHoverBg,
+      },
+
+      '&:last-child': {
+        borderBottom: 0,
+      },
+    }),
+    expandedRow: css({
+      label: 'expanded-row-content',
+      borderBottom: 'none',
+    }),
+    expandedContentRow: css({
+      label: 'expanded-row-content',
+
+      td: {
+        borderBottom: `1px solid ${theme.colors.border.weak}`,
+        position: 'relative',
+        padding: theme.spacing(2, 2, 2, 5),
+
+        '&:before': {
+          content: '""',
+          position: 'absolute',
+          width: '1px',
+          top: 0,
+          left: '16px',
+          bottom: theme.spacing(2),
+          background: theme.colors.border.medium,
+        },
+      },
+    }),
+    sortableHeader: css({
+      /* increases selector's specificity so that it always takes precedence over default styles  */
+      '&&': {
+        padding: 0,
+      },
+    }),
+  };
+};
