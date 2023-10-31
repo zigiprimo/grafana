@@ -211,9 +211,12 @@ export function InteractiveTable<TableData extends object>({
   const { getTableProps, getTableBodyProps, headerGroups, prepareRow } = tableInstance;
 
   const { sortBy } = tableInstance.state;
+  const prevSort = React.useRef(sortBy);
+
   useEffect(() => {
-    if (fetchData) {
+    if (fetchData && sortBy !== prevSort.current) {
       fetchData({ sortBy });
+      prevSort.current = sortBy;
     }
   }, [sortBy, fetchData]);
 
