@@ -22,7 +22,8 @@ type QueryHistoryPreference struct {
 	HomeTab *string `json:"homeTab,omitempty"`
 }
 
-// Spec defines model for Spec.
+// Spec describes the preferences given to an org, team or user.
+// swagger:model Preferences
 type Spec struct {
 	CookiePreferences *CookiePreferences `json:"cookiePreferences,omitempty"`
 

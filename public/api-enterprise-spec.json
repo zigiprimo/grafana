@@ -3460,7 +3460,7 @@
       "type": "object",
       "properties": {
         "folderId": {
-          "description": "ID of the folder where the library element is stored.",
+          "description": "ID of the folder where the library element is stored.\n\nDeprecated: use FolderUID instead",
           "type": "integer",
           "format": "int64"
         },
@@ -6066,6 +6066,38 @@
         }
       }
     },
+    "Preferences": {
+      "type": "object",
+      "title": "Spec describes the preferences given to an org, team or user.",
+      "properties": {
+        "cookiePreferences": {
+          "$ref": "#/definitions/CookiePreferences"
+        },
+        "homeDashboardUID": {
+          "description": "UID for the home dashboard",
+          "type": "string"
+        },
+        "language": {
+          "description": "Selected language (beta)",
+          "type": "string"
+        },
+        "queryHistory": {
+          "$ref": "#/definitions/QueryHistoryPreference"
+        },
+        "theme": {
+          "description": "Theme light, dark, empty is default",
+          "type": "string"
+        },
+        "timezone": {
+          "description": "The timezone selection\nTODO: this should use the timezone defined in common",
+          "type": "string"
+        },
+        "weekStart": {
+          "description": "WeekStart day of the week (sunday, monday, etc)",
+          "type": "string"
+        }
+      }
+    },
     "PrometheusRemoteWriteTargetJSON": {
       "type": "object",
       "properties": {
@@ -6251,8 +6283,10 @@
     },
     "QueryHistoryPreference": {
       "type": "object",
+      "title": "QueryHistoryPreference defines model for QueryHistoryPreference.",
       "properties": {
         "homeTab": {
+          "description": "HomeTab one of: '' | 'query' | 'starred';",
           "type": "string"
         }
       }
@@ -6998,38 +7032,6 @@
       "type": "integer",
       "format": "int64"
     },
-    "Spec": {
-      "type": "object",
-      "title": "Spec defines model for Spec.",
-      "properties": {
-        "cookiePreferences": {
-          "$ref": "#/definitions/CookiePreferences"
-        },
-        "homeDashboardUID": {
-          "description": "UID for the home dashboard",
-          "type": "string"
-        },
-        "language": {
-          "description": "Selected language (beta)",
-          "type": "string"
-        },
-        "queryHistory": {
-          "$ref": "#/definitions/QueryHistoryPreference"
-        },
-        "theme": {
-          "description": "Theme light, dark, empty is default",
-          "type": "string"
-        },
-        "timezone": {
-          "description": "The timezone selection\nTODO: this should use the timezone defined in common",
-          "type": "string"
-        },
-        "weekStart": {
-          "description": "WeekStart day of the week (sunday, monday, etc)",
-          "type": "string"
-        }
-      }
-    },
     "State": {
       "type": "string"
     },
@@ -7478,28 +7480,6 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/Transformation"
-      }
-    },
-    "TrimDashboardCommand": {
-      "type": "object",
-      "properties": {
-        "dashboard": {
-          "$ref": "#/definitions/Json"
-        },
-        "meta": {
-          "$ref": "#/definitions/Json"
-        }
-      }
-    },
-    "TrimDashboardFullWithMeta": {
-      "type": "object",
-      "properties": {
-        "dashboard": {
-          "$ref": "#/definitions/Json"
-        },
-        "meta": {
-          "$ref": "#/definitions/Json"
-        }
       }
     },
     "Type": {
@@ -8928,7 +8908,7 @@
     "getPreferencesResponse": {
       "description": "",
       "schema": {
-        "$ref": "#/definitions/Spec"
+        "$ref": "#/definitions/Preferences"
       }
     },
     "getPublicAnnotationsResponse": {
@@ -9316,6 +9296,10 @@
           "url"
         ],
         "properties": {
+          "folderUid": {
+            "description": "FolderUID The unique identifier (uid) of the folder the dashboard belongs to.",
+            "type": "string"
+          },
           "id": {
             "description": "ID The unique identifier (id) of the created/updated dashboard.",
             "type": "integer",
@@ -9481,12 +9465,6 @@
       "description": "",
       "schema": {
         "$ref": "#/definitions/AlertTestResult"
-      }
-    },
-    "trimDashboardResponse": {
-      "description": "",
-      "schema": {
-        "$ref": "#/definitions/TrimDashboardFullWithMeta"
       }
     },
     "unauthorisedError": {
