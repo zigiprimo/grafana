@@ -1,6 +1,7 @@
 package setting
 
 import (
+	"context"
 	"strconv"
 
 	"gopkg.in/ini.v1"
@@ -15,7 +16,7 @@ func (cfg *Cfg) readFeatureToggles(iniFile *ini.File) error {
 	if err != nil {
 		return err
 	}
-	cfg.IsFeatureToggleEnabled = func(key string) bool { return toggles[key] }
+	cfg.IsFeatureToggleEnabled = func(ctx context.Context, key string) bool { return toggles[key] }
 	return nil
 }
 

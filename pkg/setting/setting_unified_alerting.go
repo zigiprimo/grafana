@@ -159,7 +159,7 @@ func (cfg *Cfg) readUnifiedAlertingEnabledSetting(section *ini.Section) (*bool, 
 	hasEnabled := section.Key("enabled").Value() != ""
 	if !hasEnabled {
 		// TODO: Remove in Grafana v10
-		if cfg.IsFeatureToggleEnabled("ngalert") {
+		if cfg.IsFeatureToggleEnabledGlobal("ngalert") {
 			cfg.Logger.Warn("ngalert feature flag is deprecated: use unified alerting enabled setting instead")
 			// feature flag overrides the legacy alerting setting
 			legacyAlerting := false
@@ -309,7 +309,7 @@ func (cfg *Cfg) ReadUnifiedAlertingSettings(iniFile *ini.File) error {
 	// 1. All alert rule intervals should be times of this interval. Otherwise, the rules will not be evaluated. It is not recommended to set it lower than 10s or odd numbers. Recommended: 10s, 30s, 1m
 	// 2. The increasing of the interval will affect how slow alert rule updates will reset the state, and therefore reset notification. Higher the interval - slower propagation of the changes.
 	baseInterval, err := gtime.ParseDuration(valueAsString(ua, "scheduler_tick_interval", SchedulerBaseInterval.String()))
-	if cfg.IsFeatureToggleEnabled("configurableSchedulerTick") { // use literal to avoid cycle imports
+	if cfg.IsFeatureToggleEnabledGlobal("configurableSchedulerTick") { // use literal to avoid cycle imports
 		if err != nil {
 			return fmt.Errorf("failed to parse setting 'scheduler_tick_interval' as duration: %w", err)
 		}

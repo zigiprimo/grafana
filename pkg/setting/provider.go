@@ -1,6 +1,7 @@
 package setting
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"time"
@@ -144,8 +145,8 @@ func (o *OSSImpl) Section(section string) Section {
 
 func (*OSSImpl) RegisterReloadHandler(string, ReloadHandler) {}
 
-func (o *OSSImpl) IsFeatureToggleEnabled(name string) bool {
-	return o.Cfg.IsFeatureToggleEnabled(name)
+func (o *OSSImpl) IsFeatureToggleEnabled(ctx context.Context, name string) bool {
+	return o.Cfg.IsFeatureToggleEnabled(ctx, name)
 }
 
 type keyValImpl struct {

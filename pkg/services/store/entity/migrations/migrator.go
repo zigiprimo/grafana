@@ -14,7 +14,7 @@ import (
 
 func MigrateEntityStore(xdb db.DB, features featuremgmt.FeatureToggles) error {
 	// Skip if feature flag is not enabled
-	if !features.IsEnabled(featuremgmt.FlagEntityStore) {
+	if !features.IsEnabledGlobal(featuremgmt.FlagEntityStore) {
 		return nil
 	}
 

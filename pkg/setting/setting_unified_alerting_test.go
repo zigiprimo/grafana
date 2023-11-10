@@ -45,7 +45,7 @@ func TestCfg_ReadUnifiedAlertingSettings(t *testing.T) {
 		t.Cleanup(func() {
 			cfg.IsFeatureToggleEnabled = tmp
 		})
-		cfg.IsFeatureToggleEnabled = func(key string) bool { return key == "configurableSchedulerTick" }
+		cfg.IsFeatureToggleEnabledGlobal = func(key string) bool { return key == "configurableSchedulerTick" }
 
 		s, err := cfg.Raw.NewSection("unified_alerting")
 		require.NoError(t, err)
@@ -185,7 +185,7 @@ func TestUnifiedAlertingSettings(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			f := ini.Empty()
 			cfg := NewCfg()
-			cfg.IsFeatureToggleEnabled = func(key string) bool { return false }
+			cfg.IsFeatureToggleEnabledGlobal = func(key string) bool { return false }
 			unifiedAlertingSec, err := f.NewSection("unified_alerting")
 			require.NoError(t, err)
 			for k, v := range tc.unifiedAlertingOptions {
@@ -293,7 +293,7 @@ func TestMinInterval(t *testing.T) {
 				require.NoError(t, err)
 			}
 			cfg := NewCfg()
-			cfg.IsFeatureToggleEnabled = func(key string) bool { return false }
+			cfg.IsFeatureToggleEnabledGlobal = func(key string) bool { return false }
 			err := cfg.ReadUnifiedAlertingSettings(f)
 			testCase.verifyCfg(t, cfg, err)
 		})

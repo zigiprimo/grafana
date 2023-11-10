@@ -7,8 +7,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
-	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models/resources"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models/resources"
 )
 
 type LogsAPI struct {
@@ -47,7 +48,13 @@ type MockFeatures struct {
 	mock.Mock
 }
 
-func (f *MockFeatures) IsEnabled(feature string) bool {
+func (f *MockFeatures) IsEnabled(ctx context.Context, feature string) bool {
+	args := f.Called(feature)
+
+	return args.Bool(0)
+}
+
+func (f *MockFeatures) IsEnabledGlobal(feature string) bool {
 	args := f.Called(feature)
 
 	return args.Bool(0)

@@ -23,6 +23,7 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/data"
+
 	"github.com/grafana/grafana/pkg/setting"
 	"github.com/grafana/grafana/pkg/tsdb/prometheus/client"
 	"github.com/grafana/grafana/pkg/tsdb/prometheus/models"
@@ -464,7 +465,11 @@ type fakeFeatureToggles struct {
 	flags map[string]bool
 }
 
-func (f *fakeFeatureToggles) IsEnabled(feature string) bool {
+func (f *fakeFeatureToggles) IsEnabled(ctx context.Context, feature string) bool {
+	return f.flags[feature]
+}
+
+func (f *fakeFeatureToggles) IsEnabledGlobal(feature string) bool {
 	return f.flags[feature]
 }
 

@@ -5,6 +5,7 @@ package setting
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -362,7 +363,10 @@ type Cfg struct {
 
 	// Check if a feature toggle is enabled
 	// @deprecated
-	IsFeatureToggleEnabled func(key string) bool // filled in dynamically
+	IsFeatureToggleEnabled func(ctx context.Context, key string) bool // filled in dynamically
+
+	// @deprecated
+	IsFeatureToggleEnabledGlobal func(key string) bool // filled in dynamically
 
 	AnonymousEnabled     bool
 	AnonymousOrgName     string
@@ -980,6 +984,12 @@ func NewCfg() *Cfg {
 		Logger: log.New("settings"),
 		Raw:    ini.Empty(),
 		Azure:  &azsettings.AzureSettings{},
+		IsFeatureToggleEnabled: func(ctx context.Context, key string) bool {
+			return false
+		},
+		IsFeatureToggleEnabledGlobal: func(key string) bool {
+			return false
+		},
 	}
 }
 

@@ -28,7 +28,7 @@ func (e *cloudWatchExecutor) newResourceMux() *http.ServeMux {
 	mux.HandleFunc("/external-id", routes.ResourceRequestMiddleware(routes.ExternalIdHandler, logger, e.getRequestContext))
 
 	// feature is enabled by default, just putting behind a feature flag in case of unexpected bugs
-	if e.features.IsEnabled("cloudwatchNewRegionsHandler") {
+	if e.features.IsEnabledGlobal("cloudwatchNewRegionsHandler") {
 		mux.HandleFunc("/regions", routes.ResourceRequestMiddleware(routes.RegionsHandler, logger, e.getRequestContext))
 	} else {
 		mux.HandleFunc("/regions", handleResourceReq(e.handleGetRegions))

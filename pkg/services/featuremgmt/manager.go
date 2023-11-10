@@ -126,7 +126,12 @@ func (fm *FeatureManager) readFile() error {
 }
 
 // IsEnabled checks if a feature is enabled
-func (fm *FeatureManager) IsEnabled(flag string) bool {
+func (fm *FeatureManager) IsEnabled(ctx context.Context, flag string) bool {
+	return fm.enabled[flag]
+}
+
+// IsEnabledGlobal checks if a feature is enabled
+func (fm *FeatureManager) IsEnabledGlobal(flag string) bool {
 	return fm.enabled[flag]
 }
 
