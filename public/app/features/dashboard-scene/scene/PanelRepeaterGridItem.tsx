@@ -18,7 +18,8 @@ import {
 } from '@grafana/scenes';
 import { GRID_CELL_HEIGHT, GRID_CELL_VMARGIN } from 'app/core/constants';
 
-import { getMultiVariableValues } from '../utils/utils';
+import { NextPanelIdGenerator } from '../utils/getNextPanelId';
+import { getDashboardSceneFor, getMultiVariableValues, getVizPanelKeyForPanelId } from '../utils/utils';
 
 import { DashboardRepeatsProcessedEvent } from './types';
 
@@ -108,6 +109,8 @@ export class PanelRepeaterGridItem extends SceneObjectBase<PanelRepeaterGridItem
       return;
     }
 
+    const dashboard = getDashboardSceneFor(this);
+    const nextIdGenerator = new NextPanelIdGenerator(dashboard);
     const panelToRepeat = this.state.source;
     const { values, texts } = getMultiVariableValues(variable);
     const repeatedPanels: VizPanel[] = [];
@@ -120,7 +123,7 @@ export class PanelRepeaterGridItem extends SceneObjectBase<PanelRepeaterGridItem
             new LocalValueVariable({ name: variable.state.name, value: values[index], text: String(texts[index]) }),
           ],
         }),
-        key: `${panelToRepeat.state.key}-clone-${index}`,
+        key: getVizPanelKeyForPanelId(nextIdGenerator.getNextId()),
       });
 
       repeatedPanels.push(clone);
