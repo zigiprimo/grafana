@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { capitalize, throttle } from 'lodash';
+import { capitalize } from 'lodash';
 import memoizeOne from 'memoize-one';
 import React, { createRef, PureComponent } from 'react';
 
@@ -176,12 +176,6 @@ class UnthemedLogs extends PureComponent<Props, State> {
     if (this.cancelFlippingTimer) {
       window.clearTimeout(this.cancelFlippingTimer);
     }
-
-    window.removeEventListener('resize', this.handleResize);
-  }
-
-  componentDidMount() {
-    window.addEventListener('resize', this.handleResize);
   }
 
   updatePanelState = (logsPanelState: Partial<ExploreLogsPanelState>) => {
@@ -228,23 +222,8 @@ class UnthemedLogs extends PureComponent<Props, State> {
     }
   };
 
-  handleResize = throttle(() => {
-    if (!this.state.logsContainer || !scrollableLogsContainer) {
-      return;
-    }
-    this.setState({ logRowsHeight: this.calculateLogRowsHeight(this.state.logsContainer) });
-  }, 100);
-
-  calculateLogRowsHeight = (node: HTMLDivElement) => {
-    const rect = node.getBoundingClientRect();
-    return window.innerHeight - rect.y; 
-  }
-
   onLogsContainerRef = (node: HTMLDivElement) => {
     const newState = { logsContainer: node, logRowsHeight: this.state.logRowsHeight };
-    if (scrollableLogsContainer) {
-      newState.logRowsHeight = this.calculateLogRowsHeight(node); 
-    }
     this.setState(newState);
   };
 
@@ -772,7 +751,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
               </div>
             )}
             {this.state.visualisationType === 'logs' && hasData && (
-              <div className={scrollableLogsContainer ? styles.scrollableLogRows : styles.logRows} data-testid="logRows" ref={this.onLogsContainerRef} style={{ height: scrollableLogsContainer ? this.state.logRowsHeight : 'auto' }}>
+              <div className={scrollableLogsContainer ? styles.scrollableLogRows : styles.logRows} data-testid="logRows" ref={this.onLogsContainerRef}>
                 <LogRows
                   logRows={logRows}
                   deduplicatedRows={dedupedRows}
@@ -889,6 +868,7 @@ const getStyles = (theme: GrafanaTheme2, wrapLogMessage: boolean) => {
       overflow-x: scroll;
       overflow-y: visible;
       width: 100%;
+      max-height: calc(100vh - 170px);
     `,
     logRows: css`
       overflow-x: ${wrapLogMessage ? 'unset' : 'scroll'};
