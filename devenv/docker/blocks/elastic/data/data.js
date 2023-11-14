@@ -76,6 +76,9 @@ async function elasticSetupIndexTemplate() {
             type: 'date_nanos',
             format: 'strict_date_optional_time_nanos'
           },
+          '@receive_timestamp': {
+            type: 'date',
+          },
           counter: {
             type: 'integer',
           },
@@ -130,6 +133,8 @@ function getRandomLogItem(counter, timestamp) {
     '@timestamp_custom': timestamp.toISOString().split('.')[0].replace(/[T:-]/g,'_'),
     '@timestamp_unix': timestamp.getTime(),
     '@timestamp_nanos': timestamp.toISOString().slice(0,-1) + '123Z',
+    // timestamp.toISOString().slice(0,-1) produces time such as 2023-11-14T08:56:47.608
+    '@receive_timestamp': timestamp.toISOString().slice(0,-1),
     line: `log text ${maybeAnsiText} [${randomText}]`,
     counter: counter.toString(),
     float: 100 * Math.random().toString(),
