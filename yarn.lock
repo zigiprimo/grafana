@@ -17545,7 +17545,7 @@ __metadata:
     json-markup: "npm:^1.1.0"
     json-source-map: "npm:0.6.1"
     jsurl: "npm:^0.1.5"
-    kbar: "patch:kbar@npm%3A0.1.0-beta.40#~/.yarn/patches/kbar-npm-0.1.0-beta.40-372b138d36.patch"
+    kbar: "npm:0.1.0-beta.40"
     lerna: "npm:7.4.1"
     lodash: "npm:4.17.21"
     logfmt: "npm:^1.3.2"
@@ -20953,22 +20953,6 @@ __metadata:
     react: ^16.0.0 || ^17.0.0 || ^18.0.0
     react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0
   checksum: d9c19e1c22e518e5db531fdcee7a33864d64cb13f820e2b4a4bcf09fde2bc070df56a34212c6aff2c728a9b6b5288f3146d3f1931fa68d69a2c9f60482676d0d
-  languageName: node
-  linkType: hard
-
-"kbar@patch:kbar@npm%3A0.1.0-beta.40#~/.yarn/patches/kbar-npm-0.1.0-beta.40-372b138d36.patch":
-  version: 0.1.0-beta.40
-  resolution: "kbar@patch:kbar@npm%3A0.1.0-beta.40#~/.yarn/patches/kbar-npm-0.1.0-beta.40-372b138d36.patch::version=0.1.0-beta.40&hash=1ce5dd"
-  dependencies:
-    "@radix-ui/react-portal": "npm:^1.0.1"
-    command-score: "npm:^0.1.2"
-    fast-equals: "npm:^2.0.3"
-    react-virtual: "npm:^2.8.2"
-    tiny-invariant: "npm:^1.2.0"
-  peerDependencies:
-    react: ^16.0.0 || ^17.0.0 || ^18.0.0
-    react-dom: ^16.0.0 || ^17.0.0 || ^18.0.0
-  checksum: c3bb1ce90fd441405480ab66a0d62dd4989f8e1ee69703c077e4f9f25502bc12e987ac5156cce31a47b0252e29297eff593197c3c18c3d744d2850d0030a4ca5
   languageName: node
   linkType: hard
 
