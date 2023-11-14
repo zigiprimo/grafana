@@ -1,22 +1,16 @@
-import uFuzzy from '@leeoniya/ufuzzy';
+import commandScore from 'command-score';
 import * as React from 'react';
 
-import { ActionImpl, Priority, useKBar } from './KBar';
-import { useThrottledValue } from './KBar/utils';
-
-// From https://github.dev/timc1/kbar/blob/main/src/useMatches.tsx
-// TODO: Go back to useMatches from kbar when https://github.com/timc1/kbar/issues/255 is fixed
+import type { ActionImpl } from './action/ActionImpl';
+import { useKBar } from './useKBar';
+import { Priority, useThrottledValue } from './utils';
 
 export const NO_GROUP = {
   name: 'none',
   priority: Priority.NORMAL,
 };
 
-interface Prioritised {
-  priority: number;
-}
-
-function order(a: Prioritised, b: Prioritised) {
+function order(a, b) {
   /**
    * Larger the priority = higher up the list
    */
@@ -37,7 +31,7 @@ export function useMatches() {
 
   const rootResults = React.useMemo(() => {
     return Object.keys(actions)
-      .reduce<ActionImpl[]>((acc, actionId) => {
+      .reduce((acc, actionId) => {
         const action = actions[actionId];
         if (!action.parent && !rootActionId) {
           acc.push(action);
@@ -48,7 +42,7 @@ export function useMatches() {
           }
         }
         return acc;
-      }, [])
+      }, [] as ActionImpl[])
       .sort(order);
   }, [actions, rootActionId]);
 
@@ -169,9 +163,7 @@ type Match = {
   score: number;
 };
 
-function useInternalMatches(filtered: ActionImpl[], search: string): Match[] {
-  const ufuzzy = useUfuzzy();
-
+function useInternalMatches(filtered: ActionImpl[], search: string) {
   const value = React.useMemo(
     () => ({
       filtered,
@@ -187,60 +179,21 @@ function useInternalMatches(filtered: ActionImpl[], search: string): Match[] {
       return throttledFiltered.map((action) => ({ score: 0, action }));
     }
 
-    const haystack = throttledFiltered.map(({ name, keywords }) => `${name} ${keywords ?? ''}`.toLowerCase());
+    let matches: Match[] = [];
 
-    const results: Match[] = [];
-
-    // If the search term is too long, then just do a simple substring search.
-    // We don't expect users to actually hit this frequently, but want to prevent browser hangs
-    if (throttledSearch.length > FUZZY_SEARCH_LIMIT) {
-      const query = throttledSearch.toLowerCase();
-
-      for (let haystackIndex = 0; haystackIndex < haystack.length; haystackIndex++) {
-        const haystackItem = haystack[haystackIndex];
-
-        // Use the position of the match as a stand-in for score
-        const substringPosition = haystackItem.indexOf(query);
-
-        if (substringPosition > -1) {
-          const score = substringPosition * -1; // lower position of the match should be a higher priority score
-          const action = throttledFiltered[haystackIndex];
-          results.push({ score, action });
-        }
-      }
-    } else {
-      const termCount = ufuzzy.split(throttledSearch).length;
-      const infoThresh = Infinity;
-      const oooSearch = termCount < 5;
-
-      const [, info, order] = ufuzzy.search(haystack, throttledSearch, oooSearch, infoThresh);
-
-      if (info && order) {
-        for (let orderIndex = 0; orderIndex < order.length; orderIndex++) {
-          const actionIndex = order[orderIndex];
-          const score = order.length - orderIndex;
-          const action = throttledFiltered[info.idx[actionIndex]];
-          results.push({ score, action });
-        }
+    for (let i = 0; i < throttledFiltered.length; i++) {
+      const action = throttledFiltered[i];
+      const score = commandScore([action.name, action.keywords, action.subtitle].join(' '), throttledSearch);
+      if (score > 0) {
+        matches.push({ score, action });
       }
     }
 
-    return results;
-  }, [throttledFiltered, throttledSearch, ufuzzy]);
+    return matches;
+  }, [throttledFiltered, throttledSearch]) as Match[];
 }
 
-const FUZZY_SEARCH_LIMIT = 25;
-
-function useUfuzzy(): uFuzzy {
-  const ref = React.useRef<uFuzzy>();
-
-  if (!ref.current) {
-    ref.current = new uFuzzy({
-      // See https://github.com/leeoniya/uFuzzy#options
-      intraMode: 0, // don't allow for typos/extra letters
-      intraIns: 0, // require each term in the search to appear exactly
-    });
-  }
-
-  return ref.current;
-}
+/**
+ * @deprecated use useMatches
+ */
+export const useDeepMatches = useMatches;

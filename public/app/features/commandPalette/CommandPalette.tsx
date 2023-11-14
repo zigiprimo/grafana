@@ -2,16 +2,6 @@ import { css, cx } from '@emotion/css';
 import { useDialog } from '@react-aria/dialog';
 import { FocusScope } from '@react-aria/focus';
 import { useOverlay } from '@react-aria/overlays';
-import {
-  KBarAnimator,
-  KBarPortal,
-  KBarPositioner,
-  KBarSearch,
-  VisualState,
-  useRegisterActions,
-  useKBar,
-  ActionImpl,
-} from 'kbar';
 import React, { useEffect, useMemo, useRef } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
@@ -19,6 +9,16 @@ import { reportInteraction } from '@grafana/runtime';
 import { Icon, LoadingBar, useStyles2 } from '@grafana/ui';
 import { t } from 'app/core/internationalization';
 
+import {
+  KBarSearch,
+  KBarAnimator,
+  KBarPortal,
+  KBarPositioner,
+  VisualState,
+  useRegisterActions,
+  useKBar,
+  ActionImpl,
+} from './KBar';
 import { KBarResults } from './KBarResults';
 import { ResultItem } from './ResultItem';
 import { useSearchResults } from './actions/dashboardActions';

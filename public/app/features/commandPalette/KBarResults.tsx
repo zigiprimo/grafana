@@ -1,7 +1,8 @@
-import { ActionImpl, getListboxItemId, KBAR_LISTBOX, useKBar } from 'kbar';
-import { usePointerMovedSinceMount } from 'kbar/lib/utils';
 import * as React from 'react';
 import { useVirtual } from 'react-virtual';
+
+import { ActionImpl, getListboxItemId, KBAR_LISTBOX, useKBar } from './KBar';
+import { usePointerMovedSinceMount } from './KBar/utils';
 
 // From https://github.com/timc1/kbar/blob/main/src/KBarResults.tsx
 // TODO: Go back to KBarResults from kbar when https://github.com/timc1/kbar/issues/281 is fixed

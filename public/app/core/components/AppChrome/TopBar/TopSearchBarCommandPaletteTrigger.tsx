@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { useKBar, VisualState } from 'kbar';
+// import { useKBar, VisualState } from 'kbar';
 import React, { useMemo, useState } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
@@ -8,6 +8,7 @@ import { focusCss } from '@grafana/ui/src/themes/mixins';
 import { useMediaQueryChange } from 'app/core/hooks/useMediaQueryChange';
 import { t } from 'app/core/internationalization';
 import { getModKey } from 'app/core/utils/browser';
+import { useKBar, VisualState } from 'app/features/commandPalette/KBar';
 
 export function TopSearchBarCommandPaletteTrigger() {
   const theme = useTheme2();
