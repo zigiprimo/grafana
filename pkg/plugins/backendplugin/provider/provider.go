@@ -18,10 +18,10 @@ type PluginBackendProvider func(_ context.Context, _ *plugins.Plugin) backendplu
 
 type Service struct {
 	providerChain []PluginBackendProvider
-	features      featuremgmt.FeatureToggles
+	features      plugins.FeatureToggles
 }
 
-func New(features featuremgmt.FeatureToggles, providers ...PluginBackendProvider) *Service {
+func New(features plugins.FeatureToggles, providers ...PluginBackendProvider) *Service {
 	if len(providers) == 0 {
 		return New(features, RendererProvider, SecretsManagerProvider, DefaultProviderWithFeatures(features))
 	}
@@ -31,7 +31,7 @@ func New(features featuremgmt.FeatureToggles, providers ...PluginBackendProvider
 	}
 }
 
-func ProvideService(features featuremgmt.FeatureToggles, coreRegistry *coreplugin.Registry) *Service {
+func ProvideService(features plugins.FeatureToggles, coreRegistry *coreplugin.Registry) *Service {
 	return New(features, coreRegistry.BackendFactoryProvider(), RendererProvider, SecretsManagerProvider, DefaultProviderWithFeatures(features))
 }
 
@@ -68,7 +68,7 @@ var SecretsManagerProvider PluginBackendProvider = func(_ context.Context, p *pl
 	)
 }
 
-func DefaultProviderWithFeatures(features featuremgmt.FeatureToggles) PluginBackendProvider {
+func DefaultProviderWithFeatures(features plugins.FeatureToggles) PluginBackendProvider {
 	return func(_ context.Context, p *plugins.Plugin) backendplugin.PluginFactoryFunc {
 		skipEnvVars := features.IsEnabled(featuremgmt.FlagPluginsSkipHostEnvVars)
 		return grpcplugin.NewBackendPlugin(p.ID, p.ExecutablePath(), skipEnvVars)

@@ -156,6 +156,10 @@ func (fn ClientMiddlewareFunc) CreateClientMiddleware(next Client) Client {
 
 type FeatureToggles interface {
 	IsEnabled(flag string) bool
+}
+
+type FeatureManager interface {
+	FeatureToggles
 	GetEnabled(ctx context.Context) map[string]bool
 }
 
