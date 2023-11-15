@@ -1537,6 +1537,7 @@ type testEnvironment struct {
 	quotas           provisioning.QuotaChecker
 	prov             provisioning.ProvisioningStore
 	ac               *recordingAccessControlFake
+	rulesAuthz       provisioning.RuleAccessControlService
 }
 
 func createTestEnv(t *testing.T, testConfig string) testEnvironment {
@@ -1591,6 +1592,8 @@ func createTestEnv(t *testing.T, testConfig string) testEnvironment {
 
 	ac := &recordingAccessControlFake{}
 
+	ruleAuthz := &provisioning.FakeProvisioningRuleAccessControlService{}
+
 	return testEnvironment{
 		secrets:          secretsService,
 		log:              log,
@@ -1601,6 +1604,7 @@ func createTestEnv(t *testing.T, testConfig string) testEnvironment {
 		prov:             prov,
 		quotas:           quotas,
 		ac:               ac,
+		rulesAuthz:       ruleAuthz,
 	}
 }
 
@@ -1620,7 +1624,7 @@ func createProvisioningSrvSutFromEnv(t *testing.T, env *testEnvironment) Provisi
 		contactPointService: provisioning.NewContactPointService(env.configs, env.secrets, env.prov, env.xact, env.log, env.ac),
 		templates:           provisioning.NewTemplateService(env.configs, env.prov, env.xact, env.log),
 		muteTimings:         provisioning.NewMuteTimingService(env.configs, env.prov, env.xact, env.log),
-		alertRules:          provisioning.NewAlertRuleService(env.store, env.prov, env.dashboardService, env.quotas, env.xact, 60, 10, env.log),
+		alertRules:          provisioning.NewAlertRuleService(env.store, env.prov, env.dashboardService, env.quotas, env.xact, 60, 10, env.log, env.rulesAuthz),
 	}
 }
 
