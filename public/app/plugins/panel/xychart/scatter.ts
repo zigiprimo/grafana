@@ -294,7 +294,6 @@ interface DrawBubblesOpts {
   };
 }
 
-//const prepConfig: UPlotConfigPrepFnXY<Options> = ({ frames, series, theme }) => {
 const prepConfig = (
   getData: () => DataFrame[],
   scatterSeries: ScatterSeries[],
@@ -531,7 +530,9 @@ const prepConfig = (
 
   // clip hover points/bubbles to plotting area
   builder.addHook('init', (u, r) => {
-    u.over.style.overflow = 'hidden';
+    if (!config.featureToggles.newVizTooltips) {
+      u.over.style.overflow = 'hidden';
+    }
     ref_parent = u.root.parentElement;
 
     if (onUPlotClick) {
@@ -595,8 +596,8 @@ const prepConfig = (
   const frames = getData();
   let xField = scatterSeries[0].x(scatterSeries[0].frame(frames));
 
-  let config = xField.config;
-  let customConfig = config.custom;
+  let fieldConfig = xField.config;
+  let customConfig = fieldConfig.custom;
   let scaleDistr = customConfig?.scaleDistribution;
 
   builder.addScale({
@@ -607,12 +608,12 @@ const prepConfig = (
     distribution: scaleDistr?.type,
     log: scaleDistr?.log,
     linearThreshold: scaleDistr?.linearThreshold,
-    min: config.min,
-    max: config.max,
+    min: fieldConfig.min,
+    max: fieldConfig.max,
     softMin: customConfig?.axisSoftMin,
     softMax: customConfig?.axisSoftMax,
     centeredZero: customConfig?.axisCenteredZero,
-    decimals: config.decimals,
+    decimals: fieldConfig.decimals,
   });
 
   // why does this fall back to '' instead of null or undef?
