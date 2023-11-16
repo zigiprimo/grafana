@@ -5,8 +5,19 @@ import (
 	"io"
 	"net"
 
+	"github.com/grafana/grafana/pkg/apis/snapshots/v0alpha1"
+	"github.com/grafana/grafana/pkg/infra/db/dbtest"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/registry/apis/example"
+	"github.com/grafana/grafana/pkg/registry/apis/playlist"
+	"github.com/grafana/grafana/pkg/registry/apis/snapshots"
+	snapshotsService "github.com/grafana/grafana/pkg/services/dashboardsnapshots/service"
 	grafanaAPIServer "github.com/grafana/grafana/pkg/services/grafana-apiserver"
+	"github.com/grafana/grafana/pkg/services/playlist/playlistimpl"
+	secretService "github.com/grafana/grafana/pkg/services/secrets/fakes"
+	"github.com/grafana/grafana/pkg/setting"
+	openapinamer "k8s.io/apiserver/pkg/endpoints/openapi"
+	"k8s.io/apiserver/pkg/util/openapi"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,16 +71,25 @@ func newExampleServerOptions(out, errOut io.Writer) *ExampleServerOptions {
 
 func (o *ExampleServerOptions) LoadAPIGroupBuilders(args []string) error {
 	o.builders = []grafanaAPIServer.APIGroupBuilder{}
+	cfg, _ := setting.NewCfgFromArgs(setting.CommandLineArgs{
+		Config:   "conf/custom.ini",
+		HomePath: "./",
+	})
+	ts, _ := tracing.ProvideService(cfg)
+	playlistSvc := playlistimpl.ProvideService(
+		dbtest.NewFakeDB(),
+		ts,
+	)
+	snapshotSvc := snapshotsService.NewService(dbtest.NewFakeDB(), secretService.NewFakeSecretsService())
 	for _, g := range args {
 		switch g {
 		// No dependencies for testing
 		case "example.grafana.app":
 			o.builders = append(o.builders, &example.TestingAPIBuilder{})
-		case "snapshosts.grafana.app":
-
-			//	snapshots.RegisterAPIService()
-
-			return fmt.Errorf("todo... manual wire")
+		case "playlist.grafana.app":
+			o.builders = append(o.builders, playlist.NewAPIService(playlistSvc, cfg))
+		case "snapshot.grafana.app":
+			o.builders = append(o.builders, snapshots.NewAPIService(cfg, snapshotSvc))
 		default:
 			return fmt.Errorf("unknown group: %s", g)
 		}
@@ -88,6 +108,45 @@ func (o *ExampleServerOptions) LoadAPIGroupBuilders(args []string) error {
 	return nil
 }
 
+// A copy of ApplyTo in recommended.go, but for >= 0.28, server pkg in apiserver does a bit extra causing
+// a panic when CoreAPI is set to nil
+func (o *ExampleServerOptions) ApplyTo(config *genericapiserver.RecommendedConfig) error {
+	if err := o.RecommendedOptions.Etcd.ApplyTo(&config.Config); err != nil {
+		return err
+	}
+	if err := o.RecommendedOptions.EgressSelector.ApplyTo(&config.Config); err != nil {
+		return err
+	}
+	if err := o.RecommendedOptions.Traces.ApplyTo(config.Config.EgressSelector, &config.Config); err != nil {
+		return err
+	}
+	if err := o.RecommendedOptions.SecureServing.ApplyTo(&config.Config.SecureServing, &config.Config.LoopbackClientConfig); err != nil {
+		return err
+	}
+	if err := o.RecommendedOptions.Authentication.ApplyTo(&config.Config.Authentication, config.SecureServing, config.OpenAPIConfig); err != nil {
+		return err
+	}
+	if err := o.RecommendedOptions.Authorization.ApplyTo(&config.Config.Authorization); err != nil {
+		return err
+	}
+	if err := o.RecommendedOptions.Audit.ApplyTo(&config.Config); err != nil {
+		return err
+	}
+	if err := o.RecommendedOptions.Features.ApplyTo(&config.Config); err != nil {
+		return err
+	}
+
+	if err := o.RecommendedOptions.CoreAPI.ApplyTo(config); err != nil {
+		return err
+	}
+
+	_, err := o.RecommendedOptions.ExtraAdmissionInitializers(config)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (o *ExampleServerOptions) Config() (*genericapiserver.RecommendedConfig, error) {
 	if err := o.RecommendedOptions.SecureServing.MaybeDefaultWithSelfSignedCerts("localhost", o.AlternateDNS, []net.IP{netutils.ParseIPSloppy("127.0.0.1")}); err != nil {
 		return nil, fmt.Errorf("error creating self-signed certificates: %v", err)
@@ -101,8 +160,9 @@ func (o *ExampleServerOptions) Config() (*genericapiserver.RecommendedConfig, er
 	o.RecommendedOptions.Etcd = nil
 
 	serverConfig := genericapiserver.NewRecommendedConfig(Codecs)
+	serverConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(openapi.GetOpenAPIDefinitionsWithoutDisabledFeatures(v0alpha1.GetOpenAPIDefinitions), openapinamer.NewDefinitionNamer(Scheme))
 
-	if err := o.RecommendedOptions.ApplyTo(serverConfig); err != nil {
+	if err := o.ApplyTo(serverConfig); err != nil {
 		return nil, err
 	}
 
