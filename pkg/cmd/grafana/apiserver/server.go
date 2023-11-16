@@ -5,7 +5,8 @@ import (
 	"io"
 	"net"
 
-	"github.com/grafana/grafana/pkg/apis/snapshots/v0alpha1"
+	commonAPI "github.com/grafana/grafana/pkg/apis/common"
+	snapshotsv0alpha1 "github.com/grafana/grafana/pkg/apis/snapshots/v0alpha1"
 	"github.com/grafana/grafana/pkg/infra/db/dbtest"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/registry/apis/example"
@@ -16,16 +17,17 @@ import (
 	"github.com/grafana/grafana/pkg/services/playlist/playlistimpl"
 	secretService "github.com/grafana/grafana/pkg/services/secrets/fakes"
 	"github.com/grafana/grafana/pkg/setting"
-	openapinamer "k8s.io/apiserver/pkg/endpoints/openapi"
-	"k8s.io/apiserver/pkg/util/openapi"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	openapinamer "k8s.io/apiserver/pkg/endpoints/openapi"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	"k8s.io/apiserver/pkg/server/options"
+	"k8s.io/apiserver/pkg/util/openapi"
+	"k8s.io/kube-openapi/pkg/common"
 	netutils "k8s.io/utils/net"
 )
 
@@ -88,7 +90,7 @@ func (o *ExampleServerOptions) LoadAPIGroupBuilders(args []string) error {
 			o.builders = append(o.builders, &example.TestingAPIBuilder{})
 		case "playlist.grafana.app":
 			o.builders = append(o.builders, playlist.NewAPIService(playlistSvc, cfg))
-		case "snapshot.grafana.app":
+		case "snapshots.grafana.app":
 			o.builders = append(o.builders, snapshots.NewAPIService(cfg, snapshotSvc))
 		default:
 			return fmt.Errorf("unknown group: %s", g)
@@ -160,13 +162,22 @@ func (o *ExampleServerOptions) Config() (*genericapiserver.RecommendedConfig, er
 	o.RecommendedOptions.Etcd = nil
 
 	serverConfig := genericapiserver.NewRecommendedConfig(Codecs)
-	serverConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(openapi.GetOpenAPIDefinitionsWithoutDisabledFeatures(v0alpha1.GetOpenAPIDefinitions), openapinamer.NewDefinitionNamer(Scheme))
+	serverConfig.OpenAPIV3Config = genericapiserver.DefaultOpenAPIV3Config(openapi.GetOpenAPIDefinitionsWithoutDisabledFeatures(GetOpenAPIDefinitions), openapinamer.NewDefinitionNamer(Scheme))
 
 	if err := o.ApplyTo(serverConfig); err != nil {
 		return nil, err
 	}
 
 	return serverConfig, nil
+}
+
+func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
+	result := commonAPI.GetOpenAPIDefinitions(ref)
+	snapshots := snapshotsv0alpha1.GetOpenAPIDefinitions(ref)
+	for k, v := range snapshots {
+		result[k] = v
+	}
+	return result
 }
 
 // Validate validates ExampleServerOptions
