@@ -35,7 +35,7 @@ import {
   QueryFilterOptions,
   renderLegendFormat,
   LegacyMetricFindQueryOptions,
-  DataSourceWithQueryModificationSupportSupport,
+  DataSourceWithQueryModificationSupport,
 } from '@grafana/data';
 import { intervalToMs } from '@grafana/data/src/datetime/rangeutil';
 import { Duration } from '@grafana/lezer-logql';
@@ -139,7 +139,7 @@ export class LokiDatasource
     DataSourceWithQueryImportSupport<LokiQuery>,
     DataSourceWithQueryExportSupport<LokiQuery>,
     DataSourceWithToggleableQueryFiltersSupport<LokiQuery>,
-    DataSourceWithQueryModificationSupportSupport<LokiQuery>
+    DataSourceWithQueryModificationSupport<LokiQuery>
 {
   private streams = new LiveStreams();
   private logContextProvider: LogContextProvider;
@@ -860,7 +860,7 @@ export class LokiDatasource
   }
 
   /**
-   * Implemented as part of `DataSourceWithQueryModificationSupportSupport`. Used to modify a query based on the provided action.
+   * Implemented as part of `DataSourceWithQueryModificationSupport`. Used to modify a query based on the provided action.
    * It is used, for example, in the Query Builder to apply hints such as parsers, operations, etc.
    * @returns A new LokiQuery with the specified modification applied.
    */
@@ -947,7 +947,7 @@ export class LokiDatasource
   }
 
   /**
-   * Implemented as part of `DataSourceWithQueryModificationSupportSupport`. Returns a list of operation
+   * Implemented as part of `DataSourceWithQueryModificationSupport`. Returns a list of operation
    * types that are supported by `modifyQuery()`.
    */
   getSupportedQueryModifications()
