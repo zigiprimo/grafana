@@ -10,6 +10,7 @@ export enum Role {
   // User content is the content that the user has entered.
   // This content can be overwritten by following prompt.
   'user' = 'user',
+  'assistant' = 'assistant',
 }
 
 export type Message = llms.openai.Message;

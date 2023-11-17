@@ -22,6 +22,7 @@ const CHANGES_GENERATION_POSTFIX_PROMPT = [
   `If there are no substantial changes, the correct description is "Minor changes only"`,
   `If the changes are listed as "Changes too long to summarize", the correct response for that section is "Too many changes to auto-summarize"`,
   'In a diff, lines beginning with - are removed, and lines beginning with + are added.',
+  'If all of the lines begin with -, then the entire section is removed. Similar,y if all of the lines begin with +, then the entire section is added.',
   'If a line is changed, it will show a previous version removed and a new version added',
   'When referring to panel changes, use the panel title',
   'When using panel title, wrap it with double quotes',
@@ -171,10 +172,7 @@ export const GenAIDashboardChangesButton = ({
     if (userChanges.length > 8000) {
       userChanges = 'Changes too long to summarize';
     }
-
-    if (migrationChanges.split('\n').length < 10) {
-      migrationChanges = 'No significant migration changes';
-    } else if (migrationChanges.length > 8000) {
+    if (migrationChanges.length > 8000) {
       migrationChanges = 'Changes too long to summarize';
     }
 
@@ -222,13 +220,22 @@ export const GenAIDashboardChangesButton = ({
     if (hasHistory) {
       const title = <Text element="p">{'Improve the dashboard summary'}</Text>;
 
+      const historyMessages = [
+        ...messages.userMessages,
+        ...messages.migrationMessages,
+        {
+          content: reply,
+          role: Role.assistant,
+        },
+      ];
+
       return (
         <Toggletip
           title={title}
           content={
             <GenAIHistory
               history={history}
-              messages={[...messages.userMessages, ...messages.migrationMessages]}
+              messages={historyMessages}
               onApplySuggestion={onApplySuggestion}
               updateHistory={pushHistoryEntry}
               eventTrackingSrc={eventTrackingSrc}

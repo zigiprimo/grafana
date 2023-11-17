@@ -1,4 +1,4 @@
-import { get } from 'lodash';
+import { get, isEqual } from 'lodash';
 
 import { Dashboard } from '@grafana/schema';
 import { Diff, jsonDiff } from 'app/features/dashboard/components/VersionHistory/utils';
@@ -75,7 +75,7 @@ export function orderArrayProperties(obj1: JSONArray, obj2: JSONArray) {
       }
       let item2 = obj2[j];
       item2 = orderProperties(item1, item2);
-      if (JSON.stringify(item1) === JSON.stringify(item2)) {
+      if (isEqual(item1, item2)) {
         unseen1.delete(i);
         unseen2.delete(j);
         orderedObj2[i] = item2;
@@ -293,7 +293,7 @@ function formatDiffsAsString(lhs: unknown, diffRecord: Record<string, Diff[]>): 
         titleString = ` with title: ${title}`;
       }
     }
-    return `Changes for path ${key}${titleString}:\n${diffStrings.join('\n')}`;
+    return `Changes for path ${key}${titleString}:\n {\n${diffStrings.join('\n')}\n }`;
   });
 }
 
