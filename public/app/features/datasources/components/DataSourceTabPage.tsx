@@ -7,8 +7,6 @@ import { EditDataSource } from '../components/EditDataSource';
 import { EditDataSourceActions } from '../components/EditDataSourceActions';
 import { useDataSourceInfo } from '../components/useDataSourceInfo';
 
-import { DataSourceTitle } from './DataSourceTitle';
-
 export interface Props {
   uid: string;
   pageId: string | null;
@@ -23,13 +21,7 @@ export function DataSourceTabPage({ uid, pageId }: Props) {
   });
 
   return (
-    <Page
-      navId={navId}
-      pageNav={pageNav}
-      renderTitle={(title) => <DataSourceTitle title={title} />}
-      info={info}
-      actions={<EditDataSourceActions uid={uid} />}
-    >
+    <Page navId={navId} pageNav={pageNav} info={info} actions={<EditDataSourceActions uid={uid} />}>
       <Page.Contents>
         <EditDataSource uid={uid} pageId={pageId} />
       </Page.Contents>

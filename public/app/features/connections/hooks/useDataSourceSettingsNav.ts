@@ -64,7 +64,6 @@ export function useDataSourceSettingsNav(pageIdParam?: string) {
     dataSourcePluginName: datasourcePlugin?.name || plugin?.meta.name || '',
     active: true,
     text: datasource.name,
-    subTitle: `Type: ${dataSourceMeta.name}`,
     children: (pageNav.main.children || []).map((navModelItem) => ({
       ...navModelItem,
       url: navModelItem.url?.replace('datasources/edit/', '/connections/datasources/edit/'),

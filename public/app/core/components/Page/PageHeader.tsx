@@ -1,8 +1,8 @@
 import { css } from '@emotion/css';
 import React from 'react';
 
-import { NavModelItem, GrafanaTheme2 } from '@grafana/data';
-import { useStyles2 } from '@grafana/ui';
+import { NavModelItem } from '@grafana/data';
+import { Stack, Text, useStyles2 } from '@grafana/ui';
 
 import { PageInfo } from '../PageInfo/PageInfo';
 
@@ -25,73 +25,33 @@ export function PageHeader({ navItem, renderTitle, actions, info, subTitle, onEd
   const titleElement = onEditTitle ? (
     <EditableTitle value={navItem.text} onEdit={onEditTitle} />
   ) : (
-    <div className={styles.title}>
+    <Stack direction="row" alignItems="center">
       {navItem.img && <img className={styles.img} src={navItem.img} alt={`logo for ${navItem.text}`} />}
-      {renderTitle ? renderTitle(navItem.text) : <h1>{navItem.text}</h1>}
-    </div>
+      {renderTitle ? renderTitle(navItem.text) : <Text element="h1">{navItem.text}</Text>}
+    </Stack>
   );
 
   return (
-    <div className={styles.pageHeader}>
-      <div className={styles.topRow}>
-        <div className={styles.titleInfoContainer}>
+    <Stack direction="row" alignItems="flex-start" gap={3}>
+      <Stack direction="row" gap={2} flex={1} wrap="wrap" alignItems="flex-start">
+        <Stack direction="column" grow={1} shrink={0} basis="auto">
           {titleElement}
-          {info && <PageInfo info={info} />}
-        </div>
-        <div className={styles.actions}>{actions}</div>
-      </div>
-      {sub && <div className={styles.subTitle}>{sub}</div>}
-    </div>
+          {sub && <Text color="secondary">{sub}</Text>}
+        </Stack>
+        {info && <PageInfo info={info} />}
+      </Stack>
+      <Stack direction="row" gap={1}>
+        {actions}
+      </Stack>
+    </Stack>
   );
 }
 
-const getStyles = (theme: GrafanaTheme2) => {
+const getStyles = () => {
   return {
-    topRow: css({
-      alignItems: 'flex-start',
-      display: 'flex',
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: theme.spacing(1, 3),
-    }),
-    title: css({
-      display: 'flex',
-      flexDirection: 'row',
-      h1: {
-        display: 'flex',
-        marginBottom: 0,
-      },
-    }),
-    actions: css({
-      display: 'flex',
-      flexDirection: 'row',
-      gap: theme.spacing(1),
-    }),
-    titleInfoContainer: css({
-      display: 'flex',
-      label: 'title-info-container',
-      flex: 1,
-      flexWrap: 'wrap',
-      gap: theme.spacing(1, 4),
-      justifyContent: 'space-between',
-      maxWidth: '100%',
-      minWidth: '200px',
-    }),
-    pageHeader: css({
-      label: 'page-header',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: theme.spacing(1),
-      marginBottom: theme.spacing(2),
-    }),
-    subTitle: css({
-      position: 'relative',
-      color: theme.colors.text.secondary,
-    }),
     img: css({
       width: '32px',
       height: '32px',
-      marginRight: theme.spacing(2),
     }),
   };
 };

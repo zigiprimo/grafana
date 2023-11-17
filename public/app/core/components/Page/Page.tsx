@@ -100,6 +100,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       {
         label: 'page-inner',
         padding: theme.spacing(2),
+        gap: theme.spacing(2),
         borderBottom: 'none',
         background: theme.colors.background.primary,
         display: 'flex',
