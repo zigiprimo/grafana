@@ -7,7 +7,8 @@ import (
 
 	commonAPI "github.com/grafana/grafana/pkg/apis/common"
 	snapshotsv0alpha1 "github.com/grafana/grafana/pkg/apis/snapshots/v0alpha1"
-	"github.com/grafana/grafana/pkg/infra/db/dbtest"
+	"github.com/grafana/grafana/pkg/bus"
+	"github.com/grafana/grafana/pkg/infra/localcache"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/registry/apis/example"
 	"github.com/grafana/grafana/pkg/registry/apis/playlist"
@@ -16,6 +17,8 @@ import (
 	grafanaAPIServer "github.com/grafana/grafana/pkg/services/grafana-apiserver"
 	"github.com/grafana/grafana/pkg/services/playlist/playlistimpl"
 	secretService "github.com/grafana/grafana/pkg/services/secrets/fakes"
+	"github.com/grafana/grafana/pkg/services/sqlstore"
+	"github.com/grafana/grafana/pkg/services/sqlstore/migrations"
 	"github.com/grafana/grafana/pkg/setting"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -78,11 +81,22 @@ func (o *ExampleServerOptions) LoadAPIGroupBuilders(args []string) error {
 		HomePath: "./",
 	})
 	ts, _ := tracing.ProvideService(cfg)
+
+	inProcBus := bus.ProvideBus(ts)
+	cacheService := localcache.ProvideService()
+	ossMigrations := migrations.ProvideOSSMigrations()
+
+	db, err := sqlstore.ProvideService(cfg, cacheService, ossMigrations, inProcBus, ts)
+	if err != nil {
+		fmt.Println("Error in sql init", err)
+		return err
+	}
+
 	playlistSvc := playlistimpl.ProvideService(
-		dbtest.NewFakeDB(),
+		db,
 		ts,
 	)
-	snapshotSvc := snapshotsService.NewService(dbtest.NewFakeDB(), secretService.NewFakeSecretsService())
+	snapshotSvc := snapshotsService.NewService(db, secretService.NewFakeSecretsService())
 	for _, g := range args {
 		switch g {
 		// No dependencies for testing
