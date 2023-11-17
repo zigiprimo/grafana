@@ -294,8 +294,12 @@ describe('getDashboardStringDiff', () => {
 
     const result = getDashboardStringDiff(dashboardModel);
 
-    const panelToBeMovedDiff: string = [
-      `Changes for path panels/1/gridPos with title: Panel to be moved:`,
+    const panelToBeMovedDiff = [
+      `JSON path:panels/1/gridPos`,
+      `Panel title: Panel to be moved`,
+      `(2 changed, 2 unchanged)`,
+      `2 replaced`,
+      `Changes:`,
       `-\t\"x\": 2`,
       `+\t\"x\": 1`,
       `-\t\"y\": 0`,

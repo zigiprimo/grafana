@@ -299,7 +299,7 @@ function formatDiffsAsString(lhs: unknown, diffRecord: Record<string, Diff[]>): 
     }
 
     const diffStrings = desiredDiffs.map(getDiffString);
-    // Need to run reduce on desiredDiffs and return counts of add, removed and replaced
+
     const { add, remove, replace } = desiredDiffs.reduce(
       (counts, diff: Diff) => {
         if (diff.op === 'add') {
@@ -314,20 +314,31 @@ function formatDiffsAsString(lhs: unknown, diffRecord: Record<string, Diff[]>): 
       { add: 0, remove: 0, replace: 0 }
     );
 
-    // Template string to display counts of add, remove and replace
     const addString = add > 0 ? `${add} added, ` : '';
     const removeString = remove > 0 ? `${remove} removed, ` : '';
     const replaceString = replace > 0 ? `${replace} replaced` : '';
     const changedCountsString = `${addString}${removeString}${replaceString}\n`;
 
-    const path = key.split('/');
-    const numObjects = Object.keys(get(lhs, path)).length;
+    let numObjects;
+    if (key === 'dashboard') {
+      if (typeof lhs === 'object' && lhs !== null) {
+        numObjects = Object.keys(lhs).length;
+      } else {
+        numObjects = 0; // this should never happen
+      }
+    } else {
+      const path = key.split('/');
+      numObjects = (Object.keys(get(lhs, path)) ?? []).length;
+    }
+
     const numModified = diffStrings.length;
     const numUnmodified = numObjects - numModified;
     const changedAndUnchangedCountsString = `(${numModified} changed, ${numUnmodified} unchanged)\n`;
 
-    const changesString = `Changes:\n {\n${diffStrings.join('\n')}\n }`;
-    return `${jsonPathString}${titleString}${changedAndUnchangedCountsString}${changedCountsString}${changesString}`;
+    const changesString = `Changes:\n${diffStrings.join('\n')}`;
+
+    const result = `${jsonPathString}${titleString}${changedAndUnchangedCountsString}${changedCountsString}${changesString}`;
+    return result;
   });
 }
 
