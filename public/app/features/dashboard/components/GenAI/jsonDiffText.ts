@@ -256,44 +256,78 @@ export function separateRootAndNonRootDiffs(diffRecord: Record<string, Diff[]>):
 
 // Function for taking a diff and returning human-readable string
 export function getDiffString(diff: Diff): string {
-  if (diff.path.length >= 2 && diff.path[0] === 'templating' && diff.path[1] === 'list') {
-    return '';
-  }
-  if (diff.path.length >= 2 && 'thresholds' in diff.path) {
-    return '';
-  }
-  let diffString = '';
-
   const key: string = diff.path[diff.path.length - 1];
   if (diff.op === 'add') {
-    diffString = `+\t"${key}": ${JSON.stringify(diff.value)}`;
+    return `+\t"${key}": ${JSON.stringify(diff.value)}`;
   } else if (diff.op === 'remove') {
-    diffString = `-\t"${key}": ${JSON.stringify(diff.originalValue)}`;
+    return `-\t"${key}": ${JSON.stringify(diff.originalValue)}`;
   } else if (diff.op === 'replace') {
-    let minusString = `-\t"${key}": ${JSON.stringify(diff.originalValue)}`;
-    let plusString = `+\t"${key}": ${JSON.stringify(diff.value)}`;
-    diffString = minusString + '\n' + plusString;
+    const minusString = `-\t"${key}": ${JSON.stringify(diff.originalValue)}`;
+    const plusString = `+\t"${key}": ${JSON.stringify(diff.value)}`;
+    return minusString + '\n' + plusString;
   }
-  return diffString;
+  return '';
 }
 
 // Function for taking a diff record and returning human-readable string
 // Extremely specific to panels, to ensure they have displayed titles
+// Contains filtering logic for keys we do not care about
 function formatDiffsAsString(lhs: unknown, diffRecord: Record<string, Diff[]>): string[] {
   return Object.entries(diffRecord).map(([key, diffs]) => {
-    if (diffs.length === 0) {
+    const desiredDiffs = diffs.filter((diff: Diff) => {
+      if (diff.path.length >= 2 && diff.path[0] === 'templating' && diff.path[1] === 'list') {
+        return false;
+      }
+      if (diff.path.length >= 2 && 'thresholds' in diff.path) {
+        return false;
+      }
+      return true;
+    });
+
+    if (desiredDiffs.length === 0) {
       return '';
     }
-    const diffStrings = diffs.map(getDiffString).filter((diffString) => diffString !== '');
+
+    const jsonPathString = `JSON path:${key}\n`;
     let titleString = '';
     if (key.includes('panels')) {
       const path = [...diffs[0].path.slice(0, diffs[0].path.indexOf('panels') + 2), 'title'];
       const title = get(lhs, path);
       if (title !== undefined) {
-        titleString = ` with title: ${title}`;
+        titleString = `Panel title: ${title}\n`;
       }
     }
-    return `Changes for path ${key}${titleString}:\n {\n${diffStrings.join('\n')}\n }`;
+
+    const diffStrings = desiredDiffs.map(getDiffString);
+    // Need to run reduce on desiredDiffs and return counts of add, removed and replaced
+    const { add, remove, replace } = desiredDiffs.reduce(
+      (counts, diff: Diff) => {
+        if (diff.op === 'add') {
+          counts.add++;
+        } else if (diff.op === 'remove') {
+          counts.remove++;
+        } else if (diff.op === 'replace') {
+          counts.replace++;
+        }
+        return counts;
+      },
+      { add: 0, remove: 0, replace: 0 }
+    );
+
+    // Template string to display counts of add, remove and replace
+    const addString = add > 0 ? `${add} added, ` : '';
+    const removeString = remove > 0 ? `${remove} removed, ` : '';
+    const replaceString = replace > 0 ? `${replace} replaced` : '';
+    const changedCountsString = `${addString}${removeString}${replaceString}\n`;
+
+    const path = key.split('/');
+    const numObjects = Object.keys(get(lhs, path)).length;
+    const numModified = diffStrings.length;
+    const numUnmodified = numObjects - numModified;
+    const changedAndUnchangedCountsString = `(${numModified} changed, ${numUnmodified} unchanged)\n`;
+
+    const changesString = `Changes:\n {\n${diffStrings.join('\n')}\n }`;
+    return `${jsonPathString}${titleString}${changedAndUnchangedCountsString}${changedCountsString}${changesString}`;
   });
 }
 
