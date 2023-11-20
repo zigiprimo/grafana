@@ -3,21 +3,20 @@ package finder
 import (
 	"context"
 	"errors"
-	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 
-	"github.com/grafana/grafana/pkg/infra/fs"
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/config"
 	"github.com/grafana/grafana/pkg/plugins/log"
-	"github.com/grafana/grafana/pkg/util"
+	"github.com/grafana/grafana/pkg/plugins/manager/loader/fswalker"
 )
 
-var walk = util.Walk
+var walk = fswalker.Walk
 
 var (
 	ErrInvalidPluginJSONFilePath = errors.New("invalid plugin.json filepath was provided")
@@ -47,7 +46,7 @@ func (l *Local) Find(ctx context.Context, src plugins.PluginSource) ([]*plugins.
 	pluginURIs := src.PluginURIs(ctx)
 	pluginJSONPaths := make([]string, 0, len(pluginURIs))
 	for _, path := range pluginURIs {
-		exists, err := fs.Exists(path)
+		exists, err := fileExists(path)
 		if err != nil {
 			l.log.Warn("Skipping finding plugins as an error occurred", "path", path, "error", err)
 			continue
@@ -159,48 +158,69 @@ func (l *Local) readPluginJSON(pluginJSONPath string) (plugins.JSONData, error) 
 }
 
 func (l *Local) getAbsPluginJSONPaths(path string, followDistFolder bool) ([]string, error) {
-	var pluginJSONPaths []string
-
 	var err error
 	path, err = filepath.Abs(path)
 	if err != nil {
 		return []string{}, err
 	}
 
-	if err = walk(path, true, true, followDistFolder,
-		func(currentPath string, fi os.FileInfo, err error) error {
-			if err != nil {
-				if errors.Is(err, os.ErrNotExist) {
-					l.log.Error("Couldn't scan directory since it doesn't exist", "pluginDir", path, "error", err)
-					return nil
-				}
-				if errors.Is(err, os.ErrPermission) {
-					l.log.Error("Couldn't scan directory due to lack of permissions", "pluginDir", path, "error", err)
-					return nil
-				}
-
-				return fmt.Errorf("filepath.Walk reported an error for %q: %w", currentPath, err)
-			}
-
-			if fi.Name() == "node_modules" {
-				return util.ErrWalkSkipDir
-			}
-
-			if fi.IsDir() {
-				return nil
-			}
-
-			if fi.Name() != "plugin.json" {
-				return nil
-			}
-
-			pluginJSONPaths = append(pluginJSONPaths, currentPath)
-			return nil
-		}); err != nil {
+	paths, err := fs.Glob(os.DirFS(path), "**/plugin.json")
+	if err != nil {
 		return []string{}, err
 	}
 
-	return pluginJSONPaths, nil
+	if len(paths) == 0 {
+		paths, err = fs.Glob(os.DirFS(path), "plugin.json")
+		if err != nil {
+			return []string{}, err
+		}
+
+		if len(paths) == 0 {
+			paths, err = fs.Glob(os.DirFS(path), "**/**/plugin.json")
+			if err != nil {
+				return []string{}, err
+			}
+		}
+	}
+
+	for i, s := range paths {
+		paths[i] = filepath.Join(path, s)
+	}
+
+	//if err = walk(path, true, true, followDistFolder,
+	//	func(currentPath string, fi os.FileInfo, err error) error {
+	//		if err != nil {
+	//			if errors.Is(err, os.ErrNotExist) {
+	//				l.log.Error("Couldn't scan directory since it doesn't exist", "pluginDir", path, "error", err)
+	//				return nil
+	//			}
+	//			if errors.Is(err, os.ErrPermission) {
+	//				l.log.Error("Couldn't scan directory due to lack of permissions", "pluginDir", path, "error", err)
+	//				return nil
+	//			}
+	//
+	//			return fmt.Errorf("filepath.Walk reported an error for %q: %w", currentPath, err)
+	//		}
+	//
+	//		if fi.Name() == "node_modules" {
+	//			return fswalker.ErrWalkSkipDir
+	//		}
+	//
+	//		if fi.IsDir() {
+	//			return nil
+	//		}
+	//
+	//		if fi.Name() != "plugin.json" {
+	//			return nil
+	//		}
+	//
+	//		pluginJSONPaths = append(pluginJSONPaths, currentPath)
+	//		return nil
+	//	}); err != nil {
+	//	return []string{}, err
+	//}
+
+	return paths, nil
 }
 
 func (l *Local) readFile(pluginJSONPath string) (io.ReadCloser, error) {
@@ -218,4 +238,17 @@ func (l *Local) readFile(pluginJSONPath string) (io.ReadCloser, error) {
 	// Wrapping in filepath.Clean to properly handle
 	// gosec G304 Potential file inclusion via variable rule.
 	return os.Open(filepath.Clean(absPluginJSONPath))
+}
+
+// fileExists determines whether a file/directory fileExists or not.
+func fileExists(p string) (bool, error) {
+	_, err := os.Stat(p)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return false, err
+		}
+		return false, nil
+	}
+
+	return true, nil
 }
