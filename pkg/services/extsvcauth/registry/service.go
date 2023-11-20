@@ -3,7 +3,6 @@ package registry
 import (
 	"context"
 	"github.com/grafana/grafana/pkg/infra/serverlock"
-	"sync"
 	"time"
 
 	"github.com/grafana/grafana/pkg/infra/log"
@@ -29,7 +28,6 @@ type Registry struct {
 	saReg    extsvcauth.ExternalServiceRegistry
 
 	extSvcProviders map[string]extsvcauth.AuthProvider
-	lock            sync.Mutex
 	serverLock      *serverlock.ServerLockService
 }
 
@@ -37,7 +35,6 @@ func ProvideExtSvcRegistry(oauthServer *oasimpl.OAuth2ServiceImpl, saSvc *extsvc
 	return &Registry{
 		extSvcProviders: map[string]extsvcauth.AuthProvider{},
 		features:        features,
-		lock:            sync.Mutex{},
 		logger:          log.New("extsvcauth.registry"),
 		oauthReg:        oauthServer,
 		saReg:           saSvc,
@@ -129,9 +126,7 @@ func (r *Registry) SaveExternalService(ctx context.Context, cmd *extsvcauth.Exte
 
 	err := r.serverLock.LockExecuteAndReleaseWithRetries(ctx, "ext-svc-save-"+cmd.Name, lockWaitMin, lockWaitMax, lockTimeout, func(ctx context.Context) {
 		// Record provider in case of removal
-		r.lock.Lock()
 		r.extSvcProviders[slugify.Slugify(cmd.Name)] = cmd.AuthProvider
-		r.lock.Unlock()
 
 		switch cmd.AuthProvider {
 		case extsvcauth.ServiceAccounts:
