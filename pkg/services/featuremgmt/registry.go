@@ -871,6 +871,12 @@ var (
 			RequiresRestart: true, // changes the API routing
 		},
 		{
+			Name:        "kubernetesSnapshots",
+			Description: "Use the kubernetes API in the frontend for snapshots",
+			Stage:       FeatureStageExperimental,
+			Owner:       grafanaAppPlatformSquad,
+		},
+		{
 			Name:        "cloudWatchBatchQueries",
 			Description: "Runs CloudWatch metrics queries as separate batches",
 			Stage:       FeatureStagePublicPreview,

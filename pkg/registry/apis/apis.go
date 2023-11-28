@@ -8,6 +8,7 @@ import (
 	"github.com/grafana/grafana/pkg/registry/apis/datasource"
 	"github.com/grafana/grafana/pkg/registry/apis/example"
 	"github.com/grafana/grafana/pkg/registry/apis/playlist"
+	"github.com/grafana/grafana/pkg/registry/apis/snapshots"
 )
 
 var (
@@ -23,6 +24,7 @@ func ProvideRegistryServiceSink(
 	_ *playlist.PlaylistAPIBuilder,
 	_ *example.TestingAPIBuilder,
 	_ *datasource.DSAPIBuilder,
+	_ *snapshots.SnapshotsAPIBuilder,
 ) *Service {
 	return &Service{}
 }
