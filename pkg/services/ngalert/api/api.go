@@ -104,14 +104,15 @@ func (api *API) RegisterAPIEndpoints(m *metrics.API) {
 		api.DatasourceCache,
 		NewLotexRuler(proxy, logger),
 		&RulerSrv{
-			conditionValidator: api.EvaluatorFactory,
-			QuotaService:       api.QuotaService,
-			store:              api.RuleStore,
-			provenanceStore:    api.ProvenanceStore,
-			xactManager:        api.TransactionManager,
-			log:                logger,
-			cfg:                &api.Cfg.UnifiedAlerting,
-			authz:              ruleAuthzService,
+			conditionValidator:  api.EvaluatorFactory,
+			QuotaService:        api.QuotaService,
+			store:               api.RuleStore,
+			provenanceStore:     api.ProvenanceStore,
+			xactManager:         api.TransactionManager,
+			log:                 logger,
+			cfg:                 &api.Cfg.UnifiedAlerting,
+			authz:               ruleAuthzService,
+			notificationService: &NotificationServiceStub{}, // TODO replace me
 		},
 	), m)
 	api.RegisterTestingApiEndpoints(NewTestingApi(
@@ -149,4 +150,15 @@ func (api *API) RegisterAPIEndpoints(m *metrics.API) {
 		logger: logger,
 		hist:   api.Historian,
 	}), m)
+}
+
+type NotificationServiceStub struct {
+}
+
+func (n NotificationServiceStub) Validate(ctx context.Context, route models.NotificationSettings, user identity.Requester) error {
+	return nil
+}
+
+func (n NotificationServiceStub) EnsureRoutes(ctx context.Context, cp []models.NotificationSettings) error {
+	return nil
 }
