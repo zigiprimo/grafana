@@ -490,5 +490,9 @@ func GetRuleExtraLabels(rule *models.AlertRule, folderTitle string, includeFolde
 	if includeFolder {
 		extraLabels[models.FolderTitleLabel] = folderTitle
 	}
+
+	if rule.NotificationSettings != nil {
+		return mergeLabels(extraLabels, rule.NotificationSettings.ToLabels())
+	}
 	return extraLabels
 }
