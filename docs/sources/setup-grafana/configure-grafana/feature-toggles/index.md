@@ -163,6 +163,7 @@ Experimental features might be changed or removed without prior notice.
 | `logsInfiniteScrolling`                     | Enables infinite scrolling for the Logs panel in Explore and Dashboards                                                                                                                                                                                                           |
 | `flameGraphItemCollapsing`                  | Allow collapsing of flame graph items                                                                                                                                                                                                                                             |
 | `pluginsSkipHostEnvVars`                    | Disables passing host environment variable to plugin processes                                                                                                                                                                                                                    |
+| `wizarDSToggle`                             | Enables an AI supported wizard in the Prometheus data source                                                                                                                                                                                                                      |
 
 ## Development feature toggles
 

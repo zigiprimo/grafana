@@ -163,4 +163,5 @@ export interface FeatureToggles {
   datatrails?: boolean;
   alertingSimplifiedRouting?: boolean;
   pluginsSkipHostEnvVars?: boolean;
+  wizarDSToggle?: boolean;
 }

@@ -586,4 +586,8 @@ const (
 	// FlagPluginsSkipHostEnvVars
 	// Disables passing host environment variable to plugin processes
 	FlagPluginsSkipHostEnvVars = "pluginsSkipHostEnvVars"
+
+	// FlagWizarDSToggle
+	// Enables an AI supported wizard in the Prometheus data source
+	FlagWizarDSToggle = "wizarDSToggle"
 )
