@@ -1,4 +1,6 @@
-import { buildVisualQueryFromString } from './parsing';
+import { parser } from '@grafana/lezer-logql';
+
+import { buildVisualQueryFromString, getLeftMostChild, getString, replaceVariables } from './parsing';
 import { LokiOperationId, LokiVisualQuery } from './types';
 
 describe('buildVisualQueryFromString', () => {
@@ -1034,6 +1036,45 @@ describe('buildVisualQueryFromString', () => {
         operations: [{ id: LokiOperationId.Logfmt, params: [true, true, 'label1', 'label2', 'label3="label4"'] }],
       })
     );
+  });
+});
+
+describe('getLeftMostChild', () => {
+  it('return left most child', () => {
+    const tree = parser.parse('sum_over_time({bar="baz"}[5m])');
+    const child = getLeftMostChild(tree.topNode);
+    expect(child).toBeDefined();
+    expect(child!.name).toBe('SumOverTime');
+  });
+});
+
+describe('replaceVariables', () => {
+  it('should replace variables', () => {
+    expect(replaceVariables('rate({bar="${app}", job="[[label_var]]"}[$__auto])')).toBe(
+      'rate({bar="__V_2__app__V__", job="__V_1__label_var__V__"}[__V_0____auto__V__])'
+    );
+  });
+});
+
+describe('getString', () => {
+  it('should return correct string representation of the node', () => {
+    const expr = 'rate({bar="baz"}[5m])';
+    const tree = parser.parse(expr);
+    const child = getLeftMostChild(tree.topNode);
+    expect(getString(expr, child)).toBe('rate');
+  });
+
+  it('should return string with correct variables', () => {
+    const expr = 'rate({bar="__V_2__app__V__", job="__V_1__label_var__V__"}[__V_0____auto__V__])';
+    const tree = parser.parse(expr);
+    expect(getString(expr, tree.topNode)).toBe('rate({bar="${app}", job="[[label_var]]"}[$__auto])');
+  });
+
+  it('is symmetrical with replaceVariables', () => {
+    const expr = 'rate({bar="${app}", job="[[label_var]]"}[$__auto])';
+    const replaced = replaceVariables(expr);
+    const tree = parser.parse(replaced);
+    expect(getString(replaced, tree.topNode)).toBe(expr);
   });
 });
 

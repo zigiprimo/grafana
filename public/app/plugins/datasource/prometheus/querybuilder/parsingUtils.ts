@@ -1,6 +1,6 @@
 import { SyntaxNode, TreeCursor } from '@lezer/common';
 
-import { QueryBuilderOperation, QueryBuilderOperationParamValue } from './types';
+import { QueryBuilderOperation, QueryBuilderOperationParamValue } from './shared/types';
 
 // Although 0 isn't explicitly provided in the lezer-promql & @grafana/lezer-logql library as the error node ID, it does appear to be the ID of error nodes within lezer.
 export const ErrorId = 0;
@@ -113,11 +113,11 @@ export function makeBinOp(
  * not be safe is it would also find arguments of nested functions.
  * @param expr
  * @param cur
- * @param type - can be string or number, some data-sources (loki) haven't migrated over to using numeric constants defined in the lezer parsing library (e.g. lezer-promql).
+ * @param type - numeric constants defined in the lezer parsing library (e.g. lezer-promql).
  * @todo Remove string type definition when all data-sources have migrated to numeric constants
  */
-export function getAllByType(expr: string, cur: SyntaxNode, type: number | string): string[] {
-  if (cur.type.id === type || cur.name === type) {
+export function getAllByType(expr: string, cur: SyntaxNode, type: number): string[] {
+  if (cur.type.id === type) {
     return [getString(expr, cur)];
   }
   const values: string[] = [];
