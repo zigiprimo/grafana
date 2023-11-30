@@ -19,7 +19,7 @@ import { Interaction, SuggestionType } from './types';
 // actions to update the state
 const { showStartingMessage, indicateCheckbox, addInteraction, updateInteraction } = stateSlice.actions;
 
-export type PromQailProps = {
+export type WizarDSProps = {
   query: PromVisualQuery;
   closeDrawer: () => void;
   datasource: PrometheusDatasource;
@@ -27,7 +27,7 @@ export type PromQailProps = {
 
 const SKIP_STARTING_MESSAGE = 'SKIP_STARTING_MESSAGE';
 
-export const PromQail = (props: PromQailProps) => {
+export const WizarDS = (props: WizarDSProps) => {
   const { query, closeDrawer, datasource } = props;
   const skipStartingMessage = store.getBool(SKIP_STARTING_MESSAGE, false);
 

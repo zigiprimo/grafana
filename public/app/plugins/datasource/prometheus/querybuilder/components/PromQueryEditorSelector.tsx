@@ -4,7 +4,7 @@ import React, { SyntheticEvent, useCallback, useEffect, useState } from 'react';
 import { CoreApp, LoadingState, SelectableValue } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
 import { EditorHeader, EditorRows, FlexItem, Space } from '@grafana/experimental';
-import { reportInteraction } from '@grafana/runtime';
+import { config, reportInteraction } from '@grafana/runtime';
 import { Button, ConfirmModal, Drawer /*, ToggletipWIZ*/ } from '@grafana/ui';
 
 import { PromQueryEditorProps } from '../../components/types';
@@ -21,7 +21,7 @@ import { changeEditorMode, getQueryWithDefaults } from '../state';
 import { PromQueryBuilderContainer } from './PromQueryBuilderContainer';
 import { PromQueryBuilderOptions } from './PromQueryBuilderOptions';
 import { PromQueryCodeEditor } from './PromQueryCodeEditor';
-import { PromQail } from './wizarDS/WizarDS';
+import { WizarDS } from './wizarDS/WizarDS';
 
 export const FORMAT_OPTIONS: Array<SelectableValue<PromQueryFormat>> = [
   { label: 'Time series', value: 'time_series' },
@@ -94,6 +94,8 @@ export const PromQueryEditorSelector = React.memo<Props>((props) => {
     setExplain(e.currentTarget.checked);
   };
 
+  const wizarDSToggle = config.featureToggles.wizarDSToggle;
+
   return (
     <>
       <ConfirmModal
@@ -107,9 +109,9 @@ export const PromQueryEditorSelector = React.memo<Props>((props) => {
         }}
         onDismiss={() => setParseModalOpen(false)}
       />
-      {true /* feature flag*/ && wizarDSDrawerOpen && (
+      {wizarDSToggle && wizarDSDrawerOpen && (
         <Drawer closeOnMaskClick={false} onClose={() => setWizarDSDrawerOpen(false)}>
-          <PromQail
+          <WizarDS
             query={{ metric: '', labels: [], operations: [] }}
             closeDrawer={() => setWizarDSDrawerOpen(false)}
             // onChange={() => {return {metric: '', labels: [], operations: []}}}
