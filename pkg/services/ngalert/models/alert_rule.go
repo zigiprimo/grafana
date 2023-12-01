@@ -206,7 +206,7 @@ type AlertRule struct {
 	Annotations          map[string]string
 	Labels               map[string]string
 	IsPaused             bool
-	NotificationSettings *NotificationSettings `xorm:"notification_settings"`
+	NotificationSettings []NotificationSettings `xorm:"notification_settings"` // TODO slice to workaround xorm
 }
 
 // AlertRuleWithOptionals This is to avoid having to pass in additional arguments deep in the call stack. Alert rule
