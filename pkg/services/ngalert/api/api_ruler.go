@@ -439,11 +439,12 @@ func toGettableExtendedRuleNode(r ngmodels.AlertRule, namespaceID int64, provena
 	var notificationSetting *apimodels.GettableNotificationSettings
 	if r.NotificationSettings != nil {
 		notificationSetting = &apimodels.GettableNotificationSettings{
-			Receiver:       r.NotificationSettings.Receiver,
-			GroupBy:        r.NotificationSettings.GroupBy,
-			GroupWait:      r.NotificationSettings.GroupWait,
-			GroupInterval:  r.NotificationSettings.GroupInterval,
-			RepeatInterval: r.NotificationSettings.RepeatInterval,
+			Receiver:          r.NotificationSettings.Receiver,
+			GroupBy:           r.NotificationSettings.GroupBy,
+			GroupWait:         r.NotificationSettings.GroupWait,
+			GroupInterval:     r.NotificationSettings.GroupInterval,
+			RepeatInterval:    r.NotificationSettings.RepeatInterval,
+			MuteTimeIntervals: r.NotificationSettings.MuteTimeIntervals,
 		}
 	}
 
