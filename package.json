@@ -7,6 +7,8 @@
   "repository": "github:grafana/grafana",
   "scripts": {
     "prebuild": "yarn i18n:compile && yarn plugin:build",
+    "biome:check": "biome format --log-level=warn .",
+    "biome:write": "biome format --write .",
     "build": "yarn prebuild & NODE_ENV=production webpack --progress --config scripts/webpack/webpack.prod.js",
     "build:nominify": "yarn run build --env noMinify=1",
     "dev": "yarn prebuild & NODE_ENV=dev webpack --progress --color --config scripts/webpack/webpack.dev.js",
@@ -82,6 +84,7 @@
     "@betterer/cli": "5.4.0",
     "@betterer/eslint": "5.4.0",
     "@betterer/regexp": "5.4.0",
+    "@biomejs/biome": "1.4.1",
     "@cypress/webpack-preprocessor": "6.0.0",
     "@emotion/eslint-plugin": "11.11.0",
     "@grafana/eslint-config": "6.0.1",

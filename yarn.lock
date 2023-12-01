@@ -1789,6 +1789,77 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@biomejs/biome@npm:1.4.1":
+  version: 1.4.1
+  resolution: "@biomejs/biome@npm:1.4.1"
+  dependencies:
+    "@biomejs/cli-darwin-arm64": "npm:1.4.1"
+    "@biomejs/cli-darwin-x64": "npm:1.4.1"
+    "@biomejs/cli-linux-arm64": "npm:1.4.1"
+    "@biomejs/cli-linux-x64": "npm:1.4.1"
+    "@biomejs/cli-win32-arm64": "npm:1.4.1"
+    "@biomejs/cli-win32-x64": "npm:1.4.1"
+  dependenciesMeta:
+    "@biomejs/cli-darwin-arm64":
+      optional: true
+    "@biomejs/cli-darwin-x64":
+      optional: true
+    "@biomejs/cli-linux-arm64":
+      optional: true
+    "@biomejs/cli-linux-x64":
+      optional: true
+    "@biomejs/cli-win32-arm64":
+      optional: true
+    "@biomejs/cli-win32-x64":
+      optional: true
+  bin:
+    biome: bin/biome
+  checksum: fad12f5fdca7fe51f5ebf0cd559cd6ab67a6ffdb6c4b834cbd3221c1e0ca86c5ea80a565cb3bcdba0901f1055a9050db0a399c43e8c3d469cfd8bc31b95a5aca
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-darwin-arm64@npm:1.4.1":
+  version: 1.4.1
+  resolution: "@biomejs/cli-darwin-arm64@npm:1.4.1"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-darwin-x64@npm:1.4.1":
+  version: 1.4.1
+  resolution: "@biomejs/cli-darwin-x64@npm:1.4.1"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-linux-arm64@npm:1.4.1":
+  version: 1.4.1
+  resolution: "@biomejs/cli-linux-arm64@npm:1.4.1"
+  conditions: os=linux & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-linux-x64@npm:1.4.1":
+  version: 1.4.1
+  resolution: "@biomejs/cli-linux-x64@npm:1.4.1"
+  conditions: os=linux & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-win32-arm64@npm:1.4.1":
+  version: 1.4.1
+  resolution: "@biomejs/cli-win32-arm64@npm:1.4.1"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@biomejs/cli-win32-x64@npm:1.4.1":
+  version: 1.4.1
+  resolution: "@biomejs/cli-win32-x64@npm:1.4.1"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
 "@braintree/sanitize-url@npm:6.0.2":
   version: 6.0.2
   resolution: "@braintree/sanitize-url@npm:6.0.2"
@@ -17292,6 +17363,7 @@ __metadata:
     "@betterer/cli": "npm:5.4.0"
     "@betterer/eslint": "npm:5.4.0"
     "@betterer/regexp": "npm:5.4.0"
+    "@biomejs/biome": "npm:1.4.1"
     "@cypress/webpack-preprocessor": "npm:6.0.0"
     "@daybrush/utils": "npm:1.13.0"
     "@emotion/css": "npm:11.11.2"

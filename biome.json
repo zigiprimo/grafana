@@ -1,0 +1,50 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.4.1/schema.json",
+  "organizeImports": {
+    "enabled": true
+  },
+  "formatter": {
+    "enabled": true,
+    "lineWidth": 120,
+    "indentStyle": "space",
+    "ignore": [
+      "*.js",
+      ".git",
+      ".github",
+      ".yarn",
+      "build",
+      "compiled",
+      "data",
+      "deployment_tools_config.json",
+      "devenv",
+      "dist",
+      "e2e/tmp",
+      "node_modules",
+      "pkg",
+      "public/lib/monaco",
+      "public/sass/*.generated.scss",
+      "scripts/grafana-server/tmp",
+      "vendor",
+      "**/*.gen.ts",
+      "public/locales/_build/",
+      "public/locales/**/*.js",
+      "theme.light.generated.json",
+      "theme.dark.generated.json",
+      "public/api-merged.json",
+      "public/api-enterprise-spec.json",
+      "public/openapi3.json",
+      "kinds/report.json",
+      "docs/sources/developers/kinds/",
+      "scripts/cli/bettererIssueTemplate.md"
+    ]
+  },
+  "linter": {
+    "enabled": false
+  },
+  "javascript": {
+    "formatter": {
+      "trailingComma": "es5",
+      "quoteStyle": "single"
+    }
+  }
+}
