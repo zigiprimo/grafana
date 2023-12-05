@@ -19,7 +19,7 @@ import {
 import { Modal } from '@grafana/ui';
 import appEvents from 'app/core/app_events';
 import { getPluginSettings } from 'app/features/plugins/pluginSettings';
-import { ShowModalReactEvent } from 'app/types/events';
+import { ShowDrawerReactEvent, ShowModalReactEvent } from 'app/types/events';
 
 export function logWarning(message: string) {
   console.warn(`[Plugin Extensions] ${message}`);
@@ -61,7 +61,11 @@ export function getEventHelpers(pluginId: string, context?: Readonly<object>): P
     );
   };
 
-  return { openModal, context };
+  const openDrawer: PluginExtensionEventHelpers['openDrawer'] = async ({ tab } = {}) => {
+    appEvents.publish(new ShowDrawerReactEvent({ tab }));
+  };
+
+  return { openModal, openDrawer, context };
 }
 
 type ModalWrapperProps = {

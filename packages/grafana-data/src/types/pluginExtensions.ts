@@ -160,10 +160,17 @@ export type PluginExtensionOpenModalOptions = {
   height?: string | number;
 };
 
+export type PluginExtensionOpenDrawerOptions = {
+  // The tab to open.
+  tab?: string;
+};
+
 export type PluginExtensionEventHelpers<Context extends object = object> = {
   context?: Readonly<Context>;
   // Opens a modal dialog and renders the provided React component inside it
   openModal: (options: PluginExtensionOpenModalOptions) => void;
+  // Open the global drawer at the given tab.
+  openDrawer: (options: PluginExtensionOpenDrawerOptions) => void;
 };
 
 // Extension Points & Contexts

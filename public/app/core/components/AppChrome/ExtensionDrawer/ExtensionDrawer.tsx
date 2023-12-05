@@ -46,8 +46,6 @@ export function ExtensionDrawer({ open, onClose, selectedTab }: Props) {
     return extensions;
   }, []);
 
-  console.log(extensions);
-
   const activeTab = selectedTab ?? extensions[0]?.id;
 
   const children = useMemo(

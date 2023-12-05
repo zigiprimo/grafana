@@ -4,11 +4,13 @@ import React, { PropsWithChildren } from 'react';
 
 import { GrafanaTheme2, PageLayoutType } from '@grafana/data';
 import { useStyles2, LinkButton, useTheme2 } from '@grafana/ui';
+import appEvents from 'app/core/app_events';
 import { HotEdge } from 'app/core/components/HotEdge';
 import config from 'app/core/config';
 import { useGrafana } from 'app/core/context/GrafanaContext';
 import { CommandPalette } from 'app/features/commandPalette/CommandPalette';
 import { KioskMode, useSelector } from 'app/types';
+import { ShowDrawerReactEvent } from 'app/types/events';
 
 import { AppChromeMenu } from './AppChromeMenu';
 import { MegaMenu as DockedMegaMenu } from './DockedMegaMenu/MegaMenu';
@@ -28,6 +30,11 @@ export function AppChrome({ children }: Props) {
   const theme = useTheme2();
   const styles = useStyles2(getStyles);
   const dragData = useSelector((state) => state.dragDrop.data);
+
+  appEvents.subscribe(ShowDrawerReactEvent, (event) => {
+    chrome.setExtensionDrawerTab(event.payload.tab);
+    chrome.setExtensionDrawerOpen(true);
+  });
 
   const contentClass = cx({
     [styles.content]: true,

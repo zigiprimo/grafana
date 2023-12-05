@@ -27,6 +27,10 @@ export interface ShowModalReactPayload {
   props?: any;
 }
 
+export interface ShowDrawerPayload {
+  tab?: string;
+}
+
 export interface ShowConfirmModalPayload {
   title?: string;
   text?: string;
@@ -185,6 +189,10 @@ export class ShowConfirmModalEvent extends BusEventWithPayload<ShowConfirmModalP
 
 export class ShowModalReactEvent extends BusEventWithPayload<ShowModalReactPayload> {
   static type = 'show-react-modal';
+}
+
+export class ShowDrawerReactEvent extends BusEventWithPayload<ShowDrawerPayload> {
+  static type = 'show-react-drawer';
 }
 
 /**
