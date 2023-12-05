@@ -1,12 +1,13 @@
 import React from 'react';
 
-import { DataQuery, DataSourceJsonData } from '@grafana/schema';
+import { DataQuery, DataSourceJsonData, DataSourceRef, TimeZone } from '@grafana/schema';
 
 import { ScopedVars } from './ScopedVars';
+import { DataFrame } from './dataFrame';
 import { DataSourcePluginMeta, DataSourceSettings } from './datasource';
 import { IconName } from './icon';
 import { PanelData } from './panel';
-import { RawTimeRange, TimeZone } from './time';
+import { AbsoluteTimeRange, RawTimeRange } from './time';
 
 // Plugin Extensions types
 // ---------------------------------------
@@ -32,9 +33,62 @@ export type PluginExtensionLink = PluginExtensionBase & {
   category?: string;
 };
 
-export type PluginExtensionComponent = PluginExtensionBase & {
+export type PluginExtensionComponent<Context extends object = object> = PluginExtensionBase & {
   type: PluginExtensionTypes.component;
-  component: React.ComponentType;
+  component: React.ComponentType<{ context?: Context }>;
+};
+
+export type PluginExtensionGlobalDrawerComponent = PluginExtensionBase & {
+  id: PluginExtensionPoints.GlobalDrawer;
+  type: PluginExtensionTypes.component;
+  component: React.ComponentType<{ context?: PluginExtensionGlobalDrawerContext }>;
+};
+
+export type PluginExtensionGlobalDrawerDroppedDataType = 'explore-graph' | 'panel' | 'alert-rule' | 'query-editor';
+
+export interface PluginExtensionGlobalDrawerDroppedData<T extends object = object> {
+  type: PluginExtensionGlobalDrawerDroppedDataType;
+  data: T;
+}
+
+export interface PluginExtensionGlobalDrawerDroppedExploreGraphData {
+  type: 'explore-graph';
+  data: {
+    datasource?: DataSourceRef;
+    data: DataFrame[] | null;
+    targets: DataQuery[];
+    timeRange: AbsoluteTimeRange;
+    timeZone: TimeZone;
+  };
+}
+
+export interface PluginExtensionGlobalDrawerDroppedPanelData {
+  type: 'panel';
+  data: {
+    pluginId: string;
+    id: number;
+    datasource?: DataSourceRef;
+    data?: PanelData;
+    targets: DataQuery[];
+    timeRange: RawTimeRange;
+    timeZone: TimeZone;
+    scopedVars?: ScopedVars;
+    title: string;
+    dashboard: Dashboard;
+  };
+}
+
+export interface PluginExtensionGlobalDrawerDroppedQueryEditorData {
+  type: 'query-editor';
+  data: {
+    datasource?: DataSourceRef;
+    data: PanelData;
+    query: DataQuery;
+  };
+}
+
+export type PluginExtensionGlobalDrawerContext<T extends object = object> = {
+  droppedData?: PluginExtensionGlobalDrawerDroppedData<T>;
 };
 
 export type PluginExtension = PluginExtensionLink | PluginExtensionComponent;

@@ -1,4 +1,4 @@
-﻿import { isArray, isPlainObject } from 'lodash';
+import { isArray, isPlainObject } from 'lodash';
 
 /** @returns a deep clone of the object, but with any null value removed */
 export function sortedDeepCloneWithoutNulls<T extends {}>(value: T): T {
@@ -17,4 +17,17 @@ export function sortedDeepCloneWithoutNulls<T extends {}>(value: T): T {
       }, {});
   }
   return value;
+}
+
+export function getCircularReplacer() {
+  const seen = new WeakSet();
+  return (_key: string, value: object | null) => {
+    if (typeof value === 'object' && value !== null) {
+      if (seen.has(value)) {
+        return;
+      }
+      seen.add(value);
+    }
+    return value;
+  };
 }

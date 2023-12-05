@@ -4,7 +4,9 @@ import ReactGridLayout, { ItemCallback } from 'react-grid-layout';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Subscription } from 'rxjs';
 
+import { PluginExtensionGlobalDrawerDroppedPanelData, getTimeZone } from '@grafana/data';
 import { config } from '@grafana/runtime';
+import { Portal } from '@grafana/ui';
 import appEvents from 'app/core/app_events';
 import { GRID_CELL_HEIGHT, GRID_CELL_VMARGIN, GRID_COLUMN_COUNT } from 'app/core/constants';
 import { contextSrv } from 'app/core/services/context_srv';
@@ -28,10 +30,12 @@ export interface Props {
   editPanel: PanelModel | null;
   viewPanel: PanelModel | null;
   hidePanelMenus?: boolean;
+  onDrag?: (panel: PluginExtensionGlobalDrawerDroppedPanelData) => void;
 }
 
 interface State {
   panelFilter?: RegExp;
+  isDraggingPanelId: number | null;
 }
 
 export class DashboardGrid extends PureComponent<Props, State> {
@@ -46,8 +50,10 @@ export class DashboardGrid extends PureComponent<Props, State> {
 
   constructor(props: Props) {
     super(props);
+
     this.state = {
       panelFilter: undefined,
+      isDraggingPanelId: null,
     };
   }
 
@@ -182,8 +188,46 @@ export class DashboardGrid extends PureComponent<Props, State> {
     this.updateGridPos(newItem, layout);
   };
 
-  onDragStop: ItemCallback = (layout, oldItem, newItem) => {
+  onDragStart: ItemCallback = (_layout, _oldItem, _newItem, _placeholder, _event, element: HTMLElement) => {
+    const { dashboard, onDrag } = this.props;
+    if (!onDrag) {
+      return;
+    }
+
+    // panels
+    const panelId = Number(element.getAttribute('data-panelid'));
+    const panel = dashboard.panels.find((panel) => panel.id === panelId);
+
+    if (!panel) {
+      return;
+    }
+
+    const dragData: PluginExtensionGlobalDrawerDroppedPanelData = {
+      type: 'panel',
+      data: {
+        pluginId: panel.type,
+        id: panel.id,
+        title: panel.title,
+        datasource: panel.datasource ?? undefined,
+        targets: panel.targets,
+        timeRange: dashboard.time,
+        timeZone: getTimeZone({ timeZone: dashboard.timezone }),
+        dashboard: {
+          uid: dashboard.uid,
+          title: dashboard.title,
+          tags: Array.from<string>(dashboard.tags),
+        },
+        scopedVars: panel.scopedVars,
+        data: panel.getQueryRunner().getLastResult(),
+      },
+    };
+    onDrag(dragData);
+    this.setState({ isDraggingPanelId: panelId });
+  };
+
+  onDragStop: ItemCallback = (layout, _, newItem) => {
     this.updateGridPos(newItem, layout);
+    this.setState({ isDraggingPanelId: null });
   };
 
   getPanelScreenPos(panel: PanelModel, gridWidth: number): { top: number; bottom: number } {
@@ -235,6 +279,7 @@ export class DashboardGrid extends PureComponent<Props, State> {
           gridWidth={gridWidth}
           windowHeight={this.windowHeight}
           windowWidth={this.windowWidth}
+          isDragging={this.state.isDraggingPanelId === panel.id}
           isViewing={panel.isViewing}
         >
           {(width: number, height: number) => {
@@ -349,6 +394,7 @@ export class DashboardGrid extends PureComponent<Props, State> {
                   draggableHandle=".grid-drag-handle"
                   draggableCancel=".grid-drag-cancel"
                   layout={this.buildLayout()}
+                  onDragStart={this.onDragStart}
                   onDragStop={this.onDragStop}
                   onResize={this.onResize}
                   onResizeStop={this.onResizeStop}
@@ -370,6 +416,7 @@ interface GrafanaGridItemProps extends React.HTMLAttributes<HTMLDivElement> {
   gridPos?: GridPos;
   descendingOrderIndex?: number;
   isViewing: boolean;
+  isDragging: boolean;
   windowHeight: number;
   windowWidth: number;
   children: any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -383,7 +430,8 @@ const GrafanaGridItem = React.forwardRef<HTMLDivElement, GrafanaGridItemProps>((
   let width = 100;
   let height = 100;
 
-  const { gridWidth, gridPos, isViewing, windowHeight, windowWidth, descendingOrderIndex, ...divProps } = props;
+  const { gridWidth, gridPos, isDragging, isViewing, windowHeight, windowWidth, descendingOrderIndex, ...divProps } =
+    props;
   const style: CSSProperties = props.style ?? {};
 
   if (isViewing) {
@@ -411,12 +459,18 @@ const GrafanaGridItem = React.forwardRef<HTMLDivElement, GrafanaGridItemProps>((
     }
   }
 
+  const Wrapper = isDragging ? Portal : React.Fragment;
+
   // props.children[0] is our main children. RGL adds the drag handle at props.children[1]
   return (
-    <div {...divProps} style={{ ...divProps.style, zIndex: descendingOrderIndex }} ref={ref}>
-      {/* Pass width and height to children as render props */}
-      {[props.children[0](width, height), props.children.slice(1)]}
-    </div>
+    <Wrapper>
+      <div style={{ pointerEvents: isDragging ? 'none' : undefined }}>
+        <div {...divProps} style={{ ...divProps.style, zIndex: descendingOrderIndex }} ref={ref}>
+          {/* Pass width and height to children as render props */}
+          {[props.children[0](width, height), props.children.slice(1)]}
+        </div>
+      </div>
+    </Wrapper>
   );
 });
 
