@@ -1,6 +1,8 @@
+import { css } from '@emotion/css';
 import React, { useRef, useState, DragEvent, ReactNode } from 'react';
 
-import { PluginExtensionGlobalDrawerDroppedData } from '@grafana/data';
+import { GrafanaTheme2, PluginExtensionGlobalDrawerDroppedData } from '@grafana/data';
+import { useTheme2 } from '@grafana/ui';
 import { useSelector } from 'app/types';
 
 interface DrawerDropZoneProps {
@@ -12,6 +14,7 @@ export const DrawerDropZone = ({ children, onDrop }: DrawerDropZoneProps) => {
   const temp = useRef<PluginExtensionGlobalDrawerDroppedData | undefined>(undefined);
   const [isDragging, setIsDragging] = useState(false);
   const dragData = useSelector((state) => state.dragDrop.data);
+  const styles = getStyles(useTheme2());
 
   const handleMoveEnter = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -55,9 +58,21 @@ export const DrawerDropZone = ({ children, onDrop }: DrawerDropZoneProps) => {
       onMouseEnter={handleMoveEnter}
       onMouseLeave={handleMoveLeave}
       onMouseUp={handleDrop}
-      style={{ padding: 50, backgroundColor: isDragging ? 'green' : 'grey' }}
+      className={isDragging ? styles.dragging : styles.normal}
     >
       {children}
     </div>
   );
 };
+
+const getStyles = (theme: GrafanaTheme2) => ({
+  normal: css({
+    padding: theme.spacing(1),
+    borderRadius: theme.shape.radius.default,
+  }),
+  dragging: css({
+    padding: theme.spacing(1),
+    borderRadius: theme.shape.radius.default,
+    backgroundColor: theme.colors.background.secondary,
+  }),
+});
