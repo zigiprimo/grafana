@@ -33,4 +33,4 @@ export function getCircularReplacer() {
   };
 }
 
-export const createSafeObject = (x: object | undefined) => x && JSON.parse(JSON.stringify(x, getCircularReplacer()));
+export const createSafeObject = <T>(x: T) => x && JSON.parse(JSON.stringify(x, getCircularReplacer()));
