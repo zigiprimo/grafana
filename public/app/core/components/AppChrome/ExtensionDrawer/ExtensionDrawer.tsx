@@ -85,7 +85,7 @@ export function ExtensionDrawer({ open, onClose, selectedTab }: Props) {
           </div>
         }
         size={size}
-        closeOnMaskClick={false}
+        closeOnMaskClick
       >
         {children}
         {activeTab === undefined && <ExampleTab />}
