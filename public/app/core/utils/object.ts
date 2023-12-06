@@ -21,6 +21,7 @@ export function sortedDeepCloneWithoutNulls<T extends {}>(value: T): T {
 
 export function getCircularReplacer() {
   const seen = new WeakSet();
+
   return (_key: string, value: object | null) => {
     if (typeof value === 'object' && value !== null) {
       if (seen.has(value)) {
@@ -31,3 +32,5 @@ export function getCircularReplacer() {
     return value;
   };
 }
+
+export const createSafeObject = (x: object | undefined) => x && JSON.parse(JSON.stringify(x, getCircularReplacer()));

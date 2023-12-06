@@ -90,7 +90,7 @@ const getHotEdgeStyles = (theme: GrafanaTheme2, props: GetHotEdgeStylesProps) =>
     top: 0,
     bottom: 0,
     width: '15px',
-    zIndex: 9999,
+    zIndex: 1,
     [props.position]: 0,
   }),
   tab: css({

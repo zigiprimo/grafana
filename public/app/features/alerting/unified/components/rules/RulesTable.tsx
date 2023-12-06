@@ -13,6 +13,7 @@ import {
   dateTime,
 } from '@grafana/data';
 import { useStyles2, Tooltip } from '@grafana/ui';
+import { createSafeObject } from 'app/core/utils/object';
 import { setDragData } from 'app/features/drag-drop/state/reducers';
 import { useDispatch } from 'app/types';
 import { CombinedRule } from 'app/types/unified-alerting';
@@ -93,7 +94,7 @@ export const RulesTable = ({
           type: 'alert-rule',
           data: { rule: item.data },
         })}
-        onDragRow={(x) => dispatch(setDragData(x))}
+        onDragRow={(x) => dispatch(setDragData(createSafeObject(x)))}
       />
     </div>
   );
