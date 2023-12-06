@@ -64,6 +64,7 @@ export {
   type PluginExtensionPanelContext,
   type PluginExtensionDataSourceConfigContext,
   type PluginExtensionGlobalDrawerContext,
+  type PluginExtensionGlobalDrawerDroppedAlertRuleData,
   type PluginExtensionGlobalDrawerDroppedData,
   type PluginExtensionGlobalDrawerDroppedExploreGraphData,
   type PluginExtensionGlobalDrawerDroppedPanelData,

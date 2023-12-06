@@ -1,7 +1,7 @@
 import { css, cx } from '@emotion/css';
 import React, { ReactNode, useState } from 'react';
 
-import { GrafanaTheme2 } from '@grafana/data';
+import { GrafanaTheme2, PluginExtensionGlobalDrawerDroppedData } from '@grafana/data';
 import { IconButton, Pagination, useStyles2 } from '@grafana/ui';
 import { Draggable } from 'app/core/components/Draggable';
 
@@ -41,7 +41,8 @@ export interface DynamicTableProps<T = unknown> {
   onExpand?: (item: DynamicTableItemProps<T>) => void;
   isExpanded?: (item: DynamicTableItemProps<T>) => boolean;
   activeRowId?: number | string;
-  onDragRow?: (data?: object) => void;
+  onDragRow?: (data?: PluginExtensionGlobalDrawerDroppedData) => void;
+  rowToDragData?: (item: DynamicTableItemProps<T>) => PluginExtensionGlobalDrawerDroppedData;
 
   renderExpandedContent?: (
     item: DynamicTableItemProps<T>,
@@ -65,6 +66,7 @@ export const DynamicTable = <T extends object>({
   isExpandable = false,
   onCollapse,
   onExpand,
+  rowToDragData,
   onDragRow,
   activeRowId,
   isExpanded,
@@ -123,7 +125,7 @@ export const DynamicTable = <T extends object>({
           return (
             <Draggable
               key={`${item.id}-${index}`}
-              data={item}
+              data={rowToDragData?.(item)}
               draggable={item.id === activeRowId}
               onDragStart={onDragRow}
               onDragEnd={onDragRow}

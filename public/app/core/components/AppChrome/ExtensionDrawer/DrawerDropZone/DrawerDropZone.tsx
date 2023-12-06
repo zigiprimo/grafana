@@ -50,6 +50,7 @@ export const DrawerDropZone = ({ children, onDrop }: DrawerDropZoneProps) => {
   };
 
   return (
+    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div
       onDragEnter={handleMoveEnter}
       onDragOver={handleMoveOver}

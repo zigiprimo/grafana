@@ -51,6 +51,14 @@ export interface PluginExtensionGlobalDrawerDroppedData<T extends object = objec
   data: T;
 }
 
+export interface PluginExtensionGlobalDrawerDroppedAlertRuleData {
+  type: 'alert-rule';
+  data: {
+    // rule: CombinedRule;
+    rule: object; // CombinedRule isn't defined outside Grafana's private code.
+  };
+}
+
 export interface PluginExtensionGlobalDrawerDroppedExploreGraphData {
   type: 'explore-graph';
   data: {

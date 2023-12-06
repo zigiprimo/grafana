@@ -4,6 +4,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 
 import {
   GrafanaTheme2,
+  PluginExtensionGlobalDrawerDroppedAlertRuleData,
   addDurationToDate,
   isValidDate,
   isValidDuration,
@@ -12,7 +13,6 @@ import {
   dateTime,
 } from '@grafana/data';
 import { useStyles2, Tooltip } from '@grafana/ui';
-import { getCircularReplacer } from 'app/core/utils/object';
 import { setDragData } from 'app/features/drag-drop/state/reducers';
 import { useDispatch } from 'app/types';
 import { CombinedRule } from 'app/types/unified-alerting';
@@ -89,8 +89,11 @@ export const RulesTable = ({
         activeRowId={activeRuleId}
         pagination={{ itemsPerPage: DEFAULT_PER_PAGE_PAGINATION }}
         paginationStyles={styles.pagination}
-        // TODO: convert this into a proper drag and drop object after it's dragged.
-        onDragRow={(x) => dispatch(setDragData(x ? createSafeObject(x) : null))}
+        rowToDragData={(item): PluginExtensionGlobalDrawerDroppedAlertRuleData => ({
+          type: 'alert-rule',
+          data: { rule: item.data },
+        })}
+        onDragRow={(x) => dispatch(setDragData(x))}
       />
     </div>
   );
@@ -292,5 +295,3 @@ function useColumns(
     setActiveRuleId,
   ]);
 }
-
-const createSafeObject = (x: object) => JSON.parse(JSON.stringify(x, getCircularReplacer()));

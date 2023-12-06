@@ -8,7 +8,7 @@ import { useTimeout } from '../../hooks/useTimeout';
 
 interface DraggableProps {
   children: ReactNode;
-  data: PluginExtensionGlobalDrawerDroppedData;
+  data?: PluginExtensionGlobalDrawerDroppedData;
   draggable?: boolean;
   onDragStart?: (data: PluginExtensionGlobalDrawerDroppedData) => void;
   onDragEnd?: () => void;
@@ -21,7 +21,7 @@ export const Draggable = ({ children, data, draggable = true, onDragStart, onDra
 
   const handleDragStart = (_: DragEvent<HTMLDivElement>) => {
     setIsDragging(true);
-    onDragStart?.(data);
+    data && onDragStart?.(data);
   };
 
   const handleDragEnd = (_: DragEvent<HTMLDivElement>) => {

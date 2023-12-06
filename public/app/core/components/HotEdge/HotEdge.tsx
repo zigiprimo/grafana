@@ -60,6 +60,7 @@ export const HotEdge = ({ position = 'right', hasData, onActivate }: HotEdgeProp
       onMouseEnter={handleMoveEnter}
       onMouseLeave={handleMoveLeave}
     >
+      {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div className={styles.tab} onClick={handleActivated} />
     </div>
   );
