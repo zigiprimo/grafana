@@ -226,6 +226,9 @@ export class DashboardGrid extends PureComponent<Props, State> {
   };
 
   onDragStop: ItemCallback = (layout, _, newItem) => {
+    const { onDrag } = this.props;
+
+    onDrag();
     this.updateGridPos(newItem, layout);
     this.setState({ isDraggingPanelId: null });
   };
