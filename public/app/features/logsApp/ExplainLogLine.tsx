@@ -45,7 +45,13 @@ export const ExplainLogLine = ({ logLine }: Props) => {
 
   return (
     <>
-      <Button style={{ margin: '4px 0' }} size="sm" variant="secondary" onClick={() => setShouldRun(!shouldRun)}>
+      <Button
+        style={{ margin: '4px 0' }}
+        size="sm"
+        variant="secondary"
+        icon="ai"
+        onClick={() => setShouldRun(!shouldRun)}
+      >
         Help me understand this message
         <Icon name={`${shouldRun ? 'angle-up' : 'angle-down'}`} />
       </Button>
