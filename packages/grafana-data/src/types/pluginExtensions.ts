@@ -96,7 +96,7 @@ export interface PluginExtensionGlobalDrawerDroppedQueryEditorData {
 }
 
 export type PluginExtensionGlobalDrawerContext<T extends object = object> = {
-  droppedData?: PluginExtensionGlobalDrawerDroppedData<T>;
+  dragData?: PluginExtensionGlobalDrawerDroppedData<T>;
 };
 
 export type PluginExtension = PluginExtensionLink | PluginExtensionComponent;

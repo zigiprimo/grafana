@@ -4,15 +4,12 @@ import React, { Suspense, useMemo, useState } from 'react';
 import {
   GrafanaTheme2,
   PluginExtensionComponent,
-  PluginExtensionGlobalDrawerDroppedData,
   PluginExtensionGlobalDrawerContext,
   PluginExtensionPoints,
 } from '@grafana/data';
 import { getPluginComponentExtensions } from '@grafana/runtime';
 import { Drawer, IconButton, useStyles2 } from '@grafana/ui';
-import { getCircularReplacer } from 'app/core/utils/object';
-
-import { DrawerDropZone } from './DrawerDropZone';
+import { useSelector } from 'app/types';
 
 type DrawerSize = 'sm' | 'md' | 'lg';
 
@@ -23,23 +20,10 @@ export interface Props {
   onChangeTab: (id?: string) => void;
 }
 
-function ExampleTab() {
-  const [data, setData] = useState<PluginExtensionGlobalDrawerDroppedData | undefined>(undefined);
-
-  return (
-    <div>
-      <p>Example content from a plugin</p>
-      <DrawerDropZone onDrop={setData}>
-        {data ? JSON.stringify(data, getCircularReplacer()) : <h2>Drop something here</h2>}
-      </DrawerDropZone>
-    </div>
-  );
-}
-
 export function ExtensionDrawer({ open, onClose, selectedTab }: Props) {
+  const dragData = useSelector((state) => state.dragDrop.data);
   const styles = useStyles2(getStyles);
   const [size, setSize] = useState<DrawerSize>('md');
-  const [data, setData] = useState<PluginExtensionGlobalDrawerDroppedData | undefined>(undefined);
   const extensions: Array<PluginExtensionComponent<PluginExtensionGlobalDrawerContext>> = useMemo(() => {
     const extensionPointId = PluginExtensionPoints.GlobalDrawer;
     const { extensions } = getPluginComponentExtensions({ extensionPointId });
@@ -55,13 +39,11 @@ export function ExtensionDrawer({ open, onClose, selectedTab }: Props) {
           activeTab === extension.id && (
             // Support lazy components with a fallback.
             <Suspense key={index} fallback={'Loading...'}>
-              <DrawerDropZone onDrop={setData}>
-                <extension.component context={{ droppedData: data }} />
-              </DrawerDropZone>
+              <extension.component context={{ dragData }} />
             </Suspense>
           )
       ),
-    [activeTab, data, extensions]
+    [activeTab, extensions, dragData]
   );
 
   const [buttonIcon, buttonLabel, newSize] =
@@ -88,7 +70,6 @@ export function ExtensionDrawer({ open, onClose, selectedTab }: Props) {
         closeOnMaskClick
       >
         {children}
-        {activeTab === undefined && <ExampleTab />}
       </Drawer>
     )
   );
