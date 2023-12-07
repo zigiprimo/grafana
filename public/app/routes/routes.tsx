@@ -521,6 +521,7 @@ export function getDynamicDashboardRoutes(cfg = config): RouteDescriptor[] {
     },
     {
       path: '/scenes/dashboard/:uid',
+      chromeless: true,
       component: SafeDynamicImport(
         () => import(/* webpackChunkName: "scenes"*/ 'app/features/dashboard-scene/pages/DashboardScenePage')
       ),

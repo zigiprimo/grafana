@@ -365,7 +365,7 @@ func (rs *RenderingService) getNewFilePath(rt RenderType) (string, error) {
 		return "", err
 	}
 
-	ext := "png"
+	ext := "pdf"
 	folder := rs.Cfg.ImagesDir
 	if rt == RenderCSV {
 		ext = "csv"
