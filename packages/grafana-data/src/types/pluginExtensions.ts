@@ -96,6 +96,8 @@ export interface PluginExtensionGlobalDrawerDroppedQueryEditorData {
 }
 
 export type PluginExtensionGlobalDrawerContext<T extends object = object> = {
+  setTitle: (title?: string) => void;
+  setSubTitle: (subTitle?: string) => void;
   dragData?: PluginExtensionGlobalDrawerDroppedData<T>;
 };
 

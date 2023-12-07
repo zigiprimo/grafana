@@ -21,12 +21,14 @@ export interface Props {
 }
 
 export function ExtensionDrawer({ open, onClose, selectedTab }: Props) {
+  const [title, setTitle] = useState<React.ReactNode | undefined>();
+  const [subtitle, setSubTitle] = useState<React.ReactNode | undefined>();
   const dragData = useSelector((state) => state.dragDrop.data);
   const styles = useStyles2(getStyles);
   const [size, setSize] = useState<DrawerSize>('md');
   const extensions: Array<PluginExtensionComponent<PluginExtensionGlobalDrawerContext>> = useMemo(() => {
     const extensionPointId = PluginExtensionPoints.GlobalDrawer;
-    const { extensions } = getPluginComponentExtensions({ extensionPointId });
+    const { extensions } = getPluginComponentExtensions({ extensionPointId, context: { setSubTitle, setTitle } });
     return extensions;
   }, []);
 
@@ -39,7 +41,7 @@ export function ExtensionDrawer({ open, onClose, selectedTab }: Props) {
           activeTab === extension.id && (
             // Support lazy components with a fallback.
             <Suspense key={index} fallback={'Loading...'}>
-              <extension.component context={{ dragData }} />
+              <extension.component context={{ dragData, setSubTitle, setTitle }} />
             </Suspense>
           )
       ),
@@ -55,9 +57,10 @@ export function ExtensionDrawer({ open, onClose, selectedTab }: Props) {
     open && (
       <Drawer
         onClose={onClose}
-        title=""
+        title={title}
         subtitle={
           <div className={styles.wrapper}>
+            {subtitle}
             <IconButton
               name={buttonIcon}
               aria-label={buttonLabel}
