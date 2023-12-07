@@ -30,7 +30,7 @@ export interface Props {
   editPanel: PanelModel | null;
   viewPanel: PanelModel | null;
   hidePanelMenus?: boolean;
-  onDrag?: (panel: PluginExtensionGlobalDrawerDroppedPanelData) => void;
+  onDrag?: (panel: PluginExtensionGlobalDrawerDroppedPanelData | undefined) => void;
 }
 
 interface State {
@@ -228,7 +228,7 @@ export class DashboardGrid extends PureComponent<Props, State> {
   onDragStop: ItemCallback = (layout, _, newItem) => {
     const { onDrag } = this.props;
 
-    onDrag();
+    onDrag?.(undefined);
     this.updateGridPos(newItem, layout);
     this.setState({ isDraggingPanelId: null });
   };
