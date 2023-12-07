@@ -401,6 +401,60 @@ type PostableNotificationSettings struct {
 	MuteTimeIntervals []string        `json:"mute_time_intervals,omitempty"`
 }
 
+type intermediate struct {
+	GroupBy              []string `json:"groupBy,omitempty"`
+	GroupIntervalValue   string   `json:"groupIntervalValue,omitempty"`
+	GroupWaitValue       string   `json:"groupWaitValue,omitempty"`
+	OverrideGrouping     bool     `json:"overrideGrouping,omitempty"`
+	OverrideTimings      bool     `json:"overrideTimings,omitempty"`
+	RepeatIntervalValue  string   `json:"repeatIntervalValue,omitempty"`
+	SelectedContactPoint string   `json:"selectedContactPoint,omitempty"`
+	MuteTimeIntervals    []string `json:"muteTimeIntervals,omitempty"`
+}
+
+func (ns *PostableNotificationSettings) UnmarshalJSON(b []byte) error { //TODO: Won't be necessary once we align with FE on the field names.
+	contactPoints := map[string]*intermediate{}
+	if err := json.Unmarshal(b, &contactPoints); err != nil {
+		return err
+	}
+
+	in, ok := contactPoints["grafana"]
+	if !ok {
+		return nil
+	}
+
+	if in.OverrideGrouping {
+		ns.GroupBy = in.GroupBy
+	}
+	if in.OverrideTimings {
+		if in.GroupIntervalValue != "" {
+			d, err := model.ParseDuration(in.GroupIntervalValue)
+			if err != nil {
+				return err
+			}
+			ns.GroupInterval = &d
+		}
+		if in.GroupWaitValue != "" {
+			d, err := model.ParseDuration(in.GroupWaitValue)
+			if err != nil {
+				return err
+			}
+			ns.GroupWait = &d
+		}
+		if in.RepeatIntervalValue != "" {
+			d, err := model.ParseDuration(in.RepeatIntervalValue)
+			if err != nil {
+				return err
+			}
+			ns.RepeatInterval = &d
+		}
+	}
+	ns.Receiver = in.SelectedContactPoint
+	ns.MuteTimeIntervals = in.MuteTimeIntervals
+
+	return nil
+}
+
 // swagger:model
 type PostableGrafanaRule struct {
 	Title                string                        `json:"title" yaml:"title"`
@@ -410,7 +464,7 @@ type PostableGrafanaRule struct {
 	NoDataState          NoDataState                   `json:"no_data_state" yaml:"no_data_state"`
 	ExecErrState         ExecutionErrorState           `json:"exec_err_state" yaml:"exec_err_state"`
 	IsPaused             *bool                         `json:"is_paused" yaml:"is_paused"`
-	NotificationSettings *PostableNotificationSettings `json:"notification_settings" yaml:"notification_settings"`
+	NotificationSettings *PostableNotificationSettings `json:"contactPoints" yaml:"contactPoints"` //TODO: Use map[string]*NotificationSettings
 }
 
 // swagger: model
@@ -422,6 +476,32 @@ type GettableNotificationSettings struct {
 	GroupInterval     *model.Duration `yaml:"group_interval,omitempty" json:"group_interval,omitempty"`
 	RepeatInterval    *model.Duration `yaml:"repeat_interval,omitempty" json:"repeat_interval,omitempty"`
 	MuteTimeIntervals []string        `yaml:"mute_time_intervals,omitempty" json:"mute_time_intervals,omitempty"`
+}
+
+func (ns *GettableNotificationSettings) MarshalJSON() ([]byte, error) { //TODO: Won't be necessary once we align with FE on the field names.
+	in := intermediate{
+		GroupBy:              ns.GroupBy,
+		OverrideGrouping:     len(ns.GroupBy) > 0,
+		OverrideTimings:      ns.GroupInterval != nil || ns.GroupWait != nil || ns.RepeatInterval != nil,
+		SelectedContactPoint: ns.Receiver,
+		MuteTimeIntervals:    ns.MuteTimeIntervals,
+	}
+
+	if ns.GroupInterval != nil {
+		in.GroupIntervalValue = ns.GroupInterval.String()
+	}
+
+	if ns.GroupWait != nil {
+		in.GroupWaitValue = ns.GroupWait.String()
+	}
+
+	if ns.RepeatInterval != nil {
+		in.RepeatIntervalValue = ns.RepeatInterval.String()
+	}
+
+	return json.Marshal(map[string]*intermediate{
+		"grafana": &in,
+	})
 }
 
 // swagger:model
@@ -442,7 +522,7 @@ type GettableGrafanaRule struct {
 	ExecErrState         ExecutionErrorState           `json:"exec_err_state" yaml:"exec_err_state"`
 	Provenance           Provenance                    `json:"provenance,omitempty" yaml:"provenance,omitempty"`
 	IsPaused             bool                          `json:"is_paused" yaml:"is_paused"`
-	NotificationSettings *GettableNotificationSettings `json:"notification_settings" yaml:"notification_settings"`
+	NotificationSettings *GettableNotificationSettings `json:"contactPoints" yaml:"contactPoints"` //TODO: Use map[string]*NotificationSettings
 }
 
 // AlertQuery represents a single query associated with an alert definition.
