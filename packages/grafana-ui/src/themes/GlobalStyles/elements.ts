@@ -141,10 +141,6 @@ export function getElementStyles(theme: GrafanaTheme2) {
       color: theme.components.textHighlight.text,
       padding: 0,
     },
-
-    '@media print': {
-      '*': { overflow: 'visible !important;' },
-    },
   });
 }
 

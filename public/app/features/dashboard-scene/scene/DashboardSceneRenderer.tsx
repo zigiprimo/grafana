@@ -26,9 +26,26 @@ export function DashboardSceneRenderer({ model }: SceneComponentProps<DashboardS
   }
 
   return (
-    <div className={cx(styles.body)}>
-      <bodyToRender.Component model={bodyToRender} />
-    </div>
+    <Page navModel={navModel} pageNav={pageNav} layout={PageLayoutType.Custom}>
+      <CustomScrollbar autoHeightMin={'100%'}>
+        <div className={styles.canvasContent}>
+          <NavToolbarActions dashboard={model} />
+
+          {controls && (
+            <div className={styles.controls}>
+              {controls.map((control) => (
+                <control.Component key={control.state.key} model={control} />
+              ))}
+              <SceneDebugger scene={model} key={'scene-debugger'} />
+            </div>
+          )}
+          <div className={cx(styles.body)}>
+            <bodyToRender.Component model={bodyToRender} />
+          </div>
+        </div>
+      </CustomScrollbar>
+      {overlay && <overlay.Component model={overlay} />}
+    </Page>
   );
 }
 
