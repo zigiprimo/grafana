@@ -309,7 +309,9 @@ roles:
         state: 'present'
 ```
 
-- Or use [RBAC HTTP API]({{< relref "../../../../developers/http_api/access_control/#update-a-role" >}}).
+- Or use [RBAC HTTP API]({{< relref "../../../../developers/http_api/access_control/#update-a-role" >}}). 
+
+RBAC includes _allow_ permissions only. Therefore, in order to allow Viewers to access all app plugins _except_ for one or two, you must explicitly allow all of the app plugins the user or role should be able to access. Retrieve a list of your instance's app plugins by using the `/api/plugins?type=app` API endpoint.
 
 ### Manage user permissions through teams
 
