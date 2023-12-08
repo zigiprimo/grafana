@@ -2,11 +2,14 @@ import { cx } from '@emotion/css';
 import { debounce } from 'lodash';
 import memoizeOne from 'memoize-one';
 import React, { PureComponent, MouseEvent } from 'react';
+import { connect } from 'react-redux';
 
 import { Field, LinkModel, LogRowModel, LogsSortOrder, dateTimeFormat, CoreApp, DataFrame } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime';
 import { TimeZone } from '@grafana/schema';
 import { withTheme2, Themeable2, Icon, Tooltip } from '@grafana/ui';
+import { Draggable } from 'app/core/components/Draggable';
+import { setDragData } from 'app/features/drag-drop/state/reducers';
 
 import { checkLogsError, escapeUnescapedString } from '../utils';
 
@@ -202,6 +205,7 @@ class UnThemedLogRow extends PureComponent<Props, State> {
       forceEscape,
       app,
       styles,
+      setDragData,
     } = this.props;
     const { showDetails, showingContext, permalinked } = this.state;
     const levelStyles = getLogLevelStyles(theme, row.logLevel);
@@ -219,7 +223,11 @@ class UnThemedLogRow extends PureComponent<Props, State> {
 
     return (
       <>
-        <tr
+        <Draggable
+          data={row}
+          onDragStart={(data) => setDragData({ type: 'log', data })}
+          onDragEnd={setDragData}
+          as="tr"
           ref={this.logLineRef}
           className={logRowBackground}
           onClick={this.onRowClick}
@@ -289,7 +297,7 @@ class UnThemedLogRow extends PureComponent<Props, State> {
               onBlur={this.onMouseLeave}
             />
           )}
-        </tr>
+        </Draggable>
         {this.state.showDetails && (
           <LogDetails
             className={logRowDetailsBackground}
@@ -314,5 +322,10 @@ class UnThemedLogRow extends PureComponent<Props, State> {
   }
 }
 
-export const LogRow = withTheme2(UnThemedLogRow);
+const mapDispatchToProps = {
+  setDragData,
+};
+const connector = connect(null, mapDispatchToProps);
+
+export const LogRow = withTheme2(connector(UnThemedLogRow));
 LogRow.displayName = 'LogRow';
