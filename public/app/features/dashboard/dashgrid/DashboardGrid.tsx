@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import React, { PureComponent, CSSProperties } from 'react';
+import React, { CSSProperties, FC, PureComponent } from 'react';
 import ReactGridLayout, { ItemCallback } from 'react-grid-layout';
 import AutoSizer from 'react-virtualized-auto-sizer';
 import { Subscription } from 'rxjs';
@@ -19,6 +19,7 @@ import { GridPos } from '../state/PanelModel';
 
 import DashboardEmpty from './DashboardEmpty';
 import { DashboardPanel } from './DashboardPanel';
+import { Mode, Orientation, PrintOptions } from './PrintPDF/types';
 
 export const PANEL_FILTER_VARIABLE = 'systemPanelFilterVar';
 
@@ -28,6 +29,7 @@ export interface Props {
   editPanel: PanelModel | null;
   viewPanel: PanelModel | null;
   hidePanelMenus?: boolean;
+  printOptions?: PrintOptions;
 }
 
 interface State {
@@ -43,6 +45,10 @@ export class DashboardGrid extends PureComponent<Props, State> {
   /** Used to keep track of mobile panel layout position */
   private lastPanelBottom = 0;
   private isLayoutInitialized = false;
+
+  // Print preview
+  private wrapperDivRef: HTMLDivElement | null = null;
+  private pageLineCount = 17;
 
   constructor(props: Props) {
     super(props);
@@ -101,6 +107,7 @@ export class DashboardGrid extends PureComponent<Props, State> {
   }
 
   buildLayout() {
+    console.log('in buildLayout');
     const layout: ReactGridLayout.Layout[] = [];
     this.panelMap = {};
     const { panelFilter } = this.state;
@@ -115,6 +122,10 @@ export class DashboardGrid extends PureComponent<Props, State> {
       if (!panel.gridPos) {
         console.log('panel without gridpos');
         continue;
+      }
+
+      if (this.props.printOptions?.mode && panel.collapsed) {
+        this.props.dashboard.toggleRow(panel);
       }
 
       const panelPos: ReactGridLayout.Layout = {
@@ -149,7 +160,110 @@ export class DashboardGrid extends PureComponent<Props, State> {
     return layout;
   }
 
+  buildPrintableLayout() {
+    console.log('in buildPrintableLayout: ', this.props.dashboard.panels, this.props.printOptions);
+    this.panelMap = {};
+    const panelLayoutMap: { [key: string]: ReactGridLayout.Layout } = {};
+
+    const panelYPerColumn = Array(24).fill(0);
+    // const offsetPerColumn = Array(24).fill(0);
+    const lastPanelKeyPerColumn = Array(24).fill('');
+    for (let idx = 0; idx < this.props.dashboard.panels.length; idx++) {
+      console.log('init loop', panelYPerColumn);
+      const panel = this.props.dashboard.panels[idx];
+      if (!panel.key) {
+        panel.key = `panel-${panel.id}-${Date.now()}`;
+      }
+      this.panelMap[panel.key] = panel;
+
+      if (!panel.gridPos) {
+        console.log('panel without gridpos');
+        continue;
+      }
+
+      if (panel.collapsed) {
+        this.props.dashboard.toggleRow(panel);
+      }
+
+      const panelPos: ReactGridLayout.Layout = {
+        i: panel.key,
+        x: panel.gridPos.x,
+        y: panel.gridPos.y,
+        w: panel.gridPos.w,
+        h: panel.gridPos.h,
+      };
+
+      if (panel.type === 'row') {
+        panelPos.w = GRID_COLUMN_COUNT;
+        panelPos.h = 1;
+        panelPos.isResizable = false;
+        panelPos.isDraggable = panel.collapsed;
+      }
+
+      // Calculate max Y of the panel
+      let maxY = 0;
+      for (let i = panelPos.x; i < panelPos.x + panelPos.w; i++) {
+        const startY = panelYPerColumn[i]; // + offsetPerColumn[i];
+        if (startY > maxY) {
+          maxY = startY;
+        }
+      }
+      panelPos.y = maxY;
+
+      const startingPage = Math.floor(maxY / this.pageLineCount);
+      const endingPage = Math.floor((maxY + panelPos.h - 1) / this.pageLineCount);
+      // Panel about to be cut
+      // TODO: If panel too big to be displayed on one page only - do nothing but could reduce it to fit in one page
+      console.log(
+        `[Panel ${panel.title}] comparing starting page ${startingPage} with ending page ${endingPage} (maxY ${maxY}, h ${panelPos.h})`
+      );
+      if (panelPos.h <= this.pageLineCount && startingPage !== endingPage) {
+        let newY = Math.floor((maxY + panelPos.h) / this.pageLineCount) * this.pageLineCount;
+        console.log(`[Panel ${panel.title}] panel about to be cut, old y: ${panelPos.y}, new y: ${newY}`);
+
+        // If previous panel is a row, put it on the new page as well
+        if (idx - 1 > 0 && this.props.dashboard.panels[idx - 1].type === 'row') {
+          panelLayoutMap[this.props.dashboard.panels[idx - 1].key].y += 1;
+          newY += 1;
+        }
+
+        const offset = newY - panelPos.y;
+        panelPos.y = newY;
+
+        // Update offset and previous panels to be bigger
+        const previousPanels: string[] = [];
+        for (let i = 0; i < 24; i++) {
+          panelYPerColumn[i] += offset;
+          if (!previousPanels.includes(lastPanelKeyPerColumn[i])) {
+            previousPanels.push(lastPanelKeyPerColumn[i]);
+          }
+        }
+        for (const id of previousPanels) {
+          console.log('updating previous panel: ', id, offset);
+          panelLayoutMap[id].h += offset;
+        }
+      }
+
+      for (let i = panelPos.x; i < panelPos.x + panelPos.w; i++) {
+        panelYPerColumn[i] = panelPos.y + panelPos.h;
+        if (panel.type !== 'row') {
+          lastPanelKeyPerColumn[i] = panel.key;
+        }
+      }
+
+      panelLayoutMap[panel.key] = panelPos;
+    }
+
+    const layout: ReactGridLayout.Layout[] = [];
+    for (const key in panelLayoutMap) {
+      layout.push(panelLayoutMap[key]);
+    }
+
+    return layout;
+  }
+
   onLayoutChange = (newLayout: ReactGridLayout.Layout[]) => {
+    console.log('on layout change');
     if (this.state.panelFilter) {
       return;
     }
@@ -285,6 +399,26 @@ export class DashboardGrid extends PureComponent<Props, State> {
     );
   }
 
+  renderPages() {
+    if (this.props.printOptions?.mode === Mode.Preview && this.props.printOptions?.pageBreaks && this.wrapperDivRef) {
+      const pageElements = [];
+      this.pageLineCount = 17;
+      if (this.props.printOptions?.orientation === Orientation.Portrait) {
+        this.pageLineCount = 26;
+      }
+      this.pageLineCount *= this.props.printOptions?.scaleFactor || 1;
+      const pageHeight = (GRID_CELL_HEIGHT + GRID_CELL_VMARGIN) * this.pageLineCount;
+      const pageCount = Math.floor(this.wrapperDivRef.offsetHeight / pageHeight);
+      for (let i = 1; i <= pageCount; i++) {
+        pageElements.push(<DashboardPage marginTop={i * pageHeight - 14} key={`page-break-${i}`} />);
+      }
+
+      return pageElements;
+    }
+
+    return [];
+  }
+
   /**
    * Without this hack the move animations are triggered on initial load and all panels fly into position.
    * This can be quite distracting and make the dashboard appear to less snappy.
@@ -294,8 +428,75 @@ export class DashboardGrid extends PureComponent<Props, State> {
       setTimeout(() => {
         ref.classList.add('react-grid-layout--enable-move-animations');
       }, 50);
+
+      this.wrapperDivRef = ref;
     }
   };
+
+  // optimizeForPrinting() {
+  //   const pageLineCount = 16;
+  //   const panelYPerColumn = Array(24).fill(0);
+  //   const offsetPerColumn = Array(24).fill(0);
+  //   const lastPanelIDsPerColumn = Array(24).fill(0);
+  //   for (let idx = 0; idx < this.props.dashboard.panels.length; idx++) {
+  //     const panel = this.props.dashboard.panels[idx];
+  //     const gridPos = panel.gridPos;
+  //     const newPos = {
+  //       h: panel.gridPos.h,
+  //       w: panel.gridPos.w,
+  //       x: panel.gridPos.x,
+  //       y: panel.gridPos.y,
+  //     };
+  //
+  //     // Calculate max Y of the panel
+  //     let maxY = 0;
+  //     for (let i = gridPos.x; i < gridPos.x + gridPos.w; i++) {
+  //       const startY = panelYPerColumn[i] + offsetPerColumn[i];
+  //       if (startY > maxY) {
+  //         maxY = startY;
+  //       }
+  //     }
+  //     newPos.y = maxY;
+  //     panel.updateGridPos(newPos, false);
+  //
+  //     // Panel about to be cut
+  //     const startingPage = Math.floor(maxY / pageLineCount);
+  //     const endingPage = Math.floor((maxY + gridPos.h) / pageLineCount);
+  //     // console.log(
+  //     //   `[Panel ${panel.title}] comparing starting page ${startingPage} with ending page ${endingPage} (maxY ${maxY}, h ${gridPos.h})`
+  //     // );
+  //     // TODO: If panel too big to be displayed on one page only - do nothing but could reduce it to fit in one page
+  //     if (gridPos.h <= pageLineCount && startingPage !== endingPage) {
+  //       const newY = Math.floor((maxY + gridPos.h) / pageLineCount) * pageLineCount;
+  //       console.log(`[Panel ${panel.title}] panel about to be cut, old y: ${gridPos.y}, new y: ${newY}`);
+  //       const previousPanels: number[] = [];
+  //       for (let i = gridPos.x; i < gridPos.x + gridPos.w; i++) {
+  //         offsetPerColumn[i] = newY - gridPos.y;
+  //         if (!previousPanels.includes(lastPanelIDsPerColumn[i])) {
+  //           previousPanels.push(lastPanelIDsPerColumn[i]);
+  //         }
+  //       }
+  //       for (const id of previousPanels) {
+  //         console.log('about to update previous panel: ', id);
+  //         const previousPanel = this.props.dashboard.panels[id];
+  //         const newPos = {
+  //           h: previousPanel.gridPos.h,
+  //           w: previousPanel.gridPos.w,
+  //           x: previousPanel.gridPos.x,
+  //           y: previousPanel.gridPos.y,
+  //         };
+  //         newPos.h += newY - gridPos.y;
+  //         previousPanel.updateGridPos(newPos, false);
+  //       }
+  //       gridPos.y = newY;
+  //     }
+  //
+  //     for (let i = gridPos.x; i < gridPos.x + gridPos.w; i++) {
+  //       panelYPerColumn[i] = gridPos.y + gridPos.h;
+  //       lastPanelIDsPerColumn[i] = idx;
+  //     }
+  //   }
+  // }
 
   render() {
     const { isEditable, dashboard } = this.props;
@@ -342,13 +543,17 @@ export class DashboardGrid extends PureComponent<Props, State> {
                   isDraggable={draggable}
                   isResizable={isEditable}
                   containerPadding={[0, 0]}
-                  useCSSTransforms={true}
+                  useCSSTransforms={false}
                   margin={[GRID_CELL_VMARGIN, GRID_CELL_VMARGIN]}
                   cols={GRID_COLUMN_COUNT}
                   rowHeight={GRID_CELL_HEIGHT}
                   draggableHandle=".grid-drag-handle"
                   draggableCancel=".grid-drag-cancel"
-                  layout={this.buildLayout()}
+                  layout={
+                    this.props.printOptions?.mode && this.props.printOptions?.pageBreaks
+                      ? this.buildPrintableLayout()
+                      : this.buildLayout()
+                  }
                   onDragStop={this.onDragStop}
                   onResize={this.onResize}
                   onResizeStop={this.onResizeStop}
@@ -356,6 +561,7 @@ export class DashboardGrid extends PureComponent<Props, State> {
                 >
                   {this.renderPanels(width, draggable)}
                 </ReactGridLayout>
+                {this.renderPages()}
               </div>
             );
           }}
@@ -428,3 +634,45 @@ function translateGridHeightToScreenHeight(gridHeight: number): number {
 }
 
 GrafanaGridItem.displayName = 'GridItemWithDimensions';
+
+interface DashboardPageProps {
+  marginTop: number;
+}
+
+const DashboardPage: FC<DashboardPageProps> = ({ marginTop }) => {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        position: 'absolute',
+        width: '100%',
+        zIndex: 1000,
+        top: marginTop,
+        alignItems: 'center',
+      }}
+    >
+      <div
+        style={{
+          flexGrow: 1,
+          borderBottom: '2px dashed black',
+        }}
+      />
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'end',
+          margin: '0 .5em',
+          // backgroundColor: 'white',
+        }}
+      >
+        Page Break
+      </div>
+      <div
+        style={{
+          flexGrow: 1,
+          borderBottom: '2px dashed black',
+        }}
+      />
+    </div>
+  );
+};

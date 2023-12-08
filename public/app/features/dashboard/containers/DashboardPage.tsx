@@ -33,6 +33,7 @@ import { PanelInspector } from '../components/Inspector/PanelInspector';
 import { PanelEditor } from '../components/PanelEditor/PanelEditor';
 import { SubMenu } from '../components/SubMenu/SubMenu';
 import { DashboardGrid } from '../dashgrid/DashboardGrid';
+import { getPrintOptions } from '../dashgrid/PrintPDF/utils';
 import { liveTimer } from '../dashgrid/liveTimer';
 import { getTimeSrv } from '../services/TimeSrv';
 import { cleanUpDashboardAndVariables } from '../state/actions';
@@ -130,6 +131,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: State) {
+    console.log('in componentDidUpdate');
     const { dashboard, match, templateVarsChangedInUrl } = this.props;
     const routeReloadCounter = (this.props.history.location.state as any)?.routeReloadCounter;
 
@@ -315,6 +317,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
     const { dashboard, initError, queryParams } = this.props;
     const { editPanel, viewPanel, updateScrollTop, pageNav, sectionNav } = this.state;
     const kioskMode = getKioskMode(this.props.queryParams);
+    const printOptions = getPrintOptions();
 
     if (!dashboard || !pageNav || !sectionNav) {
       return <DashboardLoading initPhase={this.props.initPhase} />;
@@ -376,6 +379,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
             isEditable={!!dashboard.meta.canEdit}
             viewPanel={viewPanel}
             editPanel={editPanel}
+            printOptions={printOptions}
           />
 
           {inspectPanel && <PanelInspector dashboard={dashboard} panel={inspectPanel} />}
@@ -404,6 +408,7 @@ export class UnthemedDashboardPage extends PureComponent<Props, State> {
 }
 
 function updateStatePageNavFromProps(props: Props, state: State): State {
+  console.log('in updateStatePageNavFromProps');
   const { dashboard, navIndex } = props;
 
   if (!dashboard) {
