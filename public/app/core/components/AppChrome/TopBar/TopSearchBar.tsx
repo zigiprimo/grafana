@@ -12,7 +12,6 @@ import { SupportedPlugin } from 'app/features/alerting/unified/types/pluginBridg
 import { useSelector } from 'app/types';
 
 import { Branding } from '../../Branding/Branding';
-import { ExtensionDrawerButton } from '../ExtensionDrawer/ExtensionDrawerButton';
 import { enrichHelpItem } from '../MegaMenu/utils';
 import { NavToolbarSeparator } from '../NavToolbar/NavToolbarSeparator';
 import { NewsContainer } from '../News/NewsContainer';
@@ -55,7 +54,6 @@ export const TopSearchBar = React.memo(function TopSearchBar() {
       </TopSearchBarSection>
 
       <TopSearchBarSection align="right">
-        <ExtensionDrawerButton />
         <QuickAdd />
         {incidentInstalled && <InvestigationsButton count={1} collaborators={[]} />}
         <NavToolbarSeparator className={styles.separator} />
