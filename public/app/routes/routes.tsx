@@ -528,7 +528,7 @@ export function getDynamicDashboardRoutes(cfg = config): RouteDescriptor[] {
     {
       path: '/d-report/:uid',
       component: SafeDynamicImport(
-        () => import(/* webpackChunkName: "scenes"*/ 'app/features/dashboard-scene/pages/DashboardSceneReport')
+        () => import(/* webpackChunkName: "scenes"*/ 'app/features/dashboard-scene/reporting/DashboardSceneReport')
       ),
     },
     {

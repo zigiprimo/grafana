@@ -3,14 +3,14 @@ import { css } from '@emotion/css';
 import React, { useEffect, useState } from 'react';
 
 import { GrafanaTheme2 } from '@grafana/data';
+import { SceneGridLayout } from '@grafana/scenes';
 import { useStyles2 } from '@grafana/ui';
 import PageLoader from 'app/core/components/PageLoader/PageLoader';
 import { GrafanaRouteComponentProps } from 'app/core/navigation/types';
 import { DashboardPageRouteParams } from 'app/features/dashboard/containers/types';
 
+import { getDashboardScenePageStateManager } from '../pages/DashboardScenePageStateManager';
 import { DashboardScene } from '../scene/DashboardScene';
-
-import { getDashboardScenePageStateManager } from './DashboardScenePageStateManager';
 
 export interface Props extends GrafanaRouteComponentProps<DashboardPageRouteParams> {}
 
@@ -48,6 +48,11 @@ function DashbordReportRenderer({ model }: RendererProps) {
   const styles = useStyles2(getStyles);
 
   useEffect(() => {
+    // Disable lazy rendering
+    if (model.state.body instanceof SceneGridLayout) {
+      model.state.body.setState({ isLazy: false });
+    }
+
     setIsActive(true);
     return model.activate();
   }, [model]);
@@ -58,9 +63,18 @@ function DashbordReportRenderer({ model }: RendererProps) {
 
   return (
     <div className={styles.canvas}>
-      <div className={styles.title}>{model.state.title}</div>
+      {/* <div className={styles.title}>{window.visualViewport?.height}</div> */}
 
       <div className={styles.body}>
+        {/* <div
+          style={{
+            width: '1210px',
+            height: '1722px',
+            background: 'red',
+            border: `1px solid blue`,
+            position: 'absolute',
+          }}
+        /> */}
         <body.Component model={body} />
       </div>
     </div>
