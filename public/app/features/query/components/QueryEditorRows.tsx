@@ -95,7 +95,7 @@ class BaseQueryEditorRows extends PureComponent<Props> {
   }
 
   onDragStart = (result: DragStart) => {
-    const { queries, dsSettings, setDragData, data } = this.props;
+    const { absoluteRange, queries, dsSettings, setDragData, data } = this.props;
 
     const query = queries[result.source.index];
     const dragData: PluginExtensionGlobalDrawerDroppedQueryEditorData = {
@@ -104,8 +104,10 @@ class BaseQueryEditorRows extends PureComponent<Props> {
         query,
         data,
         datasource: dsSettings,
+        timeRange: absoluteRange,
       },
     };
+
     setDragData(dragData);
 
     reportInteraction('query_row_reorder_started', {

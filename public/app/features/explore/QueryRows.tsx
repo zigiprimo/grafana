@@ -14,6 +14,7 @@ import { changeQueries, runQueries } from './state/query';
 import { getExploreItemSelector } from './state/selectors';
 
 interface Props {
+  absoluteRange: [number, number];
   exploreId: string;
 }
 
@@ -31,7 +32,7 @@ const makeSelectors = (exploreId: string) => {
   };
 };
 
-export const QueryRows = ({ exploreId }: Props) => {
+export const QueryRows = ({ absoluteRange, exploreId }: Props) => {
   const dispatch = useDispatch();
   const { getQueries, getDatasourceInstanceSettings, getQueryResponse, getHistory, getEventBridge } = useMemo(
     () => makeSelectors(exploreId),
@@ -77,6 +78,7 @@ export const QueryRows = ({ exploreId }: Props) => {
   return (
     <QueryEditorRows
       dsSettings={dsSettings}
+      absoluteRange={absoluteRange}
       queries={queries}
       onQueriesChange={onChange}
       onAddQuery={onAddQuery}

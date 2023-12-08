@@ -569,6 +569,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
 
   render() {
     const {
+      absoluteRange,
       datasourceInstance,
       exploreId,
       graphResult,
@@ -646,7 +647,7 @@ export class Explore extends React.PureComponent<Props, ExploreState> {
                     <ContentOutlineItem title="Queries" icon="arrow">
                       <PanelContainer className={styles.queryContainer}>
                         {correlationsBox}
-                        <QueryRows exploreId={exploreId} />
+                        <QueryRows absoluteRange={absoluteRange} exploreId={exploreId} />
                         <SecondaryActions
                           // do not allow people to add queries with potentially different datasources in correlations editor mode
                           addQueryRowButtonDisabled={
