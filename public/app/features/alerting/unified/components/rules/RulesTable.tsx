@@ -94,7 +94,7 @@ export const RulesTable = ({
           type: 'alert-rule',
           data: { rule: item.data },
         })}
-        onDragRow={(x) => dispatch(setDragData(createSafeObject(x)))}
+        onDragRow={(row) => dispatch(setDragData(createSafeObject(row)))}
       />
     </div>
   );

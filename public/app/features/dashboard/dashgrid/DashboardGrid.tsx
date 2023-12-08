@@ -190,6 +190,7 @@ export class DashboardGrid extends PureComponent<Props, State> {
 
   onDragStart: ItemCallback = (_layout, _oldItem, _newItem, _placeholder, _event, element: HTMLElement) => {
     const { dashboard, onDrag } = this.props;
+
     if (!onDrag) {
       return;
     }
@@ -226,10 +227,14 @@ export class DashboardGrid extends PureComponent<Props, State> {
   };
 
   onDragStop: ItemCallback = (layout, _, newItem) => {
+    this.updateGridPos(newItem, layout);
+    this.onDragRelease();
+  };
+
+  onDragRelease = () => {
     const { onDrag } = this.props;
 
     onDrag?.(undefined);
-    this.updateGridPos(newItem, layout);
     this.setState({ isDraggingPanelId: null });
   };
 
@@ -384,7 +389,11 @@ export class DashboardGrid extends PureComponent<Props, State> {
                * in an element that has the calculated size given by the AutoSizer. The AutoSizer
                * has a width of 0 and will let its content overflow its div.
                */
-              <div style={{ width: width, height: '100%' }} ref={this.onGetWrapperDivRef}>
+              <div
+                style={{ width: width, height: '100%' }}
+                ref={this.onGetWrapperDivRef}
+                onMouseUp={this.onDragRelease}
+              >
                 <ReactGridLayout
                   width={width}
                   isDraggable={draggable}
