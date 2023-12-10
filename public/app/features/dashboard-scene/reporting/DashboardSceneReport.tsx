@@ -12,6 +12,8 @@ import { DashboardPageRouteParams } from 'app/features/dashboard/containers/type
 import { getDashboardScenePageStateManager } from '../pages/DashboardScenePageStateManager';
 import { DashboardScene } from '../scene/DashboardScene';
 
+import { ReportGridRenderer } from './ReportGridRenderer';
+
 export interface Props extends GrafanaRouteComponentProps<DashboardPageRouteParams> {}
 
 export function DashboardSceneReport({ match, route }: Props) {
@@ -48,11 +50,6 @@ function DashbordReportRenderer({ model }: RendererProps) {
   const styles = useStyles2(getStyles);
 
   useEffect(() => {
-    // Disable lazy rendering
-    if (model.state.body instanceof SceneGridLayout) {
-      model.state.body.setState({ isLazy: false });
-    }
-
     setIsActive(true);
     return model.activate();
   }, [model]);
@@ -75,7 +72,7 @@ function DashbordReportRenderer({ model }: RendererProps) {
             position: 'absolute',
           }}
         /> */}
-        <body.Component model={body} />
+        <ReportGridRenderer grid={body as SceneGridLayout} />
       </div>
     </div>
   );
