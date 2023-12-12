@@ -38,9 +38,7 @@ export const TopSearchBar = React.memo(function TopSearchBar() {
     homeUrl = textUtil.sanitizeUrl(locationUtil.getUrlForPartial(location, { forceLogin: 'true' }));
   }
   const showReturnToPrevious =
-    state?.returnToPrevious?.show &&
-    state?.returnToPrevious?.href !== '' &&
-    location.pathname !== state?.returnToPrevious?.href;
+    state?.returnToPrevious?.href !== '' && location.pathname !== state?.returnToPrevious?.href;
   const styles = useStyles2(getStyles, showReturnToPrevious);
 
   return (

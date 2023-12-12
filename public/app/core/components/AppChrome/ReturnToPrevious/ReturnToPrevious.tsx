@@ -1,8 +1,8 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 
+import { setReturnToPrevious } from '@grafana/runtime';
 import { Button } from '@grafana/ui';
-import { useGrafana } from 'app/core/context/GrafanaContext';
 
 export interface ReturnToPreviousProps {
   href: string;
@@ -11,11 +11,10 @@ export interface ReturnToPreviousProps {
 }
 
 export const ReturnToPrevious = ({ href, title, children }: ReturnToPreviousProps) => {
-  const { chrome } = useGrafana();
   const history = useHistory();
 
   const handleOnClick = () => {
-    chrome.setReturnToPrevious({ show: false, href: '', title: '' });
+    setReturnToPrevious({ title: '', href: '' });
     history.push(href);
   };
 

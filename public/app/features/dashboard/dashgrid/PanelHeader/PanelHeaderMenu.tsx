@@ -3,8 +3,8 @@ import { useLocation } from 'react-router-dom';
 
 import { PanelMenuItem } from '@grafana/data';
 import { selectors } from '@grafana/e2e-selectors';
+import { setReturnToPrevious } from '@grafana/runtime';
 import { Menu } from '@grafana/ui';
-import { useGrafana } from 'app/core/context/GrafanaContext';
 
 export interface Props {
   items: PanelMenuItem[];
@@ -15,7 +15,6 @@ export interface Props {
 
 export function PanelHeaderMenu({ items }: Props) {
   const location = useLocation();
-  const { chrome } = useGrafana();
 
   const renderItems = (items: PanelMenuItem[]) => {
     return items.map((item) => {
@@ -39,8 +38,7 @@ export function PanelHeaderMenu({ items }: Props) {
               onClick={(e: React.MouseEvent) => {
                 if (item && item.onClick) {
                   if (item.text === 'Explore') {
-                    chrome.setReturnToPrevious({ show: true, href: location.pathname, title: 'Dashboard' });
-                    console.log('location', location);
+                    setReturnToPrevious({ title: 'Dashboard', href: location.pathname });
                   }
                   item.onClick(e);
                 }
