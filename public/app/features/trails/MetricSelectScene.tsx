@@ -15,12 +15,14 @@ import {
   SceneVariable,
   SceneCSSGridLayout,
   SceneCSSGridItem,
+  SceneQueryRunner,
 } from '@grafana/scenes';
 import { VariableHide } from '@grafana/schema';
 import { Input, Text, useStyles2, InlineSwitch } from '@grafana/ui';
 
 import { getAutoQueriesForMetric } from './AutomaticMetricQueries/AutoQueryEngine';
 import { SelectMetricAction } from './SelectMetricAction';
+import { hideEmptyPreviews } from './hideEmptyPreviews';
 import { getVariablesWithMetricConstant, trailDS, VAR_FILTERS_EXPR, VAR_METRIC_NAMES } from './shared';
 import { getColorByIndex } from './utils';
 
@@ -94,7 +96,7 @@ export class MetricSelectScene extends SceneObjectBase<MetricSelectSceneState> {
     const metricNames = variable.state.options;
     const children: SceneFlexItem[] = [];
     const showPreviews = this.state.showPreviews;
-    const previewLimit = 20;
+    const previewLimit = 30;
     const cardLimit = 50;
 
     for (let index = 0; index < metricNames.length; index++) {
@@ -110,12 +112,7 @@ export class MetricSelectScene extends SceneObjectBase<MetricSelectSceneState> {
       }
 
       if (showPreviews && children.length < previewLimit) {
-        children.push(
-          new SceneCSSGridItem({
-            $variables: getVariablesWithMetricConstant(metricName),
-            body: getPreviewPanelFor(metricName, index),
-          })
-        );
+        children.push(getPreviewPanelFor(metricName, index));
       } else {
         children.push(
           new SceneCSSGridItem({
@@ -181,11 +178,22 @@ function getMetricNamesVariableSet() {
 function getPreviewPanelFor(metric: string, index: number) {
   const autoQuery = getAutoQueriesForMetric(metric);
 
-  return autoQuery.preview
+  const vizPanel = autoQuery.preview
     .vizBuilder(autoQuery.preview)
     .setColor({ mode: 'fixed', fixedColor: getColorByIndex(index) })
     .setHeaderActions(new SelectMetricAction({ metric, title: 'Select' }))
     .build();
+
+  return new SceneCSSGridItem({
+    $variables: getVariablesWithMetricConstant(metric),
+    $behaviors: [hideEmptyPreviews],
+    $data: new SceneQueryRunner({
+      datasource: trailDS,
+      maxDataPoints: 200,
+      queries: autoQuery.preview.queries,
+    }),
+    body: vizPanel,
+  });
 }
 
 function getCardPanelFor(metric: string) {
