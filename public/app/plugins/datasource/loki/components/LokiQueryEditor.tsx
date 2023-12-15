@@ -1,3 +1,4 @@
+import { QueryEditorMode, QueryEditorModeToggle, QueryHeaderSwitch } from 'custom-experimental';
 import { isEqual } from 'lodash';
 import React, { SyntheticEvent, useCallback, useEffect, useId, useState } from 'react';
 import { usePrevious } from 'react-use';
@@ -7,9 +8,6 @@ import { selectors } from '@grafana/e2e-selectors';
 import { EditorHeader, EditorRows, FlexItem, Space, Stack } from '@grafana/experimental';
 import { config, reportInteraction } from '@grafana/runtime';
 import { Button, ConfirmModal } from '@grafana/ui';
-import { QueryEditorModeToggle } from 'app/plugins/datasource/prometheus/querybuilder/shared/QueryEditorModeToggle';
-import { QueryHeaderSwitch } from 'app/plugins/datasource/prometheus/querybuilder/shared/QueryHeaderSwitch';
-import { QueryEditorMode } from 'app/plugins/datasource/prometheus/querybuilder/shared/types';
 
 import { lokiQueryEditorExplainKey, useFlag } from '../../prometheus/querybuilder/shared/hooks/useFlag';
 import { LabelBrowserModal } from '../querybuilder/components/LabelBrowserModal';

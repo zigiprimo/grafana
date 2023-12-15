@@ -1,9 +1,9 @@
+import { QueryBuilderOperationParamEditorProps } from 'custom-experimental';
 import React, { useState } from 'react';
 
 import { SelectableValue, getDefaultTimeRange, toOption } from '@grafana/data';
 import { Select } from '@grafana/ui';
 
-import { QueryBuilderOperationParamEditorProps } from '../../../prometheus/querybuilder/shared/types';
 import { placeHolderScopedVars } from '../../components/monaco-query-field/monaco-completion-provider/validation';
 import { LokiDatasource } from '../../datasource';
 import { getLogQueryFromMetricsQuery, isQueryWithError } from '../../queryUtils';

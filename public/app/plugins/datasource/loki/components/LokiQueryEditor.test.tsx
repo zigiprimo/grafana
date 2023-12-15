@@ -1,10 +1,10 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryEditorMode } from 'custom-experimental';
 import { cloneDeep, defaultsDeep } from 'lodash';
 import React from 'react';
 
 import { CoreApp } from '@grafana/data';
-import { QueryEditorMode } from 'app/plugins/datasource/prometheus/querybuilder/shared/types';
 
 import { createLokiDatasource } from '../mocks';
 import { EXPLAIN_LABEL_FILTER_CONTENT } from '../querybuilder/components/LokiQueryBuilderExplained';

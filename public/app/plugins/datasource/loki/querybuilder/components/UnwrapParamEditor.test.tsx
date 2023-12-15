@@ -1,12 +1,9 @@
 import { screen, render } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryBuilderOperation, QueryBuilderOperationParamDef, VisualQueryModeller } from 'custom-experimental';
 import React, { ComponentProps } from 'react';
 
 import { DataFrame, DataSourceApi, FieldType, toDataFrame } from '@grafana/data';
-import {
-  QueryBuilderOperation,
-  QueryBuilderOperationParamDef,
-} from 'app/plugins/datasource/prometheus/querybuilder/shared/types';
 
 import { LokiDatasource } from '../../datasource';
 import { createLokiDatasource } from '../../mocks';
@@ -32,7 +29,7 @@ describe('UnwrapParamEditor', () => {
   it('shows no label options for non-metric query', async () => {
     const props = createProps({
       query: {
-        labels: [{ op: '=', label: 'foo', value: 'bar' }],
+        labels: [{ operator: '=', label: 'foo', value: 'bar' }],
         operations: [
           { id: LokiOperationId.Logfmt, params: [] },
           { id: LokiOperationId.Unwrap, params: ['', ''] },
@@ -77,6 +74,7 @@ const createProps = (
     paramDef: {} as QueryBuilderOperationParamDef,
     operation: {} as QueryBuilderOperation,
     datasource: createLokiDatasource() as DataSourceApi,
+    queryModeller: {} as VisualQueryModeller,
   };
   const props = { ...propsDefault, ...propsOverrides };
 

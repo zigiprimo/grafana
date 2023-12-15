@@ -1,25 +1,26 @@
+import {
+  QueryBuilderLabelFilter,
+  LabelFilters,
+  QueryBuilderOperation,
+  OperationExplainedBox,
+  OperationList,
+  OperationListExplained,
+  OperationsEditorRow,
+  QueryBuilderHints,
+  RawQuery,
+} from 'custom-experimental';
 import React, { useEffect, useMemo, useState } from 'react';
 
 import { DataSourceApi, getDefaultTimeRange, LoadingState, PanelData, SelectableValue, TimeRange } from '@grafana/data';
 import { EditorRow } from '@grafana/experimental';
-import { LabelFilters } from 'app/plugins/datasource/prometheus/querybuilder/shared/LabelFilters';
-import { OperationExplainedBox } from 'app/plugins/datasource/prometheus/querybuilder/shared/OperationExplainedBox';
-import { OperationList } from 'app/plugins/datasource/prometheus/querybuilder/shared/OperationList';
-import { OperationListExplained } from 'app/plugins/datasource/prometheus/querybuilder/shared/OperationListExplained';
-import { OperationsEditorRow } from 'app/plugins/datasource/prometheus/querybuilder/shared/OperationsEditorRow';
-import { QueryBuilderHints } from 'app/plugins/datasource/prometheus/querybuilder/shared/QueryBuilderHints';
-import { RawQuery } from 'app/plugins/datasource/prometheus/querybuilder/shared/RawQuery';
-import {
-  QueryBuilderLabelFilter,
-  QueryBuilderOperation,
-} from 'app/plugins/datasource/prometheus/querybuilder/shared/types';
 
 import { testIds } from '../../components/LokiQueryEditor';
 import { LokiDatasource } from '../../datasource';
 import { escapeLabelValueInSelector } from '../../languageUtils';
 import logqlGrammar from '../../syntax';
+import { LokiQuery } from '../../types';
 import { lokiQueryModeller } from '../LokiQueryModeller';
-import { buildVisualQueryFromString } from '../parsing';
+import { buildVisualQueryFromString, buildDataQueryQueryFromString } from '../parsing';
 import { LokiOperationId, LokiVisualQuery } from '../types';
 
 import { EXPLAIN_LABEL_FILTER_CONTENT } from './LokiQueryBuilderExplained';
@@ -81,7 +82,7 @@ export const LokiQueryBuilder = React.memo<Props>(
         values = result[datasource.interpolateString(forLabel.label)];
       }
 
-      return values ? values.map((v) => escapeLabelValueInSelector(v, forLabel.op)) : []; // Escape values in return
+      return values ? values.map((v) => escapeLabelValueInSelector(v, forLabel.operator)) : []; // Escape values in return
     };
 
     const labelFilterRequired: boolean = useMemo(() => {
@@ -122,12 +123,13 @@ export const LokiQueryBuilder = React.memo<Props>(
             labelsFilters={query.labels}
             onChange={onChangeLabels}
             labelFilterRequired={labelFilterRequired}
+            multiValueSeparator="|"
           />
         </EditorRow>
         {showExplain && (
           <OperationExplainedBox
             stepNumber={1}
-            title={<RawQuery query={`${lokiQueryModeller.renderLabels(query.labels)}`} lang={lang} />}
+            title={<RawQuery query={`${lokiQueryModeller.renderLabels(query.labels)}`} language={lang} />}
           >
             {EXPLAIN_LABEL_FILTER_CONTENT}
           </OperationExplainedBox>
@@ -141,13 +143,14 @@ export const LokiQueryBuilder = React.memo<Props>(
             datasource={datasource as DataSourceApi}
             highlightedOp={highlightedOp}
           />
-          <QueryBuilderHints<LokiVisualQuery>
-            datasource={datasource}
+          <QueryBuilderHints<LokiVisualQuery, LokiQuery>
+            datasource={datasource as DataSourceApi}
             query={query}
             onChange={onChange}
             data={sampleData}
             queryModeller={lokiQueryModeller}
             buildVisualQueryFromString={buildVisualQueryFromString}
+            buildDataQueryFromString={buildDataQueryQueryFromString}
           />
         </OperationsEditorRow>
         {showExplain && (
@@ -155,7 +158,8 @@ export const LokiQueryBuilder = React.memo<Props>(
             stepNumber={2}
             queryModeller={lokiQueryModeller}
             query={query}
-            lang={lang}
+            language={lang}
+            placeholderInnerQuery="<expr>"
             onMouseEnter={(op) => {
               setHighlightedOp(op);
             }}

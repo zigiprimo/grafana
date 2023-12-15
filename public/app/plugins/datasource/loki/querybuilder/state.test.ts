@@ -1,4 +1,4 @@
-import { QueryEditorMode } from '../../prometheus/querybuilder/shared/types';
+import { QueryEditorMode } from 'custom-experimental';
 
 import { changeEditorMode, getQueryWithDefaults } from './state';
 

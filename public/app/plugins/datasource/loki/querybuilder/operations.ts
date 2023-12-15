@@ -1,4 +1,4 @@
-import { QueryBuilderOperationDef, QueryBuilderOperationParamValue } from '../../prometheus/querybuilder/shared/types';
+import { QueryBuilderOperationDef, QueryBuilderOperationParamValue } from 'custom-experimental';
 
 import { binaryScalarOperations } from './binaryScalarOperations';
 import { UnwrapParamEditor } from './components/UnwrapParamEditor';

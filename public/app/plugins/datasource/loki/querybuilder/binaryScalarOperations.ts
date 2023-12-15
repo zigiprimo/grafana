@@ -1,8 +1,4 @@
-import {
-  QueryBuilderOperation,
-  QueryBuilderOperationDef,
-  QueryBuilderOperationParamDef,
-} from '../../prometheus/querybuilder/shared/types';
+import { QueryBuilderOperation, QueryBuilderOperationDef, QueryBuilderOperationParamDef } from 'custom-experimental';
 
 import { defaultAddOperationHandler } from './operationUtils';
 import { LokiOperationId, LokiVisualQueryOperationCategory } from './types';

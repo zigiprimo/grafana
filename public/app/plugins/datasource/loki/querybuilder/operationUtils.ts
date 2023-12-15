@@ -1,15 +1,15 @@
-import { capitalize } from 'lodash';
-import pluralize from 'pluralize';
-
-import { LabelParamEditor } from '../../prometheus/querybuilder/components/LabelParamEditor';
 import {
+  LabelParamEditor,
   QueryBuilderOperation,
   QueryBuilderOperationDef,
   QueryBuilderOperationParamDef,
   QueryBuilderOperationParamValue,
   QueryWithOperations,
   VisualQueryModeller,
-} from '../../prometheus/querybuilder/shared/types';
+} from 'custom-experimental';
+import { capitalize } from 'lodash';
+import pluralize from 'pluralize';
+
 import { FUNCTIONS } from '../syntax';
 
 import { LokiOperationId, LokiOperationOrder, LokiVisualQuery, LokiVisualQueryOperationCategory } from './types';

@@ -1,4 +1,5 @@
 import { SyntaxNode } from '@lezer/common';
+import { QueryBuilderLabelFilter, QueryBuilderOperation, QueryBuilderOperationParamValue } from 'custom-experimental';
 
 import {
   And,
@@ -63,11 +64,7 @@ import {
   makeError,
   replaceVariables,
 } from '../../prometheus/querybuilder/shared/parsingUtils';
-import {
-  QueryBuilderLabelFilter,
-  QueryBuilderOperation,
-  QueryBuilderOperationParamValue,
-} from '../../prometheus/querybuilder/shared/types';
+import { LokiQuery } from '../types';
 
 import { binaryScalarDefs } from './binaryScalarOperations';
 import { checkParamsAreValid, getDefinitionById } from './operations';
@@ -88,6 +85,13 @@ interface ParsingError {
 interface GetOperationResult {
   operation?: QueryBuilderOperation;
   error?: string;
+}
+
+export function buildDataQueryQueryFromString(expr: string): LokiQuery {
+  return {
+    expr,
+    refId: '',
+  };
 }
 
 export function buildVisualQueryFromString(expr: string): Context {
@@ -260,14 +264,14 @@ export function handleExpression(expr: string, node: SyntaxNode, context: Contex
 function getLabel(expr: string, node: SyntaxNode): QueryBuilderLabelFilter {
   const labelNode = node.getChild(Identifier);
   const label = getString(expr, labelNode);
-  const op = getString(expr, labelNode?.nextSibling);
+  const operator = getString(expr, labelNode?.nextSibling);
   let value = getString(expr, node.getChild(String));
   // `value` is wrapped in double quotes, so we need to remove them. As a value can contain double quotes, we can't use RegEx here.
   value = value.substring(1, value.length - 1);
 
   return {
     label,
-    op,
+    operator,
     value,
   };
 }

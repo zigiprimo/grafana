@@ -1,8 +1,8 @@
+import { QueryEditorMode } from 'custom-experimental';
+
 import { CoreApp, DashboardLoadedEvent, DataQueryRequest, DataQueryResponse } from '@grafana/data';
 import { reportInteraction, config } from '@grafana/runtime';
 import { variableRegex } from 'app/features/variables/utils';
-
-import { QueryEditorMode } from '../prometheus/querybuilder/shared/types';
 
 import {
   REF_ID_STARTER_ANNOTATION,

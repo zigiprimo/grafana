@@ -7,7 +7,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with labels only', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [],
       })
     ).toBe('{app="grafana"}');
@@ -16,7 +16,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with pipeline operation json', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Json, params: [] }],
       })
     ).toBe('{app="grafana"} | json');
@@ -25,7 +25,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with pipeline operation json and expression param', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Json, params: ['foo="bar"'] }],
       })
     ).toBe('{app="grafana"} | json foo="bar"');
@@ -34,7 +34,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with pipeline operation json and multiple expression params', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Json, params: ['foo="bar", bar="baz"'] }],
       })
     ).toBe('{app="grafana"} | json foo="bar", bar="baz"');
@@ -43,7 +43,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with pipeline operation logfmt', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Logfmt, params: [] }],
       })
     ).toBe('{app="grafana"} | logfmt');
@@ -52,7 +52,7 @@ describe('LokiQueryModeller', () => {
   it('Models a logfmt query with strict flag', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Logfmt, params: [true] }],
       })
     ).toBe('{app="grafana"} | logfmt --strict');
@@ -61,7 +61,7 @@ describe('LokiQueryModeller', () => {
   it('Models a logfmt query with keep empty flag', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Logfmt, params: [false, true] }],
       })
     ).toBe('{app="grafana"} | logfmt --keep-empty');
@@ -70,7 +70,7 @@ describe('LokiQueryModeller', () => {
   it('Models a logfmt query with multiple flags', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Logfmt, params: [true, true] }],
       })
     ).toBe('{app="grafana"} | logfmt --strict --keep-empty');
@@ -79,7 +79,7 @@ describe('LokiQueryModeller', () => {
   it('Models a logfmt query with multiple flags and labels', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Logfmt, params: [true, true, 'label', 'label2="label3'] }],
       })
     ).toBe('{app="grafana"} | logfmt --strict --keep-empty label, label2="label3');
@@ -88,7 +88,7 @@ describe('LokiQueryModeller', () => {
   it('Models a logfmt query with labels', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Logfmt, params: [false, false, 'label', 'label2="label3'] }],
       })
     ).toBe('{app="grafana"} | logfmt label, label2="label3');
@@ -97,7 +97,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with pipeline operation regexp', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Regexp, params: ['re'] }],
       })
     ).toBe('{app="grafana"} | regexp `re`');
@@ -106,7 +106,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with pipeline operation pattern', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Pattern, params: ['<pattern>'] }],
       })
     ).toBe('{app="grafana"} | pattern `<pattern>`');
@@ -115,7 +115,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with pipeline operation unpack', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Unpack, params: [] }],
       })
     ).toBe('{app="grafana"} | unpack');
@@ -124,7 +124,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with line filter contains operation', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LineContains, params: ['error'] }],
       })
     ).toBe('{app="grafana"} |= `error`');
@@ -133,7 +133,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with line filter contains operation with empty params', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LineContains, params: [''] }],
       })
     ).toBe('{app="grafana"} |= ``');
@@ -142,7 +142,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with line filter contains not operation', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LineContainsNot, params: ['error'] }],
       })
     ).toBe('{app="grafana"} != `error`');
@@ -151,7 +151,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with line regex filter', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LineMatchesRegex, params: ['error'] }],
       })
     ).toBe('{app="grafana"} |~ `error`');
@@ -160,7 +160,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with line not matching regex', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LineMatchesRegexNot, params: ['error'] }],
       })
     ).toBe('{app="grafana"} !~ `error`');
@@ -169,7 +169,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with label filter expression', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LabelFilter, params: ['__error__', '=', 'value'] }],
       })
     ).toBe('{app="grafana"} | __error__ = `value`');
@@ -178,7 +178,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with label filter expression using greater than operator', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LabelFilter, params: ['count', '>', 'value'] }],
       })
     ).toBe('{app="grafana"} | count > value');
@@ -187,7 +187,7 @@ describe('LokiQueryModeller', () => {
   it('Can query no formatting errors operation', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LabelFilterNoErrors, params: [] }],
       })
     ).toBe('{app="grafana"} | __error__=``');
@@ -196,7 +196,7 @@ describe('LokiQueryModeller', () => {
   it('Can query with unwrap operation', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Unwrap, params: ['count'] }],
       })
     ).toBe('{app="grafana"} | unwrap count');
@@ -205,7 +205,7 @@ describe('LokiQueryModeller', () => {
   it('Can render with line_format operation', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LineFormat, params: ['{{.status_code}}'] }],
       })
     ).toBe('{app="grafana"} | line_format `{{.status_code}}`');
@@ -214,7 +214,7 @@ describe('LokiQueryModeller', () => {
   it('Can render with label_format operation', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.LabelFormat, params: ['original', 'renameTo'] }],
       })
     ).toBe('{app="grafana"} | label_format renameTo=original');
@@ -223,7 +223,7 @@ describe('LokiQueryModeller', () => {
   it('Can render simply binary operation with scalar', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.MultiplyBy, params: [1000] }],
       })
     ).toBe('{app="grafana"} * 1000');
@@ -232,13 +232,13 @@ describe('LokiQueryModeller', () => {
   it('Can render query with simple binary query', () => {
     expect(
       modeller.renderQuery({
-        labels: [{ label: 'app', op: '=', value: 'grafana' }],
+        labels: [{ label: 'app', operator: '=', value: 'grafana' }],
         operations: [{ id: LokiOperationId.Rate, params: ['5m'] }],
         binaryQueries: [
           {
             operator: '/',
             query: {
-              labels: [{ label: 'job', op: '=', value: 'backup' }],
+              labels: [{ label: 'job', operator: '=', value: 'backup' }],
               operations: [{ id: LokiOperationId.CountOverTime, params: ['5m'] }],
             },
           },

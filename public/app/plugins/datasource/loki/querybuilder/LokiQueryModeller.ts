@@ -1,10 +1,9 @@
-import { LokiAndPromQueryModellerBase } from '../../prometheus/querybuilder/shared/LokiAndPromQueryModellerBase';
-import { QueryBuilderLabelFilter } from '../../prometheus/querybuilder/shared/types';
+import { QueryBuilderLabelFilter, QueryModellerBase } from 'custom-experimental';
 
 import { getOperationDefinitions } from './operations';
 import { LokiOperationId, LokiQueryPattern, LokiQueryPatternType, LokiVisualQueryOperationCategory } from './types';
 
-export class LokiQueryModeller extends LokiAndPromQueryModellerBase {
+export class LokiQueryModeller extends QueryModellerBase {
   constructor() {
     super(getOperationDefinitions);
 

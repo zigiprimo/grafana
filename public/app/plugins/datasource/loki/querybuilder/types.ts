@@ -1,10 +1,11 @@
+import { QueryBuilderLabelFilter, QueryBuilderOperation, VisualQuery } from 'custom-experimental';
+
 import { VisualQueryBinary } from '../../prometheus/querybuilder/shared/LokiAndPromQueryModellerBase';
-import { QueryBuilderLabelFilter, QueryBuilderOperation } from '../../prometheus/querybuilder/shared/types';
 
 /**
  * Visual query model
  */
-export interface LokiVisualQuery {
+export interface LokiVisualQuery extends VisualQuery {
   labels: QueryBuilderLabelFilter[];
   operations: QueryBuilderOperation[];
   binaryQueries?: LokiVisualQueryBinary[];

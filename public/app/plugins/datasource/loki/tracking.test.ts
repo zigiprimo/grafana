@@ -1,9 +1,8 @@
+import { QueryEditorMode } from 'custom-experimental';
 import { getQueryOptions } from 'test/helpers/getQueryOptions';
 
 import { DashboardLoadedEvent, dateTime } from '@grafana/data';
 import { reportInteraction } from '@grafana/runtime';
-
-import { QueryEditorMode } from '../prometheus/querybuilder/shared/types';
 
 import pluginJson from './plugin.json';
 import { partitionTimeRange } from './querySplitting';

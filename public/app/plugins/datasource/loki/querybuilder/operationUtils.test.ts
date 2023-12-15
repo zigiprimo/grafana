@@ -1,4 +1,4 @@
-import { QueryBuilderOperation, QueryBuilderOperationDef } from '../../prometheus/querybuilder/shared/types';
+import { QueryBuilderOperation, QueryBuilderOperationDef } from 'custom-experimental';
 
 import {
   createAggregationOperation,

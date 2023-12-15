@@ -311,6 +311,7 @@
     "combokeys": "^3.0.0",
     "comlink": "4.4.1",
     "common-tags": "1.8.2",
+    "custom-experimental": "file:../grafana-experimental",
     "d3": "7.8.5",
     "d3-force": "3.0.0",
     "d3-scale-chromatic": "3.0.0",
