@@ -15,6 +15,9 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/dashboards"
+	"github.com/grafana/grafana/pkg/services/folder"
+	"github.com/grafana/grafana/pkg/services/folder/folderimpl"
+	"github.com/grafana/grafana/pkg/services/org"
 	"github.com/grafana/grafana/pkg/services/provisioning/utils"
 	"github.com/grafana/grafana/pkg/util"
 )
@@ -34,6 +37,7 @@ type FileReader struct {
 	dashboardProvisioningService dashboards.DashboardProvisioningService
 	dashboardStore               utils.DashboardStore
 	FoldersFromFilesStructure    bool
+	folderService                folder.Service
 
 	mux                     sync.RWMutex
 	usageTracker            *usageTracker
@@ -41,7 +45,8 @@ type FileReader struct {
 }
 
 // NewDashboardFileReader returns a new filereader based on `config`
-func NewDashboardFileReader(cfg *config, log log.Logger, service dashboards.DashboardProvisioningService, dashboardStore utils.DashboardStore) (*FileReader, error) {
+func NewDashboardFileReader(cfg *config, log log.Logger, service dashboards.DashboardProvisioningService,
+	dashboardStore utils.DashboardStore, folderService folder.Service) (*FileReader, error) {
 	var path string
 	path, ok := cfg.Options["path"].(string)
 	if !ok {
@@ -64,6 +69,7 @@ func NewDashboardFileReader(cfg *config, log log.Logger, service dashboards.Dash
 		log:                          log,
 		dashboardProvisioningService: service,
 		dashboardStore:               dashboardStore,
+		folderService:                folderService,
 		FoldersFromFilesStructure:    foldersFromFilesStructure,
 		usageTracker:                 newUsageTracker(),
 	}, nil
@@ -137,12 +143,31 @@ func (fr *FileReader) isDatabaseAccessRestricted() bool {
 	return fr.dbWriteAccessRestricted
 }
 
+// splitFn is passed to strings.FieldsFunc to split the string and remove the empty token
+var splitFn = func(char rune) bool {
+	return string(char) == folderimpl.FULLPATH_SEPARATOR
+}
+
 // storeDashboardsInFolder saves dashboards from the filesystem on disk to the folder from config
 func (fr *FileReader) storeDashboardsInFolder(ctx context.Context, filesFoundOnDisk map[string]os.FileInfo,
 	dashboardRefs map[string]*dashboards.DashboardProvisioning, usageTracker *usageTracker) error {
-	folderID, folderUID, err := fr.getOrCreateFolder(ctx, fr.Cfg, fr.dashboardProvisioningService, fr.Cfg.Folder)
-	if err != nil && !errors.Is(err, ErrFolderNameMissing) {
-		return err
+
+	folderTitles := strings.FieldsFunc(fr.Cfg.Folder, splitFn)
+	// TODO: should it create a folder in General if no folder is specified in the config?
+	if len(folderTitles) == 0 {
+		return fmt.Errorf("folder name must be specified %v", ErrFolderNameMissing)
+	}
+
+	var folderID int64
+	var folderUID string
+	for i := range folderTitles {
+		id, uid, err := fr.getOrCreateFolderByTitle(ctx, folderTitles[i], fr.Cfg.OrgID, folderUID)
+		if err != nil && !errors.Is(err, ErrFolderNameMissing) {
+			return fmt.Errorf("can't create folder %q: %w", folderTitles[i], err)
+		}
+
+		folderID = id
+		folderUID = uid
 	}
 
 	// save dashboards based on json files
@@ -163,16 +188,22 @@ func (fr *FileReader) storeDashboardsInFolder(ctx context.Context, filesFoundOnD
 func (fr *FileReader) storeDashboardsInFoldersFromFileStructure(ctx context.Context, filesFoundOnDisk map[string]os.FileInfo,
 	dashboardRefs map[string]*dashboards.DashboardProvisioning, resolvedPath string, usageTracker *usageTracker) error {
 	for path, fileInfo := range filesFoundOnDisk {
-		folderName := ""
+		folderFullPath := filepath.Dir(path)
+		folderTitles := folderimpl.SplitFullpath(strings.TrimPrefix(folderFullPath, resolvedPath))
 
-		dashboardsFolder := filepath.Dir(path)
-		if dashboardsFolder != resolvedPath {
-			folderName = filepath.Base(dashboardsFolder)
+		if len(folderTitles) == 0 {
+			return fmt.Errorf("invalid folder fullpath: %s", path)
 		}
 
-		folderID, folderUID, err := fr.getOrCreateFolder(ctx, fr.Cfg, fr.dashboardProvisioningService, folderName)
-		if err != nil && !errors.Is(err, ErrFolderNameMissing) {
-			return fmt.Errorf("can't provision folder %q from file system structure: %w", folderName, err)
+		var folderID int64
+		var folderUID string
+		for i := range folderTitles {
+			id, uid, err := fr.getOrCreateFolderByTitle(ctx, folderTitles[i], fr.Cfg.OrgID, folderUID)
+			if err != nil {
+				return fmt.Errorf("can't provision folder %q from file system structure: %w", folderTitles[i], err)
+			}
+			folderID = id
+			folderUID = uid
 		}
 
 		provisioningMetadata, err := fr.saveDashboard(ctx, path, folderID, folderUID, fileInfo, dashboardRefs)
@@ -182,6 +213,50 @@ func (fr *FileReader) storeDashboardsInFoldersFromFileStructure(ctx context.Cont
 		}
 	}
 	return nil
+}
+
+func (fr *FileReader) getOrCreateFolderByTitle(ctx context.Context, folderName string, orgID int64, parentUID string) (int64, string, error) {
+	if folderName == "" {
+		return 0, "", ErrFolderNameMissing
+	}
+
+	cmd := &folder.GetFolderQuery{
+		Title:     &folderName,
+		ParentUID: &parentUID,
+		OrgID:     orgID,
+		SignedInUser: accesscontrol.BackgroundUser("dashboard_provisioning", orgID, org.RoleAdmin, []accesscontrol.Permission{
+			{Action: dashboards.ActionFoldersRead, Scope: dashboards.ScopeFoldersAll},
+		}),
+	}
+
+	cmdResult, err := fr.folderService.Get(ctx, cmd)
+	if err != nil && !errors.Is(err, dashboards.ErrFolderNotFound) {
+		return 0, "", err
+	}
+
+	// if not found, create a new folder
+	if errors.Is(err, dashboards.ErrFolderNotFound) {
+		createCmd := &folder.CreateFolderCommand{
+			OrgID: orgID,
+			UID:   util.GenerateShortUID(),
+			Title: folderName,
+		}
+
+		if parentUID != "" {
+			createCmd.ParentUID = parentUID
+		}
+
+		f, err := fr.dashboardProvisioningService.SaveFolderForProvisionedDashboards(ctx, createCmd)
+		if err != nil {
+			return 0, "", err
+		}
+
+		// nolint:staticcheck
+		return f.ID, f.UID, nil
+	}
+
+	// nolint:staticcheck
+	return cmdResult.ID, cmdResult.UID, nil
 }
 
 // handleMissingDashboardFiles will unprovision or delete dashboards which are missing on disk.
@@ -333,22 +408,23 @@ func (fr *FileReader) getOrCreateFolder(ctx context.Context, cfg *config, servic
 
 	// dashboard folder not found. create one.
 	if errors.Is(err, dashboards.ErrDashboardNotFound) {
-		dash := &dashboards.SaveDashboardDTO{}
-		dash.Dashboard = dashboards.NewDashboardFolder(folderName)
-		dash.Dashboard.IsFolder = true
-		dash.Overwrite = true
-		dash.OrgID = cfg.OrgID
 		// set dashboard folderUid if given
 		if cfg.FolderUID == accesscontrol.GeneralFolderUID {
 			return 0, "", dashboards.ErrFolderInvalidUID
 		}
-		dash.Dashboard.SetUID(cfg.FolderUID)
-		dbDash, err := service.SaveFolderForProvisionedDashboards(ctx, dash)
+
+		createCmd := &folder.CreateFolderCommand{
+			OrgID: cfg.OrgID,
+			UID:   cfg.FolderUID,
+			Title: folderName,
+		}
+
+		f, err := service.SaveFolderForProvisionedDashboards(ctx, createCmd)
 		if err != nil {
 			return 0, "", err
 		}
-
-		return dbDash.ID, dbDash.UID, nil
+		// nolint:staticcheck
+		return f.ID, f.UID, nil
 	}
 
 	if !result.IsFolder {
