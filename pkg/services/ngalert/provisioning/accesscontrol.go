@@ -10,37 +10,43 @@ import (
 	"github.com/grafana/grafana/pkg/services/ngalert/store"
 )
 
+type ruleService interface {
+	HasAccess(ctx context.Context, user identity.Requester, evaluator ac.Evaluator) (bool, error)
+	AuthorizeAccessToRuleGroup(ctx context.Context, user identity.Requester, rules models.RulesGroup) error
+	AuthorizeRuleChanges(ctx context.Context, user identity.Requester, change *store.GroupDelta) error
+}
+
 func NewRuleAccessControlService(ac *accesscontrol.RuleService) RuleAccessControlService {
 	return &provisioningAccessControl{
-		RuleService: ac,
+		ruleService: ac,
 	}
 }
 
 type provisioningAccessControl struct {
-	*accesscontrol.RuleService
+	ruleService
 }
 
-func (p *provisioningAccessControl) AuthorizeAccessToRuleGroup(ctx context.Context, user identity.Requester, rules models.RulesGroup) bool {
-	if p.CanReadAllRules(ctx, user) {
-		return true
+func (p *provisioningAccessControl) AuthorizeAccessToRuleGroup(ctx context.Context, user identity.Requester, rules models.RulesGroup) error {
+	if can, err := p.CanReadAllRules(ctx, user); can || err != nil {
+		return err
 	}
-	return p.RuleService.AuthorizeAccessToRuleGroup(ctx, user, rules)
+	return p.ruleService.AuthorizeAccessToRuleGroup(ctx, user, rules)
 }
 
 func (p *provisioningAccessControl) AuthorizeRuleChanges(ctx context.Context, user identity.Requester, change *store.GroupDelta) error {
-	if p.CanWriteAllRules(ctx, user) {
-		return nil
+	if can, err := p.CanWriteAllRules(ctx, user); can || err != nil {
+		return err
 	}
-	return p.RuleService.AuthorizeRuleChanges(ctx, user, change)
+	return p.ruleService.AuthorizeRuleChanges(ctx, user, change)
 }
 
-func (p *provisioningAccessControl) CanReadAllRules(ctx context.Context, user identity.Requester) bool {
+func (p *provisioningAccessControl) CanReadAllRules(ctx context.Context, user identity.Requester) (bool, error) {
 	return p.HasAccess(ctx, user, ac.EvalAny(
 		ac.EvalPermission(ac.ActionAlertingProvisioningRead),
 		ac.EvalPermission(ac.ActionAlertingProvisioningReadSecrets),
 	))
 }
 
-func (p *provisioningAccessControl) CanWriteAllRules(ctx context.Context, user identity.Requester) bool {
+func (p *provisioningAccessControl) CanWriteAllRules(ctx context.Context, user identity.Requester) (bool, error) {
 	return p.HasAccess(ctx, user, ac.EvalPermission(ac.ActionAlertingProvisioningWrite))
 }

@@ -134,8 +134,11 @@ func (prov *defaultAlertRuleProvisioner) getOrCreateFolderUID(
 type NoopRuleAccessControlService struct {
 }
 
-func (n NoopRuleAccessControlService) AuthorizeAccessToRuleGroup(_ context.Context, u identity.Requester, _ alert_models.RulesGroup) bool {
-	return provisionerUser.GetLogin() == u.GetLogin()
+func (n NoopRuleAccessControlService) AuthorizeAccessToRuleGroup(_ context.Context, u identity.Requester, _ alert_models.RulesGroup) error {
+	if provisionerUser.GetLogin() == u.GetLogin() {
+		return nil
+	}
+	return errors.New("only provisioner user is allowed")
 }
 
 func (n NoopRuleAccessControlService) AuthorizeRuleChanges(_ context.Context, u identity.Requester, _ *store.GroupDelta) error {
@@ -145,12 +148,12 @@ func (n NoopRuleAccessControlService) AuthorizeRuleChanges(_ context.Context, u 
 	return errors.New("only provisioner user is allowed")
 }
 
-func (n NoopRuleAccessControlService) CanReadAllRules(_ context.Context, u identity.Requester) bool {
-	return provisionerUser.GetLogin() == u.GetLogin()
+func (n NoopRuleAccessControlService) CanReadAllRules(_ context.Context, u identity.Requester) (bool, error) {
+	return provisionerUser.GetLogin() == u.GetLogin(), nil
 }
 
-func (n NoopRuleAccessControlService) CanWriteAllRules(_ context.Context, u identity.Requester) bool {
-	return provisionerUser.GetLogin() == u.GetLogin()
+func (n NoopRuleAccessControlService) CanWriteAllRules(_ context.Context, u identity.Requester) (bool, error) {
+	return provisionerUser.GetLogin() == u.GetLogin(), nil
 }
 
 // UserID is 0 to use org quota
