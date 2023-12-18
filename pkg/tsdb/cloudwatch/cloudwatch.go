@@ -3,6 +3,7 @@ package cloudwatch
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"sync"
@@ -277,10 +278,27 @@ func (e *cloudWatchExecutor) newSession(ctx context.Context, pluginCtx backend.P
 		return nil, err
 	}
 
-	// work around until https://github.com/grafana/grafana/issues/39089 is implemented
+	// Workround until https://github.com/grafana/grafana/issues/39089 is implemented.
+	// Only update the transport's dialer to try to avoid the issue mentioned here https://github.com/grafana/grafana/issues/46365
+	// and here https://github.com/grafana/support-escalations/issues/8405
 	if e.cfg.SecureSocksDSProxy.Enabled && instance.Settings.SecureSocksProxyEnabled {
-		// only update the transport to try to avoid the issue mentioned here https://github.com/grafana/grafana/issues/46365
-		sess.Config.HTTPClient.Transport = instance.HTTPClient.Transport
+		tr, ok := sess.Config.HTTPClient.Transport.(*http.Transport)
+		if !ok {
+			// TODO this is not desired
+			return nil, errors.New("session http client transport is not of type http.Transport")
+		}
+
+		otr, ok := instance.HTTPClient.Transport.(*http.Transport)
+		if !ok {
+			return nil, errors.New("instance http client transport is not of type http.Transport")
+
+		}
+
+		// TODO is there a need to clone here?
+		t := tr.Clone()
+
+		t.DialContext = otr.DialContext
+		sess.Config.HTTPClient.Transport = t
 	}
 
 	return sess, nil
