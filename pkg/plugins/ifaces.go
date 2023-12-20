@@ -77,7 +77,7 @@ type FSRemover interface {
 
 type FoundBundle struct {
 	Primary  FoundPlugin
-	Children []*FoundPlugin
+	Children []FoundPlugin
 }
 
 type FoundPlugin struct {

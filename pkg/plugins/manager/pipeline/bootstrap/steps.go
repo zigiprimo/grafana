@@ -66,7 +66,7 @@ func (c *DefaultConstructor) Construct(ctx context.Context, src plugins.PluginSo
 
 		children := make([]*plugins.Plugin, 0, len(bundle.Children))
 		for _, child := range bundle.Children {
-			cp, err := c.pluginFactoryFunc(*child, plugin.Class, sig)
+			cp, err := c.pluginFactoryFunc(child, plugin.Class, sig)
 			if err != nil {
 				c.log.Error("Could not create child plugin base", "pluginId", child.JSONData.ID, "error", err)
 				continue

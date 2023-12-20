@@ -89,7 +89,7 @@ func (l *Local) Find(ctx context.Context, src plugins.PluginSource) ([]*plugins.
 		foundPlugins[filepath.Dir(pluginJSONAbsPath)] = plugin
 	}
 
-	res := make(map[string]*plugins.FoundBundle)
+	var res []plugins.FoundPlugin
 	for pluginDir, data := range foundPlugins {
 		var pluginFs plugins.FS
 		pluginFs = plugins.NewLocalFS(pluginDir)
@@ -102,46 +102,69 @@ func (l *Local) Find(ctx context.Context, src plugins.PluginSource) ([]*plugins.
 				return nil, err
 			}
 		}
-		res[pluginDir] = &plugins.FoundBundle{
-			Primary: plugins.FoundPlugin{
-				JSONData: data,
-				FS:       pluginFs,
-			},
-		}
+		res = append(res, plugins.FoundPlugin{
+			JSONData: data,
+			FS:       pluginFs,
+		})
+	}
+
+	// If there are multiple plugins with the same ID, select the one to use.
+	deDuped, err := newDupeSelector(l.features).Filter(ctx, src.PluginClass(ctx), res)
+	if err != nil {
+		return nil, err
 	}
 
 	// Track child plugins and add them to their parent.
+	result := make(map[string]*plugins.FoundBundle)
 	childPlugins := make(map[string]struct{})
-	for dir, p := range res {
+	for _, p := range deDuped {
+		dir := p.FS.Base()
+
 		// Check if this plugin is the parent of another plugin.
-		for dir2, p2 := range res {
+		for _, p2 := range deDuped {
+			dir2 := p2.FS.Base()
 			if dir == dir2 {
 				continue
 			}
 
 			relPath, err := filepath.Rel(dir, dir2)
 			if err != nil {
-				l.log.Error("Cannot calculate relative path. Skipping", "pluginId", p2.Primary.JSONData.ID, "err", err)
+				l.log.Error("Cannot calculate relative path. Skipping", "pluginId", p2.JSONData.ID, "err", err)
 				continue
 			}
 			if !strings.Contains(relPath, "..") {
-				child := p2.Primary
-				l.log.Debug("Adding child", "parent", p.Primary.JSONData.ID, "child", child.JSONData.ID, "relPath", relPath)
-				p.Children = append(p.Children, &child)
+				l.log.Info("Adding child", "parent", p.JSONData.ID, "child", p2.JSONData.ID, "relPath", relPath)
+
+				if _, exists := result[dir]; !exists {
+					result[dir] = &plugins.FoundBundle{
+						Primary:  p,
+						Children: []plugins.FoundPlugin{p2},
+					}
+				} else {
+					result[dir].Children = append(result[dir].Children, p2)
+				}
+
 				childPlugins[dir2] = struct{}{}
 			}
 		}
 	}
 
-	// Remove child plugins from the result (they are already tracked via their parent).
-	result := make([]*plugins.FoundBundle, 0, len(res))
-	for k := range res {
-		if _, ok := childPlugins[k]; !ok {
-			result = append(result, res[k])
+	r := make([]*plugins.FoundBundle, 0, len(result))
+	for _, p := range deDuped {
+		bp, alreadyRegistered := result[p.FS.Base()]
+		if alreadyRegistered {
+			r = append(r, bp)
+			continue
+		}
+		_, childPlugin := childPlugins[p.FS.Base()]
+		if !childPlugin {
+			r = append(r, &plugins.FoundBundle{
+				Primary: p,
+			})
 		}
 	}
 
-	return result, nil
+	return r, nil
 }
 
 func (l *Local) readPluginJSON(pluginJSONPath string) (plugins.JSONData, error) {
