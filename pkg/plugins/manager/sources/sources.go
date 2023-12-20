@@ -35,8 +35,8 @@ func (s *Service) List(_ context.Context) []plugins.PluginSource {
 // corePluginPaths provides a list of the Core plugin file system paths
 func corePluginPaths(staticRootPath string) []string {
 	datasourcePaths := filepath.Join(staticRootPath, "app/plugins/datasource")
-	panelsPath := filepath.Join(staticRootPath, "app/plugins/panel")
-	return []string{datasourcePaths, panelsPath}
+	//panelsPath := filepath.Join(staticRootPath, "app/plugins/panel")
+	return []string{datasourcePaths}
 }
 
 // pluginSettingPaths provides plugin file system paths defined in cfg.PluginSettings

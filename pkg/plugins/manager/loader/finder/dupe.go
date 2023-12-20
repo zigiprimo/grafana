@@ -2,9 +2,7 @@ package finder
 
 import (
 	"context"
-	"fmt"
 	"path/filepath"
-	"strings"
 
 	"github.com/Masterminds/semver/v3"
 
@@ -13,6 +11,8 @@ import (
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/log"
 )
+
+const unknownVersion = "unknown"
 
 type dupeSelector struct {
 	features plugins.FeatureToggles
@@ -33,50 +33,34 @@ func (ds *dupeSelector) filter(_ context.Context, class plugins.Class, ps []plug
 
 	grouped := ds.groupByIdAndVersion(ps)
 	var res []plugins.FoundPlugin
-	for _, d := range grouped {
-		if len(d) == 1 {
-			res = append(res, d[0])
-			continue
+	for _, versions := range grouped {
+		var toResolve []plugins.FoundPlugin
+		for _, foundPlugins := range versions {
+			toResolve = append(toResolve, foundPlugins...)
 		}
 
-		res = append(res, ds.resolve(class, d))
+		res = append(res, ds.resolve(class, toResolve))
 	}
 
 	return res, nil
 }
 
-func (ds *dupeSelector) groupByIdAndVersion(ps []plugins.FoundPlugin) map[string][]plugins.FoundPlugin {
-	pluginsByVersion := make(map[string][]plugins.FoundPlugin)
+func (ds *dupeSelector) groupByIdAndVersion(ps []plugins.FoundPlugin) map[string]map[string][]plugins.FoundPlugin {
+	pluginsByVersion := make(map[string]map[string][]plugins.FoundPlugin)
 	for _, p := range ps {
-		v, err := semver.NewVersion(p.JSONData.Info.Version)
-		key := ""
+		version := p.JSONData.Info.Version
+		v, err := semver.NewVersion(version)
 		if err != nil {
-			ds.log.Debug("Plugin version not valid semver", "pluginId", p.JSONData.ID, "version", p.JSONData.Info.Version)
-			key = fmt.Sprintf("%s@unknown", p.JSONData.ID)
+			version = unknownVersion
 		} else {
-			key = fmt.Sprintf("%s@%s", p.JSONData.ID, v.String())
+			version = v.String()
 		}
-		pluginsByVersion[key] = append(pluginsByVersion[key], p)
-	}
 
-	for v := range pluginsByVersion {
-		s := strings.Split(v, "@")
-		pluginID := s[0]
-		version := s[1]
-		if version != "unknown" {
-			continue
+		if pluginsByVersion[p.JSONData.ID] == nil {
+			pluginsByVersion[p.JSONData.ID] = make(map[string][]plugins.FoundPlugin)
 		}
-		for v2 := range pluginsByVersion {
-			if v == v2 {
-				continue
-			}
 
-			if strings.HasPrefix(v2, fmt.Sprintf("%s@", pluginID)) {
-				ds.log.Debug("Found two occurrences of the same plugin, where one has a valid version and the other does not", "plugin", v2)
-				delete(pluginsByVersion, v)
-				break
-			}
-		}
+		pluginsByVersion[p.JSONData.ID][version] = append(pluginsByVersion[p.JSONData.ID][version], p)
 	}
 
 	return pluginsByVersion
