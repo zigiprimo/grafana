@@ -17,7 +17,7 @@ describe('buildVisualQueryFromString', () => {
         labels: [
           {
             label: 'app',
-            operator: '=',
+            op: '=',
             value: 'aggregator',
           },
         ],
@@ -44,7 +44,7 @@ describe('buildVisualQueryFromString', () => {
         labels: [
           {
             label: 'app',
-            operator: '=',
+            op: '=',
             value: 'aggregator',
           },
         ],
@@ -75,12 +75,12 @@ describe('buildVisualQueryFromString', () => {
         binaryQueries: [
           {
             // nested binary operation
-            operator: '>',
+            op: '>',
             query: {
               labels: [
                 {
                   label: 'app',
-                  operator: '=',
+                  op: '=',
                   value: 'aggregator',
                 },
               ],
@@ -102,7 +102,7 @@ describe('buildVisualQueryFromString', () => {
         labels: [
           {
             label: 'app',
-            operator: '=',
+            op: '=',
             value: 'aggregator',
           },
         ],
@@ -126,7 +126,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -141,12 +141,12 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
           {
-            operator: '!=',
+            op: '!=',
             value: '1',
             label: 'instance',
           },
@@ -161,7 +161,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -176,12 +176,12 @@ describe('buildVisualQueryFromString', () => {
     ['!=', LokiOperationId.LineContainsNot],
     ['|~', LokiOperationId.LineMatchesRegex],
     ['!~', LokiOperationId.LineMatchesRegexNot],
-  ])('parses query with line filter and `or` statements', (operator: string, id: LokiOperationId) => {
+  ])('parses query with line filter and `or` statements', (op: string, id: LokiOperationId) => {
     expect(buildVisualQueryFromString(`{app="frontend"} ${operator} "line" or "text"`)).toEqual(
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -196,7 +196,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -211,7 +211,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -226,7 +226,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -242,7 +242,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -276,7 +276,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -291,7 +291,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -306,7 +306,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -321,7 +321,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -349,7 +349,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -367,7 +367,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -380,7 +380,7 @@ describe('buildVisualQueryFromString', () => {
   it('parses query with JSON parser with expression', () => {
     const context = buildVisualQueryFromString('{app="frontend"} | json label="value" ');
     expect(context.query).toEqual({
-      labels: [{ label: 'app', operator: '=', value: 'frontend' }],
+      labels: [{ label: 'app', op: '=', value: 'frontend' }],
       operations: [{ id: LokiOperationId.Json, params: ['label="value"'] }],
     });
   });
@@ -388,7 +388,7 @@ describe('buildVisualQueryFromString', () => {
   it('parses query with JSON parser with multiple expressions', () => {
     const context = buildVisualQueryFromString('{app="frontend"} | json label="value", bar="baz", foo="bar" ');
     expect(context.query).toEqual({
-      labels: [{ label: 'app', operator: '=', value: 'frontend' }],
+      labels: [{ label: 'app', op: '=', value: 'frontend' }],
       operations: [{ id: LokiOperationId.Json, params: ['label="value"', 'bar="baz"', 'foo="bar"'] }],
     });
   });
@@ -400,7 +400,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -421,7 +421,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -443,7 +443,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -466,7 +466,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -485,7 +485,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -500,7 +500,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -519,7 +519,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -537,7 +537,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -556,7 +556,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -576,7 +576,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -595,7 +595,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -618,7 +618,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -637,7 +637,7 @@ describe('buildVisualQueryFromString', () => {
   it('parses template variables in strings', () => {
     expect(buildVisualQueryFromString('{instance="$label_variable"}')).toEqual(
       noErrors({
-        labels: [{ label: 'instance', operator: '=', value: '$label_variable' }],
+        labels: [{ label: 'instance', op: '=', value: '$label_variable' }],
         operations: [],
       })
     );
@@ -648,7 +648,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -663,7 +663,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -678,7 +678,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -693,7 +693,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -710,7 +710,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -726,13 +726,13 @@ describe('buildVisualQueryFromString', () => {
   it('parses binary query', () => {
     expect(buildVisualQueryFromString('rate({project="bar"}[5m]) / rate({project="foo"}[5m])')).toEqual(
       noErrors({
-        labels: [{ operator: '=', value: 'bar', label: 'project' }],
+        labels: [{ op: '=', value: 'bar', label: 'project' }],
         operations: [{ id: LokiOperationId.Rate, params: ['5m'] }],
         binaryQueries: [
           {
-            operator: '/',
+            op: '/',
             query: {
-              labels: [{ operator: '=', value: 'foo', label: 'project' }],
+              labels: [{ op: '=', value: 'foo', label: 'project' }],
               operations: [{ id: LokiOperationId.Rate, params: ['5m'] }],
             },
           },
@@ -744,7 +744,7 @@ describe('buildVisualQueryFromString', () => {
   it('parses binary scalar query', () => {
     expect(buildVisualQueryFromString('rate({project="bar"}[5m]) / 2')).toEqual(
       noErrors({
-        labels: [{ operator: '=', value: 'bar', label: 'project' }],
+        labels: [{ op: '=', value: 'bar', label: 'project' }],
         operations: [
           { id: LokiOperationId.Rate, params: ['5m'] },
           { id: LokiOperationId.DivideBy, params: [2] },
@@ -759,22 +759,22 @@ describe('buildVisualQueryFromString', () => {
     // Note the extra parenthesis around the first binary operation expression: (rate({project="bar"} [5m]) * 2)
     expect(buildVisualQueryFromString(expression)).toEqual(
       noErrors({
-        labels: [{ operator: '=', value: 'bar', label: 'project' }],
+        labels: [{ op: '=', value: 'bar', label: 'project' }],
         operations: [
           { id: LokiOperationId.Rate, params: ['5m'] },
           { id: LokiOperationId.MultiplyBy, params: [2] },
         ],
         binaryQueries: [
           {
-            operator: '/',
+            op: '/',
             query: {
-              labels: [{ operator: '=', value: 'foo', label: 'project' }],
+              labels: [{ op: '=', value: 'foo', label: 'project' }],
               operations: [{ id: LokiOperationId.Rate, params: ['5m'] }],
               binaryQueries: [
                 {
-                  operator: '+',
+                  op: '+',
                   query: {
-                    labels: [{ operator: '=', value: 'test', label: 'app' }],
+                    labels: [{ op: '=', value: 'test', label: 'app' }],
                     operations: [{ id: LokiOperationId.Rate, params: ['1m'] }],
                   },
                 },
@@ -791,7 +791,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: '\\"frontend\\"',
             label: 'app',
           },
@@ -806,7 +806,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -823,7 +823,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -838,7 +838,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -853,7 +853,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -868,7 +868,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -888,7 +888,7 @@ describe('buildVisualQueryFromString', () => {
     ).toEqual({
       errors: [],
       query: {
-        labels: [{ label: 'test', operator: '=', value: 'value' }],
+        labels: [{ label: 'test', op: '=', value: 'value' }],
         operations: [
           { id: '__line_contains', params: ['restart counter is at'] },
           { id: 'regexp', params: ['restart counter is at (?P<restart_counter>[0-9]+)s*.*.*?$'] },
@@ -904,7 +904,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -919,7 +919,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -934,7 +934,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -949,7 +949,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -964,7 +964,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -979,7 +979,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'frontend',
             label: 'app',
           },
@@ -994,7 +994,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'value',
             label: 'label',
           },
@@ -1009,7 +1009,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'value',
             label: 'label',
           },
@@ -1026,7 +1026,7 @@ describe('buildVisualQueryFromString', () => {
       noErrors({
         labels: [
           {
-            operator: '=',
+            op: '=',
             value: 'value',
             label: 'label',
           },

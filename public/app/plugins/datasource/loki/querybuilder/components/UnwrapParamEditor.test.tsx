@@ -29,7 +29,7 @@ describe('UnwrapParamEditor', () => {
   it('shows no label options for non-metric query', async () => {
     const props = createProps({
       query: {
-        labels: [{ operator: '=', label: 'foo', value: 'bar' }],
+        labels: [{ op: '=', label: 'foo', value: 'bar' }],
         operations: [
           { id: LokiOperationId.Logfmt, params: [] },
           { id: LokiOperationId.Unwrap, params: ['', ''] },
