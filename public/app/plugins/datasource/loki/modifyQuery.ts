@@ -389,9 +389,9 @@ function getLogQueryPositions(query: string): NodePosition[] {
   return positions;
 }
 
-export function toLabelFilter(key: string, value: string, operator: string): QueryBuilderLabelFilter {
+export function toLabelFilter(key: string, value: string, op: string): QueryBuilderLabelFilter {
   // We need to make sure that we convert the value back to string because it may be a number
-  return { label: key, operator, value };
+  return { label: key, op, value };
 }
 
 /**
@@ -452,12 +452,12 @@ export function addFilterAsLabelFilter(
 
     let labelFilter = '';
     // For < and >, if the value is number, we don't add quotes around it and use it as number
-    if (!Number.isNaN(Number(filter.value)) && (filter.operator === '<' || filter.operator === '>')) {
-      labelFilter = ` | ${filter.label}${filter.operator}${Number(filter.value)}`;
+    if (!Number.isNaN(Number(filter.value)) && (filter.op === '<' || filter.op === '>')) {
+      labelFilter = ` | ${filter.label}${filter.op}${Number(filter.value)}`;
     } else {
       // we now unescape all escaped values again, because we are using backticks which can handle those cases.
       // we also don't care about the operator here, because we need to unescape for both, regex and equal.
-      labelFilter = ` | ${filter.label}${filter.operator}\`${unescapeLabelValue(filter.value)}\``;
+      labelFilter = ` | ${filter.label}${filter.op}\`${unescapeLabelValue(filter.value)}\``;
     }
 
     newQuery += start + labelFilter + end;

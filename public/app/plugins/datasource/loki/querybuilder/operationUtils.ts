@@ -4,7 +4,7 @@ import {
   QueryBuilderOperationDef,
   QueryBuilderOperationParamDef,
   QueryBuilderOperationParamValue,
-  QueryWithOperations,
+  VisualQuery,
   VisualQueryModeller,
 } from 'custom-experimental';
 import { capitalize } from 'lodash';
@@ -369,7 +369,7 @@ export function getLokiOperationDisplayName(funcName: string) {
   return capitalize(funcName.replace(/_/g, ' '));
 }
 
-export function defaultAddOperationHandler<T extends QueryWithOperations>(def: QueryBuilderOperationDef, query: T) {
+export function defaultAddOperationHandler<T extends VisualQuery>(def: QueryBuilderOperationDef, query: T) {
   const newOperation: QueryBuilderOperation = {
     id: def.id,
     params: def.defaultParams,

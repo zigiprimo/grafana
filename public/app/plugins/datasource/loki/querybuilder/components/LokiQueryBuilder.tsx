@@ -82,7 +82,7 @@ export const LokiQueryBuilder = React.memo<Props>(
         values = result[datasource.interpolateString(forLabel.label)];
       }
 
-      return values ? values.map((v) => escapeLabelValueInSelector(v, forLabel.operator)) : []; // Escape values in return
+      return values ? values.map((v) => escapeLabelValueInSelector(v, forLabel.op)) : []; // Escape values in return
     };
 
     const labelFilterRequired: boolean = useMemo(() => {
@@ -150,7 +150,8 @@ export const LokiQueryBuilder = React.memo<Props>(
             data={sampleData}
             queryModeller={lokiQueryModeller}
             buildVisualQueryFromString={buildVisualQueryFromString}
-            buildDataQueryFromString={buildDataQueryQueryFromString}
+            buildDataQueryFromQueryString={buildDataQueryQueryFromString}
+            buildQueryStringFromDataQuery={datasource.getQueryDisplayText}
           />
         </OperationsEditorRow>
         {showExplain && (
@@ -159,7 +160,7 @@ export const LokiQueryBuilder = React.memo<Props>(
             queryModeller={lokiQueryModeller}
             query={query}
             language={lang}
-            placeholderInnerQuery="<expr>"
+            innerQueryPlaceholder="<expr>"
             onMouseEnter={(op) => {
               setHighlightedOp(op);
             }}

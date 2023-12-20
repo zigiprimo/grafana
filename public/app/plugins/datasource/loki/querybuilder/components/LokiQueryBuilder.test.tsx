@@ -14,7 +14,7 @@ import { EXPLAIN_LABEL_FILTER_CONTENT } from './LokiQueryBuilderExplained';
 const MISSING_LABEL_FILTER_ERROR_MESSAGE = 'Select at least 1 label filter (label and value)';
 
 const defaultQuery: LokiVisualQuery = {
-  labels: [{ operator: '=', label: 'baz', value: 'bar' }],
+  labels: [{ op: '=', label: 'baz', value: 'bar' }],
   operations: [],
 };
 
@@ -92,7 +92,7 @@ describe('LokiQueryBuilder', () => {
   });
   it('shows explain section when showExplain is true', async () => {
     const query = {
-      labels: [{ label: 'foo', operator: '=', value: 'bar' }],
+      labels: [{ label: 'foo', op: '=', value: 'bar' }],
       operations: [{ id: LokiOperationId.LineContains, params: ['error'] }],
     };
     const props = createDefaultProps();
@@ -105,7 +105,7 @@ describe('LokiQueryBuilder', () => {
 
   it('does not shows explain section when showExplain is false', async () => {
     const query = {
-      labels: [{ label: 'foo', operator: '=', value: 'bar' }],
+      labels: [{ label: 'foo', op: '=', value: 'bar' }],
       operations: [{ id: LokiOperationId.LineContains, params: ['error'] }],
     };
     const props = createDefaultProps();
