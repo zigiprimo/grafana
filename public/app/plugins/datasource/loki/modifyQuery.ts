@@ -389,9 +389,9 @@ function getLogQueryPositions(query: string): NodePosition[] {
   return positions;
 }
 
-export function toLabelFilter(key: string, value: string, op: string): QueryBuilderLabelFilter {
+export function toLabelFilter(key: string, value: string, operator: string): QueryBuilderLabelFilter {
   // We need to make sure that we convert the value back to string because it may be a number
-  return { label: key, op, value };
+  return { label: key, op: operator, value };
 }
 
 /**
