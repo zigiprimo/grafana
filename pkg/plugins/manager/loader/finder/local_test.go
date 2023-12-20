@@ -87,7 +87,7 @@ func TestFinder_Find(t *testing.T) {
 						},
 						FS: mustNewStaticFSForTests(t, filepath.Join(testData, "duplicate-plugins/nested")),
 					},
-					Children: []*plugins.FoundPlugin{
+					Children: []plugins.FoundPlugin{
 						{
 							JSONData: plugins.JSONData{
 								ID:   "test-app",
@@ -198,7 +198,7 @@ func TestFinder_Find(t *testing.T) {
 					},
 					FS: mustNewStaticFSForTests(t, filepath.Join(testData, "duplicate-plugins/nested")),
 				},
-				Children: []*plugins.FoundPlugin{
+				Children: []plugins.FoundPlugin{
 					{
 						JSONData: plugins.JSONData{
 							ID:   "test-app",

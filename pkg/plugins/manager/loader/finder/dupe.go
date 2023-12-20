@@ -2,7 +2,9 @@ package finder
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
+	"strings"
 
 	"github.com/Masterminds/semver/v3"
 
@@ -24,22 +26,14 @@ func newDupeSelector(features plugins.FeatureToggles) *dupeSelector {
 	}
 }
 
-func (ds *dupeSelector) Filter(_ context.Context, class plugins.Class, ps []plugins.FoundPlugin) ([]plugins.FoundPlugin, error) {
+func (ds *dupeSelector) filter(_ context.Context, class plugins.Class, ps []plugins.FoundPlugin) ([]plugins.FoundPlugin, error) {
 	if len(ps) == 0 {
 		return ps, nil
 	}
 
-	// Check if multiple plugins with the same ID exist
-	dupes := make(map[string][]plugins.FoundPlugin)
-	for _, p := range ps {
-		dupes[p.JSONData.ID] = append(dupes[p.JSONData.ID], p)
-	}
-	if len(dupes) == 0 {
-		return ps, nil
-	}
-
+	grouped := ds.groupByIdAndVersion(ps)
 	var res []plugins.FoundPlugin
-	for _, d := range dupes {
+	for _, d := range grouped {
 		if len(d) == 1 {
 			res = append(res, d[0])
 			continue
@@ -51,6 +45,43 @@ func (ds *dupeSelector) Filter(_ context.Context, class plugins.Class, ps []plug
 	return res, nil
 }
 
+func (ds *dupeSelector) groupByIdAndVersion(ps []plugins.FoundPlugin) map[string][]plugins.FoundPlugin {
+	pluginsByVersion := make(map[string][]plugins.FoundPlugin)
+	for _, p := range ps {
+		v, err := semver.NewVersion(p.JSONData.Info.Version)
+		key := ""
+		if err != nil {
+			ds.log.Debug("Plugin version not valid semver", "pluginId", p.JSONData.ID, "version", p.JSONData.Info.Version)
+			key = fmt.Sprintf("%s@unknown", p.JSONData.ID)
+		} else {
+			key = fmt.Sprintf("%s@%s", p.JSONData.ID, v.String())
+		}
+		pluginsByVersion[key] = append(pluginsByVersion[key], p)
+	}
+
+	for v := range pluginsByVersion {
+		s := strings.Split(v, "@")
+		pluginID := s[0]
+		version := s[1]
+		if version != "unknown" {
+			continue
+		}
+		for v2 := range pluginsByVersion {
+			if v == v2 {
+				continue
+			}
+
+			if strings.HasPrefix(v2, fmt.Sprintf("%s@", pluginID)) {
+				ds.log.Debug("Found two occurrences of the same plugin, where one has a valid version and the other does not", "plugin", v2)
+				delete(pluginsByVersion, v)
+				break
+			}
+		}
+	}
+
+	return pluginsByVersion
+}
+
 // resolve will resolve a single plugin from a list of plugins with the same ID.
 func (ds *dupeSelector) resolve(class plugins.Class, plugins []plugins.FoundPlugin) plugins.FoundPlugin {
 	if len(plugins) == 1 {
@@ -60,6 +91,7 @@ func (ds *dupeSelector) resolve(class plugins.Class, plugins []plugins.FoundPlug
 	// recursively compare plugins until we resolve a single plugin
 	for i := 0; i < len(plugins)-1; i++ {
 		for j := i + 1; j < len(plugins); {
+
 			ds.log.Debug("Comparing duplicate plugins", "i", plugins[i].FS.Base(), "j", plugins[j].FS.Base())
 			c := ds.cmp(class, plugins[i], plugins[j])
 			if c == 1 {

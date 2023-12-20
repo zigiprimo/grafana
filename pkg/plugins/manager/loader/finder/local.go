@@ -108,8 +108,8 @@ func (l *Local) Find(ctx context.Context, src plugins.PluginSource) ([]*plugins.
 		})
 	}
 
-	// If there are multiple plugins with the same ID, select the one to use.
-	deDuped, err := newDupeSelector(l.features).Filter(ctx, src.PluginClass(ctx), res)
+	// If there are multiple plugins with the same ID across different file system paths, select the most appropriate.
+	deDuped, err := newDupeSelector(l.features).filter(ctx, src.PluginClass(ctx), res)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +134,6 @@ func (l *Local) Find(ctx context.Context, src plugins.PluginSource) ([]*plugins.
 			}
 			if !strings.Contains(relPath, "..") {
 				l.log.Info("Adding child", "parent", p.JSONData.ID, "child", p2.JSONData.ID, "relPath", relPath)
-
 				if _, exists := result[dir]; !exists {
 					result[dir] = &plugins.FoundBundle{
 						Primary:  p,
