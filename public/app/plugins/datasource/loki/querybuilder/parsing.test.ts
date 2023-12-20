@@ -75,7 +75,7 @@ describe('buildVisualQueryFromString', () => {
         binaryQueries: [
           {
             // nested binary operation
-            op: '>',
+            operator: '>',
             query: {
               labels: [
                 {
@@ -177,7 +177,7 @@ describe('buildVisualQueryFromString', () => {
     ['|~', LokiOperationId.LineMatchesRegex],
     ['!~', LokiOperationId.LineMatchesRegexNot],
   ])('parses query with line filter and `or` statements', (op: string, id: LokiOperationId) => {
-    expect(buildVisualQueryFromString(`{app="frontend"} ${operator} "line" or "text"`)).toEqual(
+    expect(buildVisualQueryFromString(`{app="frontend"} ${op} "line" or "text"`)).toEqual(
       noErrors({
         labels: [
           {
@@ -730,7 +730,7 @@ describe('buildVisualQueryFromString', () => {
         operations: [{ id: LokiOperationId.Rate, params: ['5m'] }],
         binaryQueries: [
           {
-            op: '/',
+            operator: '/',
             query: {
               labels: [{ op: '=', value: 'foo', label: 'project' }],
               operations: [{ id: LokiOperationId.Rate, params: ['5m'] }],
@@ -766,13 +766,13 @@ describe('buildVisualQueryFromString', () => {
         ],
         binaryQueries: [
           {
-            op: '/',
+            operator: '/',
             query: {
               labels: [{ op: '=', value: 'foo', label: 'project' }],
               operations: [{ id: LokiOperationId.Rate, params: ['5m'] }],
               binaryQueries: [
                 {
-                  op: '+',
+                  operator: '+',
                   query: {
                     labels: [{ op: '=', value: 'test', label: 'app' }],
                     operations: [{ id: LokiOperationId.Rate, params: ['1m'] }],
