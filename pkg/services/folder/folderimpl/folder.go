@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/exp/slices"
 
+	"github.com/grafana/dskit/concurrency"
 	"github.com/grafana/grafana/pkg/bus"
 	"github.com/grafana/grafana/pkg/events"
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -148,7 +150,6 @@ func (s *Service) Get(ctx context.Context, q *folder.GetFolderQuery) (*folder.Fo
 	f.ID = dashFolder.ID
 	f.Version = dashFolder.Version
 
-	// TODO: where's this WithFulpath method
 	return s.WithFullpath(ctx, f, q.IncludeFullpath)
 }
 
@@ -197,19 +198,73 @@ func (s *Service) GetChildren(ctx context.Context, q *folder.GetChildrenQuery) (
 		return s.GetSharedWithMe(ctx, q)
 	}
 
-	if q.UID != "" {
-		g, err := guardian.NewByUID(ctx, q.UID, q.OrgID, q.SignedInUser)
-		if err != nil {
-			return nil, err
+	if q.UID == "" {
+		return s.getRootFolders(ctx, q)
+	}
+
+	// we only need to check access to the folder
+	// if the parent is accessible then the subfolders are accessible as well (due to inheritance)
+	g, err := guardian.NewByUID(ctx, q.UID, q.OrgID, q.SignedInUser)
+	if err != nil {
+		return nil, err
+	}
+
+	canView, err := g.CanView()
+	if err != nil {
+		return nil, err
+	}
+
+	if !canView {
+		return nil, dashboards.ErrFolderAccessDenied
+	}
+
+	children, err := s.store.GetChildren(ctx, *q)
+	if err != nil {
+		return nil, err
+	}
+
+	childrenUIDs := make([]string, 0, len(children))
+	for _, f := range children {
+		childrenUIDs = append(childrenUIDs, f.UID)
+	}
+
+	dashFolders, err := s.dashboardFolderStore.GetFolders(ctx, q.OrgID, childrenUIDs)
+	if err != nil {
+		return nil, folder.ErrInternal.Errorf("failed to fetch subfolders from dashboard store: %w", err)
+	}
+
+	for _, f := range children {
+		// fetch folder from dashboard store
+		dashFolder, ok := dashFolders[f.UID]
+		if !ok {
+			s.log.Error("failed to fetch folder by UID from dashboard store", "uid", f.UID)
+			continue
 		}
 
-		canView, err := g.CanView()
-		if err != nil {
-			return nil, err
-		}
+		// always expose the dashboard store sequential ID
+		// nolint:staticcheck
+		f.ID = dashFolder.ID
+	}
 
-		if !canView {
-			return nil, dashboards.ErrFolderAccessDenied
+	return children, nil
+}
+
+func (s *Service) getRootFolders(ctx context.Context, q *folder.GetChildrenQuery) ([]*folder.Folder, error) {
+	permissions := q.SignedInUser.GetPermissions()
+	folderPermissions := permissions[dashboards.ActionFoldersRead]
+	folderPermissions = append(folderPermissions, permissions[dashboards.ActionDashboardsRead]...)
+	q.FolderUIDs = make([]string, 0, len(folderPermissions))
+	for _, p := range folderPermissions {
+		if p == dashboards.ScopeFoldersAll {
+			// no need to query for folders with permissions
+			// the user has permission to access all folders
+			q.FolderUIDs = nil
+			break
+		}
+		if folderUid, found := strings.CutPrefix(p, dashboards.ScopeFoldersPrefix); found {
+			if !slices.Contains(q.FolderUIDs, folderUid) {
+				q.FolderUIDs = append(q.FolderUIDs, folderUid)
+			}
 		}
 	}
 
@@ -228,45 +283,28 @@ func (s *Service) GetChildren(ctx context.Context, q *folder.GetChildrenQuery) (
 		return nil, folder.ErrInternal.Errorf("failed to fetch subfolders from dashboard store: %w", err)
 	}
 
-	filtered := make([]*folder.Folder, 0, len(children))
-	for _, f := range children {
+	if err := concurrency.ForEachJob(ctx, len(children), runtime.NumCPU(), func(ctx context.Context, i int) error {
+		f := children[i]
 		// fetch folder from dashboard store
 		dashFolder, ok := dashFolders[f.UID]
 		if !ok {
-			s.log.Error("failed to fetch folder by UID from dashboard store", "uid", f.UID)
-			continue
+			s.log.Error("failed to fetch folder by UID from dashboard store", "orgID", f.OrgID, "uid", f.UID)
 		}
-
 		// always expose the dashboard store sequential ID
 		// nolint:staticcheck
 		f.ID = dashFolder.ID
 
-		if q.UID != "" {
-			// parent access has been checked already
-			// the subfolder must be accessible as well (due to inheritance)
-			filtered = append(filtered, f)
-			continue
-		}
-
-		g, err := guardian.NewByFolder(ctx, dashFolder, dashFolder.OrgID, q.SignedInUser)
-		if err != nil {
-			return nil, err
-		}
-		canView, err := g.CanView()
-		if err != nil {
-			return nil, err
-		}
-		if canView {
-			filtered = append(filtered, f)
-		}
+		return nil
+	}); err != nil {
+		return nil, folder.ErrInternal.Errorf("failed to assign folder sequential ID: %w", err)
 	}
 
-	if len(filtered) < len(children) {
-		// add "shared with me" folder
-		filtered = append(filtered, &folder.SharedWithMeFolder)
+	// add "shared with me" folder on the 1st page
+	if (q.Page == 0 || q.Page == 1) && len(q.FolderUIDs) != 0 {
+		children = append(children, &folder.SharedWithMeFolder)
 	}
 
-	return filtered, nil
+	return children, nil
 }
 
 // GetSharedWithMe returns folders available to user, which cannot be accessed from the root folders
@@ -292,7 +330,7 @@ func (s *Service) getAvailableNonRootFolders(ctx context.Context, orgID int64, u
 	folderPermissions := permissions[dashboards.ActionFoldersRead]
 	folderPermissions = append(folderPermissions, permissions[dashboards.ActionDashboardsRead]...)
 	nonRootFolders := make([]*folder.Folder, 0)
-	folderUids := make([]string, 0)
+	folderUids := make([]string, 0, len(folderPermissions))
 	for _, p := range folderPermissions {
 		if folderUid, found := strings.CutPrefix(p, dashboards.ScopeFoldersPrefix); found {
 			if !slices.Contains(folderUids, folderUid) {

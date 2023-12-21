@@ -164,8 +164,8 @@ type GetParentsQuery struct {
 // return a list of child folders of the given folder.
 
 type GetChildrenQuery struct {
-	UID   string `xorm:"uid"`
-	OrgID int64  `xorm:"org_id"`
+	UID   string
+	OrgID int64
 	Depth int64
 
 	// Pagination options
@@ -173,6 +173,9 @@ type GetChildrenQuery struct {
 	Page  int64
 
 	SignedInUser identity.Requester `json:"-"`
+
+	// array of folder uids to filter by
+	FolderUIDs []string `json:"-"`
 }
 
 // GetFoldersQuery captures the information required by the folder service to
