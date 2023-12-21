@@ -62,6 +62,21 @@ func (s *legacyStorage) List(ctx context.Context, options *internalversion.ListO
 		return nil, err
 	}
 
+	// Supports
+	if options.FieldSelector != nil {
+		fmt.Printf("FIELDS: %s\n", options.FieldSelector.String())
+		for _, r := range options.FieldSelector.Requirements() {
+			fmt.Printf("> %v [%v] %v\n", r.Field, r.Operator, r.Value)
+		}
+	}
+	if options.LabelSelector != nil {
+		requirements, selectable := options.LabelSelector.Requirements()
+		fmt.Printf("LABELS: %s (selectable:%v)\n", options.LabelSelector.String(), selectable)
+		for _, r := range requirements {
+			fmt.Printf("> %v [%v] %v\n", r.Key(), r.Operator(), r.Values())
+		}
+	}
+
 	limit := 100
 	if options.Limit > 0 {
 		limit = int(options.Limit)
