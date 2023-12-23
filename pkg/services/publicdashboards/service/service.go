@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+
 	"github.com/grafana/grafana/pkg/api/dtos"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
@@ -435,7 +435,7 @@ func publicDashboardIsEnabledChanged(existingPubdash *PublicDashboard, newPubdas
 
 // GenerateAccessToken generates an uuid formatted without dashes to use as access token
 func GenerateAccessToken() (string, error) {
-	token, err := uuid.NewRandom()
+	token, err := util.NewRandomUUID()
 	if err != nil {
 		return "", err
 	}

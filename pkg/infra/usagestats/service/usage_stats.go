@@ -11,12 +11,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/infra/usagestats"
+	"github.com/grafana/grafana/pkg/util"
 )
 
 var usageStatsURL = "https://stats.grafana.org/grafana-usage-report"
@@ -162,7 +162,7 @@ func (uss *UsageStats) GetUsageStatsId(ctx context.Context) string {
 		return anonId
 	}
 
-	newId, err := uuid.NewRandom()
+	newId, err := util.NewRandomUUID()
 	if err != nil {
 		uss.log.Error("Failed to generate usage stats id", "error", err)
 		return ""
