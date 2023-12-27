@@ -33,6 +33,9 @@ func IsShortUIDTooLong(uid string) bool {
 
 // GenerateShortUID will generate a UID that can also be used as k8s name
 // it is guaranteed to have a character as the first and last letter
+// The will be longer when many ids are generated in the same millisecond
+// Although not based on the standard UUID calculation, this algorithm
+// should guarantee uniqueness https://github.com/teris-io/shortid?tab=readme-ov-file#life-span
 func GenerateShortUID() string {
 	orig, err := shortid.Generate()
 	if err != nil {
@@ -41,9 +44,9 @@ func GenerateShortUID() string {
 
 	uid := []rune{next()} // start with an alpha
 	for _, v := range orig {
-		if v == '_' || v == '-' {
-			uid = append(uid, next())
-			uid = append(uid, next())
+		if v == '_' || v == '-' { // ugly
+			r, _ := GetRandomString(2) // add randomness
+			uid = append(uid, []rune(r)...)
 		} else {
 			uid = append(uid, v)
 		}
