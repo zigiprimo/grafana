@@ -10,11 +10,10 @@ import {
   PluginType,
   ScopedVars,
 } from '@grafana/data';
-import { backendSrv } from 'app/core/services/backend_srv';
-import { TimeSrv } from 'app/features/dashboard/services/TimeSrv';
+import { BackendSrv } from '@grafana/runtime';
 
 import { ALL_OPERATIONS_KEY } from './components/SearchForm';
-import { JaegerDatasource, JaegerJsonData } from './datasource';
+import { JaegerDatasource, JaegerJsonData, TimeSrv } from './datasource';
 import mockJson from './mockJsonResponse.json';
 import {
   testResponse,
@@ -23,6 +22,8 @@ import {
   testResponseNodesFields,
 } from './testResponse';
 import { JaegerQuery } from './types';
+
+export const backendSrv = { fetch: jest.fn() } as unknown as BackendSrv;
 
 jest.mock('@grafana/runtime', () => ({
   ...jest.requireActual('@grafana/runtime'),

@@ -6,6 +6,7 @@ import {
   TraceLog,
   TraceSpanRow,
 } from '@grafana/data';
+// TODO
 import { transformTraceData } from 'app/features/explore/TraceView/components';
 
 import { JaegerResponse, Span, TraceProcess, TraceResponse } from './types';
