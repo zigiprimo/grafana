@@ -39,20 +39,16 @@ func GenerateShortUID() string {
 		orig, _ = GetRandomString(11)
 	}
 
-	uid := []rune{next()}
+	uid := []rune{next()} // start with an alpha
 	for _, v := range orig {
 		if v == '_' || v == '-' {
+			uid = append(uid, next())
 			uid = append(uid, next())
 		} else {
 			uid = append(uid, v)
 		}
 	}
-	uid = append(uid, next())
-
-	// fp0nTfcOIRzgh (for consistency/aesthetics)
-	for len(uid) < 13 {
-		uid = append(uid, next())
-	}
+	uid = append(uid, next()) // end with an alpha
 	return string(uid)
 }
 

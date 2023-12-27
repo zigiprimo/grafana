@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/matttproud/golang_protobuf_extensions/pbutil"
 	pb "github.com/prometheus/alertmanager/silence/silencepb"
 	"github.com/prometheus/common/model"
 
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
-	"github.com/grafana/grafana/pkg/util"
 )
 
 const (
@@ -28,7 +28,7 @@ const (
 
 // addErrorSilence adds a silence for the given rule to the orgMigration if the ExecutionErrorState was set to keep_state.
 func (om *OrgMigration) addErrorSilence(rule *models.AlertRule) error {
-	uid, err := util.NewRandomUUID()
+	uid, err := uuid.NewRandom()
 	if err != nil {
 		return errors.New("create uuid for silence")
 	}
@@ -61,7 +61,7 @@ func (om *OrgMigration) addErrorSilence(rule *models.AlertRule) error {
 
 // addNoDataSilence adds a silence for the given rule to the orgMigration if the NoDataState was set to keep_state.
 func (om *OrgMigration) addNoDataSilence(rule *models.AlertRule) error {
-	uid, err := util.NewRandomUUID()
+	uid, err := uuid.NewRandom()
 	if err != nil {
 		return errors.New("create uuid for silence")
 	}
