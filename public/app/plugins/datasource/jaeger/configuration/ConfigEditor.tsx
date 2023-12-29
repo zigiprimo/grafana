@@ -6,10 +6,10 @@ import { ConfigSection, DataSourceDescription } from '@grafana/experimental';
 import { config } from '@grafana/runtime';
 import { TraceToLogsSection, TraceToMetricsSection } from '@grafana/traces';
 import { DataSourceHttpSettings, useStyles2 } from '@grafana/ui';
-// TODO
-import { Divider } from 'app/core/components/Divider';
-import { NodeGraphSection } from 'app/core/components/NodeGraphSettings';
-import { SpanBarSection } from 'app/features/explore/TraceView/components/settings/SpanBarSettings';
+
+import { Divider } from '../_importedDependencies/components/Divider';
+import { NodeGraphSection } from '../_importedDependencies/components/NodeGraphSettings';
+import { SpanBarSection } from '../_importedDependencies/components/TraceView/SpanBarSettings';
 
 import { TraceIdTimeParams } from './TraceIdTimeParams';
 

@@ -22,10 +22,9 @@ import {
 } from '@grafana/data';
 import { BackendSrvRequest, getBackendSrv, getTemplateSrv, TemplateSrv } from '@grafana/runtime';
 import { sceneGraph } from '@grafana/scenes';
-// TODO
-import { NodeGraphOptions } from 'app/core/components/NodeGraphSettings';
-import { SpanBarOptions } from 'app/features/explore/TraceView/components';
 
+import { NodeGraphOptions } from './_importedDependencies/components/NodeGraphSettings';
+import { SpanBarOptions } from './_importedDependencies/components/TraceView/SpanBarSettings';
 import { ALL_OPERATIONS_KEY } from './components/SearchForm';
 import { TraceIdTimeParamsOptions } from './configuration/TraceIdTimeParams';
 import { createGraphFrames } from './graphTransform';

@@ -1,0 +1,27 @@
+{
+  "name": "@grafana-plugins/jaeger",
+  "description": "Jaeger plugin for Grafana",
+  "private": true,
+  "version": "10.3.0-pre",
+  "dependencies": {
+    "logfmt": "^1.3.2",
+    "react": "18.2.0",
+    "tslib": "2.6.0"
+  },
+  "devDependencies": {
+    "@grafana/plugin-configs": "10.3.0-pre",
+    "@testing-library/react": "14.0.0",
+    "@types/react": "18.2.15",
+    "ts-node": "10.9.1",
+    "webpack": "5.89.0"
+  },
+  "peerDependencies": {
+    "@grafana/runtime": "*"
+  },
+  "scripts": {
+    "build": "webpack -c ./webpack.config.ts --env production",
+    "build:commit": "webpack -c ./webpack.config.ts --env production --env commit=$(git rev-parse --short HEAD)",
+    "dev": "webpack -w -c ./webpack.config.ts --env development"
+  },
+  "packageManager": "yarn@3.6.0"
+}

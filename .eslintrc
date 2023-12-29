@@ -97,7 +97,11 @@
     {
       "files": [
         "public/app/plugins/datasource/grafana-testdata-datasource/*.{ts,tsx}",
-        "public/app/plugins/datasource/grafana-testdata-datasource/**/*.{ts,tsx}"
+        "public/app/plugins/datasource/grafana-testdata-datasource/**/*.{ts,tsx}",
+        "public/app/plugins/datasource/jaeger/*.{ts,tsx}",
+        "public/app/plugins/datasource/jaeger/**/*.{ts,tsx}",
+        "public/app/plugins/datasource/zipkin/*.{ts,tsx}",
+        "public/app/plugins/datasource/zipkin/**/*.{ts,tsx}"
       ],
       "settings": {
         "import/resolver": {
