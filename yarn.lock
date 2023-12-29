@@ -2897,13 +2897,34 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@grafana-plugins/jaeger@workspace:public/app/plugins/datasource/jaeger"
   dependencies:
+    "@emotion/css": "npm:11.11.2"
+    "@grafana/data": "workspace:*"
+    "@grafana/experimental": "npm:1.7.4"
     "@grafana/plugin-configs": "npm:10.3.0-pre"
+    "@grafana/runtime": "workspace:*"
+    "@grafana/scenes": "npm:1.28.5"
+    "@grafana/traces": "workspace:*"
+    "@grafana/ui": "workspace:*"
+    "@reduxjs/toolkit": "npm:1.9.5"
     "@testing-library/react": "npm:14.0.0"
+    "@testing-library/user-event": "npm:14.5.1"
+    "@types/lodash": "npm:4.14.195"
+    "@types/logfmt": "npm:^1.2.3"
     "@types/react": "npm:18.2.15"
+    "@types/uuid": "npm:9.0.2"
+    buffer: "npm:6.0.3"
+    events: "npm:3.3.0"
+    lodash: "npm:4.17.21"
     logfmt: "npm:^1.3.2"
     react: "npm:18.2.0"
+    redux: "npm:4.2.1"
+    reselect: "npm:4.1.8"
+    rxjs: "npm:7.8.1"
+    stream-browserify: "npm:3.0.0"
+    string_decoder: "npm:1.2.0"
     ts-node: "npm:10.9.1"
     tslib: "npm:2.6.0"
+    uuid: "npm:9.0.0"
     webpack: "npm:5.89.0"
   peerDependencies:
     "@grafana/runtime": "*"
@@ -2914,12 +2935,26 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@grafana-plugins/zipkin@workspace:public/app/plugins/datasource/zipkin"
   dependencies:
+    "@emotion/css": "npm:11.11.2"
+    "@grafana/data": "workspace:*"
+    "@grafana/experimental": "npm:1.7.4"
     "@grafana/plugin-configs": "npm:10.3.0-pre"
+    "@grafana/runtime": "workspace:*"
+    "@grafana/traces": "workspace:*"
+    "@grafana/ui": "workspace:*"
+    "@reduxjs/toolkit": "npm:1.9.5"
     "@testing-library/react": "npm:14.0.0"
+    "@types/lodash": "npm:4.14.195"
     "@types/react": "npm:18.2.15"
+    "@types/uuid": "npm:9.0.2"
+    lodash: "npm:4.17.21"
     react: "npm:18.2.0"
+    react-use: "npm:17.4.0"
+    redux: "npm:4.2.1"
+    rxjs: "npm:7.8.1"
     ts-node: "npm:10.9.1"
     tslib: "npm:2.6.0"
+    uuid: "npm:9.0.0"
     webpack: "npm:5.89.0"
   peerDependencies:
     "@grafana/runtime": "*"
@@ -11794,6 +11829,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"buffer@npm:6.0.3":
+  version: 6.0.3
+  resolution: "buffer@npm:6.0.3"
+  dependencies:
+    base64-js: "npm:^1.3.1"
+    ieee754: "npm:^1.2.1"
+  checksum: b6bc68237ebf29bdacae48ce60e5e28fc53ae886301f2ad9496618efac49427ed79096750033e7eab1897a4f26ae374ace49106a5758f38fb70c78c9fda2c3b1
+  languageName: node
+  linkType: hard
+
 "buffer@npm:^5.5.0, buffer@npm:^5.6.0":
   version: 5.7.1
   resolution: "buffer@npm:5.7.1"
@@ -15851,7 +15896,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"events@npm:^3.2.0, events@npm:^3.3.0":
+"events@npm:3.3.0, events@npm:^3.2.0, events@npm:^3.3.0":
   version: 3.3.0
   resolution: "events@npm:3.3.0"
   checksum: a3d47e285e28d324d7180f1e493961a2bbb4cad6412090e4dec114f4db1f5b560c7696ee8e758f55e23913ede856e3689cd3aa9ae13c56b5d8314cd3b3ddd1be
@@ -18483,7 +18528,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ieee754@npm:^1.1.12, ieee754@npm:^1.1.13":
+"ieee754@npm:^1.1.12, ieee754@npm:^1.1.13, ieee754@npm:^1.2.1":
   version: 1.2.1
   resolution: "ieee754@npm:1.2.1"
   checksum: d9f2557a59036f16c282aaeb107832dc957a93d73397d89bbad4eb1130560560eb695060145e8e6b3b498b15ab95510226649a0b8f52ae06583575419fe10fc4
@@ -18629,7 +18674,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4, inherits@npm:~2.0.1, inherits@npm:~2.0.3":
+"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4, inherits@npm:~2.0.1, inherits@npm:~2.0.3, inherits@npm:~2.0.4":
   version: 2.0.4
   resolution: "inherits@npm:2.0.4"
   checksum: cd45e923bee15186c07fa4c89db0aace24824c482fb887b528304694b2aa6ff8a898da8657046a5dcf3e46cd6db6c61629551f9215f208d7c3f157cf9b290521
@@ -26421,6 +26466,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"readable-stream@npm:^3.5.0":
+  version: 3.6.2
+  resolution: "readable-stream@npm:3.6.2"
+  dependencies:
+    inherits: "npm:^2.0.3"
+    string_decoder: "npm:^1.1.1"
+    util-deprecate: "npm:^1.0.1"
+  checksum: d9e3e53193adcdb79d8f10f2a1f6989bd4389f5936c6f8b870e77570853561c362bee69feca2bbb7b32368ce96a85504aa4cedf7cf80f36e6a9de30d64244048
+  languageName: node
+  linkType: hard
+
 "readdirp@npm:~3.6.0":
   version: 3.6.0
   resolution: "readdirp@npm:3.6.0"
@@ -28302,6 +28358,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"stream-browserify@npm:3.0.0":
+  version: 3.0.0
+  resolution: "stream-browserify@npm:3.0.0"
+  dependencies:
+    inherits: "npm:~2.0.4"
+    readable-stream: "npm:^3.5.0"
+  checksum: 05a3cd0a0ce2d568dbdeb69914557c26a1b0a9d871839666b692eae42b96189756a3ed685affc90dab64ff588a8524c8aec6d85072c07905a1f0d941ea68f956
+  languageName: node
+  linkType: hard
+
 "stream-buffers@npm:1.0.1":
   version: 1.0.1
   resolution: "stream-buffers@npm:1.0.1"
@@ -28450,6 +28516,15 @@ __metadata:
     define-properties: "npm:^1.2.0"
     es-abstract: "npm:^1.22.1"
   checksum: 6e594d3a61b127d243b8be1312e9f78683abe452cfe0bcafa3e0dc62ad6f030ccfb64d87ed3086fb7cb540fda62442c164d237cc5cc4d53c6e3eb659c29a0aeb
+  languageName: node
+  linkType: hard
+
+"string_decoder@npm:1.2.0":
+  version: 1.2.0
+  resolution: "string_decoder@npm:1.2.0"
+  dependencies:
+    safe-buffer: "npm:~5.1.0"
+  checksum: 5ec46dfa2ba2315b3449a71cfc06e45db836ff059bc3227d8fcb77cc86b5e35731d93f07481aaaa903d31829ed647449cfe4204664388b87116ea9745a439b33
   languageName: node
   linkType: hard
 
