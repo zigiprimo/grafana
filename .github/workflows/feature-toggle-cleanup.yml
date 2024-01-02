@@ -13,10 +13,14 @@ jobs:
         steps:
             - name: Check out the code
               uses: actions/checkout@v3
+              with:
+                sparse-checkout: |
+                  .github
+                  pkg/services/featuremgmt
             - uses: actions/setup-node@v4
               with:
                 node-version: "20.x"
-            - run: yarn add csv-parse
+            - run: npm install csv-parse
             - name: Parse CVS file to see which Feature Toggles should be notified about
               id: parse-csv-file
               uses: actions/github-script@v7
