@@ -199,11 +199,16 @@ export function LokiContextUi(props: LokiContextUiProps) {
 
   useAsync(async () => {
     setLoading(true);
-    const initContextFilters = await logContextProvider.getInitContextFilters(row.labels, origQuery, {
-      from: dateTime(row.timeEpochMs),
-      to: dateTime(row.timeEpochMs),
-      raw: { from: dateTime(row.timeEpochMs), to: dateTime(row.timeEpochMs) },
-    });
+    const initContextFilters = await logContextProvider.getInitContextFilters(
+      row.labels,
+      origQuery,
+      {
+        from: dateTime(row.timeEpochMs),
+        to: dateTime(row.timeEpochMs),
+        raw: { from: dateTime(row.timeEpochMs), to: dateTime(row.timeEpochMs) },
+      },
+      true
+    );
     setContextFilters(initContextFilters);
 
     setInitialized(true);
