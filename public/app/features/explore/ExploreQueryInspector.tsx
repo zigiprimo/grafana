@@ -14,6 +14,7 @@ import { QueryInspector } from 'app/features/inspector/QueryInspector';
 import { StoreState, ExploreItemState } from 'app/types';
 
 import { runQueries } from './state/query';
+import { requestIdGenerator } from 'app/core/utils/explore';
 
 interface DispatchProps {
   width: number;
@@ -25,7 +26,7 @@ interface DispatchProps {
 type Props = DispatchProps & ConnectedProps<typeof connector>;
 
 export function ExploreQueryInspector(props: Props) {
-  const { width, onClose, queryResponse, timeZone } = props;
+  const { width, onClose, queryResponse, timeZone, exploreId } = props;
   const dataFrames = queryResponse?.series || [];
   let errors = queryResponse?.errors;
   if (!errors?.length && queryResponse?.error) {
@@ -71,7 +72,11 @@ export function ExploreQueryInspector(props: Props) {
     value: 'query',
     icon: 'info-circle',
     content: (
-      <QueryInspector data={queryResponse} onRefreshQuery={() => props.runQueries({ exploreId: props.exploreId })} />
+      <QueryInspector
+        instanceId={requestIdGenerator(exploreId)}
+        data={queryResponse}
+        onRefreshQuery={() => props.runQueries({ exploreId })}
+      />
     ),
   };
 
