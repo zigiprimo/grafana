@@ -153,42 +153,6 @@ func (s *Service) Get(ctx context.Context, q *folder.GetFolderQuery) (*folder.Fo
 	return s.WithFullpath(ctx, f, q.IncludeFullpath)
 }
 
-func (s *Service) GetFolders(ctx context.Context, q *folder.GetFoldersQuery) ([]*folder.Folder, error) {
-	if q.SignedInUser == nil {
-		return nil, folder.ErrBadRequest.Errorf("missing signed in user")
-	}
-
-	// contrary to the nested folders store that returns empty array if no UIDs are provided,
-	// this one returns all folders if no UIDs are provided
-	// therefore any callers that do not provide UIDs are assumed to want all folders
-	folders, err := s.dashboardFolderStore.GetFolders(ctx, q.OrgID, q.UIDs)
-	if err != nil {
-		s.log.Error("failed to fetch folders from folder store", "error", err)
-		return nil, err
-	}
-
-	filtered := make([]*folder.Folder, 0, len(folders))
-	for _, f := range folders {
-		g, err := guardian.NewByFolder(ctx, f, f.OrgID, q.SignedInUser)
-		if err != nil {
-			return nil, err
-		}
-		canView, err := g.CanView()
-		if err != nil {
-			return nil, err
-		}
-		if canView {
-			f, err := s.WithFullpath(ctx, f, q.IncludeFullpath)
-			if err != nil {
-				s.log.Error("failed to fetch folder full path", "error", err)
-			}
-			filtered = append(filtered, f)
-		}
-	}
-
-	return filtered, nil
-}
-
 func (s *Service) GetChildren(ctx context.Context, q *folder.GetChildrenQuery) ([]*folder.Folder, error) {
 	if q.SignedInUser == nil {
 		return nil, folder.ErrBadRequest.Errorf("missing signed in user")
