@@ -81,12 +81,12 @@ func (a *alertRuleInfo) stop(reason error) {
 }
 
 //nolint:gocyclo
-func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertRuleKey, evalCh <-chan *evaluation, updateCh <-chan ruleVersionAndPauseStatus) error {
-	grafanaCtx = ngmodels.WithRuleKey(grafanaCtx, key)
+func (sch *schedule) ruleRoutine(r *alertRuleInfo) error {
+	grafanaCtx := ngmodels.WithRuleKey(r.ctx, r.key)
 	logger := sch.log.FromContext(grafanaCtx)
 	logger.Debug("Alert rule routine started")
 
-	orgID := fmt.Sprint(key.OrgID)
+	orgID := fmt.Sprint(r.key.OrgID)
 	evalTotal := sch.metrics.EvalTotal.WithLabelValues(orgID)
 	evalDuration := sch.metrics.EvalDuration.WithLabelValues(orgID)
 	evalTotalFailures := sch.metrics.EvalFailures.WithLabelValues(orgID)
@@ -96,12 +96,12 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 	notify := func(states []state.StateTransition) {
 		expiredAlerts := state.FromAlertsStateToStoppedAlert(states, sch.appURL, sch.clock)
 		if len(expiredAlerts.PostableAlerts) > 0 {
-			sch.alertsSender.Send(grafanaCtx, key, expiredAlerts)
+			sch.alertsSender.Send(grafanaCtx, r.key, expiredAlerts)
 		}
 	}
 
 	resetState := func(ctx context.Context, isPaused bool) {
-		rule := sch.schedulableAlertRules.get(key)
+		rule := sch.schedulableAlertRules.get(r.key)
 		reason := ngmodels.StateReasonUpdated
 		if isPaused {
 			reason = ngmodels.StateReasonPaused
@@ -197,7 +197,7 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 			attribute.Int64("alerts_to_send", int64(len(alerts.PostableAlerts))),
 		))
 		if len(alerts.PostableAlerts) > 0 {
-			sch.alertsSender.Send(ctx, key, alerts)
+			sch.alertsSender.Send(ctx, r.key, alerts)
 		}
 		sendDuration.Observe(sch.clock.Now().Sub(start).Seconds())
 
@@ -206,11 +206,11 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 
 	evalRunning := false
 	var currentFingerprint fingerprint
-	defer sch.stopApplied(key)
+	defer sch.stopApplied(r.key)
 	for {
 		select {
 		// used by external services (API) to notify that rule is updated.
-		case ctx := <-updateCh:
+		case ctx := <-r.updateCh:
 			if currentFingerprint == ctx.Fingerprint {
 				logger.Info("Rule's fingerprint has not changed. Skip resetting the state", "currentFingerprint", currentFingerprint)
 				continue
@@ -221,7 +221,7 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 			resetState(grafanaCtx, ctx.IsPaused)
 			currentFingerprint = ctx.Fingerprint
 		// evalCh - used by the scheduler to signal that evaluation is needed.
-		case ctx, ok := <-evalCh:
+		case ctx, ok := <-r.evalCh:
 			if !ok {
 				logger.Debug("Evaluation channel has been closed. Exiting")
 				return nil
@@ -234,7 +234,7 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 				evalRunning = true
 				defer func() {
 					evalRunning = false
-					sch.evalApplied(key, ctx.scheduledAt)
+					sch.evalApplied(r.key, ctx.scheduledAt)
 				}()
 
 				for attempt := int64(1); attempt <= sch.maxAttempts; attempt++ {
@@ -305,7 +305,7 @@ func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertR
 				// cases.
 				ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 				defer cancelFunc()
-				states := sch.stateManager.DeleteStateByRuleUID(ngmodels.WithRuleKey(ctx, key), key, ngmodels.StateReasonRuleDeleted)
+				states := sch.stateManager.DeleteStateByRuleUID(ngmodels.WithRuleKey(ctx, r.key), r.key, ngmodels.StateReasonRuleDeleted)
 				notify(states)
 			}
 			logger.Debug("Stopping alert rule routine")
