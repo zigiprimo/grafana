@@ -105,13 +105,13 @@ func (prov *defaultAlertRuleProvisioner) getOrCreateFolderUID(
 	if err != nil && !errors.Is(err, dashboards.ErrDashboardNotFound) {
 		return "", err
 	}
-
 	// dashboard folder not found. create one.
 	if errors.Is(err, dashboards.ErrDashboardNotFound) {
 		createCmd := &folder.CreateFolderCommand{
-			OrgID: orgID,
-			UID:   util.GenerateShortUID(),
-			Title: folderName,
+			OrgID:                 orgID,
+			UID:                   util.GenerateShortUID(),
+			Title:                 folderName,
+			IgnoreDuplicateRowErr: true,
 		}
 		dbDash, err := prov.dashboardProvService.SaveFolderForProvisionedDashboards(ctx, createCmd)
 		if err != nil {

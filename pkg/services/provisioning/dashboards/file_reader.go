@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/grafana/grafana/pkg/services/org"
 	"io"
 	"os"
 	"path/filepath"
@@ -324,28 +325,33 @@ func (fr *FileReader) getOrCreateFolder(ctx context.Context, cfg *config, servic
 		return 0, "", ErrFolderNameMissing
 	}
 
-	cmd := &dashboards.GetDashboardQuery{
-		Title:    &folderName,
-		FolderID: util.Pointer(int64(0)), // nolint:staticcheck
-		OrgID:    cfg.OrgID,
+	q := folder.GetFolderQuery{
+		SignedInUser: accesscontrol.BackgroundUser("dashboard_provisioning", cfg.OrgID, org.RoleAdmin, []accesscontrol.Permission{
+			{Action: dashboards.ActionFoldersRead, Scope: dashboards.ScopeFoldersAll},
+		}),
+		Title:             &folderName,
+		OrgID:             cfg.OrgID,
+		ForceFoldersWrite: true,
 	}
-	result, err := fr.dashboardStore.GetDashboard(ctx, cmd)
+	result, err := fr.folderService.Get(ctx, &q)
 
-	if err != nil && !errors.Is(err, dashboards.ErrDashboardNotFound) {
+	isNotFound := errors.Is(err, dashboards.ErrDashboardNotFound) || errors.Is(err, folder.ErrFolderNotFound)
+	if err != nil && !isNotFound {
 		return 0, "", err
 	}
 
 	// dashboard folder not found. create one.
-	if errors.Is(err, dashboards.ErrDashboardNotFound) {
+	if isNotFound {
 		// set dashboard folderUid if given
 		if cfg.FolderUID == accesscontrol.GeneralFolderUID {
 			return 0, "", dashboards.ErrFolderInvalidUID
 		}
 
 		createCmd := &folder.CreateFolderCommand{
-			OrgID: cfg.OrgID,
-			UID:   cfg.FolderUID,
-			Title: folderName,
+			OrgID:                 cfg.OrgID,
+			UID:                   cfg.FolderUID,
+			Title:                 folderName,
+			IgnoreDuplicateRowErr: true,
 		}
 
 		f, err := service.SaveFolderForProvisionedDashboards(ctx, createCmd)
@@ -354,10 +360,6 @@ func (fr *FileReader) getOrCreateFolder(ctx context.Context, cfg *config, servic
 		}
 		// nolint:staticcheck
 		return f.ID, f.UID, nil
-	}
-
-	if !result.IsFolder {
-		return 0, "", fmt.Errorf("got invalid response. expected folder, found dashboard")
 	}
 
 	return result.ID, result.UID, nil
