@@ -30,7 +30,7 @@ func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key mod
 
 	info, ok := r.alertRuleInfo[key]
 	if !ok {
-		info = newAlertRuleInfo(context)
+		info = newAlertRuleInfo(context, key)
 		r.alertRuleInfo[key] = info
 	}
 	return info, !ok

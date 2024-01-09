@@ -24,10 +24,11 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 		success     bool
 		droppedEval *evaluation
 	}
+	key := models.AlertRuleKey{OrgID: 1, UID: "foo"}
 
 	t.Run("when rule evaluation is not stopped", func(t *testing.T) {
 		t.Run("update should send to updateCh", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background())
+			r := newAlertRuleInfo(context.Background(), key)
 			resultCh := make(chan bool)
 			go func() {
 				resultCh <- r.update(ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false})
@@ -40,7 +41,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			}
 		})
 		t.Run("update should drop any concurrent sending to updateCh", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background())
+			r := newAlertRuleInfo(context.Background(), key)
 			version1 := ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}
 			version2 := ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}
 
@@ -66,7 +67,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			}
 		})
 		t.Run("eval should send to evalCh", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background())
+			r := newAlertRuleInfo(context.Background(), key)
 			expected := time.Now()
 			resultCh := make(chan evalResponse)
 			data := &evaluation{
@@ -89,7 +90,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			}
 		})
 		t.Run("eval should drop any concurrent sending to evalCh", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background())
+			r := newAlertRuleInfo(context.Background(), key)
 			time1 := time.UnixMilli(rand.Int63n(math.MaxInt64))
 			time2 := time.UnixMilli(rand.Int63n(math.MaxInt64))
 			resultCh1 := make(chan evalResponse)
@@ -135,7 +136,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			}
 		})
 		t.Run("eval should exit when context is cancelled", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background())
+			r := newAlertRuleInfo(context.Background(), key)
 			resultCh := make(chan evalResponse)
 			data := &evaluation{
 				scheduledAt: time.Now(),
@@ -159,13 +160,13 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 	})
 	t.Run("when rule evaluation is stopped", func(t *testing.T) {
 		t.Run("Update should do nothing", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background())
+			r := newAlertRuleInfo(context.Background(), key)
 			r.stop(errRuleDeleted)
 			require.ErrorIs(t, r.ctx.Err(), errRuleDeleted)
 			require.False(t, r.update(ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}))
 		})
 		t.Run("eval should do nothing", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background())
+			r := newAlertRuleInfo(context.Background(), key)
 			r.stop(nil)
 			data := &evaluation{
 				scheduledAt: time.Now(),
@@ -177,19 +178,19 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			require.Nilf(t, dropped, "expected no dropped evaluations but got one")
 		})
 		t.Run("stop should do nothing", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background())
+			r := newAlertRuleInfo(context.Background(), key)
 			r.stop(nil)
 			r.stop(nil)
 		})
 		t.Run("stop should do nothing if parent context stopped", func(t *testing.T) {
 			ctx, cancelFn := context.WithCancel(context.Background())
-			r := newAlertRuleInfo(ctx)
+			r := newAlertRuleInfo(ctx, key)
 			cancelFn()
 			r.stop(nil)
 		})
 	})
 	t.Run("should be thread-safe", func(t *testing.T) {
-		r := newAlertRuleInfo(context.Background())
+		r := newAlertRuleInfo(context.Background(), key)
 		wg := sync.WaitGroup{}
 		go func() {
 			for {
