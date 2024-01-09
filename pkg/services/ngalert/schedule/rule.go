@@ -59,6 +59,7 @@ func (a *alertRuleInfo) update(lastVersion ruleVersionAndPauseStatus) bool {
 	}
 }
 
+// stop sends a signal to the rule evaluation routine to stop evaluating.
 func (a *alertRuleInfo) stop(reason error) {
 	a.cancel(reason)
 }
