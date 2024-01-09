@@ -3,19 +3,27 @@ package schedule
 import (
 	context "context"
 
+	models "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/util"
 )
 
 type alertRuleInfo struct {
+	key      models.AlertRuleKey
 	evalCh   chan *evaluation
 	updateCh chan ruleVersionAndPauseStatus
 	ctx      context.Context
 	cancel   util.CancelCauseFunc
 }
 
-func newAlertRuleInfo(parent context.Context) *alertRuleInfo {
+func newAlertRuleInfo(parent context.Context, key models.AlertRuleKey) *alertRuleInfo {
 	ctx, cancel := util.WithCancelCause(parent)
-	return &alertRuleInfo{evalCh: make(chan *evaluation), updateCh: make(chan ruleVersionAndPauseStatus), ctx: ctx, cancel: cancel}
+	return &alertRuleInfo{
+		key:      key,
+		evalCh:   make(chan *evaluation),
+		updateCh: make(chan ruleVersionAndPauseStatus),
+		ctx:      ctx,
+		cancel:   cancel,
+	}
 }
 
 // eval signals the rule evaluation routine to perform the evaluation of the rule. Does nothing if the loop is stopped.
