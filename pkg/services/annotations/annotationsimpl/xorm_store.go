@@ -519,7 +519,8 @@ func (r *xormRepositoryImpl) CleanAnnotations(ctx context.Context, cfg setting.A
 	var totalAffected int64
 	if cfg.MaxAge > 0 {
 		cutoffDate := timeNow().Add(-cfg.MaxAge).UnixNano() / int64(time.Millisecond)
-		deleteQuery := `DELETE FROM annotation WHERE id IN (SELECT id FROM (SELECT id FROM annotation WHERE %s AND created < %v ORDER BY id DESC %s) a)`
+		// deleteQuery := `DELETE FROM annotation WHERE id IN (SELECT id FROM (SELECT id FROM annotation WHERE %s AND created < %v ORDER BY id DESC %s) a)`
+		deleteQuery := `DELETE FROM annotation WHERE %s AND created < %v %s`
 		sql := fmt.Sprintf(deleteQuery, annotationType, cutoffDate, r.db.GetDialect().Limit(r.cfg.AnnotationCleanupJobBatchSize))
 
 		affected, err := r.executeUntilDoneOrCancelled(ctx, sql)
@@ -530,7 +531,8 @@ func (r *xormRepositoryImpl) CleanAnnotations(ctx context.Context, cfg setting.A
 	}
 
 	if cfg.MaxCount > 0 {
-		deleteQuery := `DELETE FROM annotation WHERE id IN (SELECT id FROM (SELECT id FROM annotation WHERE %s ORDER BY id DESC %s) a)`
+		// deleteQuery := `DELETE FROM annotation WHERE id IN (SELECT id FROM (SELECT id FROM annotation WHERE %s ORDER BY id DESC %s) a)`
+		deleteQuery := `DELETE FROM annotation WHERE %s %s`
 		sql := fmt.Sprintf(deleteQuery, annotationType, r.db.GetDialect().LimitOffset(r.cfg.AnnotationCleanupJobBatchSize, cfg.MaxCount))
 		affected, err := r.executeUntilDoneOrCancelled(ctx, sql)
 		totalAffected += affected
@@ -557,10 +559,12 @@ func (r *xormRepositoryImpl) executeUntilDoneOrCancelled(ctx context.Context, sq
 			err := r.db.WithDbSession(ctx, func(session *db.Session) error {
 				res, err := session.Exec(sql)
 				if err != nil {
+					r.log.Error("failed to delete annotations in background", "sql", sql)
 					return err
 				}
 
 				affected, err = res.RowsAffected()
+				r.log.Error("deleted annotations in background", "sql", sql, "rowsAffected", affected)
 				totalAffected += affected
 
 				return err
