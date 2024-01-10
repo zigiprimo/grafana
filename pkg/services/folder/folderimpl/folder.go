@@ -449,17 +449,38 @@ func (s *Service) Create(ctx context.Context, cmd *folder.CreateFolderCommand) (
 	var dash *dashboards.Dashboard
 	err = s.db.InTransaction(ctx, func(ctx context.Context) error {
 		if !ignoreDuplicateInsert {
-			dash, err = s.dashboardStore.SaveDashboard(ctx, *saveDashboardCmd)
-			if err != nil {
+			if dash, err = s.dashboardStore.SaveDashboard(ctx, *saveDashboardCmd); err != nil {
+				return toFolderError(err)
+			}
+
+		} else {
+			dashQuery := &dashboards.GetDashboardQuery{
+				Title: &dashFolder.Title,
+				OrgID: cmd.OrgID,
+			}
+			if dash, err = s.dashboardStore.GetDashboard(ctx, dashQuery); err != nil {
 				return toFolderError(err)
 			}
 		}
+		//if err != nil {
+		//	if s.db.GetDialect().IsUniqueConstraintViolation(err) && cmd.IgnoreDuplicateRowErr {
+		//		// TODO: This needs to be changed when folder titles become non-unique
+		//		dashQuery := &dashboards.GetDashboardQuery{
+		//			Title: &dashFolder.Title,
+		//			OrgID: cmd.OrgID,
+		//		}
+		//		if dash, err = s.dashboardStore.GetDashboard(ctx, dashQuery); err != nil {
+		//			return toFolderError(err)
+		//		}
+		//
+		//	}
+		//	return toFolderError(err)
+		//}
 
 		cmd = &folder.CreateFolderCommand{
 			// TODO: Today, if a UID isn't specified, the dashboard store
 			// generates a new UID. The new folder store will need to do this as
 			// well, but for now we take the UID from the newly created folder.
-			// TODO: this would fail dash is nil in cases when there's already such a folder in the dashboards table and we're trying to create one in folders
 			UID:         dash.UID,
 			OrgID:       cmd.OrgID,
 			Title:       cmd.Title,

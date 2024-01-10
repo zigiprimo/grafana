@@ -347,6 +347,23 @@ func (fr *FileReader) getOrCreateFolder(ctx context.Context, cfg *config, servic
 			return 0, "", dashboards.ErrFolderInvalidUID
 		}
 
+		dashQuery := &dashboards.GetDashboardQuery{
+			Title:    &folderName,
+			FolderID: util.Pointer(int64(0)), // nolint:staticcheck
+			OrgID:    cfg.OrgID,
+		}
+
+		dash, err := fr.dashboardStore.GetDashboard(ctx, dashQuery)
+		if err != nil && !errors.Is(err, dashboards.ErrDashboardNotFound) {
+			return 0, "", err
+		}
+
+		// if a folder is not found in folder tbl, but found in dashboard tbl,
+		// we create a missing folder entry and set its UID to the dashboard's UID
+		if err == nil {
+			cfg.FolderUID = dash.FolderUID
+		}
+
 		createCmd := &folder.CreateFolderCommand{
 			OrgID:                 cfg.OrgID,
 			UID:                   cfg.FolderUID,
