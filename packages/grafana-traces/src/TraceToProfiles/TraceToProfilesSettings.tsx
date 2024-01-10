@@ -9,10 +9,11 @@ import {
   updateDatasourcePluginJsonDataOption,
 } from '@grafana/data';
 import { ConfigSection } from '@grafana/experimental';
-import { DataSourcePicker, getDataSourceSrv } from '@grafana/runtime';
+import { getDataSourceSrv } from '@grafana/runtime';
 import { InlineField, InlineFieldRow, Input, InlineSwitch } from '@grafana/ui';
 
 import { ConfigDescriptionLink } from '../ConfigDescriptionLink';
+import { DataSourcePicker } from '../DataSourcePicker';
 import { TagMappingInput } from '../TraceToLogs/TagMappingInput';
 import { ProfileTypesCascader } from '../pyroscope/ProfileTypesCascader';
 import { PyroscopeDataSource } from '../pyroscope/datasource';
@@ -63,6 +64,8 @@ export function TraceToProfilesSettings({ options, onOptionsChange }: Props) {
     }
   }, [dataSource, onOptionsChange, options, supportedDataSourceTypes]);
 
+  const [dataSourceSrv, _] = useState(getDataSourceSrv());
+
   return (
     <div className={css({ width: '100%' })}>
       <InlineFieldRow>
@@ -83,6 +86,7 @@ export function TraceToProfilesSettings({ options, onOptionsChange }: Props) {
                 datasourceUid: ds.uid,
               });
             }}
+            dataSourceSrv={dataSourceSrv || getDataSourceSrv()}
           />
         </InlineField>
       </InlineFieldRow>

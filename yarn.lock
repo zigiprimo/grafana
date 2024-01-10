@@ -3136,12 +3136,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@grafana/eslint-plugin@link:./packages/grafana-eslint-rules::locator=%40grafana%2Ftraces%40workspace%3Apackages%2Fgrafana-traces":
-  version: 0.0.0-use.local
-  resolution: "@grafana/eslint-plugin@link:./packages/grafana-eslint-rules::locator=%40grafana%2Ftraces%40workspace%3Apackages%2Fgrafana-traces"
-  languageName: node
-  linkType: soft
-
 "@grafana/eslint-plugin@link:./packages/grafana-eslint-rules::locator=grafana%40workspace%3A.":
   version: 0.0.0-use.local
   resolution: "@grafana/eslint-plugin@link:./packages/grafana-eslint-rules::locator=grafana%40workspace%3A."
@@ -3407,36 +3401,22 @@ __metadata:
   resolution: "@grafana/traces@workspace:packages/grafana-traces"
   dependencies:
     "@emotion/css": "npm:11.11.2"
-    "@grafana/data": "npm:10.3.0-pre"
-    "@grafana/eslint-config": "npm:6.0.1"
-    "@grafana/eslint-plugin": "link:./packages/grafana-eslint-rules"
+    "@grafana/data": "workspace:*"
+    "@grafana/e2e-selectors": "workspace:*"
     "@grafana/experimental": "npm:1.7.4"
-    "@grafana/runtime": "npm:10.3.0-pre"
-    "@grafana/schema": "npm:10.3.0-pre"
+    "@grafana/runtime": "workspace:*"
+    "@grafana/schema": "workspace:*"
     "@grafana/tsconfig": "npm:^1.2.0-rc1"
-    "@grafana/ui": "npm:10.3.0-pre"
-    "@rollup/plugin-commonjs": "npm:25.0.2"
-    "@rollup/plugin-json": "npm:6.0.0"
-    "@rollup/plugin-node-resolve": "npm:15.2.3"
-    "@testing-library/jest-dom": "npm:6.1.4"
-    "@testing-library/react": "npm:14.0.0"
-    "@testing-library/user-event": "npm:14.5.1"
-    "@types/jest": "npm:29.5.4"
-    "@types/react": "npm:18.2.15"
-    "@types/testing-library__jest-dom": "npm:5.14.8"
-    esbuild: "npm:0.18.12"
-    eslint-plugin-jest: "npm:27.6.0"
-    glob: "npm:^10.2.7"
+    "@grafana/ui": "workspace:*"
+    "@types/react": "npm:18.2.46"
     react: "npm:18.2.0"
     react-use: "npm:17.4.0"
-    rimraf: "npm:5.0.1"
-    rollup: "npm:2.79.1"
-    rollup-plugin-dts: "npm:^5.0.0"
-    rollup-plugin-esbuild: "npm:5.0.0"
-    rollup-plugin-node-externals: "npm:^5.0.0"
     rxjs: "npm:7.8.1"
     tslib: "npm:2.6.0"
     typescript: "npm:5.2.2"
+  peerDependencies:
+    react: ^17.0.0 || ^18.0.0
+    react-dom: ^17.0.0 || ^18.0.0
   languageName: unknown
   linkType: soft
 
@@ -9321,6 +9301,17 @@ __metadata:
     "@types/scheduler": "npm:*"
     csstype: "npm:^3.0.2"
   checksum: 7a752e6c5e76139f258bc14827d2c574bb76d6e7eb1b240f24f79b269153cb88668c34ba7078d3de99ec1973b7022e1f788e71117bd52a287f382d24bb80be40
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:18.2.46":
+  version: 18.2.46
+  resolution: "@types/react@npm:18.2.46"
+  dependencies:
+    "@types/prop-types": "npm:*"
+    "@types/scheduler": "npm:*"
+    csstype: "npm:^3.0.2"
+  checksum: 10fb28a5b8504106512ce3b154c45d1ac045c31633786773a29f003b3079b434060368bb56f95ef6c39510835ceec4fb8fdc271d6ca2b9cdd979379cf53f126b
   languageName: node
   linkType: hard
 

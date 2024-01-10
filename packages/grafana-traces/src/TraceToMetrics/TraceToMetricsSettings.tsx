@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import React from 'react';
+import React, { useState } from 'react';
 
 import {
   DataSourceInstanceSettings,
@@ -9,10 +9,11 @@ import {
   updateDatasourcePluginJsonDataOption,
 } from '@grafana/data';
 import { ConfigSection } from '@grafana/experimental';
-import { DataSourcePicker } from '@grafana/runtime';
+import { getDataSourceSrv } from '@grafana/runtime';
 import { Button, InlineField, InlineFieldRow, Input, useStyles2 } from '@grafana/ui';
 
 import { ConfigDescriptionLink } from '../ConfigDescriptionLink';
+import { DataSourcePicker } from '../DataSourcePicker';
 import { IntervalInput } from '../IntervalInput/IntervalInput';
 import { TagMappingInput } from '../TraceToLogs/TagMappingInput';
 import { getTimeShiftLabel, getTimeShiftTooltip, invalidTimeShiftError } from '../TraceToLogs/TraceToLogsSettings';
@@ -39,6 +40,8 @@ interface Props extends DataSourcePluginOptionsEditorProps<TraceToMetricsData> {
 export function TraceToMetricsSettings({ options, onOptionsChange }: Props) {
   const styles = useStyles2(getStyles);
 
+  const [dataSourceSrv, _] = useState(getDataSourceSrv());
+
   return (
     <div className={css({ width: '100%' })}>
       <InlineFieldRow className={styles.row}>
@@ -59,6 +62,7 @@ export function TraceToMetricsSettings({ options, onOptionsChange }: Props) {
                 datasourceUid: ds.uid,
               })
             }
+            dataSourceSrv={dataSourceSrv || getDataSourceSrv()}
           />
         </InlineField>
         {options.jsonData.tracesToMetrics?.datasourceUid ? (

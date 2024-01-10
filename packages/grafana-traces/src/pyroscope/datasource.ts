@@ -3,7 +3,7 @@ import { Observable } from 'rxjs';
 import { AbstractQuery, CoreApp, DataQueryRequest, DataQueryResponse, ScopedVars } from '@grafana/data';
 import { DataSourceWithBackend } from '@grafana/runtime';
 
-import { PyroscopeDataSourceOptions, Query, ProfileTypeMessage } from './types';
+import { PyroscopeDataSourceOptions, ProfileTypeMessage, Query } from './types';
 
 export abstract class PyroscopeDataSource extends DataSourceWithBackend<Query, PyroscopeDataSourceOptions> {
   abstract query(request: DataQueryRequest<Query>): Observable<DataQueryResponse>;
