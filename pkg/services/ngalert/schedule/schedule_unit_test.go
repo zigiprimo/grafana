@@ -396,7 +396,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 				t.Cleanup(cancel)
 				info := &alertRuleInfo{ctx: ctx, key: rule.GetKey(), evalCh: evalChan, updateCh: make(chan ruleVersionAndPauseStatus)}
-				_ = sch.ruleRoutine(info)
+				_ = info.ruleRoutine(sch)
 			}()
 
 			expectedTime := time.UnixMicro(rand.Int63())
@@ -544,7 +544,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			go func() {
 				info := &alertRuleInfo{ctx: ctx, key: rule.GetKey(), evalCh: make(chan *evaluation), updateCh: make(chan ruleVersionAndPauseStatus)}
-				err := sch.ruleRoutine(info)
+				err := info.ruleRoutine(sch)
 				stoppedChan <- err
 			}()
 
@@ -564,7 +564,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ctx, cancel := util.WithCancelCause(context.Background())
 			go func() {
 				info := &alertRuleInfo{ctx: ctx, key: rule.GetKey(), evalCh: make(chan *evaluation), updateCh: make(chan ruleVersionAndPauseStatus)}
-				err := sch.ruleRoutine(info)
+				err := info.ruleRoutine(sch)
 				stoppedChan <- err
 			}()
 
@@ -596,7 +596,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 			info := &alertRuleInfo{ctx: ctx, key: rule.GetKey(), evalCh: evalChan, updateCh: updateChan}
-			_ = sch.ruleRoutine(info)
+			_ = info.ruleRoutine(sch)
 		}()
 
 		// init evaluation loop so it got the rule version
@@ -678,7 +678,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 			info := &alertRuleInfo{ctx: ctx, key: rule.GetKey(), evalCh: evalChan, updateCh: make(chan ruleVersionAndPauseStatus)}
-			_ = sch.ruleRoutine(info)
+			_ = info.ruleRoutine(sch)
 		}()
 
 		evalChan <- &evaluation{
@@ -784,7 +784,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 				ctx, cancel := context.WithCancel(context.Background())
 				t.Cleanup(cancel)
 				info := &alertRuleInfo{ctx: ctx, key: rule.GetKey(), evalCh: evalChan, updateCh: make(chan ruleVersionAndPauseStatus)}
-				_ = sch.ruleRoutine(info)
+				_ = info.ruleRoutine(sch)
 			}()
 
 			evalChan <- &evaluation{
@@ -818,7 +818,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 			info := &alertRuleInfo{ctx: ctx, key: rule.GetKey(), evalCh: evalChan, updateCh: make(chan ruleVersionAndPauseStatus)}
-			_ = sch.ruleRoutine(info)
+			_ = info.ruleRoutine(sch)
 		}()
 
 		evalChan <- &evaluation{
