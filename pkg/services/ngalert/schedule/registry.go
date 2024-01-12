@@ -12,6 +12,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/benbjohnson/clock"
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
 )
 
@@ -24,13 +25,13 @@ type alertRuleInfoRegistry struct {
 
 // getOrCreateInfo gets rule routine information from registry by the key. If it does not exist, it creates a new one.
 // Returns a pointer to the rule routine information and a flag that indicates whether it is a new struct or not.
-func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey) (*alertRuleInfo, bool) {
+func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey, clock clock.Clock) (*alertRuleInfo, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	info, ok := r.alertRuleInfo[key]
 	if !ok {
-		info = newAlertRuleInfo(context, key)
+		info = newAlertRuleInfo(context, key, clock)
 		r.alertRuleInfo[key] = info
 	}
 	return info, !ok

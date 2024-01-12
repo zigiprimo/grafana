@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -25,10 +26,11 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 		droppedEval *evaluation
 	}
 	key := models.AlertRuleKey{OrgID: 1, UID: "foo"}
+	mockedClock := clock.NewMock()
 
 	t.Run("when rule evaluation is not stopped", func(t *testing.T) {
 		t.Run("update should send to updateCh", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background(), key)
+			r := newAlertRuleInfo(context.Background(), key, mockedClock)
 			rule := models.AlertRuleGen()()
 			resultCh := make(chan bool)
 			go func() {
@@ -42,7 +44,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			}
 		})
 		t.Run("update should drop any concurrent sending to updateCh", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background(), key)
+			r := newAlertRuleInfo(context.Background(), key, mockedClock)
 			rule1 := models.AlertRuleGen(
 				models.WithKey(key),
 				models.WithTitle("rule-1"),
@@ -78,7 +80,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			}
 		})
 		t.Run("eval should send to evalCh", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background(), key)
+			r := newAlertRuleInfo(context.Background(), key, mockedClock)
 			expected := time.Now()
 			resultCh := make(chan evalResponse)
 			data := &evaluation{
@@ -101,7 +103,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			}
 		})
 		t.Run("eval should drop any concurrent sending to evalCh", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background(), key)
+			r := newAlertRuleInfo(context.Background(), key, mockedClock)
 			time1 := time.UnixMilli(rand.Int63n(math.MaxInt64))
 			time2 := time.UnixMilli(rand.Int63n(math.MaxInt64))
 			resultCh1 := make(chan evalResponse)
@@ -147,7 +149,7 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			}
 		})
 		t.Run("eval should exit when context is cancelled", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background(), key)
+			r := newAlertRuleInfo(context.Background(), key, mockedClock)
 			resultCh := make(chan evalResponse)
 			data := &evaluation{
 				scheduledAt: time.Now(),
@@ -171,14 +173,14 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 	})
 	t.Run("when rule evaluation is stopped", func(t *testing.T) {
 		t.Run("Update should do nothing", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background(), key)
+			r := newAlertRuleInfo(context.Background(), key, mockedClock)
 			rule := models.AlertRuleGen()()
 			r.stop(errRuleDeleted)
 			require.ErrorIs(t, r.ctx.Err(), errRuleDeleted)
 			require.False(t, r.update(rule, "some-folder"))
 		})
 		t.Run("eval should do nothing", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background(), key)
+			r := newAlertRuleInfo(context.Background(), key, mockedClock)
 			r.stop(nil)
 			data := &evaluation{
 				scheduledAt: time.Now(),
@@ -190,19 +192,19 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 			require.Nilf(t, dropped, "expected no dropped evaluations but got one")
 		})
 		t.Run("stop should do nothing", func(t *testing.T) {
-			r := newAlertRuleInfo(context.Background(), key)
+			r := newAlertRuleInfo(context.Background(), key, mockedClock)
 			r.stop(nil)
 			r.stop(nil)
 		})
 		t.Run("stop should do nothing if parent context stopped", func(t *testing.T) {
 			ctx, cancelFn := context.WithCancel(context.Background())
-			r := newAlertRuleInfo(ctx, key)
+			r := newAlertRuleInfo(ctx, key, mockedClock)
 			cancelFn()
 			r.stop(nil)
 		})
 	})
 	t.Run("should be thread-safe", func(t *testing.T) {
-		r := newAlertRuleInfo(context.Background(), key)
+		r := newAlertRuleInfo(context.Background(), key, mockedClock)
 		wg := sync.WaitGroup{}
 		go func() {
 			for {

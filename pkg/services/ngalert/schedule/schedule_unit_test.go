@@ -840,7 +840,7 @@ func TestSchedule_deleteAlertRule(t *testing.T) {
 			sch := setupScheduler(t, nil, nil, nil, nil, nil)
 			rule := models.AlertRuleGen()()
 			key := rule.GetKey()
-			info, _ := sch.registry.getOrCreateInfo(context.Background(), key)
+			info, _ := sch.registry.getOrCreateInfo(context.Background(), key, sch.clock)
 			sch.deleteAlertRule(key)
 			require.ErrorIs(t, info.ctx.Err(), errRuleDeleted)
 			require.False(t, sch.registry.exists(key))

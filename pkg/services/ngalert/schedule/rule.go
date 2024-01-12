@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/grafana/grafana/pkg/services/ngalert/eval"
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/services/ngalert/state"
@@ -21,9 +22,10 @@ type alertRuleInfo struct {
 	updateCh chan ruleVersionAndPauseStatus
 	ctx      context.Context
 	cancel   util.CancelCauseFunc
+	clock    clock.Clock
 }
 
-func newAlertRuleInfo(parent context.Context, key ngmodels.AlertRuleKey) *alertRuleInfo {
+func newAlertRuleInfo(parent context.Context, key ngmodels.AlertRuleKey, clock clock.Clock) *alertRuleInfo {
 	ctx, cancel := util.WithCancelCause(parent)
 	return &alertRuleInfo{
 		key:      key,
@@ -31,6 +33,7 @@ func newAlertRuleInfo(parent context.Context, key ngmodels.AlertRuleKey) *alertR
 		updateCh: make(chan ruleVersionAndPauseStatus),
 		ctx:      ctx,
 		cancel:   cancel,
+		clock:    clock,
 	}
 }
 
@@ -105,7 +108,7 @@ func (r *alertRuleInfo) ruleRoutine(sch *schedule) error {
 	sendDuration := sch.metrics.SendDuration.WithLabelValues(orgID)
 
 	notify := func(states []state.StateTransition) {
-		expiredAlerts := state.FromAlertsStateToStoppedAlert(states, sch.appURL, sch.clock)
+		expiredAlerts := state.FromAlertsStateToStoppedAlert(states, sch.appURL, r.clock)
 		if len(expiredAlerts.PostableAlerts) > 0 {
 			sch.alertsSender.Send(grafanaCtx, r.key, expiredAlerts)
 		}
@@ -123,7 +126,7 @@ func (r *alertRuleInfo) ruleRoutine(sch *schedule) error {
 
 	evaluate := func(ctx context.Context, f fingerprint, attempt int64, e *evaluation, span trace.Span, retry bool) error {
 		logger := logger.New("version", e.rule.Version, "fingerprint", f, "attempt", attempt, "now", e.scheduledAt).FromContext(ctx)
-		start := sch.clock.Now()
+		start := r.clock.Now()
 
 		evalCtx := eval.NewContextWithPreviousResults(ctx, SchedulerUserFor(e.rule.OrgID), sch.newLoadedMetricsReader(e.rule))
 		if sch.evaluatorFactory == nil {
@@ -133,11 +136,11 @@ func (r *alertRuleInfo) ruleRoutine(sch *schedule) error {
 		var results eval.Results
 		var dur time.Duration
 		if err != nil {
-			dur = sch.clock.Now().Sub(start)
+			dur = r.clock.Now().Sub(start)
 			logger.Error("Failed to build rule evaluator", "error", err)
 		} else {
 			results, err = ruleEval.Evaluate(ctx, e.scheduledAt)
-			dur = sch.clock.Now().Sub(start)
+			dur = r.clock.Now().Sub(start)
 			if err != nil {
 				logger.Error("Failed to evaluate rule", "error", err, "duration", dur)
 			}
@@ -191,7 +194,7 @@ func (r *alertRuleInfo) ruleRoutine(sch *schedule) error {
 				attribute.Int64("results", int64(len(results))),
 			))
 		}
-		start = sch.clock.Now()
+		start = r.clock.Now()
 		processedStates := sch.stateManager.ProcessEvalResults(
 			ctx,
 			e.scheduledAt,
@@ -199,9 +202,9 @@ func (r *alertRuleInfo) ruleRoutine(sch *schedule) error {
 			results,
 			state.GetRuleExtraLabels(e.rule, e.folderTitle, !sch.disableGrafanaFolder),
 		)
-		processDuration.Observe(sch.clock.Now().Sub(start).Seconds())
+		processDuration.Observe(r.clock.Now().Sub(start).Seconds())
 
-		start = sch.clock.Now()
+		start = r.clock.Now()
 		alerts := state.FromStateTransitionToPostableAlerts(processedStates, sch.stateManager, sch.appURL)
 		span.AddEvent("results processed", trace.WithAttributes(
 			attribute.Int64("state_transitions", int64(len(processedStates))),
@@ -210,7 +213,7 @@ func (r *alertRuleInfo) ruleRoutine(sch *schedule) error {
 		if len(alerts.PostableAlerts) > 0 {
 			sch.alertsSender.Send(ctx, r.key, alerts)
 		}
-		sendDuration.Observe(sch.clock.Now().Sub(start).Seconds())
+		sendDuration.Observe(r.clock.Now().Sub(start).Seconds())
 
 		return nil
 	}
