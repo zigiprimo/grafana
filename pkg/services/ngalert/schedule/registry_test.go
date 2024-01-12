@@ -29,9 +29,10 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 	t.Run("when rule evaluation is not stopped", func(t *testing.T) {
 		t.Run("update should send to updateCh", func(t *testing.T) {
 			r := newAlertRuleInfo(context.Background(), key)
+			rule := models.AlertRuleGen()()
 			resultCh := make(chan bool)
 			go func() {
-				resultCh <- r.update(ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false})
+				resultCh <- r.update(rule, "some-folder")
 			}()
 			select {
 			case <-r.updateCh:
@@ -42,26 +43,36 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 		})
 		t.Run("update should drop any concurrent sending to updateCh", func(t *testing.T) {
 			r := newAlertRuleInfo(context.Background(), key)
-			version1 := ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}
-			version2 := ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}
+			rule1 := models.AlertRuleGen(
+				models.WithKey(key),
+				models.WithTitle("rule-1"),
+			)()
+			rule2 := models.AlertRuleGen(
+				models.WithKey(key),
+				models.WithTitle("rule-2"),
+			)()
 
 			wg := sync.WaitGroup{}
 			wg.Add(1)
 			go func() {
 				wg.Done()
-				r.update(version1)
+				r.update(rule1, "some-folder")
 				wg.Done()
 			}()
 			wg.Wait()
 			wg.Add(2) // one when time1 is sent, another when go-routine for time2 has started
 			go func() {
 				wg.Done()
-				r.update(version2)
+				r.update(rule2, "some-folder")
 			}()
 			wg.Wait() // at this point tick 1 has already been dropped
+
+			// Expect the updateCh to reflect the second rule.
+			expectedRWF := ruleWithFolder{rule: rule2, folderTitle: "some-folder"}
+			expected := ruleVersionAndPauseStatus{expectedRWF.Fingerprint(), false}
 			select {
 			case version := <-r.updateCh:
-				require.Equal(t, version2, version)
+				require.Equal(t, expected, version)
 			case <-time.After(5 * time.Second):
 				t.Fatal("No message was received on eval channel")
 			}
@@ -161,9 +172,10 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 	t.Run("when rule evaluation is stopped", func(t *testing.T) {
 		t.Run("Update should do nothing", func(t *testing.T) {
 			r := newAlertRuleInfo(context.Background(), key)
+			rule := models.AlertRuleGen()()
 			r.stop(errRuleDeleted)
 			require.ErrorIs(t, r.ctx.Err(), errRuleDeleted)
-			require.False(t, r.update(ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false}))
+			require.False(t, r.update(rule, "some-folder"))
 		})
 		t.Run("eval should do nothing", func(t *testing.T) {
 			r := newAlertRuleInfo(context.Background(), key)
@@ -215,7 +227,8 @@ func TestSchedule_alertRuleInfo(t *testing.T) {
 					}
 					switch rand.Intn(max) + 1 {
 					case 1:
-						r.update(ruleVersionAndPauseStatus{fingerprint(rand.Uint64()), false})
+						rule := models.AlertRuleGen(models.WithKey(key))()
+						r.update(rule, "some-folder")
 					case 2:
 						r.eval(&evaluation{
 							scheduledAt: time.Now(),

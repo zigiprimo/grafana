@@ -58,7 +58,8 @@ func (a *alertRuleInfo) eval(eval *evaluation) (bool, *evaluation) {
 }
 
 // update sends an instruction to the rule evaluation routine to update the scheduled rule to the specified version. The specified version must be later than the current version, otherwise no update will happen.
-func (a *alertRuleInfo) update(lastVersion ruleVersionAndPauseStatus) bool {
+// func (a *alertRuleInfo) update(lastVersion ruleVersionAndPauseStatus) bool {
+func (a *alertRuleInfo) update(rule *ngmodels.AlertRule, folderTitle string) bool {
 	// check if the channel is not empty.
 	select {
 	case <-a.updateCh:
@@ -67,8 +68,18 @@ func (a *alertRuleInfo) update(lastVersion ruleVersionAndPauseStatus) bool {
 	default:
 	}
 
+	// TODO: Probably need a mutex for this update
+	// TODO: move inside ruleRoutine, so that we don't change fields out from underneath a running rule. ruleRoutine is the main reader here, so handling updates inside that prevents read/write races with the new fields
+	// TODO: Ideally the key should never change due to the how the registry works.
+	a.key = rule.GetKey()
+
+	rvp := ruleVersionAndPauseStatus{
+		Fingerprint: ruleWithFolder{rule: rule, folderTitle: folderTitle}.Fingerprint(),
+		IsPaused:    rule.IsPaused,
+	}
+
 	select {
-	case a.updateCh <- lastVersion:
+	case a.updateCh <- rvp:
 		return true
 	case <-a.ctx.Done():
 		return false

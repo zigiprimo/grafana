@@ -113,6 +113,13 @@ func WithUniqueID() AlertRuleMutator {
 	}
 }
 
+func WithKey(key AlertRuleKey) AlertRuleMutator {
+	return func(rule *AlertRule) {
+		rule.UID = key.UID
+		rule.OrgID = key.OrgID
+	}
+}
+
 func WithGroupIndex(groupIndex int) AlertRuleMutator {
 	return func(rule *AlertRule) {
 		rule.RuleGroupIndex = groupIndex
