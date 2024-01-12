@@ -150,16 +150,17 @@ func (sl *ServerLockService) LockExecuteAndRelease(ctx context.Context, actionNa
 		return err
 	}
 
+	// using defer releaseLock to avoid keeping the lock in case of unexpected errors
+	defer func() {
+		if err := sl.releaseLock(ctx, actionName); err != nil {
+			span.RecordError(err)
+			ctxLogger.Error("Failed to release the lock", "error", err)
+		}
+	}()
+
 	sl.executeFunc(ctx, actionName, fn)
 
-	err = sl.releaseLock(ctx, actionName)
-	if err != nil {
-		span.RecordError(err)
-		ctxLogger.Error("Failed to release the lock", "error", err)
-	}
-
 	ctxLogger.Debug("LockExecuteAndRelease finished", "actionName", actionName, "duration", time.Since(start))
-
 	return nil
 }
 
