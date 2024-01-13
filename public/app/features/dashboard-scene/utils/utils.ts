@@ -11,6 +11,8 @@ import { initialIntervalVariableModelState } from 'app/features/variables/interv
 
 import { PanelEditor } from '../panel-edit/PanelEditor';
 import { DashboardScene } from '../scene/DashboardScene';
+import { DashboardDataProvider } from './createPanelDataProvider';
+import { ShareQueryDataProvider } from '../scene/ShareQueryDataProvider';
 
 export function getVizPanelKeyForPanelId(panelId: number) {
   return `panel-${panelId}`;
@@ -151,12 +153,18 @@ export function getQueryRunnerFor(sceneObject: SceneObject | undefined): SceneQu
   if (!sceneObject) {
     return undefined;
   }
+  if (sceneObject.state.$data instanceof DashboardDataProvider) {
+    return getQueryRunnerFor(sceneObject.state.$data);
+  }
 
   if (sceneObject.state.$data instanceof SceneQueryRunner) {
     return sceneObject.state.$data;
   }
 
-  if (sceneObject.state.$data instanceof SceneDataTransformer) {
+  if (
+    sceneObject.state.$data instanceof SceneDataTransformer ||
+    sceneObject.state.$data instanceof ShareQueryDataProvider
+  ) {
     return getQueryRunnerFor(sceneObject.state.$data);
   }
 

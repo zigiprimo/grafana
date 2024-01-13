@@ -14,6 +14,7 @@ import { DashboardQuery } from 'app/plugins/datasource/dashboard/types';
 
 import { PanelEditor } from '../panel-edit/PanelEditor';
 import { getVizPanelKeyForPanelId } from '../utils/utils';
+import { DashboardDataProvider } from '../utils/createPanelDataProvider';
 
 export interface ShareQueryDataProviderState extends SceneDataState {
   query: DashboardQuery;
@@ -43,12 +44,12 @@ export class ShareQueryDataProvider extends SceneObjectBase<ShareQueryDataProvid
       root.state.dashboardRef.resolve(),
       (scene: SceneObject) => scene.state.key === keyToFind
     );
-
     if (source) {
       // Indicate that when de-activated, i.e. navigating back to dashboard, the cloned$data state needs to be removed
       // so that the panel on the dashboar can use data from the actual source panel.
       this.setState({
-        $data: source.state.$data!.clone(),
+        $data: source.state.$data!.state.$data.clone(),
+        data: source.state.$data!.state.$data.state.data || emptyPanelData,
       });
     }
   }
@@ -87,6 +88,7 @@ export class ShareQueryDataProvider extends SceneObjectBase<ShareQueryDataProvid
 
     if (this._querySub) {
       this._querySub.unsubscribe();
+      this._querySub = undefined;
     }
 
     if (this._sourceDataDeactivationHandler) {
@@ -111,7 +113,10 @@ export class ShareQueryDataProvider extends SceneObjectBase<ShareQueryDataProvid
       }
 
       this._sourceProvider = source.state.$data;
-      if (!this._sourceProvider) {
+
+      // console.log('Subscribing to source panel data provider', this._sourceProvider);
+
+      if (!this._sourceProvider || !(this._sourceProvider instanceof DashboardDataProvider)) {
         console.log('No source data found for shared dashboard query');
         return;
       }
@@ -122,19 +127,26 @@ export class ShareQueryDataProvider extends SceneObjectBase<ShareQueryDataProvid
       this._passContainerWidth = true;
     }
 
-    // This will activate if sourceData is part of hidden panel
-    // Also make sure the sourceData is not deactivated if hidden later
     this._sourceDataDeactivationHandler = this._sourceProvider.activate();
 
+    // This will activate if sourceData is part of hidden panel
+    // Also make sure the sourceData is not deactivated if hidden later
+
     // If source is a data transformer we might need to get the inner query runner instead depending on withTransforms option
-    if (this._sourceProvider instanceof SceneDataTransformer && !query.withTransforms) {
-      if (!this._sourceProvider.state.$data) {
-        throw new Error('No source inner query runner found in data transformer');
-      }
-      this._sourceProvider = this._sourceProvider.state.$data;
-    }
+    // if (
+    //   this._sourceProvider?.state.$data instanceof SceneDataTransformer &&
+    //   this._sourceProvider?.state.$data.state.transformations.length > 0 &&
+    //   !query.withTransforms
+    // ) {
+    //   // console.log('Source is a data transformer, getting inner query runner');
+    //   if (!this._sourceProvider.state.$data) {
+    //     throw new Error('No source inner query runner found in data transformer');
+    //   }
+    //   this._sourceProvider = this._sourceProvider.state.$data;
+    // }
 
     this._querySub = this._sourceProvider.subscribeToState((state) => {
+      console.log('ShareQueryDataProvider data change from source', state.data);
       this._results.next({
         origin: this,
         data: state.data || {
@@ -148,13 +160,15 @@ export class ShareQueryDataProvider extends SceneObjectBase<ShareQueryDataProvid
     });
 
     // Copy the initial state
-    this.setState({ data: this._sourceProvider.state.data || emptyPanelData });
+    // this.setState({ data: this._sourceProvider.state.data || emptyPanelData });
   }
 
   private _onStateChanged = (n: ShareQueryDataProviderState, p: ShareQueryDataProviderState) => {
     const root = this.getRoot();
     // If the query changed, we need to find the new source panel and subscribe to it
     if (n.query !== p.query && n.query.panelId) {
+      console.log('Query changed, subscribing to new source panel');
+
       if (root instanceof PanelEditor) {
         this._setupEditMode(n.query.panelId, root);
       }

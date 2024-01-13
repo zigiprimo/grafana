@@ -14,6 +14,7 @@ import { ShareQueryDataProvider } from '../../scene/ShareQueryDataProvider';
 import { VizPanelManager } from '../VizPanelManager';
 
 import { PanelDataPaneTabState, PanelDataPaneTab } from './types';
+import { DashboardDataProvider } from '../../utils/createPanelDataProvider';
 
 interface PanelDataQueriesTabState extends PanelDataPaneTabState {
   datasource?: DataSourceApi;
@@ -116,16 +117,22 @@ export class PanelDataQueriesTab extends SceneObjectBase<PanelDataQueriesTabStat
   };
 
   onRunQueries = () => {
+    console.log('onRunQueries', this._panelManager.queryRunner);
     this._panelManager.queryRunner.runQueries();
   };
 
   getQueries() {
-    const dataObj = this._panelManager.state.panel.state.$data!;
+    const dataObj = this._panelManager.state.panel.state.$data! as DashboardDataProvider;
+    const dataProvider = dataObj.getDataProvider();
 
-    if (dataObj instanceof ShareQueryDataProvider) {
-      return [dataObj.state.query];
+    if (!dataProvider) {
+      return [];
     }
-    return this._panelManager.queryRunner.state.queries;
+    if (dataProvider instanceof ShareQueryDataProvider) {
+      return [dataProvider.state.query];
+    }
+
+    return dataProvider.state.queries;
   }
 
   get panelManager() {
@@ -137,6 +144,10 @@ function PanelDataQueriesTabRendered({ model }: SceneComponentProps<PanelDataQue
   const { panel, datasource, dsSettings } = model.panelManager.useState();
   const { $data: dataObj } = panel.useState();
   const { data } = dataObj!.useState();
+
+  if (!(dataObj instanceof DashboardDataProvider)) {
+    return null;
+  }
 
   if (!datasource || !dsSettings || !data) {
     return null;
@@ -154,8 +165,13 @@ function PanelDataQueriesTabRendered({ model }: SceneComponentProps<PanelDataQue
         onOpenQueryInspector={model.onOpenInspector}
       />
 
-      {dataObj instanceof ShareQueryDataProvider ? (
-        <DashboardQueryEditor queries={model.getQueries()} panelData={data} onChange={model.onQueriesChange} />
+      {dataObj.getDataProvider() instanceof ShareQueryDataProvider ? (
+        <DashboardQueryEditor
+          queries={model.getQueries()}
+          panelData={data}
+          onChange={model.onQueriesChange}
+          onRunQueries={model.onRunQueries}
+        />
       ) : (
         <QueryEditorRows
           data={data}

@@ -21,7 +21,6 @@ import {
   DeepPartial,
   SceneQueryRunner,
   sceneGraph,
-  SceneDataTransformer,
   SceneDataProvider,
 } from '@grafana/scenes';
 import { DataQuery, DataSourceRef } from '@grafana/schema';
@@ -35,6 +34,7 @@ import { QueryGroupOptions } from 'app/types';
 
 import { PanelTimeRange, PanelTimeRangeState } from '../scene/PanelTimeRange';
 import { ShareQueryDataProvider } from '../scene/ShareQueryDataProvider';
+import { DashboardDataProvider } from '../utils/createPanelDataProvider';
 import { getPanelIdForVizPanel } from '../utils/utils';
 
 interface VizPanelManagerState extends SceneObjectState {
@@ -59,6 +59,7 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
   public constructor(panel: VizPanel) {
     super({ panel });
 
+    console.log(panel.state.key, panel.state.$data?.state.key, panel.state.$data);
     this.addActivationHandler(() => this._onActivate());
   }
 
@@ -69,19 +70,29 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
   private async loadDataSource() {
     const dataObj = this.state.panel.state.$data;
 
+    if (!(dataObj instanceof DashboardDataProvider)) {
+      throw new Error('Panel data object is not a query provider');
+    }
+
     if (!dataObj) {
+      return;
+    }
+
+    const dataProvider = dataObj.getDataProvider();
+
+    if (!dataProvider) {
       return;
     }
 
     let datasourceToLoad: DataSourceRef | undefined;
 
-    if (dataObj instanceof ShareQueryDataProvider) {
+    if (dataProvider instanceof ShareQueryDataProvider) {
       datasourceToLoad = {
         uid: SHARED_DASHBOARD_QUERY,
         type: DASHBOARD_DATASOURCE_PLUGIN_ID,
       };
     } else {
-      datasourceToLoad = this.queryRunner.state.datasource;
+      datasourceToLoad = dataProvider.state.datasource;
     }
 
     if (!datasourceToLoad) {
@@ -168,7 +179,7 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
   ) {
     const { panel, dsSettings } = this.state;
     const dataObj = panel.state.$data;
-    if (!dataObj) {
+    if (!(dataObj instanceof DashboardDataProvider)) {
       return;
     }
 
@@ -176,16 +187,20 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
     const nextDS = await getDataSourceSrv().get({ uid: newSettings.uid });
 
     const currentQueries = [];
-    if (dataObj instanceof SceneQueryRunner) {
-      currentQueries.push(...dataObj.state.queries);
-    } else if (dataObj instanceof ShareQueryDataProvider) {
-      currentQueries.push(dataObj.state.query);
+
+    const dataObjClone = dataObj.clone();
+    const dataProvider = dataObjClone.getDataProvider();
+
+    if (dataProvider instanceof SceneQueryRunner) {
+      currentQueries.push(...dataProvider.state.queries);
+    } else if (dataProvider instanceof ShareQueryDataProvider) {
+      currentQueries.push(dataProvider.state.query);
     }
 
     // We need to pass in newSettings.uid as well here as that can be a variable expression and we want to store that in the query model not the current ds variable value
     const queries = defaultQueries || (await updateQueries(nextDS, newSettings.uid, currentQueries, currentDS));
 
-    if (dataObj instanceof SceneQueryRunner) {
+    if (dataProvider instanceof SceneQueryRunner) {
       // Changing to Dashboard data source
       if (newSettings.uid === SHARED_DASHBOARD_QUERY) {
         // Changing from one plugin to another
@@ -200,9 +215,9 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
             timeRange: getDefaultTimeRange(),
           },
         });
-        panel.setState({ $data: sharedProvider });
+        dataObjClone.setState({ $data: sharedProvider });
       } else {
-        dataObj.setState({
+        dataProvider.setState({
           datasource: {
             type: newSettings.type,
             uid: newSettings.uid,
@@ -210,10 +225,10 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
           queries,
         });
         if (defaultQueries) {
-          dataObj.runQueries();
+          dataProvider.runQueries();
         }
       }
-    } else if (dataObj instanceof ShareQueryDataProvider && newSettings.uid !== SHARED_DASHBOARD_QUERY) {
+    } else if (dataProvider instanceof ShareQueryDataProvider && newSettings.uid !== SHARED_DASHBOARD_QUERY) {
       const dataProvider = new SceneQueryRunner({
         datasource: {
           type: newSettings.type,
@@ -221,38 +236,41 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
         },
         queries,
       });
-      panel.setState({ $data: dataProvider });
-    } else if (dataObj instanceof SceneDataTransformer) {
-      const data = dataObj.clone();
-
-      let provider: SceneDataProvider = new SceneQueryRunner({
-        datasource: {
-          type: newSettings.type,
-          uid: newSettings.uid,
-        },
-        queries,
-      });
-
-      if (newSettings.uid === SHARED_DASHBOARD_QUERY) {
-        provider = new ShareQueryDataProvider({
-          query: queries[0],
-          $data: new SceneQueryRunner({
-            queries: [],
-          }),
-          data: {
-            series: [],
-            state: LoadingState.NotStarted,
-            timeRange: getDefaultTimeRange(),
-          },
-        });
-      }
-
-      data.setState({
-        $data: provider,
-      });
-
-      panel.setState({ $data: data });
+      dataObjClone.setState({ $data: dataProvider });
     }
+
+    panel.setState({ $data: dataObjClone });
+    // else if (dataObj instanceof SceneDataTransformer) {
+    //   const data = dataObj.clone();
+
+    //   let provider: SceneDataProvider = new SceneQueryRunner({
+    //     datasource: {
+    //       type: newSettings.type,
+    //       uid: newSettings.uid,
+    //     },
+    //     queries,
+    //   });
+
+    //   if (newSettings.uid === SHARED_DASHBOARD_QUERY) {
+    //     provider = new ShareQueryDataProvider({
+    //       query: queries[0],
+    //       $data: new SceneQueryRunner({
+    //         queries: [],
+    //       }),
+    //       data: {
+    //         series: [],
+    //         state: LoadingState.NotStarted,
+    //         timeRange: getDefaultTimeRange(),
+    //       },
+    //     });
+    //   }
+
+    //   data.setState({
+    //     $data: provider,
+    //   });
+
+    //   panel.setState({ $data: data });
+    // }
     this.loadDataSource();
   }
 
@@ -294,17 +312,26 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
 
   public changeQueries<T extends DataQuery>(queries: T[]) {
     const dataObj = this.state.panel.state.$data;
-    const runner = this.queryRunner;
 
-    if (dataObj instanceof ShareQueryDataProvider && queries.length > 0) {
+    if (!(dataObj instanceof DashboardDataProvider)) {
+      throw new Error('Panel data object is not a query provider');
+    }
+    const dataProvider = dataObj.getDataProvider();
+
+    if (!dataProvider) {
+      return;
+    }
+
+    if (dataProvider instanceof ShareQueryDataProvider && queries.length > 0) {
       const dashboardQuery = queries[0] as DashboardQuery;
       if (dashboardQuery.panelId) {
-        dataObj.setState({
+        console.log('changeQueries', dataProvider);
+        dataProvider.setState({
           query: dashboardQuery,
         });
       }
     } else {
-      runner.setState({ queries });
+      dataProvider.setState({ queries });
     }
   }
 
@@ -321,18 +348,42 @@ export class VizPanelManager extends SceneObjectBase<VizPanelManagerState> {
   get queryRunner(): SceneQueryRunner {
     const dataObj = this.state.panel.state.$data;
 
-    if (dataObj instanceof ShareQueryDataProvider) {
-      return dataObj.state.$data as SceneQueryRunner;
+    if (!(dataObj instanceof DashboardDataProvider)) {
+      throw new Error('Panel data object is not a query provider');
     }
 
-    if (dataObj instanceof SceneDataTransformer) {
-      return dataObj.state.$data as SceneQueryRunner;
-    }
-
-    return dataObj as SceneQueryRunner;
+    return dataObj.getQueryRunner()!;
   }
 
   get panelData(): SceneDataProvider {
     return this.state.panel.state.$data!;
   }
 }
+
+// public changeQueries<T extends DataQuery>(queries: T[]) {
+//   const dataObj = this.state.panel.state.$data;
+
+//   if (!(dataObj instanceof DashboardDataProvider)) {
+//     throw new Error('Panel data object is not a query provider');
+//   }
+//   const dataProvider = dataObj.getDataProvider();
+
+//   if (!dataProvider) {
+//     return;
+//   }
+
+//   if (dataProvider instanceof ShareQueryDataProvider && queries.length > 0) {
+//     const dashboardQuery = queries[0] as DashboardQuery;
+//     if (dashboardQuery.panelId) {
+//       const newDataProvider = new DashboardDataProvider({
+//         $data: new ShareQueryDataProvider({
+//           query: dashboardQuery,
+//         }),
+//       });
+
+//       dataObj.setState({ $data: newDataProvider });
+//     }
+//   } else {
+//     dataProvider.setState({ queries });
+//   }
+// }

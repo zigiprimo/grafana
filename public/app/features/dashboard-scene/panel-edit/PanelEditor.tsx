@@ -27,6 +27,7 @@ import { PanelEditorUrlSync } from './PanelEditorUrlSync';
 import { PanelOptionsPane } from './PanelOptionsPane';
 import { PanelVizTypePicker } from './PanelVizTypePicker';
 import { VizPanelManager } from './VizPanelManager';
+import { DashboardDataProvider } from '../utils/createPanelDataProvider';
 
 export interface PanelEditorState extends SceneObjectState {
   body: SceneObject;
@@ -110,8 +111,10 @@ export class PanelEditor extends SceneObjectBase<PanelEditorState> {
     // Remove data provider if it's a share query. For editing purposes the data provider is cloned and attached to the
     // ShareQueryDataProvider when panel is in edit mode.
     // TODO: Handle transformations when we get on transformations edit.
-    if (newState.$data instanceof ShareQueryDataProvider) {
-      newState.$data.setState({ $data: undefined });
+    if (newState.$data instanceof DashboardDataProvider) {
+      if (newState.$data.getDataProvider() instanceof ShareQueryDataProvider) {
+        newState.$data.getDataProvider()!.setState({ $data: undefined });
+      }
     }
 
     sourcePanel.setState(newState);

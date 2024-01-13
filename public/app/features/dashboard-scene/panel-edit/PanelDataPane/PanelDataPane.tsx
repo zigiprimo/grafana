@@ -22,6 +22,7 @@ import { PanelDataAlertingTab } from './PanelDataAlertingTab';
 import { PanelDataQueriesTab } from './PanelDataQueriesTab';
 import { PanelDataTransformationsTab } from './PanelDataTransformationsTab';
 import { PanelDataPaneTab } from './types';
+import { DashboardDataProvider } from '../../utils/createPanelDataProvider';
 
 export interface PanelDataPaneState extends SceneObjectState {
   tabs?: PanelDataPaneTab[];
@@ -99,27 +100,18 @@ export class PanelDataPane extends SceneObjectBase<PanelDataPaneState> {
   private getDataObjects(): [SceneQueryRunner | ShareQueryDataProvider | undefined, SceneDataTransformer | undefined] {
     const dataObj = sceneGraph.getData(this.panelManager.state.panel);
 
-    let runner: SceneQueryRunner | ShareQueryDataProvider | undefined;
-    let transformer: SceneDataTransformer | undefined;
-
-    if (dataObj instanceof SceneQueryRunner || dataObj instanceof ShareQueryDataProvider) {
-      runner = dataObj;
+    if (!(dataObj instanceof DashboardDataProvider)) {
+      throw new Error('Panel data object is not a query provider');
     }
 
-    if (dataObj instanceof SceneDataTransformer) {
-      transformer = dataObj;
-      if (transformer.state.$data instanceof SceneQueryRunner) {
-        runner = transformer.state.$data;
-      }
-    }
-
-    return [runner, transformer];
+    return [dataObj.getDataProvider(), dataObj.getDataTransformer()];
   }
 
   private buildTabs() {
     const panelManager = this.panelManager;
     const panel = panelManager.state.panel;
     const [runner] = this.getDataObjects();
+
     const tabs: PanelDataPaneTab[] = [];
 
     if (panel) {
