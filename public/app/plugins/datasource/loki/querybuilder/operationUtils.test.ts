@@ -1,4 +1,4 @@
-import { QueryBuilderOperation, QueryBuilderOperationDef } from 'custom-experimental';
+import { QueryBuilderOperation, QueryBuilderOperationDefinition } from 'custom-experimental';
 
 import {
   createAggregationOperation,
@@ -145,7 +145,7 @@ describe('getLineFilterRenderer', () => {
     params: ['ERrOR'],
   };
 
-  const MOCK_DEF = undefined as unknown as QueryBuilderOperationDef;
+  const MOCK_DEF = undefined as unknown as QueryBuilderOperationDefinition;
 
   const MOCK_INNER_EXPR = '{job="grafana"}';
 
@@ -169,7 +169,7 @@ describe('getLineFilterRenderer', () => {
 
 describe('labelFilterRenderer', () => {
   const MOCK_MODEL = { id: '__label_filter', params: ['label', '', 'value'] };
-  const MOCK_DEF = undefined as unknown as QueryBuilderOperationDef;
+  const MOCK_DEF = undefined as unknown as QueryBuilderOperationDefinition;
   const MOCK_INNER_EXPR = '{job="grafana"}';
 
   it.each`
@@ -211,7 +211,7 @@ describe('isConflictingFilter', () => {
 });
 
 describe('pipelineRenderer', () => {
-  let definitions: QueryBuilderOperationDef[];
+  let definitions: QueryBuilderOperationDefinition[];
   beforeEach(() => {
     definitions = getOperationDefinitions();
   });
