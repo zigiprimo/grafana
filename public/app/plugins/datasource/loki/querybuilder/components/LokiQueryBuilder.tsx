@@ -144,7 +144,7 @@ export const LokiQueryBuilder = React.memo<Props>(
             highlightedOp={highlightedOp}
           />
           <QueryBuilderHints<LokiVisualQuery, LokiQuery>
-            datasource={datasource as DataSourceApi}
+            datasource={datasource}
             query={query}
             onChange={onChange}
             data={sampleData}

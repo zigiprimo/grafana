@@ -13393,7 +13393,7 @@ __metadata:
 
 "custom-experimental@file:../grafana-experimental::locator=grafana%40workspace%3A.":
   version: 1.7.4
-  resolution: "custom-experimental@file:../grafana-experimental#../grafana-experimental::hash=0bd18b&locator=grafana%40workspace%3A."
+  resolution: "custom-experimental@file:../grafana-experimental#../grafana-experimental::hash=646461&locator=grafana%40workspace%3A."
   dependencies:
     "@types/uuid": "npm:^8.3.3"
     lodash: "npm:^4.17.21"
@@ -13412,7 +13412,7 @@ __metadata:
     react-dom: 17.0.2
     react-select: ^5.2.1
     rxjs: 7.8.0
-  checksum: c60f26be4a3d9aa0ed755834312bfd49ab89e07bc6a907ca922d3a865cc77292d0e11d7b76fe73c85ec420c49bd44870705bd68a2f219b9139f12e84b84fa665
+  checksum: 5cff40166468017e83b455a19fa2871a9aa06c99e01debc88e7103ee8a511b562b5ce474f1898a3639e15685a3b9fe38b6ec9763985b1bc8dc41e87ea1dcf46b
   languageName: node
   linkType: hard
 
