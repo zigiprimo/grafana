@@ -12,7 +12,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/infra/usagestats/service"
 	"github.com/grafana/grafana/pkg/plugins"
-	pCfg "github.com/grafana/grafana/pkg/plugins/config"
+	pluginscfg "github.com/grafana/grafana/pkg/plugins/config"
 	"github.com/grafana/grafana/pkg/plugins/manager/loader"
 	"github.com/grafana/grafana/pkg/plugins/manager/pipeline/bootstrap"
 	"github.com/grafana/grafana/pkg/plugins/manager/pipeline/discovery"
@@ -25,9 +25,9 @@ import (
 	"github.com/grafana/grafana/pkg/services/accesscontrol/acimpl"
 	"github.com/grafana/grafana/pkg/services/accesscontrol/ossaccesscontrol"
 	"github.com/grafana/grafana/pkg/services/datasources/guardian"
-	service4 "github.com/grafana/grafana/pkg/services/datasources/service"
+	datasourceservice "github.com/grafana/grafana/pkg/services/datasources/service"
 	"github.com/grafana/grafana/pkg/services/encryption/provider"
-	service2 "github.com/grafana/grafana/pkg/services/encryption/service"
+	encryptionservice "github.com/grafana/grafana/pkg/services/encryption/service"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	"github.com/grafana/grafana/pkg/services/hooks"
 	"github.com/grafana/grafana/pkg/services/kmsproviders/osskmsproviders"
@@ -36,7 +36,7 @@ import (
 	"github.com/grafana/grafana/pkg/services/pluginsintegration/pluginstore"
 	"github.com/grafana/grafana/pkg/services/quota/quotaimpl"
 	"github.com/grafana/grafana/pkg/services/secrets/database"
-	kvstore2 "github.com/grafana/grafana/pkg/services/secrets/kvstore"
+	secretskv "github.com/grafana/grafana/pkg/services/secrets/kvstore"
 	"github.com/grafana/grafana/pkg/services/secrets/manager"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrations"
@@ -45,9 +45,9 @@ import (
 	testdatasource "github.com/grafana/grafana/pkg/tsdb/grafana-testdata-datasource"
 )
 
-const testDataPluginId = "grafana-testdata-datasource"
+const testDataPluginID = "grafana-testdata-datasource"
 
-// This is a helper function to create a new datasource API server for a group
+// NewStandaloneDatasource is a helper function to create a new datasource API server for a group
 // This currently has no dependencies and only works for testdata.  In future iterations
 // this will include here (or elsewhere) versions that can load config from HG api or
 // the remote SQL directly
@@ -55,7 +55,6 @@ func NewStandaloneDatasource(group string) (*DataSourceAPIBuilder, error) {
 	if group != "testdata.datasource.grafana.app" {
 		return nil, fmt.Errorf("only testadata is currently supported")
 	}
-	pluginId := testDataPluginId
 
 	cfg, err := setting.NewCfgFromArgs(setting.CommandLineArgs{
 		// TODO: Add support for args?
@@ -64,83 +63,73 @@ func NewStandaloneDatasource(group string) (*DataSourceAPIBuilder, error) {
 		return nil, err
 	}
 
-	routeRegisterImpl := routing.ProvideRegister()
 	tracingService, err := tracing.ProvideService(cfg)
 	if err != nil {
 		return nil, err
 	}
 	inProcBus := bus.ProvideBus(tracingService)
-	hooksService := hooks.ProvideService()
-	ossLicensingService := licensing.ProvideService(cfg, hooksService)
-	featureManager, err := featuremgmt.ProvideManagerService(cfg, ossLicensingService)
+	sqlStore, err := sqlstore.ProvideService(cfg, migrations.ProvideOSSMigrations(), inProcBus, tracingService)
 	if err != nil {
 		return nil, err
 	}
-	ossMigrations := migrations.ProvideOSSMigrations()
-	sqlStore, err := sqlstore.ProvideService(cfg, ossMigrations, inProcBus, tracingService)
-	if err != nil {
-		return nil, err
-	}
-	kvStore := kvstore.ProvideService(sqlStore)
+	routeRegisterImpl := routing.ProvideRegister()
 	accessControl := acimpl.ProvideAccessControl(cfg)
 	cacheService := localcache.ProvideService()
+	featureManager, err := featuremgmt.ProvideManagerService(cfg, licensing.ProvideService(cfg, hooks.ProvideService()))
+	if err != nil {
+		return nil, err
+	}
 	featureToggles := featuremgmt.ProvideToggles(featureManager)
-	acimplService, err := acimpl.ProvideService(cfg, sqlStore, routeRegisterImpl, cacheService, accessControl, featureToggles)
+	ac, err := acimpl.ProvideService(cfg, sqlStore, routeRegisterImpl, cacheService, accessControl, featureToggles)
 	if err != nil {
 		return nil, err
 	}
-	bundleregistryService := bundleregistry.ProvideService()
-	usageStats, err := service.ProvideService(cfg, kvStore, routeRegisterImpl, tracingService, accessControl, acimplService, bundleregistryService)
+	usageStats, err := service.ProvideService(cfg, kvstore.ProvideService(sqlStore), routeRegisterImpl, tracingService, accessControl, ac, bundleregistry.ProvideService())
 	if err != nil {
 		return nil, err
 	}
-	secretsStoreImpl := database.ProvideSecretsStore(sqlStore)
-	providerProvider := provider.ProvideEncryptionProvider()
-	serviceService, err := service2.ProvideEncryptionService(providerProvider, usageStats, cfg)
+	encryptionService, err := encryptionservice.ProvideEncryptionService(provider.ProvideEncryptionProvider(), usageStats, cfg)
 	if err != nil {
 		return nil, err
 	}
-	osskmsprovidersService := osskmsproviders.ProvideService(serviceService, cfg, featureToggles)
-	secretsService, err := manager.ProvideSecretsService(secretsStoreImpl, osskmsprovidersService, serviceService, cfg, featureToggles, usageStats)
+	kmsProvider := osskmsproviders.ProvideService(encryptionService, cfg, featureToggles)
+	secretsService, err := manager.ProvideSecretsService(database.ProvideSecretsStore(sqlStore), kmsProvider, encryptionService, cfg, featureToggles, usageStats)
 	if err != nil {
 		return nil, err
 	}
-	ossImpl := setting.ProvideProvider(cfg)
-	configCfg, err := config.ProvideConfig(ossImpl, cfg, featureToggles)
+	pluginCfg, err := config.ProvideConfig(setting.ProvideProvider(cfg), cfg, featureToggles)
 	if err != nil {
 		return nil, err
 	}
-	inMemory := registry.ProvideService()
+	pluginRegistry := registry.ProvideService()
+	pluginLoader, err := createLoader(pluginCfg, pluginRegistry)
+	if err != nil {
+		return nil, err
+	}
+	pluginStore, err := pluginstore.ProvideService(pluginRegistry, newTestDataPluginSource(cfg), pluginLoader)
+	if err != nil {
+		return nil, err
+	}
+	secretsKVStore, err := secretskv.ProvideService(sqlStore, secretsService, pluginStore, kvstore.ProvideService(sqlStore), featureToggles, cfg)
+	if err != nil {
+		return nil, err
+	}
+	datasourcePermissions := ossaccesscontrol.ProvideDatasourcePermissionsService()
 	quotaService := quotaimpl.ProvideService(sqlStore, cfg)
-	loaderLoader, err := createLoader(configCfg, inMemory)
+	datasourceService, err := datasourceservice.ProvideService(sqlStore, secretsService, secretsKVStore, cfg, featureToggles, accessControl, datasourcePermissions, quotaService, pluginStore)
 	if err != nil {
 		return nil, err
 	}
-	pluginstoreService, err := pluginstore.ProvideService(inMemory, newTestDataPluginSource(cfg), loaderLoader)
-	if err != nil {
-		return nil, err
-	}
-	secretsKVStore, err := kvstore2.ProvideService(sqlStore, secretsService, pluginstoreService, kvStore, featureToggles, cfg)
-	if err != nil {
-		return nil, err
-	}
-	datasourcePermissionsService := ossaccesscontrol.ProvideDatasourcePermissionsService()
-	service13, err := service4.ProvideService(sqlStore, secretsService, secretsKVStore, cfg, featureToggles, accessControl, datasourcePermissionsService, quotaService, pluginstoreService)
-	if err != nil {
-		return nil, err
-	}
-	ossProvider := guardian.ProvideGuardian()
-	cacheServiceImpl := service4.ProvideCacheService(cacheService, sqlStore, ossProvider)
-
-	testdataPlugin, found := pluginstoreService.Plugin(context.Background(), pluginId)
+	cacheServiceImpl := datasourceservice.ProvideCacheService(cacheService, sqlStore, guardian.ProvideGuardian())
+	testdataPlugin, found := pluginStore.Plugin(context.Background(), testDataPluginID)
 	if !found {
-		return nil, fmt.Errorf("plugin %s not found", pluginId)
+		return nil, fmt.Errorf("plugin %s not found", testDataPluginID)
 	}
 
 	return NewDataSourceAPIBuilder(
 		testdataPlugin.JSONData,
 		testdatasource.ProvideService(),
-		service13,
+		datasourceService,
 		cacheServiceImpl,
 		accessControl,
 	)
@@ -159,11 +148,11 @@ func newTestDataPluginSource(cfg *setting.Cfg) *testDataPluginSource {
 }
 
 func (t *testDataPluginSource) List(_ context.Context) []plugins.PluginSource {
-	p := filepath.Join(t.cfg.StaticRootPath, "app/plugins/datasource", testDataPluginId)
+	p := filepath.Join(t.cfg.StaticRootPath, "app/plugins/datasource", testDataPluginID)
 	return []plugins.PluginSource{sources.NewLocalSource(plugins.ClassCore, []string{p})}
 }
 
-func createLoader(cfg *pCfg.Cfg, pr registry.Service) (loader.Service, error) {
+func createLoader(cfg *pluginscfg.Cfg, pr registry.Service) (loader.Service, error) {
 	d := discovery.New(cfg, discovery.Opts{
 		FindFilterFuncs: []discovery.FindFilterFunc{
 			func(ctx context.Context, _ plugins.Class, b []*plugins.FoundBundle) ([]*plugins.FoundBundle, error) {
