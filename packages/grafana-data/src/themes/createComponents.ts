@@ -1,5 +1,8 @@
+import { merge } from 'lodash';
+
 import { ThemeColors } from './createColors';
 import { ThemeShadows } from './createShadows';
+import { DeepPartial } from './types';
 
 /** @beta */
 export interface ThemeComponents {
@@ -42,6 +45,7 @@ export interface ThemeComponents {
   };
   sidemenu: {
     width: number;
+    background: string;
   };
   menuTabs: {
     height: number;
@@ -52,9 +56,14 @@ export interface ThemeComponents {
   table: {
     rowHoverBackground: string;
   };
+  topNav: {
+    background: string;
+  };
 }
 
-export function createComponents(colors: ThemeColors, shadows: ThemeShadows): ThemeComponents {
+export type ThemeComponentsInput = DeepPartial<ThemeComponents>;
+
+export function createComponents(overrides: ThemeComponentsInput, colors: ThemeColors): ThemeComponents {
   const panel = {
     padding: 1,
     headerHeight: 4,
@@ -70,7 +79,7 @@ export function createComponents(colors: ThemeColors, shadows: ThemeShadows): Th
     background: colors.mode === 'dark' ? colors.background.canvas : colors.background.primary,
   };
 
-  return {
+  const defaults = {
     height: {
       sm: 3,
       md: 4,
@@ -94,6 +103,7 @@ export function createComponents(colors: ThemeColors, shadows: ThemeShadows): Th
     },
     sidemenu: {
       width: 57,
+      background: colors.background.primary,
     },
     menuTabs: {
       height: 42,
@@ -108,5 +118,10 @@ export function createComponents(colors: ThemeColors, shadows: ThemeShadows): Th
     table: {
       rowHoverBackground: colors.emphasize(colors.background.primary, 0.03),
     },
+    topNav: {
+      background: colors.background.primary,
+    },
   };
+
+  return merge(defaults, overrides);
 }

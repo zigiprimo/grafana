@@ -145,7 +145,7 @@ const getStyles = (theme: GrafanaTheme2) => {
       left: 0,
       right: 0,
       boxShadow: config.featureToggles.dockedMegaMenu ? undefined : shadow,
-      background: theme.colors.background.primary,
+      background: theme.components.topNav.background,
       flexDirection: 'column',
     }),
     panes: css({

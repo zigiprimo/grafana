@@ -37,6 +37,7 @@ const themeRegistry = new Registry<ThemeRegistryItem>(() => {
     { id: 'light', name: 'Light', build: () => createTheme({ colors: { mode: 'light' } }) },
     { id: 'blue-night', name: 'Blue night', build: createBlueNight, isExtra: true },
     { id: 'midnight', name: 'Midnight', build: createMidnight, isExtra: true },
+    { id: 'darkv2', name: 'Dark v2', build: createDarkv2, isExtra: true },
   ];
 });
 
@@ -65,6 +66,37 @@ function createMidnight(): GrafanaTheme2 {
         weak: `rgba(${whiteBase}, 0.17)`,
         medium: `rgba(${whiteBase}, 0.25)`,
         strong: `rgba(${whiteBase}, 0.35)`,
+      },
+    },
+  });
+}
+
+/**
+ * Just a temporary placeholder for a possible new theme
+ */
+function createDarkv2(): GrafanaTheme2 {
+  const whiteBase = '204, 204, 220';
+  const primary = '#101015';
+  const canvas = '#000000';
+
+  return createTheme({
+    name: 'Dark v2',
+    colors: {
+      mode: 'dark',
+      background: {
+        canvas,
+        primary,
+        secondary: '#181818',
+      },
+      border: {
+        weak: `rgba(${whiteBase}, 0.08)`,
+        medium: `rgba(${whiteBase}, 0.22)`,
+        strong: `rgba(${whiteBase}, 0.35)`,
+      },
+    },
+    components: {
+      topNav: {
+        background: '#000000',
       },
     },
   });
