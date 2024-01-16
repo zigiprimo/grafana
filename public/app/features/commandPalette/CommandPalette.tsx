@@ -87,6 +87,9 @@ const RenderResults = ({ searchResults }: RenderResultsProps) => {
   const styles = useStyles2(getSearchStyles);
   const dashboardsSectionTitle = t('command-palette.section.dashboard-search-results', 'Dashboards');
   const foldersSectionTitle = t('command-palette.section.folder-search-results', 'Folders');
+  const vectorDashboardsSectionTitle = 'Dashboards - Vector Search';
+  const vectorPagesSectionTitle = 'Pages - Vector Search';
+  const vectorDocsSectionTitle = 'Docs - Vector Search';
   // because dashboard search results aren't registered as actions, we need to manually
   // convert them to ActionImpls before passing them as items to KBarResults
   const dashboardResultItems = useMemo(
@@ -103,6 +106,27 @@ const RenderResults = ({ searchResults }: RenderResultsProps) => {
         .map((folder) => new ActionImpl(folder, { store: {} })),
     [searchResults]
   );
+  const vectorDashboardsResultItems = useMemo(
+    () =>
+      searchResults
+        .filter((item) => item.id.startsWith('vector/dashboard'))
+        .map((folder) => new ActionImpl(folder, { store: {} })),
+    [searchResults]
+  );
+  const vectorPagesResultItems = useMemo(
+    () =>
+      searchResults
+        .filter((item) => item.id.startsWith('vector/page'))
+        .map((folder) => new ActionImpl(folder, { store: {} })),
+    [searchResults]
+  );
+  const vectorDocsResultItems = useMemo(
+    () =>
+      searchResults
+        .filter((item) => item.id.startsWith('vector/docs'))
+        .map((folder) => new ActionImpl(folder, { store: {} })),
+    [searchResults]
+  );
 
   const items = useMemo(() => {
     const results = [...kbarResults];
@@ -114,8 +138,32 @@ const RenderResults = ({ searchResults }: RenderResultsProps) => {
       results.push(dashboardsSectionTitle);
       results.push(...dashboardResultItems);
     }
+    if (vectorDashboardsResultItems.length > 0) {
+      results.push(vectorDashboardsSectionTitle);
+      results.push(...vectorDashboardsResultItems);
+    }
+    if (vectorPagesResultItems.length > 0) {
+      results.push(vectorPagesSectionTitle);
+      results.push(...vectorPagesResultItems);
+    }
+    if (vectorDocsResultItems.length > 0) {
+      results.push(vectorDocsSectionTitle);
+      results.push(...vectorDocsResultItems);
+    }
     return results;
-  }, [kbarResults, dashboardsSectionTitle, dashboardResultItems, foldersSectionTitle, folderResultItems]);
+  }, [
+    kbarResults,
+    dashboardsSectionTitle,
+    dashboardResultItems,
+    foldersSectionTitle,
+    folderResultItems,
+    vectorDashboardsSectionTitle,
+    vectorDashboardsResultItems,
+    vectorPagesSectionTitle,
+    vectorPagesResultItems,
+    vectorDocsSectionTitle,
+    vectorDocsResultItems,
+  ]);
 
   return (
     <KBarResults

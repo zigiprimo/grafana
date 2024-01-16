@@ -6,6 +6,7 @@ import { t } from 'app/core/internationalization';
 import { contextSrv } from 'app/core/services/context_srv';
 import impressionSrv from 'app/core/services/impression_srv';
 import { getGrafanaSearcher } from 'app/features/search/service';
+import { VectorSearcher } from 'app/features/search/service/vector';
 
 import { CommandPaletteAction } from '../types';
 import { RECENT_DASHBOARDS_PRIORITY, SEARCH_RESULTS_PRIORITY } from '../values';
@@ -76,7 +77,8 @@ export async function getSearchResultActions(searchQuery: string): Promise<Comma
     };
   });
 
-  return goToSearchResultActions;
+  const base = await new VectorSearcher().doSearchQuery({ query: searchQuery });
+  return base.concat(goToSearchResultActions);
 }
 
 export function useSearchResults(searchQuery: string, isShowing: boolean) {
