@@ -29,27 +29,27 @@ export class DataTrailsApp extends SceneObjectBase<DataTrailsAppState> {
   }
 
   static Component = ({ model }: SceneComponentProps<DataTrailsApp>) => {
-    const { trail, home } = model.useState();
+    const { trail } = model.useState();
     const styles = useStyles2(getStyles);
 
     return (
       <Switch>
+        {/*<Route*/}
+        {/*  exact={true}*/}
+        {/*  path="/explore/metrics"*/}
+        {/*  render={() => (*/}
+        {/*    <Page navId="data-trails" layout={PageLayoutType.Custom}>*/}
+        {/*      <div className={styles.customPage}>*/}
+        {/*        <home.Component model={home} />*/}
+        {/*      </div>*/}
+        {/*    </Page>*/}
+        {/*  )}*/}
+        {/*/>*/}
         <Route
           exact={true}
           path="/explore/metrics"
           render={() => (
-            <Page navId="data-trails" layout={PageLayoutType.Custom}>
-              <div className={styles.customPage}>
-                <home.Component model={home} />
-              </div>
-            </Page>
-          )}
-        />
-        <Route
-          exact={true}
-          path="/explore/metrics/trail"
-          render={() => (
-            <Page navId="data-trails" pageNav={{ text: 'Trail' }} layout={PageLayoutType.Custom}>
+            <Page navId="explore/metrics" layout={PageLayoutType.Custom}>
               <div className={styles.customPage}>
                 <DataTrailView trail={trail} />
               </div>
@@ -95,8 +95,9 @@ export function getDataTrailsApp() {
 function getStyles(theme: GrafanaTheme2) {
   return {
     customPage: css({
-      padding: theme.spacing(2, 3, 2, 3),
-      background: theme.isLight ? theme.colors.background.primary : theme.colors.background.canvas,
+      // padding: theme.spacing(2, 3, 2, 3),
+      // background: theme.isLight ? theme.colors.background.primary : theme.colors.background.canvas,
+      background: theme.colors.background.canvas,
       flexGrow: 1,
       display: 'flex',
       flexDirection: 'column',

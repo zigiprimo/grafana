@@ -1,7 +1,7 @@
 import { css } from '@emotion/css';
 import React from 'react';
 
-import { AdHocVariableFilter, GrafanaTheme2 } from '@grafana/data';
+import { AdHocVariableFilter, GrafanaTheme2, SelectableValue } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import {
   AdHocFiltersVariable,
@@ -21,15 +21,16 @@ import {
   SceneVariableSet,
   VariableValueSelectors,
 } from '@grafana/scenes';
-import { useStyles2 } from '@grafana/ui';
+import { Button, Select, Stack, useStyles2 } from '@grafana/ui';
 
 import { DataTrailSettings } from './DataTrailSettings';
+import { DataTrailsApp } from './DataTrailsApp';
 import { DataTrailHistory, DataTrailHistoryStep } from './DataTrailsHistory';
 import { MetricScene } from './MetricScene';
 import { MetricSelectScene } from './MetricSelectScene';
 import { getTrailStore } from './TrailStore/TrailStore';
 import { MetricSelectedEvent, trailDS, LOGS_METRIC, VAR_DATASOURCE, VAR_FILTERS } from './shared';
-import { getUrlForTrail } from './utils';
+import { getDatasourceForNewTrail, getUrlForTrail, newMetricsTrail } from './utils';
 
 export interface DataTrailState extends SceneObjectState {
   topScene?: SceneObject;
@@ -166,13 +167,52 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
     this.setState(stateUpdate);
   }
 
+  private onNewMetricsTrail() {
+    const app = sceneGraph.getAncestor(this, DataTrailsApp);
+    const trail = newMetricsTrail(getDatasourceForNewTrail());
+
+    getTrailStore().setRecentTrail(trail);
+    app.goToUrlForTrail(trail);
+  }
+
+  public onSelectTrail = (trail?: DataTrail) => {
+    if (!trail) {
+      return;
+    }
+    const app = sceneGraph.getAncestor(this, DataTrailsApp);
+
+    getTrailStore().setRecentTrail(trail);
+    app.goToUrlForTrail(trail);
+  };
+
   static Component = ({ model }: SceneComponentProps<DataTrail>) => {
     const { controls, topScene, history, settings } = model.useState();
     const styles = useStyles2(getStyles);
 
     return (
       <div className={styles.container}>
-        <history.Component model={history} />
+        <div className={styles.header}>
+          <history.Component model={history} />
+          <Stack gap={1}>
+            <Select
+              width={'auto'}
+              onChange={(evt) => model.onSelectTrail(evt.value)}
+              value={null}
+              options={getTrailStore().bookmarks.map((dt) => storedTrailItem(dt.resolve()))}
+              placeholder="Bookmarks"
+            />
+            <Select
+              width={'auto'}
+              onChange={(evt) => model.onSelectTrail(evt.value)}
+              value={null}
+              options={getTrailStore().recent.map((dt) => storedTrailItem(dt.resolve()))}
+              placeholder="Recent trails"
+            />
+            <Button icon="repeat" size="md" variant="secondary" onClick={model.onNewMetricsTrail}>
+              Reset
+            </Button>
+          </Stack>
+        </div>
         {controls && (
           <div className={styles.controls}>
             {controls.map((control) => (
@@ -184,6 +224,20 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
         <div className={styles.body}>{topScene && <topScene.Component model={topScene} />}</div>
       </div>
     );
+  };
+}
+
+function storedTrailItem(trail: DataTrail): SelectableValue<DataTrail> {
+  const filtersVariable = sceneGraph.lookupVariable(VAR_FILTERS, trail)!;
+  if (!(filtersVariable instanceof AdHocFiltersVariable)) {
+    return {};
+  }
+
+  const filters = filtersVariable.state.set.state.filters;
+  return {
+    value: trail,
+    label: trail.state.metric,
+    description: filters.map((filter) => `${filter.key}=${filter.value}`).join(', '),
   };
 }
 
@@ -229,12 +283,20 @@ function getStyles(theme: GrafanaTheme2) {
       display: 'flex',
       flexDirection: 'column',
       gap: theme.spacing(1),
+      padding: theme.spacing(0, 3),
     }),
     controls: css({
       display: 'flex',
       gap: theme.spacing(2),
+      padding: theme.spacing(0, 3),
       alignItems: 'flex-end',
       flexWrap: 'wrap',
+    }),
+    header: css({
+      display: 'flex',
+      padding: theme.spacing(1, 3),
+      background: theme.colors.background.primary,
+      justifyContent: 'space-between',
     }),
   };
 }
