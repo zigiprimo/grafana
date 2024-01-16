@@ -76,7 +76,7 @@ function createMidnight(): GrafanaTheme2 {
  */
 function createDarkv2(): GrafanaTheme2 {
   const whiteBase = '204, 204, 220';
-  const primary = '#101015';
+  const primary = '#121215';
   const canvas = '#000000';
 
   return createTheme({
@@ -86,7 +86,7 @@ function createDarkv2(): GrafanaTheme2 {
       background: {
         canvas,
         primary,
-        secondary: '#181818',
+        secondary: '#1c1c1f',
       },
       border: {
         weak: `rgba(${whiteBase}, 0.08)`,

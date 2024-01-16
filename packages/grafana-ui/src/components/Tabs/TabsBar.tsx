@@ -27,7 +27,7 @@ export const TabsBar = React.forwardRef<HTMLDivElement, Props>(({ children, clas
 
 const getStyles = (theme: GrafanaTheme2) => ({
   tabsWrapper: css({
-    borderBottom: `1px solid ${theme.colors.border.weak}`,
+    borderBottom: `1px solid ${theme.colors.border.medium}`,
     overflowX: 'auto',
   }),
   noBorder: css({
