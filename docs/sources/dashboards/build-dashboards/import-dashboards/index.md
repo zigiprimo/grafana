@@ -19,6 +19,12 @@ weight: 5
 
 # Import dashboards
 
+You can import preconfigured dashboards into your Grafana instance or Cloud stack using the UI or the or the [HTTP API][].
+
+## Import a dashboard
+
+To import a dashboard, follow these steps:
+
 1. Click **Dashboards** in the left-side menu.
 1. Click **New** and select **Import** in the dropdown menu.
 1. Perform one of the following steps:
