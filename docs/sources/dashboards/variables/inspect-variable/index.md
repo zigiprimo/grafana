@@ -15,12 +15,22 @@ labels:
     - enterprise
     - oss
 menuTitle: Inspect variables
-title: Inspect and manage variables
+title: Manage and inspect variables
 description: Review and manage your dashboard variables
 weight: 200
 ---
 
-# Inspect and manage variables
+# Manage and inspect variables
+
+The variables page lets you [add][] variables and manage existing variables. It also allows you to [inspect](#inspect-variables) variables and identify whether a variable is being referenced (or used) in other variables or dashboard.
+
+**Move:** You can move a variable up or down the list using drag and drop.
+
+**Clone:** To clone a variable, click the clone icon from the set of icons on the right. This creates a copy of the variable with the name of the original variable prefixed with `copy_of_`.
+
+**Delete:** To delete a variable, click the trash icon from the set of icons on the right.
+
+## Inspect variables
 
 The variables page lets you easily identify whether a variable is being referenced (or used) in other variables or dashboard. In addition, you can also [add][] and [manage variables][] on this page.
 
