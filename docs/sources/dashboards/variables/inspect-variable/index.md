@@ -24,6 +24,8 @@ weight: 200
 
 The variables page lets you [add][] variables and manage existing variables. It also allows you to [inspect](#inspect-variables) variables and identify whether a variable is being referenced (or used) in other variables or dashboard.
 
+## Manage variables
+
 **Move:** You can move a variable up or down the list using drag and drop.
 
 **Clone:** To clone a variable, click the clone icon from the set of icons on the right. This creates a copy of the variable with the name of the original variable prefixed with `copy_of_`.
