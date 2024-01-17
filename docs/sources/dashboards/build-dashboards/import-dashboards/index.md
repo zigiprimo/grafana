@@ -31,7 +31,7 @@ The import process enables you to change the name of the dashboard, pick the dat
 
 ## Discover dashboards on grafana.com
 
-Find dashboards for common server applications at [Grafana.com/dashboards](https://grafana.com/dashboards).
+Find dashboards for common server applications on our [Dashboards page](https://grafana.com/grafana/dashboards/).
 
 {{< figure src="/media/docs/grafana/dashboards/screenshot-gcom-dashboards.png" alt="Preconfigured dashboards on grafana.com">}}
 
