@@ -32,7 +32,7 @@ The variables page lets you [add][] variables and manage existing variables. It 
 
 ## Inspect variables
 
-The variables page lets you easily identify whether a variable is being referenced (or used) in other variables or dashboard. In addition, you can also [add][] and [manage variables][] on this page.
+The variables page lets you easily identify whether a variable is being referenced (or used) in other variables or dashboard.
 
 {{% admonition type="note" %}}
 This feature is available in Grafana 7.4 and later versions.
@@ -50,8 +50,5 @@ In addition, all referenced variables have a dependency icon next to the green c
 
 {{% docs/reference %}}
 [add]: "/docs/grafana/ -> /docs/grafana/<GRAFANA VERSION>/dashboards/variables/add-template-variables"
-[add]: "/docs/grafana-cloud/ -> /docs/grafana/<GRAFANA VERSION>/dashboards/variables/add-template-variables"
-
-[manage variables]: "/docs/grafana/ -> /docs/grafana/<GRAFANA VERSION>/dashboards/variables/add-template-variables#manage-variables"
-[manage variables]: "/docs/grafana-cloud/ -> /docs/grafana/<GRAFANA VERSION>/dashboards/variables/add-template-variables#manage-variables"
+[add]: "/docs/grafana-cloud/ -> /docs/grafana-cloud/visualizations/dashboards/variables/add-template-variables"
 {{% /docs/reference %}}
