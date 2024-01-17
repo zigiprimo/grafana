@@ -1,7 +1,7 @@
 ---
 aliases:
   - ../troubleshooting/troubleshoot-dashboards/
-  - add-canonical-here
+  - ../reference/timerange/
 keywords:
   - grafana
   - dashboard

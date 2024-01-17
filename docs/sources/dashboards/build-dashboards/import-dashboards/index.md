@@ -2,7 +2,6 @@
 aliases:
   - ../reference/export_import/
   - export-import/
-  - add-canonical-here
 keywords:
   - grafana
   - dashboard
