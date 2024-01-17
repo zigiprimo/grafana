@@ -15,7 +15,7 @@ labels:
 menuTitle: Import dashboards
 title: Import dashboards
 description: Learn how to import dashboards and about Grafana's preconfigured dashboards
-weight: 8
+weight: 5
 ---
 
 # Import dashboards

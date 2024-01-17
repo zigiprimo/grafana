@@ -29,8 +29,8 @@ weight: 8
 
 This topic includes techniques you can use to manage your Grafana dashboards, including:
 
-- [Creating and managing dashboard folders](#create-and-manage-dashboard-folders)
-- [Organizing dashboards](#organize-a-dashboard)
+- [Browsing](#browse-dashboards) and [creating](#create-a-dashboard-folder) dashboard folders
+- [Folder permissions](#folder-permissions)
 - [Adding generative AI features to dashboards](#set-up-generative-ai-features-for-dashboards)
 
 For more information about creating dashboards, refer to [Add and organize panels](../add-organize-panels).
@@ -136,6 +136,6 @@ When enabled, the **✨ Auto generate** option displays next to the **Title** an
 [panels]: "/docs/grafana/ -> /docs/grafana/<GRAFANA VERSION>/panels-visualizations"
 [panels]: "/docs/grafana-cloud/ -> /docs/grafana-cloud/visualizations/panels-visualizations"
 
-[Grafana LLM plugin documentation]: "/docs/grafana/ -> /docs/grafana-cloud/alerting-and-irm/machine-learning/llm-plugin"
-[Grafana LLM plugin documentation]: "/docs/grafana-cloud/ -> /docs/grafana-cloud/alerting-and-irm/machine-learning/llm-plugin"
+[Grafana LLM plugin documentation]: "/docs/grafana/ -> /docs/grafana-cloud/alerting-and-irm/machine-learning/configure/llm-plugin"
+[Grafana LLM plugin documentation]: "/docs/grafana-cloud/ -> /docs/grafana-cloud/alerting-and-irm/machine-learning/configure/llm-plugin"
 {{% /docs/reference %}}
