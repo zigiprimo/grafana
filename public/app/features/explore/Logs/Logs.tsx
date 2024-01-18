@@ -476,10 +476,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
     if (config.featureToggles.logsInfiniteScrolling) {
       if (this.state.logsContainer) {
         this.topLogsRef.current?.scrollIntoView();
-        this.state.logsContainer.scroll({
-          behavior: 'smooth',
-          top: this.state.logsContainer.scrollTop + element.getBoundingClientRect().top - window.innerHeight / 2,
-        });
+        element.scrollIntoView();
       }
 
       return;
@@ -487,10 +484,7 @@ class UnthemedLogs extends PureComponent<Props, State> {
     const { scrollElement } = this.props;
 
     if (scrollElement) {
-      scrollElement.scroll({
-        behavior: 'smooth',
-        top: scrollElement.scrollTop + element.getBoundingClientRect().top - window.innerHeight / 2,
-      });
+      element.scrollIntoView();
     }
   };
 
