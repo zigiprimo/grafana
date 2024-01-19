@@ -18,7 +18,7 @@ import { RuleListErrors } from './components/rules/RuleListErrors';
 import { RuleListGroupView } from './components/rules/RuleListGroupView';
 import { RuleListStateView } from './components/rules/RuleListStateView';
 import { RuleStats } from './components/rules/RuleStats';
-import RulesFilter from './components/rules/RulesFilter';
+import RulesFilter, { SmartRulesFilter } from './components/rules/RulesFilter';
 import { useCombinedRuleNamespaces } from './hooks/useCombinedRuleNamespaces';
 import { useFilteredRules, useRulesFilter } from './hooks/useFilteredRules';
 import { useUnifiedAlertingSelector } from './hooks/useUnifiedAlertingSelector';
@@ -111,6 +111,7 @@ const RuleList = withErrorBoundary(
       <AlertingPageWrapper navId="alert-list" isLoading={false}>
         <RuleListErrors />
         <RulesFilter onFilterCleared={onFilterCleared} />
+        <SmartRulesFilter />
         {!hasNoAlertRulesCreatedYet && (
           <>
             <div className={styles.break} />

@@ -1,4 +1,5 @@
-import { css } from '@emotion/css';
+import { css, cx } from '@emotion/css';
+import { useCombobox, useMultipleSelection } from 'downshift';
 import React, { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -331,3 +332,102 @@ const helpStyles = (theme: GrafanaTheme2) => ({
 });
 
 export default RulesFilter;
+
+const filterHints = ['dashboard:', 'datasource:', 'namespace:', 'group:', 'rule:', 'label:'];
+
+interface FilterExpression {
+  filter: string;
+  value: string;
+}
+
+export function SmartRulesFilter() {
+  const styles = useStyles2(getSmartStyles);
+
+  // const [selectedFilters, setSelectedFilters] = useState<FilterExpression[]>([]);
+  const [items, setItems] = useState<FilterExpression[]>(filterHints.map((hint) => ({ filter: hint, value: '' })));
+
+  const { getDropdownProps, getSelectedItemProps, selectedItems, setSelectedItems, activeIndex } =
+    useMultipleSelection<FilterExpression>({});
+
+  const { getInputProps, getToggleButtonProps, getMenuProps, getItemProps, isOpen, highlightedIndex, setInputValue } =
+    useCombobox<FilterExpression>({
+      items,
+      itemToString: (item) => (item ? `${item.filter}:${item.value}` : ''),
+      onStateChange: ({ inputValue, type, selectedItem: newSelectedItem }) => {
+        switch (type) {
+          case useCombobox.stateChangeTypes.InputKeyDownEnter:
+          case useCombobox.stateChangeTypes.ItemClick:
+          case useCombobox.stateChangeTypes.InputBlur:
+            if (newSelectedItem) {
+              setSelectedItems([...selectedItems, newSelectedItem]);
+              setInputValue('');
+            }
+            break;
+
+          case useCombobox.stateChangeTypes.InputChange:
+            // setInputValue(newInputValue);
+
+            break;
+          default:
+            break;
+        }
+      },
+    });
+
+  return (
+    <div>
+      <Stack gap={1}>
+        {selectedItems.map((selectedItem, index) => {
+          const { filter, value } = selectedItem;
+          return (
+            <input
+              key={`${filter}:${value}`}
+              {...getSelectedItemProps({ selectedItem, index })}
+              value={`${filter}:${value}`}
+              readOnly={index !== activeIndex}
+            />
+            //   <span>{filter}</span>
+            //   <span>{value}</span>
+            // </input>
+          );
+        })}
+      </Stack>
+      <div>
+        <input {...getDropdownProps(getInputProps())} />
+        <button aria-label="toggle menu" type="button" {...getDropdownProps(getToggleButtonProps())}>
+          &#8595;
+        </button>
+      </div>
+      <ul className={cx(styles.items, { [styles.hidden]: !isOpen })} {...getMenuProps()}>
+        {isOpen &&
+          items.map((item, index) => (
+            <li
+              key={`${item.filter}:${item.value}`}
+              className={cx(styles.item, { [styles.highlightedItem]: highlightedIndex === index })}
+              {...getItemProps({ item, index })}
+            >
+              {item.filter}
+            </li>
+          ))}
+      </ul>
+    </div>
+  );
+}
+
+const getSmartStyles = (theme: GrafanaTheme2) => ({
+  items: css({
+    position: 'absolute',
+    background: theme.colors.background.primary,
+    padding: theme.spacing(1),
+    listStyle: 'none',
+  }),
+  item: css({
+    padding: theme.spacing(1),
+  }),
+  highlightedItem: css({
+    background: theme.colors.background.secondary,
+  }),
+  hidden: css({
+    visibility: 'hidden',
+  }),
+});
