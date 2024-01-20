@@ -88,6 +88,7 @@ func (hs *HTTPServer) RenderToPng(c *contextmodel.ReqContext) {
 		return
 	}
 
-	c.Resp.Header().Set("Content-Type", "application/pdf")
+	c.Resp.Header().Set("Content-Type", "image/png")
+	c.Resp.Header().Set("Cache-Control", "private")
 	http.ServeFile(c.Resp, c.Req, result.FilePath)
 }
