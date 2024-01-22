@@ -16,10 +16,10 @@ import {
   urlUtil,
 } from '@grafana/data';
 import { BackendSrvRequest, getBackendSrv, getTemplateSrv, TemplateSrv } from '@grafana/runtime';
-import { NodeGraphOptions } from 'app/core/components/NodeGraphSettings';
-import { getTimeSrv, TimeSrv } from 'app/features/dashboard/services/TimeSrv';
-import { SpanBarOptions } from 'app/features/explore/TraceView/components';
 
+import { NodeGraphOptions } from './_importedDependencies/components/NodeGraphSettings';
+import { SpanBarOptions } from './_importedDependencies/components/TraceView/SpanBarSettings';
+import { getTimeSrv, TimeSrv } from './_importedDependencies/timeSrv';
 import { ALL_OPERATIONS_KEY } from './components/SearchForm';
 import { TraceIdTimeParamsOptions } from './configuration/TraceIdTimeParams';
 import { mapJaegerDependenciesResponse } from './dependencyGraphTransform';
