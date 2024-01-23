@@ -16,6 +16,8 @@ import {
   toDataFrame,
   dataFrameFromJSON,
   LoadingState,
+  PluginType,
+  PluginMetaInfo,
 } from '@grafana/data';
 import {
   DataSourceWithBackend,
@@ -259,9 +261,38 @@ export class GrafanaDatasource extends DataSourceWithBackend<GrafanaQuery> {
   }
 }
 
+export function getGrafanaDatasourceInstanceSettings(): DataSourceInstanceSettings {
+  return {
+    name: GrafanaDatasourceRef.uid,
+    uid: GrafanaDatasourceRef.uid,
+    id: -1,
+    jsonData: {},
+    readOnly: true,
+    type: 'datasource',
+    access: 'direct',
+    meta: {
+      id: GrafanaDatasourceRef.type,
+      name: GrafanaDatasourceRef.uid,
+      baseUrl: '/public/app/plugins/datasource/grafana',
+      type: PluginType.datasource,
+      module: 'core:plugin/grafana',
+      info: {} as unknown as PluginMetaInfo,
+    },
+  };
+}
+
+export function isGrafanaDatasource(ref: string): boolean {
+  return ref === GrafanaDatasourceRef.type || ref === GrafanaDatasourceRef.uid;
+}
+
+export const GrafanaDatasourceRef = Object.freeze({
+  type: 'grafana',
+  uid: '-- Grafana --',
+});
+
 /** Get the GrafanaDatasource instance */
 export async function getGrafanaDatasource() {
-  return (await getDataSourceSrv().get('-- Grafana --')) as GrafanaDatasource;
+  return (await getDataSourceSrv().get(GrafanaDatasourceRef)) as GrafanaDatasource;
 }
 
 export interface FileElement {

@@ -24,6 +24,7 @@ import {
   instanceSettings as expressionInstanceSettings,
 } from 'app/features/expressions/ExpressionDatasource';
 import { ExpressionDatasourceUID } from 'app/features/expressions/types';
+import { getGrafanaDatasourceInstanceSettings, isGrafanaDatasource } from 'app/plugins/datasource/grafana/datasource';
 
 import { importDataSourcePlugin } from './plugin_loader';
 
@@ -44,7 +45,7 @@ export class DatasourceSrv implements DataSourceService {
 
     for (const dsSettings of Object.values(settingsMapByName)) {
       if (!dsSettings.uid) {
-        dsSettings.uid = dsSettings.name; // -- Grafana --, -- Mixed etc
+        dsSettings.uid = dsSettings.name; // -- Dashboard --, -- Mixed etc
       }
 
       this.settingsMapByUid[dsSettings.uid] = dsSettings;
@@ -106,7 +107,12 @@ export class DatasourceSrv implements DataSourceService {
       };
     }
 
-    return this.settingsMapByUid[nameOrUid] ?? this.settingsMapByName[nameOrUid] ?? this.settingsMapById[nameOrUid];
+    let settings =
+      this.settingsMapByUid[nameOrUid] ?? this.settingsMapByName[nameOrUid] ?? this.settingsMapById[nameOrUid];
+    if (!settings && isGrafanaDatasource(nameOrUid)) {
+      return getGrafanaDatasourceInstanceSettings();
+    }
+    return settings;
   }
 
   get(ref?: string | DataSourceRef | null, scopedVars?: ScopedVars): Promise<DataSourceApi> {

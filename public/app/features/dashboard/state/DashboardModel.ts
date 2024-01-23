@@ -27,6 +27,7 @@ import { isAngularDatasourcePluginAndNotHidden } from 'app/features/plugins/angu
 import { variableAdapters } from 'app/features/variables/adapters';
 import { onTimeRangeUpdated } from 'app/features/variables/state/actions';
 import { GetVariables, getVariablesByKey } from 'app/features/variables/state/selectors';
+import { GrafanaDatasourceRef } from 'app/plugins/datasource/grafana/datasource';
 import { PromQuery } from 'app/plugins/datasource/prometheus/types';
 import { CoreEvents, DashboardMeta, KioskMode } from 'app/types';
 import { DashboardMetaChangedEvent, DashboardPanelsChangedEvent, RenderEvent } from 'app/types/events';
@@ -201,7 +202,7 @@ export class DashboardModel implements TimeModel {
     }
 
     this.annotations.list.unshift({
-      datasource: { uid: '-- Grafana --', type: 'grafana' },
+      datasource: { ...GrafanaDatasourceRef },
       name: 'Annotations & Alerts',
       type: 'dashboard',
       iconColor: DEFAULT_ANNOTATION_COLOR,
