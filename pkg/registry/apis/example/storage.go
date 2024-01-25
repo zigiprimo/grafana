@@ -51,7 +51,6 @@ func newDeploymentInfoStorage(gv schema.GroupVersion, scheme *runtime.Scheme) *s
 			BuildCommit:           setting.BuildCommit,
 			BuildBranch:           setting.BuildBranch,
 			EnterpriseBuildCommit: setting.EnterpriseBuildCommit,
-			BuildStamp:            setting.BuildStamp,
 			IsEnterprise:          setting.IsEnterprise,
 			Packaging:             setting.Packaging,
 			StartupTime:           time.Now().UnixMilli(),

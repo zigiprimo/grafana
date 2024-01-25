@@ -38,7 +38,6 @@ func (hs *HTTPServer) GetFrontendAssets(c *contextmodel.ReqContext) {
 	hash.Reset()
 	_, _ = hash.Write([]byte(setting.BuildVersion))
 	_, _ = hash.Write([]byte(setting.BuildCommit))
-	_, _ = hash.Write([]byte(fmt.Sprintf("%d", setting.BuildStamp)))
 	keys["version"] = fmt.Sprintf("%x", hash.Sum(nil))
 
 	// Plugin configs
@@ -150,12 +149,10 @@ func (hs *HTTPServer) getFrontendSettings(c *contextmodel.ReqContext) (*dtos.Fro
 	hideVersion := hs.Cfg.AnonymousHideVersion && !c.IsSignedIn
 	version := setting.BuildVersion
 	commit := setting.BuildCommit
-	buildstamp := setting.BuildStamp
 
 	if hideVersion {
 		version = ""
 		commit = ""
-		buildstamp = 0
 	}
 
 	hasAccess := accesscontrol.HasAccess(hs.AccessControl, c)
@@ -224,7 +221,6 @@ func (hs *HTTPServer) getFrontendSettings(c *contextmodel.ReqContext) (*dtos.Fro
 			HideVersion:   hideVersion,
 			Version:       version,
 			Commit:        commit,
-			Buildstamp:    buildstamp,
 			Edition:       hs.License.Edition(),
 			LatestVersion: hs.grafanaUpdateChecker.LatestVersion(),
 			HasUpdate:     hs.grafanaUpdateChecker.UpdateAvailable(),

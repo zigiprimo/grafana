@@ -680,7 +680,7 @@ func init() {
 }
 
 // SetBuildInformation sets the build information for this binary
-func SetBuildInformation(reg prometheus.Registerer, version, revision, branch string, buildTimestamp int64) {
+func SetBuildInformation(reg prometheus.Registerer, version, revision, branch string) {
 	edition := "oss"
 	if setting.IsEnterprise {
 		edition = "enterprise"
@@ -692,16 +692,9 @@ func SetBuildInformation(reg prometheus.Registerer, version, revision, branch st
 		Namespace: ExporterName,
 	}, []string{"version", "revision", "branch", "goversion", "edition"})
 
-	grafanaBuildTimestamp := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name:      "build_timestamp",
-		Help:      "A metric exposing when the binary was built in epoch",
-		Namespace: ExporterName,
-	}, []string{"version", "revision", "branch", "goversion", "edition"})
-
-	reg.MustRegister(grafanaBuildVersion, grafanaBuildTimestamp)
+	reg.MustRegister(grafanaBuildVersion)
 
 	grafanaBuildVersion.WithLabelValues(version, revision, branch, runtime.Version(), edition).Set(1)
-	grafanaBuildTimestamp.WithLabelValues(version, revision, branch, runtime.Version(), edition).Set(float64(buildTimestamp))
 }
 
 // SetEnvironmentInformation exposes environment values provided by the operators as an `_info` metric.

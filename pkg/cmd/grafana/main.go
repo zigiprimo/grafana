@@ -17,7 +17,6 @@ var version = "9.2.0"
 var commit = gcli.DefaultCommitValue
 var enterpriseCommit = gcli.DefaultCommitValue
 var buildBranch = "main"
-var buildstamp string
 
 func main() {
 	app := &cli.App{
@@ -32,7 +31,7 @@ func main() {
 		Version: version,
 		Commands: []*cli.Command{
 			gcli.CLICommand(version),
-			gsrv.ServerCommand(version, commit, enterpriseCommit, buildBranch, buildstamp),
+			gsrv.ServerCommand(version, commit, enterpriseCommit, buildBranch),
 			{
 				// The kubernetes standalone apiserver service runner
 				Name:  "apiserver",
@@ -45,7 +44,7 @@ func main() {
 					return nil
 				},
 			},
-			gsrv.ServerCommand(version, commit, enterpriseCommit, buildBranch, buildstamp),
+			gsrv.ServerCommand(version, commit, enterpriseCommit, buildBranch),
 			{
 				// The kube-aggregator inspired grafana aggregator
 				Name:  "aggregator",

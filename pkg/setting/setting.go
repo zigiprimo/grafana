@@ -67,7 +67,6 @@ var (
 	BuildCommit           string
 	EnterpriseBuildCommit string
 	BuildBranch           string
-	BuildStamp            int64
 	IsEnterprise          bool
 
 	// packaging
@@ -121,7 +120,6 @@ type Cfg struct {
 	BuildCommit           string
 	EnterpriseBuildCommit string
 	BuildBranch           string
-	BuildStamp            int64
 	IsEnterprise          bool
 
 	// packaging
@@ -897,7 +895,7 @@ func (cfg *Cfg) loadConfiguration(args CommandLineArgs) (*ini.File, error) {
 		return nil, err
 	}
 
-	cfg.Logger.Info(fmt.Sprintf("Starting %s", ApplicationName), "version", BuildVersion, "commit", BuildCommit, "branch", BuildBranch, "compiled", time.Unix(BuildStamp, 0))
+	cfg.Logger.Info(fmt.Sprintf("Starting %s", ApplicationName), "version", BuildVersion, "commit", BuildCommit, "branch", BuildBranch)
 
 	return parsedFile, err
 }
@@ -1038,7 +1036,6 @@ func (cfg *Cfg) parseINIFile(iniFile *ini.File) error {
 	cfg.BuildVersion = BuildVersion
 	cfg.BuildCommit = BuildCommit
 	cfg.EnterpriseBuildCommit = EnterpriseBuildCommit
-	cfg.BuildStamp = BuildStamp
 	cfg.BuildBranch = BuildBranch
 	cfg.IsEnterprise = IsEnterprise
 	cfg.Packaging = Packaging

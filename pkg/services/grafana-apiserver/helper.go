@@ -5,7 +5,6 @@ import (
 	"net/http"
 	goruntime "runtime"
 	"strings"
-	"time"
 
 	"k8s.io/apimachinery/pkg/version"
 	openapinamer "k8s.io/apiserver/pkg/endpoints/openapi"
@@ -62,7 +61,6 @@ func SetupConfig(serverConfig *genericapiserver.RecommendedConfig, builders []AP
 		Compiler:     goruntime.Compiler,
 		GitTreeState: setting.BuildBranch,
 		GitCommit:    setting.BuildCommit,
-		BuildDate:    time.Unix(setting.BuildStamp, 0).UTC().Format(time.DateTime),
 		GitVersion:   k8sVersion,
 	}
 	return nil

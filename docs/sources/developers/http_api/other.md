@@ -41,7 +41,6 @@ Content-Type: application/json
   "allowOrgCreate":true,
   "appSubUrl":"",
   "buildInfo":{
-    "buildstamp":xxxxxx,
     "commit":"vyyyy",
     "version":"zzzzz"
   },

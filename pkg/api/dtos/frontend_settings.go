@@ -37,7 +37,6 @@ type FrontendSettingsBuildInfoDTO struct {
 	HideVersion   bool   `json:"hideVersion"`
 	Version       string `json:"version"`
 	Commit        string `json:"commit"`
-	Buildstamp    int64  `json:"buildstamp"`
 	Edition       string `json:"edition"`
 	LatestVersion string `json:"latestVersion"`
 	HasUpdate     bool   `json:"hasUpdate"`

@@ -8,9 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
 )
 
 const (
@@ -212,11 +210,6 @@ func doBuild(binaryName, pkg string, opts BuildOpts) error {
 }
 
 func ldflags(opts BuildOpts) (string, error) {
-	buildStamp, err := buildStamp()
-	if err != nil {
-		return "", err
-	}
-
 	commitSha := getGitSha()
 	if v := os.Getenv("COMMIT_SHA"); v != "" {
 		commitSha = v
@@ -241,7 +234,6 @@ func ldflags(opts BuildOpts) (string, error) {
 	if enterpriseCommitSha != "" {
 		b.WriteString(fmt.Sprintf(" -X main.enterpriseCommit=%s", enterpriseCommitSha))
 	}
-	b.WriteString(fmt.Sprintf(" -X main.buildstamp=%d", buildStamp))
 	b.WriteString(fmt.Sprintf(" -X main.buildBranch=%s", buildBranch))
 	if v := os.Getenv("LDFLAGS"); v != "" {
 		b.WriteString(fmt.Sprintf(" -extldflags \"%s\"", v))
@@ -292,20 +284,6 @@ func setBuildEnv(opts BuildOpts) error {
 	}
 
 	return os.Setenv("CC", opts.gocc)
-}
-
-func buildStamp() (int64, error) {
-	// use SOURCE_DATE_EPOCH if set.
-	if v, ok := os.LookupEnv("SOURCE_DATE_EPOCH"); ok {
-		return strconv.ParseInt(v, 10, 64)
-	}
-
-	bs, err := runError("git", "show", "-s", "--format=%ct")
-	if err != nil {
-		return time.Now().Unix(), nil
-	}
-
-	return strconv.ParseInt(string(bs), 10, 64)
 }
 
 func clean(opts BuildOpts) {

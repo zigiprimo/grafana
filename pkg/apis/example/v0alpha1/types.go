@@ -16,7 +16,6 @@ type RuntimeInfo struct {
 	BuildCommit           string `json:"buildCommit,omitempty"`
 	EnterpriseBuildCommit string `json:"enterpriseBuildCommit,omitempty"`
 	BuildBranch           string `json:"buildBranch,omitempty"`
-	BuildStamp            int64  `json:"buildStamp,omitempty"`
 	IsEnterprise          bool   `json:"enterprise,omitempty"`
 	Packaging             string `json:"packaging,omitempty"`
 }

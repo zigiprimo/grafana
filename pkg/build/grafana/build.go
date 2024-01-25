@@ -27,7 +27,6 @@ func GrafanaLDFlags(version string, r config.Revision) []string {
 		"-w",
 		fmt.Sprintf("-X main.version=%s", version),
 		fmt.Sprintf("-X main.commit=%s", r.SHA256),
-		fmt.Sprintf("-X main.buildstamp=%d", r.Timestamp),
 		fmt.Sprintf("-X main.buildBranch=%s", r.Branch),
 	}
 

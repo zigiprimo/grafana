@@ -16,7 +16,7 @@ import (
 	"github.com/grafana/grafana/pkg/setting"
 )
 
-func TargetCommand(version, commit, buildBranch, buildstamp string) *cli.Command {
+func TargetCommand(version, commit, buildBranch string) *cli.Command {
 	return &cli.Command{
 		Name:  "target",
 		Usage: "target specific grafana dskit services",
@@ -26,7 +26,6 @@ func TargetCommand(version, commit, buildBranch, buildstamp string) *cli.Command
 				Version:     version,
 				Commit:      commit,
 				BuildBranch: buildBranch,
-				BuildStamp:  buildstamp,
 				Context:     context,
 			})
 		},
@@ -89,7 +88,7 @@ func RunTargetServer(opts ServerOptions) error {
 		return err
 	}
 
-	metrics.SetBuildInformation(metrics.ProvideRegisterer(cfg), opts.Version, opts.Commit, opts.BuildBranch, getBuildstamp(opts))
+	metrics.SetBuildInformation(metrics.ProvideRegisterer(cfg), opts.Version, opts.Commit, opts.BuildBranch)
 
 	s, err := server.InitializeModuleServer(
 		cfg,

@@ -31,11 +31,10 @@ type ServerOptions struct {
 	Commit           string
 	EnterpriseCommit string
 	BuildBranch      string
-	BuildStamp       string
 	Context          *cli.Context
 }
 
-func ServerCommand(version, commit, enterpriseCommit, buildBranch, buildstamp string) *cli.Command {
+func ServerCommand(version, commit, enterpriseCommit, buildBranch string) *cli.Command {
 	return &cli.Command{
 		Name:  "server",
 		Usage: "run the grafana server",
@@ -46,11 +45,10 @@ func ServerCommand(version, commit, enterpriseCommit, buildBranch, buildstamp st
 				Commit:           commit,
 				EnterpriseCommit: enterpriseCommit,
 				BuildBranch:      buildBranch,
-				BuildStamp:       buildstamp,
 				Context:          context,
 			})
 		},
-		Subcommands: []*cli.Command{TargetCommand(version, commit, buildBranch, buildstamp)},
+		Subcommands: []*cli.Command{TargetCommand(version, commit, buildBranch)},
 	}
 }
 
@@ -114,7 +112,7 @@ func RunServer(opts ServerOptions) error {
 		return err
 	}
 
-	metrics.SetBuildInformation(metrics.ProvideRegisterer(cfg), opts.Version, opts.Commit, opts.BuildBranch, getBuildstamp(opts))
+	metrics.SetBuildInformation(metrics.ProvideRegisterer(cfg), opts.Version, opts.Commit, opts.BuildBranch)
 
 	s, err := server.Initialize(
 		cfg,
