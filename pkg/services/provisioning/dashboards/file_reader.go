@@ -13,6 +13,7 @@ import (
 
 	"github.com/grafana/grafana/pkg/components/simplejson"
 	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/infra/metrics"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/dashboards"
 	"github.com/grafana/grafana/pkg/services/folder"
@@ -318,6 +319,7 @@ func (fr *FileReader) saveDashboard(ctx context.Context, path string, folderID i
 	// keeps track of which UIDs and titles we have already provisioned
 	dash := jsonFile.dashboard
 	provisioningMetadata.uid = dash.Dashboard.UID
+	metrics.MFolderIDsServiceCount.WithLabelValues(metrics.Provisioning).Inc()
 	// nolint:staticcheck
 	provisioningMetadata.identity = dashboardIdentity{title: dash.Dashboard.Title, folderID: dash.Dashboard.FolderID}
 
@@ -339,6 +341,7 @@ func (fr *FileReader) saveDashboard(ctx context.Context, path string, folderID i
 	}
 
 	if upToDate {
+		metrics.MFolderIDsServiceCount.WithLabelValues(metrics.Provisioning).Inc()
 		// nolint:staticcheck
 		fr.log.Debug("provisioned dashboard is up to date", "provisioner", fr.Cfg.Name, "file", path, "folderId", dash.Dashboard.FolderID, "folderUid", dash.Dashboard.FolderUID)
 		return provisioningMetadata, nil
@@ -354,6 +357,7 @@ func (fr *FileReader) saveDashboard(ctx context.Context, path string, folderID i
 	}
 
 	if !fr.isDatabaseAccessRestricted() {
+		metrics.MFolderIDsServiceCount.WithLabelValues(metrics.Provisioning).Inc()
 		// nolint:staticcheck
 		fr.log.Debug("saving new dashboard", "provisioner", fr.Cfg.Name, "file", path, "folderId", dash.Dashboard.FolderID, "folderUid", dash.Dashboard.FolderUID)
 		dp := &dashboards.DashboardProvisioning{
@@ -367,6 +371,7 @@ func (fr *FileReader) saveDashboard(ctx context.Context, path string, folderID i
 			return provisioningMetadata, err
 		}
 	} else {
+		metrics.MFolderIDsServiceCount.WithLabelValues(metrics.Provisioning).Inc()
 		// nolint:staticcheck
 		fr.log.Warn("Not saving new dashboard due to restricted database access", "provisioner", fr.Cfg.Name,
 			"file", path, "folderId", dash.Dashboard.FolderID)
@@ -395,6 +400,7 @@ func (fr *FileReader) getOrCreateFolder(ctx context.Context, cfg *config, servic
 		return 0, "", ErrFolderNameMissing
 	}
 
+	metrics.MFolderIDsServiceCount.WithLabelValues(metrics.Provisioning).Inc()
 	cmd := &dashboards.GetDashboardQuery{
 		Title:    &folderName,
 		FolderID: util.Pointer(int64(0)), // nolint:staticcheck
@@ -423,6 +429,7 @@ func (fr *FileReader) getOrCreateFolder(ctx context.Context, cfg *config, servic
 		if err != nil {
 			return 0, "", err
 		}
+		metrics.MFolderIDsServiceCount.WithLabelValues(metrics.Provisioning).Inc()
 		// nolint:staticcheck
 		return f.ID, f.UID, nil
 	}

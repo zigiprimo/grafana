@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/grafana/grafana/pkg/infra/metrics"
 	"github.com/grafana/grafana/pkg/infra/slugify"
 	"github.com/grafana/grafana/pkg/services/auth/identity"
 	"github.com/grafana/grafana/pkg/setting"
@@ -13,6 +14,7 @@ import (
 var ErrMaximumDepthReached = errutil.BadRequest("folder.maximum-depth-reached", errutil.WithPublicMessage("Maximum nested folder depth reached"))
 var ErrBadRequest = errutil.BadRequest("folder.bad-request")
 var ErrDatabaseError = errutil.Internal("folder.database-error")
+var ErrConflict = errutil.Conflict("folder.conflict")
 var ErrInternal = errutil.Internal("folder.internal")
 var ErrCircularReference = errutil.BadRequest("folder.circular-reference", errutil.WithPublicMessage("Circular reference detected"))
 var ErrTargetRegistrySrvConflict = errutil.Internal("folder.target-registry-srv-conflict")
@@ -41,13 +43,13 @@ type Folder struct {
 
 	// TODO: validate if this field is required/relevant to folders.
 	// currently there is no such column
-	Version   int
-	URL       string
-	UpdatedBy int64
-	CreatedBy int64
-	HasACL    bool
-
-	Fullpath string
+	Version      int
+	URL          string
+	UpdatedBy    int64
+	CreatedBy    int64
+	HasACL       bool
+	Fullpath     string `xorm:"fullpath"`
+	FullpathUIDs string `xorm:"fullpath_uids"`
 }
 
 var GeneralFolder = Folder{ID: 0, Title: "General"}
@@ -61,6 +63,7 @@ var SharedWithMeFolder = Folder{
 }
 
 func (f *Folder) IsGeneral() bool {
+	metrics.MFolderIDsServiceCount.WithLabelValues(metrics.Folder).Inc()
 	// nolint:staticcheck
 	return f.ID == GeneralFolder.ID && f.Title == GeneralFolder.Title
 }
@@ -146,11 +149,21 @@ type GetFolderQuery struct {
 	// Deprecated: use FolderUID instead
 	ID        *int64
 	Title     *string
-	OrgID     int64
 	ParentUID *string
+	OrgID     int64
 
-	SignedInUser    identity.Requester `json:"-"`
 	IncludeFullpath bool               `json:"-"`
+	SignedInUser    identity.Requester `json:"-"`
+}
+
+type GetFoldersQuery struct {
+	OrgID            int64
+	UIDs             []string
+	WithFullpath     bool
+	WithFullpathUIDs bool
+	BatchSize        uint64
+
+	SignedInUser identity.Requester `json:"-"`
 }
 
 // GetParentsQuery captures the information required by the folder service to
@@ -176,16 +189,6 @@ type GetChildrenQuery struct {
 
 	// array of folder uids to filter by
 	FolderUIDs []string `json:"-"`
-}
-
-// GetFoldersQuery captures the information required by the folder service to
-// return a list of all folders of a given UIDs.
-type GetFoldersQuery struct {
-	UIDs            []string
-	OrgID           int64
-	IncludeFullpath bool `json:"-"`
-
-	SignedInUser identity.Requester `json:"-"`
 }
 
 type HasEditPermissionInFoldersQuery struct {

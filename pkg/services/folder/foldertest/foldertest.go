@@ -52,8 +52,8 @@ func (s *FakeService) GetDescendantCounts(ctx context.Context, q *folder.GetDesc
 	return s.ExpectedDescendantCounts, s.ExpectedError
 }
 
-func (s *FakeService) GetFolders(ctx context.Context, q *folder.GetFoldersQuery) ([]*folder.Folder, error) {
-	return s.ExpectedFolders, nil
+func (s *FakeService) GetFolders(ctx context.Context, q folder.GetFoldersQuery) ([]*folder.Folder, error) {
+	return s.ExpectedFolders, s.ExpectedError
 }
 
 func (s *FakeService) WithFullpath(ctx context.Context, f *folder.Folder, includeFullpath bool) (*folder.Folder, error) {
