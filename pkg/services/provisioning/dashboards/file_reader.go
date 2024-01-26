@@ -160,7 +160,7 @@ func (fr *FileReader) storeDashboardsInFolder(ctx context.Context, filesFoundOnD
 	}
 
 	var folderID int64
-	var folderUID string
+	var folderUID *string
 	for i := range folderTitles {
 		id, uid, err := fr.getOrCreateFolderByTitle(ctx, folderTitles[i], fr.Cfg.OrgID, folderUID)
 		if err != nil && !errors.Is(err, ErrFolderNameMissing) {
@@ -168,18 +168,43 @@ func (fr *FileReader) storeDashboardsInFolder(ctx context.Context, filesFoundOnD
 		}
 
 		folderID = id
-		folderUID = uid
+		folderUID = &uid
 	}
 
 	// save dashboards based on json files
 	for path, fileInfo := range filesFoundOnDisk {
-		provisioningMetadata, err := fr.saveDashboard(ctx, path, folderID, folderUID, fileInfo, dashboardRefs)
+		provisioningMetadata, err := fr.saveDashboard(ctx, path, folderID, *folderUID, fileInfo, dashboardRefs)
 		if err != nil {
 			fr.log.Error("failed to save dashboard", "file", path, "error", err)
 			continue
 		}
 
 		usageTracker.track(provisioningMetadata)
+	}
+	return nil
+}
+
+// TODO: Remove this - this is just for reference!!!
+func (fr *FileReader) storeDashboardsInFoldersFromFileStructureOld(ctx context.Context, filesFoundOnDisk map[string]os.FileInfo,
+	dashboardRefs map[string]*dashboards.DashboardProvisioning, resolvedPath string, usageTracker *usageTracker) error {
+	for path, fileInfo := range filesFoundOnDisk {
+		folderName := ""
+
+		dashboardsFolder := filepath.Dir(path)
+		if dashboardsFolder != resolvedPath {
+			folderName = filepath.Base(dashboardsFolder)
+		}
+
+		folderID, folderUID, err := fr.getOrCreateFolder(ctx, fr.Cfg, fr.dashboardProvisioningService, folderName)
+		if err != nil && !errors.Is(err, ErrFolderNameMissing) {
+			return fmt.Errorf("can't provision folder %q from file system structure: %w", folderName, err)
+		}
+
+		provisioningMetadata, err := fr.saveDashboard(ctx, path, folderID, folderUID, fileInfo, dashboardRefs)
+		usageTracker.track(provisioningMetadata)
+		if err != nil {
+			fr.log.Error("failed to save dashboard", "file", path, "error", err)
+		}
 	}
 	return nil
 }
@@ -197,17 +222,17 @@ func (fr *FileReader) storeDashboardsInFoldersFromFileStructure(ctx context.Cont
 		}
 
 		var folderID int64
-		var folderUID string
+		var folderUID *string
 		for i := range folderTitles {
 			id, uid, err := fr.getOrCreateFolderByTitle(ctx, folderTitles[i], fr.Cfg.OrgID, folderUID)
 			if err != nil {
 				return fmt.Errorf("can't provision folder %q from file system structure: %w", folderTitles[i], err)
 			}
 			folderID = id
-			folderUID = uid
+			folderUID = &uid
 		}
 
-		provisioningMetadata, err := fr.saveDashboard(ctx, path, folderID, folderUID, fileInfo, dashboardRefs)
+		provisioningMetadata, err := fr.saveDashboard(ctx, path, folderID, *folderUID, fileInfo, dashboardRefs)
 		usageTracker.track(provisioningMetadata)
 		if err != nil {
 			fr.log.Error("failed to save dashboard", "file", path, "error", err)
@@ -216,14 +241,14 @@ func (fr *FileReader) storeDashboardsInFoldersFromFileStructure(ctx context.Cont
 	return nil
 }
 
-func (fr *FileReader) getOrCreateFolderByTitle(ctx context.Context, folderName string, orgID int64, parentUID string) (int64, string, error) {
+func (fr *FileReader) getOrCreateFolderByTitle(ctx context.Context, folderName string, orgID int64, parentUID *string) (int64, string, error) {
 	if folderName == "" {
 		return 0, "", ErrFolderNameMissing
 	}
 
 	cmd := &folder.GetFolderQuery{
 		Title:     &folderName,
-		ParentUID: &parentUID,
+		ParentUID: parentUID,
 		OrgID:     orgID,
 		SignedInUser: accesscontrol.BackgroundUser("dashboard_provisioning", orgID, org.RoleAdmin, []accesscontrol.Permission{
 			{Action: dashboards.ActionFoldersRead, Scope: dashboards.ScopeFoldersAll},
@@ -243,8 +268,8 @@ func (fr *FileReader) getOrCreateFolderByTitle(ctx context.Context, folderName s
 			Title: folderName,
 		}
 
-		if parentUID != "" {
-			createCmd.ParentUID = parentUID
+		if parentUID != nil {
+			createCmd.ParentUID = *parentUID
 		}
 
 		f, err := fr.dashboardProvisioningService.SaveFolderForProvisionedDashboards(ctx, createCmd)

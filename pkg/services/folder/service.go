@@ -33,6 +33,7 @@ type Service interface {
 	// If a folder contains a slash in its title, it is escaped with a backslash.
 	// If FullpathUIDs is true it computes a string that contains the UIDs of all parent folders separated by slash.
 	GetFolders(ctx context.Context, q GetFoldersQuery) ([]*Folder, error)
+	GetFoldersTemp(ctx context.Context, q *GetFoldersQuery) ([]*Folder, error)
 	GetDescendantCounts(ctx context.Context, q *GetDescendantCountsQuery) (DescendantCounts, error)
 	// TODO: Is WithFullpath really needed?
 	// WithFullpath sets the FullPath property of the folder to the full path of the folder.
