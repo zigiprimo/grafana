@@ -13,6 +13,7 @@ import {
   SceneObjectState,
   SceneObjectUrlSyncConfig,
   SceneObjectUrlValues,
+  SceneQueryRunner,
   SceneVariableSet,
 } from '@grafana/scenes';
 import { Box, Icon, Stack, Tab, TabsBar, ToolbarButton, useStyles2 } from '@grafana/ui';
@@ -22,11 +23,11 @@ import { TempoQuery } from '@grafana-plugins/tempo/types';
 import { getExploreUrl } from '../../core/utils/explore';
 
 import { buildBreakdownActionScene } from './ActionTabs/BreakdownScene';
-import { buildMetricOverviewScene } from './ActionTabs/MetricOverviewScene';
 import { buildRelatedMetricsScene } from './ActionTabs/RelatedMetricsScene';
 import { AutoVizPanel } from './AutomaticMetricQueries/AutoVizPanel';
 import { ShareTrailButton } from './ShareTrailButton';
 import { TraceTimeSeriesPanel } from './TraceTimeSeriesPanel';
+import { buildTracesListScene } from './TracesTabs/TracesListScene';
 import { getTrailStore } from './TrailStore/TrailStore';
 import {
   ActionViewDefinition,
@@ -43,15 +44,23 @@ import { getDataSource, getTrailFor } from './utils';
 export interface TraceSceneState extends SceneObjectState {
   body: SceneFlexLayout;
   actionView?: string;
+  query?: TempoQuery;
 }
 
 export class TraceScene extends SceneObjectBase<TraceSceneState> {
   protected _urlSync = new SceneObjectUrlSyncConfig(this, { keys: ['actionView'] });
 
   public constructor(state: MakeOptional<TraceSceneState, 'body'>) {
+    const query = state.query ?? buildQuery();
     super({
       $variables: state.$variables ?? getVariableSet(),
-      body: state.body ?? buildGraphScene(),
+      body: state.body ?? buildGraphScene(query),
+      $data:
+        state.queryRunner ??
+        new SceneQueryRunner({
+          datasource: trailDS,
+          queries: [query],
+        }),
       ...state,
     });
 
@@ -105,14 +114,14 @@ export class TraceScene extends SceneObjectBase<TraceSceneState> {
 }
 
 const actionViewsDefinitions: ActionViewDefinition[] = [
-  { displayName: 'Overview', value: 'overview', getScene: buildMetricOverviewScene },
-  { displayName: 'Breakdown', value: 'breakdown', getScene: buildBreakdownActionScene },
+  { displayName: 'Traces', value: 'overview', getScene: buildTracesListScene },
+  { displayName: 'Group By', value: 'breakdown', getScene: buildBreakdownActionScene },
   { displayName: 'Related metrics', value: 'related', getScene: buildRelatedMetricsScene },
 ];
 
-export interface MetricActionBarState extends SceneObjectState {}
+export interface TracesActionBarState extends SceneObjectState {}
 
-export class MetricActionBar extends SceneObjectBase<MetricActionBarState> {
+export class TracesActionBar extends SceneObjectBase<TracesActionBarState> {
   public onOpenTrail = () => {
     this.publishEvent(new OpenEmbeddedTrailEvent(), true);
   };
@@ -143,7 +152,7 @@ export class MetricActionBar extends SceneObjectBase<MetricActionBarState> {
     });
   };
 
-  public static Component = ({ model }: SceneComponentProps<MetricActionBar>) => {
+  public static Component = ({ model }: SceneComponentProps<TraceActionBar>) => {
     const metricScene = sceneGraph.getAncestor(model, TraceScene);
     const styles = useStyles2(getStyles);
     const trail = getTrailFor(model);
@@ -232,11 +241,11 @@ function getVariableSet() {
   });
 }
 
-const MAIN_PANEL_MIN_HEIGHT = 280;
-const MAIN_PANEL_MAX_HEIGHT = '40%';
+const MAIN_PANEL_MIN_HEIGHT = 200;
+const MAIN_PANEL_MAX_HEIGHT = '30%';
 
-function buildGraphScene() {
-  const query: TempoQuery = {
+function buildQuery(): TempoQuery {
+  return {
     refId: 'A',
     query: `${VAR_FILTERS_EXPR} | select(status)`,
     queryType: 'traceql',
@@ -245,7 +254,9 @@ function buildGraphScene() {
     spss: 10,
     filters: [],
   };
+}
 
+function buildGraphScene() {
   return new SceneFlexLayout({
     direction: 'column',
     $behaviors: [new behaviors.CursorSync({ key: 'metricCrosshairSync', sync: DashboardCursorSync.Crosshair })],
@@ -253,11 +264,11 @@ function buildGraphScene() {
       new SceneFlexItem({
         minHeight: MAIN_PANEL_MIN_HEIGHT,
         maxHeight: MAIN_PANEL_MAX_HEIGHT,
-        body: new TraceTimeSeriesPanel({ query }),
+        body: new TraceTimeSeriesPanel({}),
       }),
       new SceneFlexItem({
         ySizing: 'content',
-        body: new MetricActionBar({}),
+        body: new TracesActionBar({}),
       }),
     ],
   });

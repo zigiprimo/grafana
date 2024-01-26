@@ -4,6 +4,7 @@ import React from 'react';
 import { AdHocVariableFilter, GrafanaTheme2 } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import {
+  AdHocFilterSet,
   AdHocFiltersVariable,
   DataSourceVariable,
   getUrlSyncManager,
@@ -50,7 +51,7 @@ export interface DataTrailState extends SceneObjectState {
 }
 
 export class DataTrail extends SceneObjectBase<DataTrailState> {
-  protected _urlSync = new SceneObjectUrlSyncConfig(this, { keys: ['metric'] });
+  protected _urlSync = new SceneObjectUrlSyncConfig(this, { keys: ['metric', 'trailType'] });
 
   public constructor(state: Partial<DataTrailState>) {
     const trailType = state.trailType ?? 'metrics';
@@ -153,7 +154,7 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
   }
 
   getUrlState() {
-    return { metric: this.state.metric };
+    return { metric: this.state.metric, trailType: this.state.trailType };
   }
 
   updateFromUrl(values: SceneObjectUrlValues) {

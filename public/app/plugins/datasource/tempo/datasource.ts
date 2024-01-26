@@ -172,12 +172,17 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
     }
   }
 
-  getTagKeys(): Promise<MetricFindValue[]> {
-    return this.labelNamesQuery();
+  async getTagKeys(): Promise<MetricFindValue[]> {
+    await this.languageProvider.fetchTags();
+    const tags = this.languageProvider.tagsV2 || [];
+    return tags
+      .map(({ name, tags }) => tags.filter((tag) => tag !== undefined).map((t) => `${name}.${t}`))
+      .flat()
+      .map((tag) => ({ text: tag }));
   }
 
   getTagValues(options: DataSourceGetTagValuesOptions): Promise<MetricFindValue[]> {
-    return this.labelValuesQuery(options.key);
+    return this.labelValuesQuery(options.key.replace(/^(resource|span)\./, ''));
   }
 
   async labelNamesQuery(): Promise<Array<{ text: string }>> {

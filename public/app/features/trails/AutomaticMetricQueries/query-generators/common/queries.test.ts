@@ -1,3 +1,4 @@
+import { PromQuery } from '../../../../../plugins/datasource/prometheus/types';
 import { VAR_GROUP_BY_EXP } from '../../../shared';
 import { AutoQueryDef, AutoQueryInfo } from '../../types';
 
@@ -13,7 +14,7 @@ describe('generateQueries', () => {
     describe('regardless of rate', () => {
       test(`specified unit must be propagated`, () => expect(queryDef.unit).toBe(unit));
       test(`only one query is expected`, () => expect(queryDef.queries.length).toBe(1));
-      const query = queryDef.queries[0];
+      const query = queryDef.queries[0] as PromQuery;
       test(`specified agg function must be propagated in the query expr`, () => {
         const queryAggFunction = query.expr.split('(', 2)[0];
         expect(queryAggFunction).toBe(agg);
@@ -29,7 +30,7 @@ describe('generateQueries', () => {
   }
 
   function testRateSpecificAssertions(queryDef: AutoQueryDef, rate: boolean) {
-    const query = queryDef.queries[0];
+    const query = queryDef.queries[0] as PromQuery;
     const firstParen = query.expr.indexOf('(');
     const expectedBaseQuery = getGeneralBaseQuery(rate);
     const detectedBaseQuery = query.expr.substring(firstParen + 1, firstParen + 1 + expectedBaseQuery.length);
