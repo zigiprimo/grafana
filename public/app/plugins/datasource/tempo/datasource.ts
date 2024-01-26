@@ -11,11 +11,13 @@ import {
   DataQueryResponse,
   DataQueryResponseData,
   DataSourceApi,
+  DataSourceGetTagValuesOptions,
   DataSourceInstanceSettings,
   dateTime,
   FieldType,
   isValidGoDuration,
   LoadingState,
+  MetricFindValue,
   rangeUtil,
   ScopedVars,
   TestDataSourceResponse,
@@ -168,6 +170,14 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
         throw Error('Invalid query type: ' + query.type);
       }
     }
+  }
+
+  getTagKeys(): Promise<MetricFindValue[]> {
+    return this.labelNamesQuery();
+  }
+
+  getTagValues(options: DataSourceGetTagValuesOptions): Promise<MetricFindValue[]> {
+    return this.labelValuesQuery(options.key);
   }
 
   async labelNamesQuery(): Promise<Array<{ text: string }>> {

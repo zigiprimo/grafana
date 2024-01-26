@@ -8,7 +8,7 @@ import { DataTrail } from './DataTrail';
 import { DataTrailSettings } from './DataTrailSettings';
 import { MetricScene } from './MetricScene';
 import { getTrailStore } from './TrailStore/TrailStore';
-import { TRAILS_ROUTE, VAR_DATASOURCE_EXPR } from './shared';
+import { TRAILS_ROUTE, TrailType, VAR_DATASOURCE_EXPR } from './shared';
 
 export function getTrailFor(model: SceneObject): DataTrail {
   return sceneGraph.getAncestor(model, DataTrail);
@@ -21,8 +21,18 @@ export function getTrailSettings(model: SceneObject): DataTrailSettings {
 export function newMetricsTrail(initialDS?: string): DataTrail {
   return new DataTrail({
     initialDS,
+    trailType: 'metrics',
     $timeRange: new SceneTimeRange({ from: 'now-1h', to: 'now' }),
     //initialFilters: [{ key: 'job', operator: '=', value: 'grafana' }],
+    embedded: false,
+  });
+}
+
+export function newTracesTrail(initialDS?: string): DataTrail {
+  return new DataTrail({
+    initialDS,
+    trailType: 'traces',
+    $timeRange: new SceneTimeRange({ from: 'now-1h', to: 'now' }),
     embedded: false,
   });
 }
@@ -58,17 +68,17 @@ export function getDataSourceName(dataSourceUid: string) {
   return getDataSourceSrv().getInstanceSettings(dataSourceUid)?.name || dataSourceUid;
 }
 
-export function getDatasourceForNewTrail(): string | undefined {
-  const prevTrail = getTrailStore().recent[0];
+export function getDatasourceForNewTrail(trailType: TrailType): string | undefined {
+  const prevTrail = getTrailStore().recent.filter((dt) => dt.resolve().state.trailType === trailType)?.[0];
   if (prevTrail) {
     const prevDataSource = sceneGraph.interpolate(prevTrail.resolve(), VAR_DATASOURCE_EXPR);
     if (typeof prevDataSource === 'string' && prevDataSource.length > 0) {
       return prevDataSource;
     }
   }
-  const promDatasources = getDatasourceSrv().getList({ type: 'prometheus' });
-  if (promDatasources.length > 0) {
-    return promDatasources.find((mds) => mds.uid === config.defaultDatasource)?.uid ?? promDatasources[0].uid;
+  const typeDatasources = getDatasourceSrv().getList({ type: trailType === 'metrics' ? 'prometheus' : 'tempo' });
+  if (typeDatasources.length > 0) {
+    return typeDatasources.find((mds) => mds.uid === config.defaultDatasource)?.uid ?? typeDatasources[0].uid;
   }
   return undefined;
 }

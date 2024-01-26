@@ -2,6 +2,8 @@ import { BusEventBase, BusEventWithPayload } from '@grafana/data';
 import { ConstantVariable, SceneObject } from '@grafana/scenes';
 import { VariableHide } from '@grafana/schema';
 
+export type TrailType = 'metrics' | 'logs' | 'traces';
+
 export type ActionViewType = 'overview' | 'breakdown' | 'logs' | 'related';
 export interface ActionViewDefinition {
   displayName: string;

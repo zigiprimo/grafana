@@ -27,8 +27,9 @@ import { DataTrailSettings } from './DataTrailSettings';
 import { DataTrailHistory, DataTrailHistoryStep } from './DataTrailsHistory';
 import { MetricScene } from './MetricScene';
 import { MetricSelectScene } from './MetricSelectScene';
+import { TraceScene } from './TraceScene';
 import { getTrailStore } from './TrailStore/TrailStore';
-import { MetricSelectedEvent, trailDS, LOGS_METRIC, VAR_DATASOURCE, VAR_FILTERS } from './shared';
+import { MetricSelectedEvent, trailDS, TrailType, VAR_DATASOURCE, VAR_FILTERS } from './shared';
 import { getUrlForTrail } from './utils';
 
 export interface DataTrailState extends SceneObjectState {
@@ -42,6 +43,8 @@ export interface DataTrailState extends SceneObjectState {
   initialDS?: string;
   initialFilters?: AdHocVariableFilter[];
 
+  trailType: TrailType;
+
   // Synced with url
   metric?: string;
 }
@@ -50,9 +53,10 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
   protected _urlSync = new SceneObjectUrlSyncConfig(this, { keys: ['metric'] });
 
   public constructor(state: Partial<DataTrailState>) {
+    const trailType = state.trailType ?? 'metrics';
     super({
       $timeRange: state.$timeRange ?? new SceneTimeRange({}),
-      $variables: state.$variables ?? getVariableSet(state.initialDS, state.metric, state.initialFilters),
+      $variables: state.$variables ?? getVariableSet(trailType, state.initialDS, state.metric, state.initialFilters),
       controls: state.controls ?? [
         new VariableValueSelectors({ layout: 'vertical' }),
         new SceneControlsSpacer(),
@@ -61,6 +65,7 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
       ],
       history: state.history ?? new DataTrailHistory({}),
       settings: state.settings ?? new DataTrailSettings({}),
+      trailType,
       ...state,
     });
 
@@ -69,7 +74,7 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
 
   public _onActivate() {
     if (!this.state.topScene) {
-      this.setState({ topScene: getTopSceneFor(this.state.metric) });
+      this.setState({ topScene: getTopSceneForType(this.state.trailType, this.state.metric) });
     }
 
     // Some scene elements publish this
@@ -186,6 +191,16 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
   };
 }
 
+function getTopSceneForType(trailType: TrailType, metric?: string) {
+  switch (trailType) {
+    case 'metrics':
+      return getTopSceneFor(metric);
+    case 'traces':
+      return new TraceScene({});
+  }
+  return undefined;
+}
+
 function getTopSceneFor(metric?: string) {
   if (metric) {
     return new MetricScene({ metric: metric });
@@ -194,21 +209,28 @@ function getTopSceneFor(metric?: string) {
   }
 }
 
-function getVariableSet(initialDS?: string, metric?: string, initialFilters?: AdHocVariableFilter[]) {
+function getVariableSet(
+  trailType: TrailType,
+  initialDS?: string,
+  metric?: string,
+  initialFilters?: AdHocVariableFilter[]
+) {
+  const pluginId = trailType === 'metrics' ? 'prometheus' : 'tempo';
+
   return new SceneVariableSet({
     variables: [
       new DataSourceVariable({
         name: VAR_DATASOURCE,
         label: 'Data source',
         value: initialDS,
-        pluginId: metric === LOGS_METRIC ? 'loki' : 'prometheus',
+        pluginId,
       }),
       AdHocFiltersVariable.create({
         name: VAR_FILTERS,
         datasource: trailDS,
         layout: 'vertical',
         filters: initialFilters ?? [],
-        baseFilters: getBaseFiltersForMetric(metric),
+        baseFilters: trailType === 'metrics' ? getBaseFiltersForMetric(metric) : [],
       }),
     ],
   });

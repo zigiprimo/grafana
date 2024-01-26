@@ -11,7 +11,7 @@ import { DataTrail } from './DataTrail';
 import { DataTrailCard } from './DataTrailCard';
 import { DataTrailsApp } from './DataTrailsApp';
 import { getTrailStore } from './TrailStore/TrailStore';
-import { getDatasourceForNewTrail, getUrlForTrail, newMetricsTrail } from './utils';
+import { getDatasourceForNewTrail, getUrlForTrail, newMetricsTrail, newTracesTrail } from './utils';
 
 export interface DataTrailsHomeState extends SceneObjectState {}
 
@@ -22,7 +22,15 @@ export class DataTrailsHome extends SceneObjectBase<DataTrailsHomeState> {
 
   public onNewMetricsTrail = () => {
     const app = getAppFor(this);
-    const trail = newMetricsTrail(getDatasourceForNewTrail());
+    const trail = newMetricsTrail(getDatasourceForNewTrail('metrics'));
+
+    getTrailStore().setRecentTrail(trail);
+    app.goToUrlForTrail(trail);
+  };
+
+  public onNewTracesTrail = () => {
+    const app = getAppFor(this);
+    const trail = newTracesTrail(getDatasourceForNewTrail('traces'));
 
     getTrailStore().setRecentTrail(trail);
     app.goToUrlForTrail(trail);
@@ -46,7 +54,7 @@ export class DataTrailsHome extends SceneObjectBase<DataTrailsHomeState> {
 
     // If there are no recent trails, don't show home page and create a new trail
     if (!getTrailStore().recent.length) {
-      const trail = newMetricsTrail(getDatasourceForNewTrail());
+      const trail = newMetricsTrail(getDatasourceForNewTrail('metrics'));
       getTrailStore().setRecentTrail(trail);
       return <Redirect to={getUrlForTrail(trail)} />;
     }
@@ -60,6 +68,9 @@ export class DataTrailsHome extends SceneObjectBase<DataTrailsHomeState> {
         <Stack gap={2}>
           <Button icon="plus" size="lg" variant="secondary" onClick={model.onNewMetricsTrail}>
             New metric trail
+          </Button>
+          <Button icon="plus" size="lg" variant="secondary" onClick={model.onNewTracesTrail}>
+            New traces trail
           </Button>
         </Stack>
         <Stack gap={4}>
