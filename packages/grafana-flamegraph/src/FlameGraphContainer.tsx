@@ -45,6 +45,7 @@ export type Props = {
   onViewSelected?: (view: string) => void;
   onTextAlignSelected?: (align: string) => void;
   onTableSort?: (sort: string) => void;
+  onItemFocused?: (data: ClickedItemData, dataContainer: FlameGraphDataContainer | undefined) => void;
 
   /**
    * Elements that will be shown in the header on the right side of the header buttons. Useful for additional
@@ -74,6 +75,7 @@ const FlameGraphContainer = ({
   onViewSelected,
   onTextAlignSelected,
   onTableSort,
+  onItemFocused,
   getTheme,
   stickyHeader,
   extraHeaderElements,
@@ -156,7 +158,10 @@ const FlameGraphContainer = ({
       matchedLabels={matchedLabels}
       setRangeMin={setRangeMin}
       setRangeMax={setRangeMax}
-      onItemFocused={(data) => setFocusedItemData(data)}
+      onItemFocused={(data) => {
+        setFocusedItemData(data);
+        onItemFocused?.(data, dataContainer);
+      }}
       focusedItemData={focusedItemData}
       textAlign={textAlign}
       sandwichItem={sandwichItem}
