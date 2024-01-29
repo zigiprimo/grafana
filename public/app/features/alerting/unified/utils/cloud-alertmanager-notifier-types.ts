@@ -515,6 +515,9 @@ export const cloudNotifierTypes: Array<NotifierDTO<CloudNotifierType>> = [
       option('text', 'Text', 'Message body template.', {
         placeholder: '{{ template "teams.default.text" . }}',
       }),
+      option('summary', 'Summary', 'A short summary of the alert.', {
+        placeholder: '{{ template "teams.default.summary" . }}',
+      }),
     ],
   },
 ];

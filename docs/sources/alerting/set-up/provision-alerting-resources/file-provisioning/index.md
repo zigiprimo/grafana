@@ -295,6 +295,9 @@ settings:
   # <string>
   message: |
     {{ template "default.message" . }}
+  # <string>
+  summary: |
+    {{ template "teams.default.summary" . }}
 ```
 
 ##### OpsGenie
