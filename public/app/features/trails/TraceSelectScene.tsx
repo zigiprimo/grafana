@@ -2,6 +2,7 @@ import { css } from '@emotion/css';
 import React from 'react';
 
 import { DataFrame, GrafanaTheme2 } from '@grafana/data';
+import { InlineSelect } from '@grafana/experimental';
 import {
   SceneObjectState,
   SceneObjectBase,
@@ -12,7 +13,7 @@ import {
   SceneQueryRunner,
   SceneDataNode,
 } from '@grafana/scenes';
-import { Text, useStyles2, InlineSwitch } from '@grafana/ui';
+import { Text, useStyles2, InlineSwitch, Tab, TabsBar, Input } from '@grafana/ui';
 import { TempoQuery } from '@grafana-plugins/tempo/types';
 
 import { ByFrameRepeater } from './ActionTabs/ByFrameRepeater';
@@ -83,20 +84,29 @@ export class TraceSelectScene extends SceneObjectBase<TraceSelectSceneState> {
   };
 
   public static Component = ({ model }: SceneComponentProps<TraceSelectScene>) => {
-    const { showHeading, showPreviews } = model.useState();
     const styles = useStyles2(getStyles);
 
     return (
       <div className={styles.container}>
-        {showHeading && (
-          <div className={styles.headingWrapper}>
-            <Text variant="h4">Select a metric</Text>
-          </div>
-        )}
         <div className={styles.header}>
-          {/*<Input placeholder="Search metrics" value={searchQuery} onChange={model.onSearchChange} />*/}
-          <InlineSwitch showLabel={true} label="Show previews" value={showPreviews} onChange={model.onTogglePreviews} />
+          <InlineSelect
+            label="Function"
+            options={[
+              { value: 'rate', label: 'Rate' },
+              { value: 'count', label: 'Count' },
+              { value: 'avg', label: 'Avg Duration' },
+              { value: 'max', label: 'Max Duration' },
+            ]}
+            value={'rate'}
+            onChange={model.onTogglePreviews}
+            width={30}
+          />
         </div>
+        <TabsBar>
+          {['Service Name', 'Cluster', 'Namespace'].map((tab, index) => {
+            return <Tab key={index} label={tab} active={index === 0} />;
+          })}
+        </TabsBar>
         <model.state.body.Component model={model.state.body} />
       </div>
     );
@@ -132,10 +142,9 @@ function getStyles(theme: GrafanaTheme2) {
       marginTop: theme.spacing(1),
     }),
     header: css({
-      flexGrow: 0,
-      display: 'flex',
-      gap: theme.spacing(2),
-      marginBottom: theme.spacing(1),
+      position: 'absolute',
+      right: '16px',
+      zIndex: 2,
     }),
   };
 }

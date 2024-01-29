@@ -5,7 +5,7 @@ import { DashboardCursorSync, GrafanaTheme2 } from '@grafana/data';
 import {
   AdHocFiltersVariable,
   behaviors,
-  QueryVariable,
+  CustomVariable,
   SceneComponentProps,
   SceneFlexItem,
   SceneFlexLayout,
@@ -24,8 +24,6 @@ import { TempoQuery } from '@grafana-plugins/tempo/types';
 
 import { getExploreUrl } from '../../core/utils/explore';
 
-import { buildBreakdownActionScene } from './ActionTabs/BreakdownScene';
-import { buildRelatedMetricsScene } from './ActionTabs/RelatedMetricsScene';
 import { AutoVizPanel } from './AutomaticMetricQueries/AutoVizPanel';
 import { ShareTrailButton } from './ShareTrailButton';
 import { TraceTimeSeriesPanel } from './TraceTimeSeriesPanel';
@@ -38,8 +36,8 @@ import {
   OpenEmbeddedTrailEvent,
   trailDS,
   VAR_FILTERS,
-  VAR_GROUP_BY,
-  VAR_METRIC_EXPR,
+  VAR_TRACE_Q,
+  VAR_TRACE_Q_EXP,
 } from './shared';
 import { getDataSource, getTrailFor } from './utils';
 
@@ -59,6 +57,10 @@ export class TraceScene extends SceneObjectBase<TraceSceneState> {
     super({
       $variables: state.$variables ?? getVariableSet(),
       body: state.body ?? buildGraphScene(),
+      $data: new SceneQueryRunner({
+        datasource: trailDS,
+        queries: [buildQuery()],
+      }),
       ...state,
     });
 
@@ -70,7 +72,13 @@ export class TraceScene extends SceneObjectBase<TraceSceneState> {
       this.setActionView('overview');
     }
 
-    this.updateQuery();
+    const variable = sceneGraph.lookupVariable('filters', this);
+    if (!(variable instanceof AdHocFiltersVariable)) {
+      return;
+    }
+    variable.state.set.state.filters.push({ key: 'span.beast', value: '', operator: '=', condition: '' });
+    variable.state.set.state.filters.push({ key: 'span.http.status_code', value: '', operator: '=', condition: '' });
+    variable.state.set.forceRender();
   }
 
   private onReferencedVariableValueChanged() {
@@ -83,14 +91,17 @@ export class TraceScene extends SceneObjectBase<TraceSceneState> {
     if (!(variable instanceof AdHocFiltersVariable)) {
       return;
     }
-
-    const queryRunner = new SceneQueryRunner({
-      datasource: trailDS,
-      queries: [
-        buildQuery(variable.state.set.state.filters.map((f) => `${f.key}${f.operator}"${f.value}"`).join(' && ')),
-      ],
-    });
-    this.setState({ $data: queryRunner });
+    const traceQvar = sceneGraph.lookupVariable(VAR_TRACE_Q, this);
+    if (!(traceQvar instanceof CustomVariable)) {
+      return;
+    }
+    console.log('updateQuery', variable.state.set.state.filters, traceQvar.state);
+    traceQvar.changeValueTo(
+      variable.state.set.state.filters
+        .filter((f) => f.value)
+        .map((f) => `${f.key}${f.operator}"${f.value}"`)
+        .join(' && ')
+    );
   }
 
   getUrlState() {
@@ -135,9 +146,10 @@ export class TraceScene extends SceneObjectBase<TraceSceneState> {
 
 const actionViewsDefinitions: ActionViewDefinition[] = [
   { displayName: 'Traces', value: 'overview', getScene: buildTracesListScene },
+  { displayName: 'Services', value: 'logs', getScene: buildTracesListScene },
   { displayName: 'Group By', value: 'breakdown', getScene: buildTracesListScene },
   { displayName: 'Metrics', value: 'related', getScene: buildTracesListScene },
-  { displayName: 'Outliers', value: 'related', getScene: buildTracesListScene },
+  { displayName: 'Outliers', value: 'other', getScene: buildTracesListScene },
 ];
 
 export interface TracesActionBarState extends SceneObjectState {}
@@ -248,13 +260,8 @@ function getStyles(theme: GrafanaTheme2) {
 function getVariableSet() {
   return new SceneVariableSet({
     variables: [
-      new QueryVariable({
-        name: VAR_GROUP_BY,
-        label: 'Group by',
-        datasource: trailDS,
-        includeAll: true,
-        defaultToAll: true,
-        query: { query: `label_names(${VAR_METRIC_EXPR})`, refId: 'A' },
+      new CustomVariable({
+        name: VAR_TRACE_Q,
         value: '',
         text: '',
       }),
@@ -265,10 +272,10 @@ function getVariableSet() {
 const MAIN_PANEL_MIN_HEIGHT = 200;
 const MAIN_PANEL_MAX_HEIGHT = '30%';
 
-function buildQuery(filters: string): TempoQuery {
+function buildQuery(): TempoQuery {
   return {
     refId: 'A',
-    query: `{${filters}} | select(status)`,
+    query: `{${VAR_TRACE_Q_EXP}} | select(status)`,
     queryType: 'traceql',
     tableType: SearchTableType.Spans,
     limit: 100,

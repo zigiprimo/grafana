@@ -4,7 +4,7 @@ import { VariableHide } from '@grafana/schema';
 
 export type TrailType = 'metrics' | 'logs' | 'traces';
 
-export type ActionViewType = 'overview' | 'breakdown' | 'logs' | 'related';
+export type ActionViewType = 'overview' | 'breakdown' | 'logs' | 'related' | 'other';
 export interface ActionViewDefinition {
   displayName: string;
   value: ActionViewType;
@@ -20,6 +20,8 @@ export const VAR_METRIC = 'metric';
 export const VAR_METRIC_EXPR = '${metric}';
 export const VAR_GROUP_BY = 'groupby';
 export const VAR_GROUP_BY_EXP = '${groupby}';
+export const VAR_TRACE_Q = 'traceQ';
+export const VAR_TRACE_Q_EXP = '${traceQ}';
 export const VAR_DATASOURCE = 'ds';
 export const VAR_DATASOURCE_EXPR = '${ds}';
 export const VAR_LOGS_DATASOURCE = 'logsDs';
