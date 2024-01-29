@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 
 import { DashboardCursorSync, GrafanaTheme2 } from '@grafana/data';
 import {
+  AdHocFiltersVariable,
   behaviors,
   QueryVariable,
   SceneComponentProps,
@@ -15,6 +16,7 @@ import {
   SceneObjectUrlValues,
   SceneQueryRunner,
   SceneVariableSet,
+  VariableDependencyConfig,
 } from '@grafana/scenes';
 import { Box, Icon, Stack, Tab, TabsBar, ToolbarButton, useStyles2 } from '@grafana/ui';
 import { SearchTableType } from '@grafana-plugins/tempo/dataquery.gen';
@@ -35,7 +37,7 @@ import {
   MakeOptional,
   OpenEmbeddedTrailEvent,
   trailDS,
-  VAR_FILTERS_EXPR,
+  VAR_FILTERS,
   VAR_GROUP_BY,
   VAR_METRIC_EXPR,
 } from './shared';
@@ -44,23 +46,19 @@ import { getDataSource, getTrailFor } from './utils';
 export interface TraceSceneState extends SceneObjectState {
   body: SceneFlexLayout;
   actionView?: string;
-  query?: TempoQuery;
 }
 
 export class TraceScene extends SceneObjectBase<TraceSceneState> {
   protected _urlSync = new SceneObjectUrlSyncConfig(this, { keys: ['actionView'] });
+  protected _variableDependency = new VariableDependencyConfig(this, {
+    variableNames: [VAR_FILTERS],
+    onReferencedVariableValueChanged: this.onReferencedVariableValueChanged.bind(this),
+  });
 
   public constructor(state: MakeOptional<TraceSceneState, 'body'>) {
-    const query = state.query ?? buildQuery();
     super({
       $variables: state.$variables ?? getVariableSet(),
-      body: state.body ?? buildGraphScene(query),
-      $data:
-        state.queryRunner ??
-        new SceneQueryRunner({
-          datasource: trailDS,
-          queries: [query],
-        }),
+      body: state.body ?? buildGraphScene(),
       ...state,
     });
 
@@ -71,6 +69,28 @@ export class TraceScene extends SceneObjectBase<TraceSceneState> {
     if (this.state.actionView === undefined) {
       this.setActionView('overview');
     }
+
+    this.updateQuery();
+  }
+
+  private onReferencedVariableValueChanged() {
+    this.updateQuery();
+  }
+
+  private updateQuery() {
+    console.log('updateQuery');
+    const variable = sceneGraph.lookupVariable('filters', this);
+    if (!(variable instanceof AdHocFiltersVariable)) {
+      return;
+    }
+
+    const queryRunner = new SceneQueryRunner({
+      datasource: trailDS,
+      queries: [
+        buildQuery(variable.state.set.state.filters.map((f) => `${f.key}${f.operator}"${f.value}"`).join(' && ')),
+      ],
+    });
+    this.setState({ $data: queryRunner });
   }
 
   getUrlState() {
@@ -115,8 +135,9 @@ export class TraceScene extends SceneObjectBase<TraceSceneState> {
 
 const actionViewsDefinitions: ActionViewDefinition[] = [
   { displayName: 'Traces', value: 'overview', getScene: buildTracesListScene },
-  { displayName: 'Group By', value: 'breakdown', getScene: buildBreakdownActionScene },
-  { displayName: 'Related metrics', value: 'related', getScene: buildRelatedMetricsScene },
+  { displayName: 'Group By', value: 'breakdown', getScene: buildTracesListScene },
+  { displayName: 'Metrics', value: 'related', getScene: buildTracesListScene },
+  { displayName: 'Outliers', value: 'related', getScene: buildTracesListScene },
 ];
 
 export interface TracesActionBarState extends SceneObjectState {}
@@ -152,7 +173,7 @@ export class TracesActionBar extends SceneObjectBase<TracesActionBarState> {
     });
   };
 
-  public static Component = ({ model }: SceneComponentProps<TraceActionBar>) => {
+  public static Component = ({ model }: SceneComponentProps<TracesActionBar>) => {
     const metricScene = sceneGraph.getAncestor(model, TraceScene);
     const styles = useStyles2(getStyles);
     const trail = getTrailFor(model);
@@ -244,10 +265,10 @@ function getVariableSet() {
 const MAIN_PANEL_MIN_HEIGHT = 200;
 const MAIN_PANEL_MAX_HEIGHT = '30%';
 
-function buildQuery(): TempoQuery {
+function buildQuery(filters: string): TempoQuery {
   return {
     refId: 'A',
-    query: `${VAR_FILTERS_EXPR} | select(status)`,
+    query: `{${filters}} | select(status)`,
     queryType: 'traceql',
     tableType: SearchTableType.Spans,
     limit: 100,

@@ -119,3 +119,29 @@ export type Scope = {
   name: string;
   tags: string[];
 };
+
+export type TraceqlMetricsResponse = {
+  series: MetricsSeries[];
+  metrics: SearchMetrics;
+};
+
+export type MetricsSeries = {
+  labels: MetricsSeriesLabel[];
+  samples: MetricsSeriesSample[];
+  promLabels: string;
+};
+
+export type MetricsSeriesLabel = {
+  key: string;
+  value: {
+    stringValue?: string;
+    intValue?: string;
+    boolValue?: boolean;
+    doubleValue?: string;
+  };
+};
+
+export type MetricsSeriesSample = {
+  timestampMs: number;
+  value: number;
+};

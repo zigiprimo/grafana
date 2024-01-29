@@ -60,6 +60,7 @@ import {
   transformTrace,
   transformTraceList,
   formatTraceQLResponse,
+  formatTraceQLMetrics,
 } from './resultTransformer';
 import { doTempoChannelStream } from './streaming';
 import { SearchQueryParams, TempoJsonData, TempoQuery } from './types';
@@ -176,7 +177,9 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
     await this.languageProvider.fetchTags();
     const tags = this.languageProvider.tagsV2 || [];
     return tags
-      .map(({ name, tags }) => tags.filter((tag) => tag !== undefined).map((t) => `${name}.${t}`))
+      .map(({ name, tags }) =>
+        tags.filter((tag) => tag !== undefined).map((t) => (name !== 'intrinsic' ? `${name}.${t}` : `${t}`))
+      )
       .flat()
       .map((tag) => ({ text: tag }));
   }
@@ -333,6 +336,36 @@ export class TempoDatasource extends DataSourceWithBackend<TempoQuery, TempoJson
             map((response) => {
               return {
                 data: [createTableFrameFromSearch(response.data.traces, this.instanceSettings)],
+              };
+            }),
+            catchError((err) => {
+              return of({ error: { message: getErrorMessage(err.data.message) }, data: [] });
+            })
+          )
+        );
+      } catch (error) {
+        return of({ error: { message: error instanceof Error ? error.message : 'Unknown error occurred' }, data: [] });
+      }
+    }
+
+    if (targets.metrics?.length) {
+      console.log('metrics', targets.metrics);
+      try {
+        const appliedQuery = this.applyVariables(targets.metrics[0], options.scopedVars);
+        const queryValue = appliedQuery?.query || '';
+
+        console.log('queryValue', queryValue);
+
+        subQueries.push(
+          this._request('/api/metrics/query_range', {
+            query: queryValue,
+            start: options.range.from.unix(),
+            end: options.range.to.unix(),
+          }).pipe(
+            map((response) => {
+              console.log(response);
+              return {
+                data: formatTraceQLMetrics(response.data),
               };
             }),
             catchError((err) => {

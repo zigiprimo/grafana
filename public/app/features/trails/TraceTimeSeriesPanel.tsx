@@ -9,7 +9,9 @@ import {
   SceneDataTransformer,
   SceneFlexLayout,
 } from '@grafana/scenes';
-import { GraphDrawStyle } from '@grafana/schema/dist/esm/common/common.gen';
+import { GraphDrawStyle, ScaleDistribution } from '@grafana/schema/dist/esm/common/common.gen';
+
+import { overrideToFixedColor } from '../alerting/unified/home/Insights';
 
 export interface TraceTimeSeriesPanelState extends SceneObjectState {
   panel?: SceneFlexLayout;
@@ -36,20 +38,45 @@ export class TraceTimeSeriesPanel extends SceneObjectBase<TraceTimeSeriesPanelSt
       children: [
         new SceneFlexItem({
           body: PanelBuilders.timeseries() //
-            .setTitle('Query')
+            .setTitle('Spans')
             .setOption('legend', { showLegend: false })
             .setCustomFieldConfig('drawStyle', GraphDrawStyle.Points)
             .setCustomFieldConfig('fillOpacity', 9)
+            .setCustomFieldConfig('scaleDistribution', {
+              type: ScaleDistribution.Log,
+              log: 2,
+            })
+            .setOverrides((b) =>
+              b
+                .matchFieldsWithName('error')
+                .overrideColor(overrideToFixedColor('firing'))
+                .overrideCustomFieldConfig('pointSize', 7)
+                .matchFieldsWithName('ok')
+                .overrideColor(overrideToFixedColor('normal'))
+                .matchFieldsWithName('unset')
+                .overrideColor(overrideToFixedColor('normal'))
+            )
             .setData(
               new SceneDataTransformer({
                 transformations: [
                   {
-                    id: 'partitionByValues',
+                    id: 'groupingToMatrix',
                     options: {
-                      fields: ['status'],
-                      naming: {
-                        asLabels: false,
-                      },
+                      columnField: 'status',
+                      rowField: 'Start time',
+                      valueField: 'Duration',
+                    },
+                  },
+                  {
+                    id: 'convertFieldType',
+                    options: {
+                      fields: {},
+                      conversions: [
+                        {
+                          targetField: 'Start time\\status',
+                          destinationType: 'time',
+                        },
+                      ],
                     },
                   },
                 ],

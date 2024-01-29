@@ -4,7 +4,6 @@ import React from 'react';
 import { AdHocVariableFilter, GrafanaTheme2 } from '@grafana/data';
 import { locationService } from '@grafana/runtime';
 import {
-  AdHocFilterSet,
   AdHocFiltersVariable,
   DataSourceVariable,
   getUrlSyncManager,
@@ -29,8 +28,16 @@ import { DataTrailHistory, DataTrailHistoryStep } from './DataTrailsHistory';
 import { MetricScene } from './MetricScene';
 import { MetricSelectScene } from './MetricSelectScene';
 import { TraceScene } from './TraceScene';
+import { TraceSelectScene } from './TraceSelectScene';
 import { getTrailStore } from './TrailStore/TrailStore';
-import { MetricSelectedEvent, trailDS, TrailType, VAR_DATASOURCE, VAR_FILTERS } from './shared';
+import {
+  MetricSelectedEvent,
+  ServiceNameSelectedEvent,
+  trailDS,
+  TrailType,
+  VAR_DATASOURCE,
+  VAR_FILTERS,
+} from './shared';
 import { getUrlForTrail } from './utils';
 
 export interface DataTrailState extends SceneObjectState {
@@ -54,7 +61,7 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
   protected _urlSync = new SceneObjectUrlSyncConfig(this, { keys: ['metric', 'trailType'] });
 
   public constructor(state: Partial<DataTrailState>) {
-    const trailType = state.trailType ?? 'metrics';
+    const trailType = state.trailType ?? 'traces';
     super({
       $timeRange: state.$timeRange ?? new SceneTimeRange({}),
       $variables: state.$variables ?? getVariableSet(trailType, state.initialDS, state.metric, state.initialFilters),
@@ -74,12 +81,17 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
   }
 
   public _onActivate() {
+    const variable = sceneGraph.lookupVariable('filters', this);
+    if (!(variable instanceof AdHocFiltersVariable)) {
+      return;
+    }
     if (!this.state.topScene) {
-      this.setState({ topScene: getTopSceneForType(this.state.trailType, this.state.metric) });
+      this.setState({ topScene: getTopSceneForType(this.state.trailType, variable, this.state.metric) });
     }
 
     // Some scene elements publish this
     this.subscribeToEvent(MetricSelectedEvent, this._handleMetricSelectedEvent.bind(this));
+    this.subscribeToEvent(ServiceNameSelectedEvent, this._handleServiceNameSelectedEvent.bind(this));
 
     // Pay attention to changes in history (i.e., changing the step)
     this.state.history.subscribeToState((newState, oldState) => {
@@ -127,6 +139,17 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
       locationService.replace(getUrlForTrail(this));
 
       getUrlSyncManager().initSync(this);
+    }
+  }
+
+  private _handleServiceNameSelectedEvent(evt: ServiceNameSelectedEvent) {
+    const variable = sceneGraph.lookupVariable('filters', this);
+    if (!(variable instanceof AdHocFiltersVariable)) {
+      return;
+    }
+    console.log('_handleServiceNameSelectedEvent', variable);
+    if (variable.state.set.state.filters.length > 0 && this.state.trailType === 'traces') {
+      this.setState({ topScene: getTopSceneForType(this.state.trailType, variable, this.state.metric) });
     }
   }
 
@@ -192,14 +215,21 @@ export class DataTrail extends SceneObjectBase<DataTrailState> {
   };
 }
 
-function getTopSceneForType(trailType: TrailType, metric?: string) {
+function getTopSceneForType(trailType: TrailType, variable: AdHocFiltersVariable, metric?: string) {
   switch (trailType) {
     case 'metrics':
       return getTopSceneFor(metric);
     case 'traces':
-      return new TraceScene({});
+      return getTopSceneForTrace(variable);
   }
   return undefined;
+}
+
+function getTopSceneForTrace(variable: AdHocFiltersVariable) {
+  if (variable.state.set.state.filters.length === 0) {
+    return new TraceSelectScene({});
+  }
+  return new TraceScene({});
 }
 
 function getTopSceneFor(metric?: string) {

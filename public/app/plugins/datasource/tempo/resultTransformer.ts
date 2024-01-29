@@ -28,7 +28,7 @@ import { getDataSourceSrv } from '@grafana/runtime';
 
 import { SearchTableType } from './dataquery.gen';
 import { createGraphFrames } from './graphTransform';
-import { Span, SpanAttributes, Spanset, TempoJsonData, TraceSearchMetadata } from './types';
+import { Span, SpanAttributes, Spanset, TempoJsonData, TraceqlMetricsResponse, TraceSearchMetadata } from './types';
 
 export function createTableFrame(
   logsFrame: DataFrame | DataFrameDTO,
@@ -623,6 +623,34 @@ function transformToTraceData(data: TraceSearchMetadata) {
   };
 }
 
+export function formatTraceQLMetrics(data: TraceqlMetricsResponse) {
+  console.log('data', data);
+
+  const frames = data.series.map((series) => {
+    const timeValues: number[] = series.samples.map((sample) => sample.timestampMs * 1); // TODO without * 1, the values are strings, don't know why
+    return createDataFrame({
+      refId: series.labels[0].key,
+      fields: [
+        {
+          name: 'time',
+          type: FieldType.time,
+          values: timeValues,
+        },
+        {
+          name: series.labels[0].value.stringValue,
+          type: FieldType.number,
+          values: series.samples.map((sample) => sample.value),
+        },
+      ],
+      meta: {
+        preferredVisualisationType: 'graph',
+      },
+    });
+  });
+  console.log('frames', frames);
+  return frames;
+}
+
 export function formatTraceQLResponse(
   data: TraceSearchMetadata[],
   instanceSettings: DataSourceInstanceSettings,
@@ -872,6 +900,7 @@ export function createTableFrameFromTraceQlQueryAsSpans(
         });
       });
     });
+  console.log(frame);
 
   return [frame];
 }
