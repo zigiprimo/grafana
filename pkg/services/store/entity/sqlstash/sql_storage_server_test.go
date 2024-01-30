@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -14,7 +15,16 @@ import (
 )
 
 func TestCreate(t *testing.T) {
-	s := setUpTestServer(t)
+	sqlStore := db.InitTestDB(t)
+
+	entityDB, err := dbimpl.ProvideEntityDB(
+		sqlStore,
+		setting.NewCfg(),
+		featuremgmt.WithFeatures(featuremgmt.FlagUnifiedStorage))
+	require.NoError(t, err)
+
+	s, err := ProvideSQLEntityServer(entityDB)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name             string
@@ -113,20 +123,31 @@ func TestCreate(t *testing.T) {
 			require.Equal(t, tc.ent.Labels, read.Labels)
 			require.Equal(t, tc.ent.Fields, read.Fields)
 			require.Equal(t, tc.ent.Errors, read.Errors)
+
+			err = sqlStore.WithDbSession(context.Background(), func(sess *db.Session) error {
+				var e []map[string]interface{}
+				err := sess.Table("entity_history").Find(&e)
+				require.NoError(t, err)
+				require.Len(t, e, 1)
+				assert.Equal(t, tc.ent.Key, e[0]["key"])
+				return nil
+			})
+			require.NoError(t, err)
 		})
 	}
 }
 
-func setUpTestServer(t *testing.T) entity.EntityStoreServer {
-	sqlStore := db.InitTestDB(t)
+// #TODO we need access to the entityDB in the test. Refactor set up.
+// func setUpTestServer(t *testing.T) entity.EntityStoreServer {
+// 	sqlStore := db.InitTestDB(t)
 
-	entityDB, err := dbimpl.ProvideEntityDB(
-		sqlStore,
-		setting.NewCfg(),
-		featuremgmt.WithFeatures(featuremgmt.FlagUnifiedStorage))
-	require.NoError(t, err)
+// 	entityDB, err := dbimpl.ProvideEntityDB(
+// 		sqlStore,
+// 		setting.NewCfg(),
+// 		featuremgmt.WithFeatures(featuremgmt.FlagUnifiedStorage))
+// 	require.NoError(t, err)
 
-	s, err := ProvideSQLEntityServer(entityDB)
-	require.NoError(t, err)
-	return s
-}
+// 	s, err := ProvideSQLEntityServer(entityDB)
+// 	require.NoError(t, err)
+// 	return s
+// }
