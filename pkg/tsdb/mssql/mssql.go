@@ -371,7 +371,7 @@ func Krb5ParseAuthCredentials(host string, port string, db string, user string, 
 	if krb5CacheCredsFile != "" {
 		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;krb5-credcachefile=%s;", host, db, krb5CacheCredsFile)
 	} else if krb5Realm != "" && krb5ClientKeytabFile != "" {
-		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;user id=%s;krb5-realm=%s;krb5-keytabfile=%s;", host, db, user, krb5Realm, krb5ClientKeytabFile)
+		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;;krb5-realm=%s;krb5-keytabfile=%s;", host, db, krb5Realm, krb5ClientKeytabFile)
 	} else if krb5Realm != "" && krb5ClientKeytabFile == "" {
 		krb5DriverParams += fmt.Sprintf("server=%s;database=%s;user id=%s;password=%s;krb5-realm=%s;", host, db, user, pass, krb5Realm)
 	} else {
