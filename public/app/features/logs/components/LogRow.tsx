@@ -196,6 +196,7 @@ class UnThemedLogRow extends PureComponent<Props, State> {
   });
 
   render() {
+    console.log('row render');
     const {
       getRows,
       onClickFilterLabel,
@@ -221,22 +222,13 @@ class UnThemedLogRow extends PureComponent<Props, State> {
     const { showDetails, showingContext, permalinked } = this.state;
     const levelStyles = getLogLevelStyles(theme, row.logLevel);
     const { errorMessage, hasError } = checkLogsError(row);
-    const logRowBackground = cx(styles.logsRow, {
-      [styles.errorLogRow]: hasError,
-      [styles.highlightBackground]: showingContext || permalinked,
-    });
-    const logRowDetailsBackground = cx(styles.logsRow, {
-      [styles.errorLogRow]: hasError,
-      [styles.highlightBackground]: permalinked && !this.state.showDetails,
-    });
-
     const processedRow = this.escapeRow(row, forceEscape);
 
     return (
       <>
         <tr
           ref={this.logLineRef}
-          className={logRowBackground}
+          className={`${styles.logsRow} ${hasError && styles.errorLogRow} ${(showingContext || permalinked) && styles.highlightBackground}`}
           onClick={this.onRowClick}
           onMouseEnter={this.onMouseEnter}
           onMouseLeave={this.onMouseLeave}
@@ -308,7 +300,10 @@ class UnThemedLogRow extends PureComponent<Props, State> {
         </tr>
         {this.state.showDetails && (
           <LogDetails
-            className={logRowDetailsBackground}
+            className={cx(styles.logsRow, {
+              [styles.errorLogRow]: hasError,
+              [styles.highlightBackground]: permalinked && !this.state.showDetails,
+            })}
             showDuplicates={showDuplicates}
             getFieldLinks={getFieldLinks}
             onClickFilterLabel={onClickFilterLabel}
