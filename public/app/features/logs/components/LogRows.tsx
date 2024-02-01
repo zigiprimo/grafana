@@ -184,6 +184,7 @@ class UnThemedLogRows extends PureComponent<Props, State> {
   );
 
   render() {
+    console.log('rows render');
     const { deduplicatedRows, logRows, dedupStrategy, theme, logsSortOrder, previewLimit, ...rest } = this.props;
     const { renderAll } = this.state;
     const styles = getLogRowStyles(theme);
