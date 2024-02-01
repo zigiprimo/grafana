@@ -256,7 +256,7 @@ func (ss *SQLStore) initEngine(engine *xorm.Engine) error {
 
 	ss.log.Info("Connecting to DB", "dbtype", ss.dbCfg.Type)
 	if ss.dbCfg.Type == migrator.SQLite && strings.HasPrefix(ss.dbCfg.ConnectionString, "file:") &&
-		!strings.HasPrefix(ss.dbCfg.ConnectionString, "file::memory:") {
+		!(strings.HasPrefix(ss.dbCfg.ConnectionString, "file::memory:") || strings.Contains(ss.dbCfg.ConnectionString, "?mode=memory")) {
 		exists, err := fs.Exists(ss.dbCfg.Path)
 		if err != nil {
 			return fmt.Errorf("can't check for existence of %q: %w", ss.dbCfg.Path, err)
