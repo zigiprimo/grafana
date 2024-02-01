@@ -41,7 +41,7 @@ interface LogMessageProps {
 const LogMessage = ({ hasAnsi, entry, highlights, styles }: LogMessageProps) => {
   const needsHighlighter =
     highlights && highlights.length > 0 && highlights[0] && highlights[0].length > 0 && entry.length < MAX_CHARACTERS;
-  const searchWords = highlights ?? [];
+  const searchWords = useMemo(() => highlights ?? [], [highlights]);
   if (hasAnsi) {
     const highlight = needsHighlighter ? { searchWords, highlightClassName: styles.logsRowMatchHighLight } : undefined;
     return <LogMessageAnsi value={entry} highlight={highlight} />;
