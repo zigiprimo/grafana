@@ -6,10 +6,7 @@ import (
 	common "github.com/grafana/grafana/pkg/apis/common/v0alpha1"
 )
 
-// The data source resource is a reflection of the individual datasource instances
-// that are exposed in the groups: {datasource}.datasource.grafana.app
-// The status is updated periodically.
-// The name is the plugin id
+// This defines valid properties in in a schema object
 //
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 type QueryTypeDefinition struct {
@@ -35,7 +32,7 @@ type QueryTypeSpec struct {
 	Changelog []string `json:"changelog,omitempty"`
 }
 
-// TODO -- this should be what is defined in peakq
+// TODO -- use the template defined in peakq!!!
 type ExampleInfo struct {
 	Name string `json:"name,omitempty"`
 
