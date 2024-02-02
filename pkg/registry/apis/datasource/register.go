@@ -3,6 +3,7 @@ package datasource
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +15,7 @@ import (
 	"k8s.io/apiserver/pkg/registry/rest"
 	genericapiserver "k8s.io/apiserver/pkg/server"
 	openapi "k8s.io/kube-openapi/pkg/common"
+	"k8s.io/kube-openapi/pkg/spec3"
 	"k8s.io/utils/strings/slices"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
@@ -218,6 +220,31 @@ func (b *DataSourceAPIBuilder) GetOpenAPIDefinitions() openapi.GetOpenAPIDefinit
 		}
 		return defs
 	}
+}
+
+func (b *DataSourceAPIBuilder) PostProcessOpenAPI(oas *spec3.OpenAPI) (*spec3.OpenAPI, error) {
+	oas.Info.Description = b.pluginJSON.Info.Description
+	baseURL := "/apis/" + b.connectionResourceInfo.GroupVersion().String() + "/"
+
+	// Hide the invalid endpoint to list all snapshots for all orgs
+	delete(oas.Paths.Paths, baseURL+"connections")
+
+	for path, info := range oas.Paths.Paths {
+		if strings.Index(path, "namespaces/{namespace}/connections/{name}/resource") > 0 {
+			for _, op := range builder.GetPathOperations(info) {
+				if op != nil {
+					op.Tags = []string{"Resource (http handling)"}
+				}
+			}
+		}
+	}
+
+	// The root API discovery list
+	sub := oas.Paths.Paths[baseURL]
+	if sub != nil && sub.Get != nil {
+		sub.Get.Tags = []string{"API Discovery"} // sorts first in the list
+	}
+	return oas, nil
 }
 
 // Register additional routes with the server
