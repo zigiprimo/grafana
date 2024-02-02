@@ -22,6 +22,7 @@ import (
 	"github.com/grafana/grafana/pkg/apis/datasource/v0alpha1"
 	query "github.com/grafana/grafana/pkg/apis/query/v0alpha1"
 	"github.com/grafana/grafana/pkg/plugins"
+	"github.com/grafana/grafana/pkg/registry/apis/datasource/queries"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/apiserver/builder"
 	"github.com/grafana/grafana/pkg/services/apiserver/utils"
@@ -221,5 +222,11 @@ func (b *DataSourceAPIBuilder) GetOpenAPIDefinitions() openapi.GetOpenAPIDefinit
 
 // Register additional routes with the server
 func (b *DataSourceAPIBuilder) GetAPIRoutes() *builder.APIRoutes {
+	if b.connectionResourceInfo.GroupVersion().Group == "testdata.datasource.grafana.app" {
+		info := queries.NewQueryInfoHandler()
+		return &builder.APIRoutes{
+			Root: info.GetQueryRoutes(),
+		}
+	}
 	return nil
 }
