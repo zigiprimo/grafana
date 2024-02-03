@@ -19,9 +19,9 @@ source "${CODEGEN_PKG}/kube_codegen.sh"
 source "$(dirname "${BASH_SOURCE[0]}")/openapi-codegen.sh"
 
 kube::codegen::gen_helpers \
-    --input-pkg-root github.com/grafana/grafana/pkg/apis \
-    --output-base "${OUTDIR}" \
-    --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt"
+   --input-pkg-root github.com/grafana/grafana/pkg/apis \
+   --output-base "${OUTDIR}" \
+   --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt"
 
 
 for api_pkg in $(ls ./pkg/apis); do
@@ -30,17 +30,15 @@ for api_pkg in $(ls ./pkg/apis); do
   fi
   for pkg_version in $(ls ./pkg/apis/${api_pkg}); do
     echo "Generating openapi package for ${api_pkg}, version=${pkg_version} ..."
+    include_common_input_dirs=$([[ ${api_pkg} == "common" ]] && echo "--include-common-input-dirs" || echo "")
 
-    if [[ api_pkg == "common" ]] then 
-      echo "TODO!!! add in the common api stuff we may want"
-    else
-      grafana::codegen::gen_openapi \
-        --input-pkg-single github.com/grafana/grafana/pkg/apis/${api_pkg}/${pkg_version} \
-        --output-base "${OUTDIR}" \
-        --report-filename "${OPENAPI_VIOLATION_EXCEPTIONS_FILENAME}" \
-        --update-report \
-        --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt"
-    fi
+    grafana::codegen::gen_openapi \
+      --input-pkg-single github.com/grafana/grafana/pkg/apis/${api_pkg}/${pkg_version} \
+      --output-base "${OUTDIR}" \
+      --report-filename "${OPENAPI_VIOLATION_EXCEPTIONS_FILENAME}" \
+      --update-report \
+      --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt" \
+      ${include_common_input_dirs}
   done
 
   violations_file="${OUTDIR}/github.com/grafana/grafana/pkg/apis/${api_pkg}/${pkg_version}/${OPENAPI_VIOLATION_EXCEPTIONS_FILENAME}"
