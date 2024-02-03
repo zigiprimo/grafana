@@ -31,7 +31,6 @@ set -o nounset
 set -o pipefail
 
 KUBE_CODEGEN_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
-COMMON_INPUT_DIRS=""
 
 source "${CODEGEN_PKG}/kube_codegen.sh"
 #
@@ -51,8 +50,12 @@ function grafana::codegen::gen_openapi() {
                 shift 2
                 ;;
             "--include-common-input-dirs")
-               COMMON_INPUT_DIRS='--input-dirs "k8s.io/apimachinery/pkg/apis/meta/v1" --input-dirs "k8s.io/apimachinery/pkg/runtime" --input-dirs "k8s.io/apimachinery/pkg/version"'
-                shift
+                if [ "$2" == "true" ]; then
+                  COMMON_INPUT_DIRS='--input-dirs "k8s.io/apimachinery/pkg/apis/meta/v1" --input-dirs "k8s.io/apimachinery/pkg/runtime" --input-dirs "k8s.io/apimachinery/pkg/version"'
+                else
+                  COMMON_INPUT_DIRS=""
+                fi
+                shift 2
                 ;;
             "--output-base")
                 out_base="$2"

@@ -28,9 +28,9 @@ for api_pkg in $(ls ./pkg/apis); do
   if [[ "${1-}" != "" && ${api_pkg} != $1 ]]; then
     continue
   fi
+  include_common_input_dirs=$([[ ${api_pkg} == "common" ]] && echo "true" || echo "false")
   for pkg_version in $(ls ./pkg/apis/${api_pkg}); do
     echo "Generating openapi package for ${api_pkg}, version=${pkg_version} ..."
-    include_common_input_dirs=$([[ ${api_pkg} == "common" ]] && echo "--include-common-input-dirs" || echo "")
 
     grafana::codegen::gen_openapi \
       --input-pkg-single github.com/grafana/grafana/pkg/apis/${api_pkg}/${pkg_version} \
@@ -38,7 +38,7 @@ for api_pkg in $(ls ./pkg/apis); do
       --report-filename "${OPENAPI_VIOLATION_EXCEPTIONS_FILENAME}" \
       --update-report \
       --boilerplate "${SCRIPT_ROOT}/hack/boilerplate.go.txt" \
-      ${include_common_input_dirs}
+      --include-common-input-dirs ${include_common_input_dirs}
   done
 
   violations_file="${OUTDIR}/github.com/grafana/grafana/pkg/apis/${api_pkg}/${pkg_version}/${OPENAPI_VIOLATION_EXCEPTIONS_FILENAME}"
