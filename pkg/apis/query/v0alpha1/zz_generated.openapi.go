@@ -449,18 +449,10 @@ func schema_pkg_apis_query_v0alpha1_QueryTypeSpec(ref common.ReferenceCallback) 
 							Format: "",
 						},
 					},
-					"properties": {
+					"schema": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The OpenAPI definition for non-common field fields",
-							Type:        []string{"object"},
-							AdditionalProperties: &spec.SchemaOrBool{
-								Allows: true,
-								Schema: &spec.Schema{
-									SchemaProps: spec.SchemaProps{
-										Ref: ref("github.com/grafana/grafana/pkg/apis/common/v0alpha1.Unstructured"),
-									},
-								},
-							},
+							Description: "The OpenAPI definition for non-common field fields Only defines the non-core fields!",
+							Ref:         ref("github.com/grafana/grafana/pkg/apis/common/v0alpha1.Unstructured"),
 						},
 					},
 					"examples": {
@@ -493,7 +485,7 @@ func schema_pkg_apis_query_v0alpha1_QueryTypeSpec(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"properties"},
+				Required: []string{"schema"},
 			},
 		},
 		Dependencies: []string{

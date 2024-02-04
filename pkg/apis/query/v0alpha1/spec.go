@@ -21,8 +21,9 @@ type QueryTypeSpec struct {
 	Description string `json:"description,omitempty"`
 
 	// The OpenAPI definition for non-common field fields
-	// TODO: should be JSON schema!!!
-	Properties map[string]common.Unstructured `json:"properties"`
+	// Only defines the non-core fields!
+	// https://github.com/kubernetes/apiextensions-apiserver/blob/v0.29.1/pkg/apis/apiextensions/types_jsonschema.go#L40
+	Schema common.Unstructured `json:"schema"`
 
 	// Examples (include a wrapper)
 	Examples []ExampleInfo `json:"examples,omitempty"`
