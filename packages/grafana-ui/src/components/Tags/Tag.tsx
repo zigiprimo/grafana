@@ -71,6 +71,9 @@ const getTagStyles = (theme: GrafanaTheme2, name: string, colorIndex?: number) =
   } else {
     colors = getTagColor(colorIndex);
   }
+
+  const bgColor = theme.visualization.getColorByName(colors.color);
+
   return {
     wrapper: css({
       appearance: 'none',
@@ -79,11 +82,11 @@ const getTagStyles = (theme: GrafanaTheme2, name: string, colorIndex?: number) =
       fontSize: theme.typography.size.sm,
       lineHeight: theme.typography.bodySmall.lineHeight,
       verticalAlign: 'baseline',
-      backgroundColor: colors.color,
-      color: theme.v1.palette.gray98,
+      backgroundColor: bgColor,
+      color: theme.colors.getContrastText(bgColor),
       whiteSpace: 'nowrap',
       textShadow: 'none',
-      padding: '3px 6px',
+      padding: '2px 6px',
       borderRadius: theme.shape.radius.default,
     }),
     hover: css({
