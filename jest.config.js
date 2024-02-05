@@ -12,6 +12,8 @@ const esModules = [
   'internmap',
   'robust-predicates',
   'leven',
+  'nanoid',
+  'monaco-promql',
 ].join('|');
 
 module.exports = {
