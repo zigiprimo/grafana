@@ -2,9 +2,9 @@ package sqlstash
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -124,19 +124,34 @@ func TestCreate(t *testing.T) {
 			require.Equal(t, tc.ent.Fields, read.Fields)
 			require.Equal(t, tc.ent.Errors, read.Errors)
 
-			err = sqlStore.WithDbSession(context.Background(), func(sess *db.Session) error {
-				var e []map[string]interface{}
-				err := sess.Table("entity_history").Find(&e)
-				require.NoError(t, err)
-				require.Len(t, e, 1)
-				assert.Equal(t, tc.ent.Key, e[0]["key"])
-				return nil
-			})
+			// check entity_history
+
+			sess, err := entityDB.GetSession()
 			require.NoError(t, err)
+
+			// #TODO update the query used here
+			rows, err := sess.Query(context.Background(), "SELECT * FROM entity_history;")
+			require.NoError(t, err)
+
+			defer func() { _ = rows.Close() }()
+
+			ss, ok := s.(*sqlEntityServer)
+			require.True(t, ok)
+
+			require.True(t, rows.Next())
+
+			// #TODO figure out what the request should contain
+			ent, err := ss.rowToEntity(context.Background(), rows, &entity.ReadEntityRequest{
+				Key: tc.ent.Key,
+			})
+			fmt.Printf("%+v", ent)
+			require.Equal(t, tc.ent.Key, ent.Key) // #TODO figure out why it panics here
+
 		})
 	}
 }
 
+// #TODO for later can also return other vals besides entity.EntityStoreServer if we need them
 // #TODO we need access to the entityDB in the test. Refactor set up.
 // func setUpTestServer(t *testing.T) entity.EntityStoreServer {
 // 	sqlStore := db.InitTestDB(t)
