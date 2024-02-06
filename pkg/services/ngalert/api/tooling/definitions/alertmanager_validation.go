@@ -114,6 +114,9 @@ func (r *Route) Validate() error {
 }
 
 func (r *Route) ValidateReceivers(receivers map[string]struct{}) error {
+	if len(r.Receiver) == 0 {
+		return nil
+	}
 	if _, exists := receivers[r.Receiver]; !exists {
 		return fmt.Errorf("receiver '%s' does not exist", r.Receiver)
 	}

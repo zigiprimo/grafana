@@ -13,6 +13,11 @@ import (
 func TestValidateRoutes(t *testing.T) {
 	zero := model.Duration(0)
 
+	receivers := map[string]struct{}{
+		"foo": {},
+		"bar": {},
+	}
+
 	type testCase struct {
 		desc   string
 		route  Route
@@ -21,10 +26,6 @@ func TestValidateRoutes(t *testing.T) {
 
 	t.Run("valid route", func(t *testing.T) {
 		cases := []testCase{
-			{
-				desc:  "empty",
-				route: Route{},
-			},
 			{
 				desc: "simple",
 				route: Route{
@@ -44,12 +45,26 @@ func TestValidateRoutes(t *testing.T) {
 					},
 				},
 			},
+			{
+				desc: "nested, inherit receiver",
+				route: Route{
+					Receiver:   "foo",
+					GroupByStr: []string{"..."},
+					Routes: []*Route{
+						{
+							GroupByStr: []string{"abc"},
+						},
+					},
+				},
+			},
 		}
 
 		for _, c := range cases {
 			t.Run(c.desc, func(t *testing.T) {
-				err := c.route.validateChild()
+				err := c.route.Validate()
+				require.NoError(t, err)
 
+				err = c.route.ValidateReceivers(receivers)
 				require.NoError(t, err)
 			})
 		}
@@ -57,6 +72,11 @@ func TestValidateRoutes(t *testing.T) {
 
 	t.Run("invalid route", func(t *testing.T) {
 		cases := []testCase{
+			{
+				desc:   "empty",
+				route:  Route{},
+				expMsg: "root route must specify a default receiver",
+			},
 			{
 				desc: "zero group interval",
 				route: Route{
@@ -117,12 +137,39 @@ func TestValidateRoutes(t *testing.T) {
 
 		for _, c := range cases {
 			t.Run(c.desc, func(t *testing.T) {
-				err := c.route.validateChild()
+				err := c.route.Validate()
 
 				require.Error(t, err)
 				require.Contains(t, err.Error(), c.expMsg)
 			})
 		}
+	})
+
+	t.Run("invalid receivers", func(t *testing.T) {
+		t.Run("at root", func(t *testing.T) {
+			route := Route{
+				Receiver:   "baz",
+				GroupByStr: []string{"..."},
+			}
+
+			err := route.ValidateReceivers(receivers)
+			require.EqualError(t, err, "receiver 'baz' does not exist")
+		})
+
+		t.Run("nested", func(t *testing.T) {
+			route := Route{
+				Receiver:   "foo",
+				GroupByStr: []string{"..."},
+				Routes: []*Route{
+					{
+						Receiver: "baz",
+					},
+				},
+			}
+
+			err := route.ValidateReceivers(receivers)
+			require.EqualError(t, err, "receiver 'baz' does not exist")
+		})
 	})
 
 	t.Run("route validator normalizes group_by", func(t *testing.T) {
