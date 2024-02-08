@@ -70,7 +70,7 @@ func (h *ContextHandler) initContextWithJWT(ctx *contextmodel.ReqContext, orgId 
 		AuthId:     sub,
 		OrgRoles:   map[int64]org.RoleType{},
 		// we do not want to sync team memberships from JWT authentication see - https://github.com/grafana/grafana/issues/62175
-		SkipTeamSync: true,
+		SkipTeamSync: false,
 	}
 
 	if key := h.Cfg.JWTAuthUsernameClaim; key != "" {
@@ -113,6 +113,15 @@ func (h *ContextHandler) initContextWithJWT(ctx *contextmodel.ReqContext, orgId 
 			}
 		}
 	}
+
+	groups, err := extractGroups(h.Cfg.JWTAuthGroupsAttributePath, claims)
+	if err != nil {
+		ctx.Logger.Debug("Failed to extract groups from JWT", "error", err)
+		ctx.JsonApiErr(http.StatusForbidden, InvalidJWT, err)
+		return true
+	}
+
+	extUser.Groups = groups
 
 	if query.Login == "" && query.Email == "" {
 		ctx.Logger.Debug("Failed to get an authentication claim from JWT")
@@ -176,6 +185,31 @@ func (h *ContextHandler) extractJWTRoleAndAdmin(claims map[string]interface{}) (
 		return org.RoleAdmin, true
 	}
 	return org.RoleType(role), false
+}
+
+func extractGroups(groupsAttributePath string, claims map[string]any) ([]string, error) {
+	if groupsAttributePath == "" {
+		return []string{}, nil
+	}
+
+	val, err := jmespath.Search(groupsAttributePath, claims)
+	if err != nil {
+		return []string{}, fmt.Errorf("failed to search group claims with provided path: %q: %w", groupsAttributePath, err)
+	}
+
+	ifArr, ok := val.([]interface{})
+	if !ok {
+		return []string{}, nil
+	}
+
+	result := []string{}
+	for _, v := range ifArr {
+		if strVal, ok := v.(string); ok {
+			result = append(result, strVal)
+		}
+	}
+
+	return result, nil
 }
 
 func searchClaimsForAttr(attributePath string, claims map[string]interface{}) (interface{}, error) {

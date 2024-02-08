@@ -310,6 +310,7 @@ type Cfg struct {
 	JWTAuthRoleAttributeStrict     bool
 	JWTAuthAllowAssignGrafanaAdmin bool
 	JWTAuthSkipOrgRoleSync         bool
+	JWTAuthGroupsAttributePath     string
 
 	// Dataproxy
 	SendUserHeader                 bool
@@ -1529,6 +1530,7 @@ func readAuthSettings(iniFile *ini.File, cfg *Cfg) (err error) {
 	cfg.JWTAuthRoleAttributeStrict = authJWT.Key("role_attribute_strict").MustBool(false)
 	cfg.JWTAuthAllowAssignGrafanaAdmin = authJWT.Key("allow_assign_grafana_admin").MustBool(false)
 	cfg.JWTAuthSkipOrgRoleSync = authJWT.Key("skip_org_role_sync").MustBool(false)
+	cfg.JWTAuthGroupsAttributePath = authJWT.Key("groups_attribute_path").MustString("")
 
 	authProxy := iniFile.Section("auth.proxy")
 	cfg.AuthProxyEnabled = authProxy.Key("enabled").MustBool(false)
