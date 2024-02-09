@@ -172,10 +172,6 @@ func (h *ContextHandler) addIDHeaderEndOfRequestFunc(ident identity.Requester) w
 
 func (h *ContextHandler) deleteInvalidCookieEndOfRequestFunc(reqContext *contextmodel.ReqContext) web.BeforeFunc {
 	return func(w web.ResponseWriter) {
-		if h.features.IsEnabled(reqContext.Req.Context(), featuremgmt.FlagClientTokenRotation) {
-			return
-		}
-
 		if w.Written() {
 			reqContext.Logger.Debug("Response written, skipping invalid cookie delete")
 			return

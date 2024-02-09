@@ -200,7 +200,7 @@ func TestHTTPServer_RotateUserAuthToken(t *testing.T) {
 				hs.Cfg = cfg
 				hs.log = log.New()
 				hs.Cfg.LoginCookieName = "grafana_session"
-				hs.Features = featuremgmt.WithFeatures(featuremgmt.FlagClientTokenRotation)
+				hs.Features = featuremgmt.WithFeatures()
 				hs.AuthTokenService = &authtest.FakeUserAuthTokenService{
 					RotateTokenProvider: func(ctx context.Context, cmd auth.RotateCommand) (*auth.UserToken, error) {
 						return tt.rotatedToken, tt.rotatedErr
