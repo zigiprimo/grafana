@@ -1,6 +1,6 @@
 import { Meta, StoryFn } from '@storybook/react';
 import Chance from 'chance';
-import React from 'react';
+import React, { useCallback, useId } from 'react';
 
 import { ComboBox } from './index';
 
@@ -13,19 +13,31 @@ const meta: Meta = {
 
 export default meta;
 
-const OPTIONS_LENGTH = 500;
+const OPTIONS_LENGTH = 500_000;
+
 const options = new Array(OPTIONS_LENGTH).fill(0).map((_, index) => ({
   value: index.toString(),
   label: chance.name(),
 }));
 
 export const Basic: StoryFn = (args) => {
+  const labelId = useId();
+  const inputId = useId();
+
+  const [value, setValue] = React.useState<string | undefined>();
+
+  const handleChange = useCallback((newValue: string | undefined) => {
+    console.log('combo box emitted', newValue);
+    setValue(newValue);
+  }, []);
+
   return (
     <div>
-      <div style={{ height: '100vh', background: 'green' }}></div>
-      <ComboBox options={options} />
-      <div style={{ height: '100vh', background: 'green' }}></div>
-      <ComboBox options={options} />
+      <label id={labelId} htmlFor={inputId}>
+        Users:
+      </label>
+
+      <ComboBox value={value} onChange={handleChange} labelId={labelId} inputId={inputId} options={options} />
     </div>
   );
 };
