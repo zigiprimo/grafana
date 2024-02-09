@@ -40,9 +40,10 @@ Choose from the options below to import (or provision) your Grafana Alerting res
 
 1. Use the [Alerting provisioning HTTP API][alerting_http_provisioning] to manage alerting resources.
 
-   **Note:**
-
-   The JSON output from the majority of Alerting HTTP endpoints is not compatible for provisioning via configuration files. Instead, use the [Export Alerting endpoints][alerting_export_http] to return or download the alerting resources in provisioning format.
+   {{< admonition type="note" >}}
+   The JSON output from the majority of Alerting HTTP endpoints isn't compatible for provisioning via configuration files.
+   Instead, use the [Export Alerting endpoints](/docs/grafana/<GRAFANA_VERSION>/alerting/set-up/provision-alerting-resources/export-alerting-resources#export-api-endpoints) to return or download the alerting resources in provisioning format.
+   {{< /admonition >}}
 
 ## Export alerting resources
 
