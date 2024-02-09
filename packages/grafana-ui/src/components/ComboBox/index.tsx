@@ -33,6 +33,7 @@ interface VirtualData {
 
 export function ComboBox({ value, onChange, options, labelId, inputId }: ComboBoxProps) {
   const styles = useStyles2(getStyles);
+
   const [inputValue, setInputValue] = React.useState('');
 
   const filteredOptions = useMemo(() => {
@@ -41,41 +42,38 @@ export function ComboBox({ value, onChange, options, labelId, inputId }: ComboBo
     }
 
     const phraseLowerCase = inputValue.toLowerCase();
-    console.time('Combobox filtering');
-    const filtered = (options ?? []).filter((v) => v.label.toLowerCase().includes(phraseLowerCase));
-    console.timeEnd('Combobox filtering');
+
+    const [filtered] = measure('combobox-filter', () =>
+      (options ?? []).filter((v) => v.label.toLowerCase().includes(phraseLowerCase))
+    );
 
     return filtered;
   }, [options, inputValue]);
 
   const selectedItem = useMemo(() => {
-    console.log('combobox value is', value);
-    console.time('combobox find selectedItem');
-    const selected = (options ?? []).find((v) => v.value === value);
-    console.timeEnd('combobox find selectedItem');
+    const [selected] = measure('combobox-selectedItem', () => (options ?? []).find((v) => v.value === value));
     return selected;
   }, [options, value]);
 
-  console.log('combobox selectedItem is', selectedItem);
+  let { /*selectedItem,*/ isOpen, getToggleButtonProps, getMenuProps, getInputProps, highlightedIndex, getItemProps } =
+    useCombobox({
+      labelId,
+      inputId,
 
-  let { isOpen, getToggleButtonProps, getMenuProps, getInputProps, highlightedIndex, getItemProps } = useCombobox({
-    labelId,
-    inputId,
+      items: filteredOptions,
+      itemToString(item) {
+        return item ? item.label : '';
+      },
 
-    items: filteredOptions,
-    itemToString(item) {
-      return item ? item.label : '';
-    },
+      selectedItem: selectedItem || null,
+      onSelectedItemChange: ({ selectedItem }) => {
+        onChange && onChange(selectedItem?.value);
+      },
 
-    selectedItem,
-    onSelectedItemChange: ({ selectedItem }) => {
-      onChange && onChange(selectedItem?.value);
-    },
-
-    onInputValueChange({ inputValue }) {
-      setInputValue(inputValue ?? '');
-    },
-  });
+      onInputValueChange({ inputValue }) {
+        setInputValue(inputValue ?? '');
+      },
+    });
 
   const { refs, floatingStyles } = useFloating({
     placement: 'bottom',
@@ -132,7 +130,6 @@ export function ComboBox({ value, onChange, options, labelId, inputId }: ComboBo
 }
 
 function Row({ index, data, style }: ListChildComponentProps<VirtualData>) {
-  const styles = useStyles2(getStyles);
   const { items, highlightedIndex, getItemProps, selectedItem } = data;
   const item = items[index];
 
@@ -142,11 +139,11 @@ function Row({ index, data, style }: ListChildComponentProps<VirtualData>) {
         index,
         item,
       })}
-      className={styles.row}
       style={{
         ...style,
         outline: highlightedIndex === index ? '2px solid blue' : 'none',
         fontWeight: selectedItem === item ? 'bold' : 'normal',
+        height: ROW_HEIGHT,
       }}
     >
       {item.label} / {item.value}
@@ -171,8 +168,19 @@ function getStyles(theme: GrafanaTheme2) {
       overflow: 'none',
     }),
     virtualList: css({}),
-    row: css({
-      height: ROW_HEIGHT,
-    }),
   };
+}
+
+function measure<T>(id: string, fn: () => T): [T, PerformanceMeasure] {
+  const startId = `${id}-start`;
+  const endId = `${id}-end`;
+  const measureId = `${id}-duration`;
+
+  performance.mark(startId);
+  const result = fn();
+  performance.mark(endId);
+  const measurement = performance.measure(measureId, startId, endId);
+  console.log(measureId, measurement.duration, 'ms');
+
+  return [result, measurement];
 }
