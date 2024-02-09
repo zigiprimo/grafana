@@ -71,6 +71,8 @@ export {
 } from './Monaco/types';
 export { variableSuggestionToCodeEditorSuggestion } from './Monaco/utils';
 
+export { ComboBox } from './ComboBox';
+
 // TODO: namespace
 export { Modal, type Props as ModalProps } from './Modal/Modal';
 export { ModalHeader } from './Modal/ModalHeader';

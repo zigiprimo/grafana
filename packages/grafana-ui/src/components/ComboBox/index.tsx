@@ -1,12 +1,15 @@
 import { css } from '@emotion/css';
-import { useFloating, flip, shift, autoUpdate } from '@floating-ui/react';
+import { useFloating, flip, shift, autoUpdate, useMergeRefs } from '@floating-ui/react';
 import { useCombobox } from 'downshift';
 import React, { useMemo } from 'react';
+import { useMeasure } from 'react-use';
 import { FixedSizeList, ListChildComponentProps } from 'react-window';
 
 import { GrafanaTheme2 } from '@grafana/data';
 
 import { useStyles2 } from '../../themes';
+import { IconButton } from '../IconButton/IconButton';
+import { Input } from '../Input/Input';
 
 const ROW_HEIGHT = 30;
 const LIST_MAX_HEIGHT = 300;
@@ -32,6 +35,7 @@ interface VirtualData {
 }
 
 export function ComboBox({ value, onChange, options, labelId, inputId }: ComboBoxProps) {
+  const [measureInputRef, { width }] = useMeasure();
   const styles = useStyles2(getStyles);
 
   const [inputValue, setInputValue] = React.useState('');
@@ -55,35 +59,38 @@ export function ComboBox({ value, onChange, options, labelId, inputId }: ComboBo
     return selected;
   }, [options, value]);
 
-  let { /*selectedItem,*/ isOpen, getToggleButtonProps, getMenuProps, getInputProps, highlightedIndex, getItemProps } =
-    useCombobox({
-      labelId,
-      inputId,
+  let { isOpen, getToggleButtonProps, getMenuProps, getInputProps, highlightedIndex, getItemProps } = useCombobox({
+    // isOpen: true,
 
-      items: filteredOptions,
-      itemToString(item) {
-        return item ? item.label : '';
-      },
+    labelId,
+    inputId,
 
-      selectedItem: selectedItem || null,
-      onSelectedItemChange: ({ selectedItem }) => {
-        onChange && onChange(selectedItem?.value);
-      },
+    items: filteredOptions,
+    itemToString(item) {
+      return item ? item.label : '';
+    },
 
-      onInputValueChange({ inputValue }) {
-        setInputValue(inputValue ?? '');
-      },
-    });
+    selectedItem: selectedItem || null,
+    onSelectedItemChange: ({ selectedItem }) => {
+      onChange && onChange(selectedItem?.value);
+    },
 
-  const { refs, floatingStyles } = useFloating({
+    onInputValueChange({ inputValue }) {
+      setInputValue(inputValue ?? '');
+    },
+  });
+
+  const { refs: floatingRefs, floatingStyles } = useFloating({
     placement: 'bottom',
     open: isOpen,
     middleware: [flip(), shift()],
     whileElementsMounted: autoUpdate,
   });
 
+  const inputRef = useMergeRefs([floatingRefs.setReference, measureInputRef]);
+
   const menuProps = getMenuProps({
-    ref: refs.setFloating,
+    ref: floatingRefs.setFloating,
   });
   // const menuRef = useMergeRefs([refs.setFloating, downshiftMenuRef]);
 
@@ -103,20 +110,27 @@ export function ComboBox({ value, onChange, options, labelId, inputId }: ComboBo
 
   return (
     <div>
-      <div className={styles.inputBox} ref={refs.setReference}>
-        <input placeholder="Best book ever" {...getInputProps()} />
-
-        <button aria-label="toggle menu" type="button" {...getToggleButtonProps()}>
-          {isOpen ? <>&#8593;</> : <>&#8595;</>}
-        </button>
+      <div className={styles.inputBox}>
+        <Input
+          {...getInputProps({ ref: inputRef })}
+          suffix={
+            <IconButton
+              aria-label="toggle menu"
+              variant="secondary"
+              {...getToggleButtonProps()}
+              name={isOpen ? 'arrow-up' : 'arrow-down'}
+            ></IconButton>
+          }
+        />
       </div>
 
       {isOpen && (
-        <ul {...menuProps} className={styles.floatingList} style={{ ...floatingStyles, height: listHeight }}>
+        // TODO: fix nesting of fixedsizelist inside ul
+        <ul {...menuProps} className={styles.floatingList} style={{ ...floatingStyles, width, height: listHeight }}>
           <FixedSizeList
             className={styles.virtualList}
             height={listHeight}
-            width={200} // JOSH TODO: don't hardcode width
+            width={width}
             itemSize={ROW_HEIGHT}
             itemCount={filteredOptions.length}
             itemData={virtualData}
@@ -154,17 +168,17 @@ function Row({ index, data, style }: ListChildComponentProps<VirtualData>) {
 function getStyles(theme: GrafanaTheme2) {
   return {
     inputBox: css({
-      display: 'inline-block',
-      background: theme.colors.background.primary,
+      // display: 'inline-block',
     }),
     floatingList: css({
-      background: theme.colors.background.secondary,
-      // width: 'max-content',
+      margin: 0,
+      padding: 0,
+      background: theme.components.input.background,
+      border: `1px solid ${theme.components.input.borderColor}`,
       position: 'absolute',
       top: 0,
       left: 0,
       height: 300,
-      width: 200,
       overflow: 'none',
     }),
     virtualList: css({}),
