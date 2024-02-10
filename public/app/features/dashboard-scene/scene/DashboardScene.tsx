@@ -357,13 +357,6 @@ export class DashboardScene extends SceneObjectBase<DashboardSceneState> {
     return pageNav;
   }
 
-  /**
-   * Returns the body (layout) or the full view panel
-   */
-  public getBodyToRender(): SceneObject {
-    return this.state.viewPanelScene ?? this.state.body;
-  }
-
   private startTrackingChanges() {
     this._changeTrackerSub = this.subscribeToEvent(
       SceneObjectStateChangedEvent,

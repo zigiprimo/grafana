@@ -10,6 +10,7 @@ import { getNavModel } from 'app/core/selectors/navModel';
 import { useSelector } from 'app/types';
 
 import { DashboardScene } from './DashboardScene';
+import { DashboardSceneLayoutWrapper } from './DashboardSceneLayoutWrapper';
 import { NavToolbarActions } from './NavToolbarActions';
 
 export function DashboardSceneRenderer({ model }: SceneComponentProps<DashboardScene>) {
@@ -18,7 +19,6 @@ export function DashboardSceneRenderer({ model }: SceneComponentProps<DashboardS
   const location = useLocation();
   const navIndex = useSelector((state) => state.navIndex);
   const pageNav = model.getPageNav(location, navIndex);
-  const bodyToRender = model.getBodyToRender();
   const navModel = getNavModel(navIndex, 'dashboards/browse');
   const showDebugger = location.search.includes('scene-debugger');
 
@@ -48,7 +48,7 @@ export function DashboardSceneRenderer({ model }: SceneComponentProps<DashboardS
               </div>
             )}
             <div className={cx(styles.body)}>
-              <bodyToRender.Component model={bodyToRender} />
+              <DashboardSceneLayoutWrapper model={model} />
             </div>
           </div>
         </CustomScrollbar>
