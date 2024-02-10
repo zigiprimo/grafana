@@ -1,22 +1,16 @@
-import { css, cx } from '@emotion/css';
+import { css } from '@emotion/css';
 import React from 'react';
-import { useLocation } from 'react-router-dom';
 
-import { GrafanaTheme2, PageLayoutType } from '@grafana/data';
-import { SceneComponentProps, SceneDebugger } from '@grafana/scenes';
-import { CustomScrollbar, Stack, useStyles2 } from '@grafana/ui';
-import { Page } from 'app/core/components/Page/Page';
-import { getNavModel } from 'app/core/selectors/navModel';
-import { useSelector } from 'app/types';
+import { GrafanaTheme2 } from '@grafana/data';
+import { useStyles2 } from '@grafana/ui';
 
 import { DashboardScene } from './DashboardScene';
-import { NavToolbarActions } from './NavToolbarActions';
 
 interface Props {
   model: DashboardScene;
 }
 
-export function DashboardSceneLayoutWrapper({ model }: SceneComponentProps<DashboardScene>) {
+export function DashboardSceneLayoutWrapper({ model }: Props) {
   const { body, viewPanelScene, isEditing } = model.useState();
   const styles = useStyles2(getStyles);
 
