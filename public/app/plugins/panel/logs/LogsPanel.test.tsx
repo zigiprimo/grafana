@@ -297,7 +297,23 @@ describe('LogsPanel', () => {
     it('does not rerender without changes', async () => {
       const { rerender, props } = setup({
         data: {
+          error: undefined,
+          request: {
+            panelId: 4,
+            app: 'dashboard',
+            requestId: 'A',
+            timezone: 'browser',
+            interval: '30s',
+            intervalMs: 30000,
+            maxDataPoints: 823,
+            targets: [],
+            range: getDefaultTimeRange(),
+            scopedVars: {},
+            startTime: 1,
+          },
           series,
+          state: LoadingState.Done,
+          timeRange: getDefaultTimeRange(),
         },
       });
 
