@@ -491,6 +491,12 @@ export function getAppRoutes(): RouteDescriptor[] {
         () => import(/* webpackChunkName: "DataTrailsPage"*/ 'app/features/trails/DataTrailsPage')
       ),
     },
+    {
+      path: '/swagger-x',
+      component: SafeDynamicImport(
+        () => import(/* webpackChunkName: "SwaggerPage"*/ 'app/features/swagger/SwaggerPage')
+      ),
+    },
     ...getPluginCatalogRoutes(),
     ...getSupportBundleRoutes(),
     ...getAlertingRoutes(),
