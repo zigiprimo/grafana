@@ -1,6 +1,13 @@
 package accesscontrol
 
-import "github.com/grafana/grafana/pkg/services/sqlstore/migrator"
+import (
+	"xorm.io/xorm"
+
+	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
+)
+
+const RBACNGDataMigrationID = "migrating permissions into ac_relation table"
 
 func AddRBACNGMigration(mg *migrator.Migrator) {
 	acRelationV1 := migrator.Table{
@@ -29,4 +36,24 @@ func AddRBACNGMigration(mg *migrator.Migrator) {
 
 	//-------  indexes ------------------
 	mg.AddMigration("add unique index ac_relation.org_object_relation_subject", migrator.NewAddIndexMigration(acRelationV1, acRelationV1.Indices[0]))
+}
+
+func AddRBACNGDataMigration(mg *migrator.Migrator) {
+	mg.AddMigration(RBACNGDataMigrationID, &alertingScopeRemovalMigrator{})
+}
+
+var _ migrator.CodeMigration = new(rbacNGDataMigrator)
+
+type rbacNGDataMigrator struct {
+	migrator.MigrationBase
+}
+
+func (p *rbacNGDataMigrator) SQL(dialect migrator.Dialect) string {
+	return CodeMigrationSQL
+}
+
+func (p *rbacNGDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Migrator) error {
+	logger := log.New("RBAC NG data migrator")
+
+	return nil
 }
