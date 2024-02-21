@@ -179,6 +179,7 @@ Experimental features might be changed or removed without prior notice.
 | `newPDFRendering`                           | New implementation for the dashboard to PDF rendering                                                                                                                                                                                                                             |
 | `kubernetesAggregator`                      | Enable grafana aggregator                                                                                                                                                                                                                                                         |
 | `expressionParser`                          | Enable new expression parser                                                                                                                                                                                                                                                      |
+| `rbacNG`                                    | New RBAC store POC                                                                                                                                                                                                                                                                |
 
 ## Development feature toggles
 

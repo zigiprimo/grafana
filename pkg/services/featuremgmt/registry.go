@@ -1223,6 +1223,13 @@ var (
 			RequiresRestart: true,
 			Expression:      "true", // enabled by default
 		},
+		{
+			Name:            "rbacNG",
+			Description:     "New RBAC store POC",
+			Stage:           FeatureStageExperimental,
+			Owner:           identityAccessTeam,
+			RequiresRestart: true,
+		},
 	}
 )
 
