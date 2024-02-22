@@ -85,7 +85,7 @@ export function NestedFolderList({
           {({ onItemsRendered, ref }) => (
             <List
               ref={ref}
-              height={ROW_HEIGHT * Math.min(6.5, items.length)}
+              height={ROW_HEIGHT * Math.min(20, items.length)}
               width="100%"
               itemData={virtualData}
               itemSize={ROW_HEIGHT}

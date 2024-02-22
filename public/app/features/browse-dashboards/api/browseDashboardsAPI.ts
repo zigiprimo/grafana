@@ -9,6 +9,7 @@ import { createSuccessNotification } from 'app/core/copy/appNotification';
 import { contextSrv } from 'app/core/core';
 import { SaveDashboardCommand } from 'app/features/dashboard/components/SaveDashboard/types';
 import { dashboardWatcher } from 'app/features/live/dashboard/dashboardWatcher';
+import { DashboardSearchItem } from 'app/features/search/types';
 import {
   DashboardDTO,
   DescendantCount,
@@ -16,7 +17,9 @@ import {
   FolderDTO,
   FolderListItemDTO,
   ImportDashboardResponseDTO,
+  PermissionLevelString,
   SaveDashboardResponseDTO,
+  SearchQueryType,
 } from 'app/types';
 
 import { refetchChildren, refreshParents } from '../state';
@@ -74,16 +77,29 @@ export interface ListFolderQueryArgs {
   page: number;
   parentUid: string | undefined;
   limit: number;
+  permission?: PermissionLevelString;
 }
 
 export const browseDashboardsAPI = createApi({
   tagTypes: ['getFolder'],
   reducerPath: 'browseDashboardsAPI',
   baseQuery: createBackendSrvBaseQuery({ baseURL: '/api' }),
+
   endpoints: (builder) => ({
-    listFolders: builder.query<FolderListItemDTO[], ListFolderQueryArgs>({
+    listFoldersBySearch: builder.query<DashboardSearchItem[], ListFolderQueryArgs>({
       providesTags: (result) => result?.map((folder) => ({ type: 'getFolder', id: folder.uid })) ?? [],
-      query: ({ page, parentUid, limit }) => ({ url: '/folders', params: { page, parentUid, limit } }),
+      query: ({ page, parentUid, limit, permission }) => {
+        return {
+          url: '/search',
+          params: {
+            type: SearchQueryType.Folder,
+            page,
+            folderUIDs: parentUid ?? 'general', // yes, empty string
+            limit,
+            permission,
+          },
+        };
+      },
     }),
 
     // get folder info (e.g. title, parents) but *not* children

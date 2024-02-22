@@ -12,7 +12,7 @@ import { RootState } from 'app/store/configureStore';
 import { FolderListItemDTO } from 'app/types';
 import { useDispatch, useSelector } from 'app/types/store';
 
-type ListFoldersQuery = ReturnType<ReturnType<typeof browseDashboardsAPI.endpoints.listFolders.select>>;
+type ListFoldersQuery = ReturnType<ReturnType<typeof browseDashboardsAPI.endpoints.listFoldersBySearch.select>>;
 type ListFoldersRequest = QueryActionCreatorResult<
   QueryDefinition<
     ListFolderQueryArgs,
@@ -30,7 +30,7 @@ const listFoldersSelector = createSelector(
     parentUid: ListFolderQueryArgs['parentUid'],
     page: ListFolderQueryArgs['page'],
     limit: ListFolderQueryArgs['limit']
-  ) => browseDashboardsAPI.endpoints.listFolders.select({ parentUid, page, limit }),
+  ) => browseDashboardsAPI.endpoints.listFoldersBySearch.select({ parentUid, page, limit }),
   (state, selectFolderList) => selectFolderList(state)
 );
 
@@ -114,7 +114,7 @@ export function useFoldersQuery(isBrowsing: boolean, openFolders: Record<string,
       }
 
       const args = { parentUid, page: (pageNumber ?? 0) + 1, limit: PAGE_SIZE };
-      const promise = dispatch(browseDashboardsAPI.endpoints.listFolders.initiate(args));
+      const promise = dispatch(browseDashboardsAPI.endpoints.listFoldersBySearch.initiate(args));
 
       // It's important that we create a new array so we can correctly memoize with it
       requestsRef.current = requestsRef.current.concat([promise]);
