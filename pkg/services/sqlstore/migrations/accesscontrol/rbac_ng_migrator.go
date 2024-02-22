@@ -54,6 +54,7 @@ func (p *rbacNGDataMigrator) SQL(dialect migrator.Dialect) string {
 
 func (p *rbacNGDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Migrator) error {
 	logger := log.New("RBAC NG data migrator")
+	logger.Debug("rbac ng data migration")
 
 	return nil
 }
