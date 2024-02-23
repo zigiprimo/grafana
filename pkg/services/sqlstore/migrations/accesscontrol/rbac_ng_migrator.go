@@ -2,6 +2,7 @@ package accesscontrol
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -76,6 +77,15 @@ type teamMember struct {
 	UserId int64
 }
 
+type relation struct {
+	OrgId       int64
+	ObjectType  string
+	ObjectId    string
+	Relation    string
+	SubjectType string
+	SubjectId   string
+}
+
 func (p *rbacNGDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Migrator) error {
 	logger := log.New("RBAC NG data migrator")
 	p.logger = logger
@@ -87,6 +97,18 @@ func (p *rbacNGDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Migrato
 		return err
 	}
 	if err := p.migrateUsersTeams(sess); err != nil {
+		return err
+	}
+	if err := p.migrateUserManagedPermissions(sess); err != nil {
+		return err
+	}
+	if err := p.migrateTeamManagedPermissions(sess); err != nil {
+		return err
+	}
+	if err := p.migrateFolders(sess); err != nil {
+		return err
+	}
+	if err := p.migrateDashboards(sess); err != nil {
 		return err
 	}
 
@@ -163,6 +185,131 @@ func (p *rbacNGDataMigrator) migrateUsersTeams(sess *xorm.Session) error {
 	return nil
 }
 
+type managedPermission struct {
+	OrgId      int64
+	UserId     int64
+	TeamId     int64
+	Name       string
+	Action     string
+	Attribute  string
+	Kind       string
+	Identifier string
+}
+
+func (p *rbacNGDataMigrator) migrateUserManagedPermissions(sess *xorm.Session) error {
+	assignments := make([]managedPermission, 0)
+	getPermissionsQuery := `SELECT ur.org_id, ur.user_id, r.name, p.action, p.attribute, p.kind, p.identifier
+		FROM user_role ur
+		INNER JOIN role r ON r.id = ur.role_id
+		INNER JOIN permission p ON r.id = p.role_id
+		WHERE r.name LIKE 'managed:%'`
+	if err := sess.SQL(getPermissionsQuery).Find(&assignments); err != nil {
+		return err
+	}
+
+	relations := make([]relation, 0)
+	for _, a := range assignments {
+		objType := kindToObjectType(a.Kind)
+		r := relation{
+			OrgId:       a.OrgId,
+			ObjectType:  objType,
+			ObjectId:    a.Identifier,
+			SubjectType: accesscontrol.KindUser,
+			SubjectId:   strconv.FormatInt(a.UserId, 10),
+			Relation:    a.Action,
+		}
+		relations = append(relations, r)
+	}
+
+	return p.insertRelations(sess, relations)
+}
+
+func (p *rbacNGDataMigrator) migrateTeamManagedPermissions(sess *xorm.Session) error {
+	assignments := make([]managedPermission, 0)
+	getPermissionsQuery := `SELECT tr.org_id, tr.team_id, r.name, p.action, p.attribute, p.kind, p.identifier
+		FROM team_role tr
+		INNER JOIN role r ON r.id = tr.role_id
+		INNER JOIN permission p ON r.id = p.role_id
+		WHERE r.name LIKE 'managed:%'`
+	if err := sess.SQL(getPermissionsQuery).Find(&assignments); err != nil {
+		return err
+	}
+
+	relations := make([]relation, 0)
+	for _, a := range assignments {
+		objType := kindToObjectType(a.Kind)
+		r := relation{
+			OrgId:       a.OrgId,
+			ObjectType:  objType,
+			ObjectId:    a.Identifier,
+			SubjectType: accesscontrol.KindTeam,
+			SubjectId:   strconv.FormatInt(a.TeamId, 10),
+			Relation:    a.Action,
+		}
+		relations = append(relations, r)
+	}
+
+	return p.insertRelations(sess, relations)
+}
+
+type folder struct {
+	OrgId     int64  `xorm:"org_id"`
+	UID       string `xorm:"uid"`
+	ParentUid string `xorm:"parent_uid"`
+}
+
+func (p *rbacNGDataMigrator) migrateFolders(sess *xorm.Session) error {
+	folders := make([]folder, 0)
+	getFoldersQuery := `SELECT org_id, uid, parent_uid FROM folder`
+	if err := sess.SQL(getFoldersQuery).Find(&folders); err != nil {
+		return err
+	}
+
+	relations := make([]relation, 0)
+	for _, f := range folders {
+		r := relation{
+			OrgId:       f.OrgId,
+			ObjectType:  accesscontrol.KindFolder,
+			ObjectId:    f.UID,
+			SubjectType: accesscontrol.KindFolder,
+			SubjectId:   f.ParentUid,
+			Relation:    accesscontrol.RelationParent,
+		}
+		relations = append(relations, r)
+	}
+
+	return p.insertRelations(sess, relations)
+}
+
+type dash struct {
+	OrgId     int64  `xorm:"org_id"`
+	UID       string `xorm:"uid"`
+	FolderUid string `xorm:"folder_uid"`
+}
+
+func (p *rbacNGDataMigrator) migrateDashboards(sess *xorm.Session) error {
+	dashboards := make([]dash, 0)
+	getDashboardsQuery := `SELECT org_id, uid, folder_uid FROM dashboard WHERE is_folder = 0`
+	if err := sess.SQL(getDashboardsQuery).Find(&dashboards); err != nil {
+		return err
+	}
+
+	relations := make([]relation, 0)
+	for _, d := range dashboards {
+		r := relation{
+			OrgId:       d.OrgId,
+			ObjectType:  accesscontrol.KindDashboard,
+			ObjectId:    d.UID,
+			SubjectType: accesscontrol.KindFolder,
+			SubjectId:   d.FolderUid,
+			Relation:    accesscontrol.RelationParent,
+		}
+		relations = append(relations, r)
+	}
+
+	return p.insertRelations(sess, relations)
+}
+
 func (p *rbacNGDataMigrator) migratePermissions(sess *xorm.Session) error {
 	permissions := make([]*accesscontrol.Permission, 0)
 	getRoleAssignmentsQuery := `SELECT ur.org_id, ur.user_id, r.name FROM user_role ur INNER JOIN role r ON r.id = ur.role_id`
@@ -171,4 +318,32 @@ func (p *rbacNGDataMigrator) migratePermissions(sess *xorm.Session) error {
 	}
 	p.logger.Debug("assignments", "assignments", permissions)
 	return nil
+}
+
+func (p *rbacNGDataMigrator) insertRelations(sess *xorm.Session, relations []relation) error {
+	ts := time.Now()
+	valueStrings := make([]string, len(relations))
+	args := make([]any, 0, len(relations)*8)
+	for i, r := range relations {
+		valueStrings[i] = "(?, ?, ?, ?, ?, ?, ?, ?)"
+		args = append(args, r.OrgId, r.ObjectType, r.ObjectId, r.Relation, r.SubjectType, r.SubjectId, ts, ts)
+	}
+	valueString := strings.Join(valueStrings, ",")
+	sql := fmt.Sprintf("INSERT INTO ac_relation (org_id, object_type, object_id, relation, subject_type, subject_id, created, updated) VALUES %s", valueString)
+	sqlArgs := append([]any{sql}, args...)
+	if _, errCreate := sess.Exec(sqlArgs...); errCreate != nil {
+		return fmt.Errorf("failed to migrate managed permissions: %w", errCreate)
+	}
+
+	return nil
+}
+
+var objectKinds = map[string]string{
+	"teams":      accesscontrol.KindTeam,
+	"folders":    accesscontrol.KindFolder,
+	"dashboards": accesscontrol.KindDashboard,
+}
+
+func kindToObjectType(kind string) string {
+	return objectKinds[kind]
 }
