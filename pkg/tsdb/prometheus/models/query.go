@@ -109,7 +109,7 @@ func Parse(query backend.DataQuery, dsScrapeInterval string, intervalCalculator 
 		timeRange,
 	)
 	var matchers []*labels.Matcher
-	if enableScope && model.Scope != nil && model.Scope.Matchers != "" {
+	if enableScope && model.ScopeSpec != nil && model.ScopeSpec.Filters != nil {
 		matchers, err = parser.ParseMetricSelector(model.Scope.Matchers)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse metric selector %v in scope", model.Scope.Matchers)
