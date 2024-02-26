@@ -2,13 +2,7 @@ import { isPromAlertingRuleState, PromAlertingRuleState, PromRuleType } from '..
 import { getRuleHealth, isPromRuleType } from '../utils/rules';
 
 import * as terms from './search.terms';
-import {
-  applyFiltersToQuery,
-  FilterExpr,
-  FilterSupportedTerm,
-  parseQueryToFilter,
-  QueryFilterMapper,
-} from './searchParser';
+import { applyFiltersToQuery, FilterExpr, parseQueryToFilter, QueryFilterMapper } from './searchParser';
 
 export interface RulesFilter {
   freeFormWords: string[];
@@ -22,18 +16,6 @@ export interface RulesFilter {
   ruleHealth?: RuleHealth;
   dashboardUid?: string;
 }
-
-const filterSupportedTerms: FilterSupportedTerm[] = [
-  FilterSupportedTerm.dataSource,
-  FilterSupportedTerm.nameSpace,
-  FilterSupportedTerm.label,
-  FilterSupportedTerm.group,
-  FilterSupportedTerm.rule,
-  FilterSupportedTerm.state,
-  FilterSupportedTerm.type,
-  FilterSupportedTerm.health,
-  FilterSupportedTerm.dashboard,
-];
 
 export enum RuleHealth {
   Ok = 'ok',
@@ -59,7 +41,7 @@ export function getSearchFilterFromQuery(query: string): RulesFilter {
     [terms.FreeFormExpression]: (value) => filter.freeFormWords.push(value),
   };
 
-  parseQueryToFilter(query, filterSupportedTerms, tokenToFilterMap);
+  parseQueryToFilter(query, tokenToFilterMap);
 
   return filter;
 }
@@ -102,7 +84,7 @@ export function applySearchFilterToQuery(query: string, filter: RulesFilter): st
     filterStateArray.push(...filter.freeFormWords.map((word) => ({ type: terms.FreeFormExpression, value: word })));
   }
 
-  return applyFiltersToQuery(query, filterSupportedTerms, filterStateArray);
+  return applyFiltersToQuery(query, filterStateArray);
 }
 
 function parseStateToken(value: string): PromAlertingRuleState | undefined {

@@ -1,10 +1,8 @@
 @top AlertRuleSearch { expression+ }
 
-@dialects { dataSourceFilter, nameSpaceFilter, labelFilter, groupFilter, ruleFilter, stateFilter, typeFilter, healthFilter, dashboardFilter }
+expression { FilterExpression | FreeFormExpression }
 
-expression { (FilterExpression | FreeFormExpression) expression }
-
-FreeFormExpression { word (colon word)* | stringWithQuotes }
+FreeFormExpression { word | stringWithQuotes }
 
 FilterExpression {
  filter<DataSourceToken> |
@@ -34,15 +32,15 @@ filter<token> { token FilterValue }
   FilterValue { allowedInputCharOrColon+ | stringWithQuotes }
   filterToken<type> { type colon }
 
-  DataSourceToken[@dialect=dataSourceFilter] { filterToken<"datasource"> }
-  NameSpaceToken[@dialect=nameSpaceFilter] { filterToken<"namespace"> }
-  LabelToken[@dialect=labelFilter] { filterToken<"label"> }
-  GroupToken[@dialect=groupFilter] { filterToken<"group"> }
-  RuleToken[@dialect=ruleFilter] { filterToken<"rule"> }
-  StateToken[@dialect=stateFilter] { filterToken<"state"> }
-  TypeToken[@dialect=typeFilter] { filterToken<"type"> }
-  HealthToken[@dialect=healthFilter] { filterToken<"health"> }
-  DashboardToken[@dialect=dashboardFilter] { filterToken<"dashboard"> }
+  DataSourceToken { filterToken<"datasource"> }
+  NameSpaceToken { filterToken<"namespace"> }
+  LabelToken { filterToken<"label"> }
+  GroupToken { filterToken<"group"> }
+  RuleToken { filterToken<"rule"> }
+  StateToken { filterToken<"state"> }
+  TypeToken { filterToken<"type"> }
+  HealthToken { filterToken<"health"> }
+  DashboardToken { filterToken<"dashboard"> }
 
   @precedence { DataSourceToken, word }
   @precedence { NameSpaceToken, word }
@@ -54,4 +52,3 @@ filter<token> { token FilterValue }
   @precedence { HealthToken, word }
   @precedence { DashboardToken, word }
 }
-

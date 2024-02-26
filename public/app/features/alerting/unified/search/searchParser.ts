@@ -38,12 +38,8 @@ export interface FilterExpr {
   value: string;
 }
 
-export function parseQueryToFilter(
-  query: string,
-  supportedTerms: FilterSupportedTerm[],
-  filterMapper: QueryFilterMapper
-) {
-  traverseNodeTree(query, supportedTerms, (node) => {
+export function parseQueryToFilter(query: string, filterMapper: QueryFilterMapper) {
+  traverseNodeTree(query, (node) => {
     if (node.type.id === terms.FilterExpression) {
       const filter = getFilterFromSyntaxNode(query, node);
 
@@ -82,13 +78,9 @@ function getNodeContent(query: string, node: SyntaxNode) {
   return query.slice(node.from, node.to).trim().replace(/\"/g, '');
 }
 
-export function applyFiltersToQuery(
-  query: string,
-  supportedTerms: FilterSupportedTerm[],
-  filters: FilterExpr[]
-): string {
+export function applyFiltersToQuery(query: string, filters: FilterExpr[]): string {
   const existingFilterNodes: SyntaxNode[] = [];
-  traverseNodeTree(query, supportedTerms, (node) => {
+  traverseNodeTree(query, (node) => {
     if (node.type.id === terms.FilterExpression && node.firstChild) {
       existingFilterNodes.push(node.firstChild);
     }
@@ -131,9 +123,8 @@ export function applyFiltersToQuery(
   return newQueryExpressions.join(' ');
 }
 
-function traverseNodeTree(query: string, supportedTerms: FilterSupportedTerm[], visit: (node: SyntaxNode) => void) {
-  const dialect = supportedTerms.join(' ');
-  const parsed = parser.configure({ dialect }).parse(query);
+function traverseNodeTree(query: string, visit: (node: SyntaxNode) => void) {
+  const parsed = parser.configure({}).parse(query);
   let cursor = parsed.cursor();
   do {
     visit(cursor.node);

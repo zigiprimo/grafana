@@ -99,11 +99,26 @@ describe('Alert rules searchParser', () => {
     });
 
     it('should parse non-filter terms with colon as free form words', () => {
-      const query = 'cpu:high-utilization memory:overload';
+      const query = '"cpu:high-utilization" "memory:overload"';
       const filter = getSearchFilterFromQuery(query);
+
+      expect(filter.freeFormWords).toHaveLength(2);
 
       expect(filter.freeFormWords).toContain('cpu:high-utilization');
       expect(filter.freeFormWords).toContain('memory:overload');
+    });
+
+    it('should parse non-filter terms with colon as multiple free form words', () => {
+      const query = 'cpu:high-utilization memory:overload';
+      const filter = getSearchFilterFromQuery(query);
+
+      expect(filter.freeFormWords).toHaveLength(4);
+
+      expect(filter.freeFormWords).toContain('cpu');
+      expect(filter.freeFormWords).toContain('high-utilization');
+
+      expect(filter.freeFormWords).toContain('memory');
+      expect(filter.freeFormWords).toContain('overload');
     });
 
     it('should parse mixed free form words and filters', () => {
