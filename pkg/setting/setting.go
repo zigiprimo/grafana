@@ -498,6 +498,9 @@ type Cfg struct {
 	// Public dashboards
 	PublicDashboardsEnabled bool
 
+	// Cloud Migration
+	CloudMigrationIsTarget bool
+
 	// Feature Management Settings
 	FeatureManagement FeatureMgmtSettings
 
@@ -1271,6 +1274,7 @@ func (cfg *Cfg) parseINIFile(iniFile *ini.File) error {
 
 	cfg.readFeatureManagementConfig()
 	cfg.readPublicDashboardsSettings()
+	cfg.readCloudMigrationSettings()
 
 	return nil
 }
@@ -2015,4 +2019,9 @@ func (cfg *Cfg) readLiveSettings(iniFile *ini.File) error {
 func (cfg *Cfg) readPublicDashboardsSettings() {
 	publicDashboards := cfg.Raw.Section("public_dashboards")
 	cfg.PublicDashboardsEnabled = publicDashboards.Key("enabled").MustBool(true)
+}
+
+func (cfg *Cfg) readCloudMigrationSettings() {
+	cloudMigration := cfg.Raw.Section("cloud_migration")
+	cfg.CloudMigrationIsTarget = cloudMigration.Key("is_target").MustBool(false)
 }

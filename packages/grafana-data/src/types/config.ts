@@ -226,6 +226,7 @@ export interface GrafanaConfig {
   sqlConnectionLimits: SqlConnectionLimits;
   sharedWithMeFolderUID?: string;
   rootFolderUID?: string;
+  cloudMigrationIsTarget: boolean;
 
   // The namespace to use for kubernetes apiserver requests
   namespace: string;
