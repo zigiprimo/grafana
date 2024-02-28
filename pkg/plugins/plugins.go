@@ -117,6 +117,11 @@ type JSONData struct {
 	// Backend (Datasource + Renderer + SecretsManager)
 	Executable string `json:"executable,omitempty"`
 
+	// Backend plugins can their supported api.  This version is independent from the plugin version
+	// and should change when incompatible/breaking changes are made.  The version strings should follow
+	// https://kubernetes.io/docs/reference/using-api/#api-versioning
+	ApiVersion string `json:"apiVersion,omitempty"`
+
 	// App Service Auth Registration
 	IAM *plugindef.IAM `json:"iam,omitempty"`
 }

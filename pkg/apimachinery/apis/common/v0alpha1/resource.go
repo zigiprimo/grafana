@@ -26,10 +26,10 @@ func NewResourceInfo(group, version, resourceName, singularName, kind string,
 	return ResourceInfo{group, version, resourceName, singularName, shortName, kind, newObj, newList}
 }
 
-func (info *ResourceInfo) WithGroupAndShortName(group string, shortName string) ResourceInfo {
+func (info *ResourceInfo) WithGroupAndShortName(group, version, shortName string) ResourceInfo {
 	return ResourceInfo{
 		group:        group,
-		version:      info.version,
+		version:      version,
 		resourceName: info.resourceName,
 		singularName: info.singularName,
 		kind:         info.kind,

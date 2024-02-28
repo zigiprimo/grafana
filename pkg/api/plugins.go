@@ -15,6 +15,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
 
@@ -203,6 +204,16 @@ func (hs *HTTPServer) GetPluginSettingByID(c *contextmodel.ReqContext) response.
 		SignatureOrg:     plugin.SignatureOrg,
 		SecureJsonFields: map[string]bool{},
 		AngularDetected:  plugin.Angular.Detected,
+	}
+
+	// Eventually this will be all backend plugins, and will default to version v0
+	if plugin.ApiVersion != "" && plugin.Backend &&
+		hs.Features.IsEnabledGlobally(featuremgmt.FlagGrafanaAPIServerWithExperimentalAPIs) {
+		group, _ := plugins.GetDatasourceGroupNameFromPluginID(pluginID)
+		dto.ApiGroupVersion = &v1.GroupVersion{
+			Group:   group,
+			Version: plugin.ApiVersion,
+		}
 	}
 
 	if plugin.IsApp() {

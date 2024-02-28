@@ -96,7 +96,8 @@ func NewDataSourceAPIBuilder(
 	datasources PluginDatasourceProvider,
 	contextProvider PluginContextWrapper,
 	accessControl accesscontrol.AccessControl) (*DataSourceAPIBuilder, error) {
-	ri, err := resourceFromPluginID(plugin.ID)
+
+	ri, err := resourceFromPlugin(plugin)
 	if err != nil {
 		return nil, err
 	}
@@ -147,12 +148,17 @@ func (b *DataSourceAPIBuilder) InstallSchema(scheme *runtime.Scheme) error {
 	return scheme.SetVersionPriority(gv)
 }
 
-func resourceFromPluginID(pluginID string) (common.ResourceInfo, error) {
-	group, err := plugins.GetDatasourceGroupNameFromPluginID(pluginID)
+func resourceFromPlugin(p plugins.JSONData) (common.ResourceInfo, error) {
+	group, err := plugins.GetDatasourceGroupNameFromPluginID(p.ID)
 	if err != nil {
 		return common.ResourceInfo{}, err
 	}
-	return v0alpha1.GenericConnectionResourceInfo.WithGroupAndShortName(group, pluginID+"-connection"), nil
+	version := p.ApiVersion
+	if version == "" {
+		version = "v0alpha1"
+	}
+	return v0alpha1.GenericConnectionResourceInfo.
+		WithGroupAndShortName(group, version, p.ID+"-connection"), nil
 }
 
 func (b *DataSourceAPIBuilder) GetAPIGroupInfo(

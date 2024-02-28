@@ -1,6 +1,8 @@
 package dtos
 
 import (
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/grafana/grafana/pkg/plugins"
 	"github.com/grafana/grafana/pkg/plugins/plugindef"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
@@ -20,6 +22,9 @@ type PluginSetting struct {
 	JsonData         map[string]any       `json:"jsonData"`
 	SecureJsonFields map[string]bool      `json:"secureJsonFields"`
 	DefaultNavUrl    string               `json:"defaultNavUrl"`
+
+	// Backends with an explicit API Version
+	ApiGroupVersion *v1.GroupVersion `json:"apiGroupVersion,omitempty"`
 
 	LatestVersion   string                  `json:"latestVersion"`
 	HasUpdate       bool                    `json:"hasUpdate"`
