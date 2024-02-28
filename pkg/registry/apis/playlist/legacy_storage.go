@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -123,6 +124,25 @@ func (s *legacyStorage) Create(ctx context.Context,
 		return nil, err
 	}
 	return s.Get(ctx, out.UID, nil)
+}
+
+func (s *legacyStorage) Merge(
+	obj runtime.Object,
+	legacy runtime.Object,
+) (runtime.Object, error) {
+	accessorL, err := meta.Accessor(legacy)
+	if err != nil {
+		return legacy, err
+	}
+	accessorO, err := meta.Accessor(obj)
+	if err != nil {
+		return legacy, err
+	}
+	accessorL.SetResourceVersion("")
+	accessorL.SetUID("")
+	accessorL.SetAnnotations(accessorO.GetAnnotations())
+	accessorL.SetLabels(accessorO.GetLabels())
+	return legacy, nil
 }
 
 func (s *legacyStorage) Update(ctx context.Context,

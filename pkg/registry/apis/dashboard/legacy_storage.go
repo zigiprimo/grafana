@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/internalversion"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -80,6 +81,19 @@ func (s *dashboardStorage) Create(ctx context.Context,
 
 	dash, _, err := s.access.SaveDashboard(ctx, info.OrgID, p)
 	return dash, err
+}
+
+func (s *dashboardStorage) Merge(
+	obj runtime.Object,
+	legacy runtime.Object,
+) (runtime.Object, error) {
+	accessor, err := meta.Accessor(legacy)
+	if err != nil {
+		return legacy, err
+	}
+	accessor.SetResourceVersion("")
+	accessor.SetUID("")
+	return legacy, nil
 }
 
 func (s *dashboardStorage) Update(ctx context.Context,

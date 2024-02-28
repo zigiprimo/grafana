@@ -38,6 +38,7 @@ type LegacyStorage interface {
 	rest.SingularNameProvider
 	rest.TableConvertor
 	rest.Getter
+	Merge(runtime.Object, runtime.Object) (runtime.Object, error)
 }
 
 // DualWriter is a storage implementation that writes first to LegacyStorage and then to Storage.
@@ -81,14 +82,12 @@ func (d *DualWriter) Create(ctx context.Context, obj runtime.Object, createValid
 			return nil, err
 		}
 
-		accessor, err := meta.Accessor(created)
+		merged, err := d.legacy.Merge(obj, created)
 		if err != nil {
 			return created, err
 		}
-		accessor.SetResourceVersion("")
-		accessor.SetUID("")
 
-		rsp, err := d.Storage.Create(ctx, created, createValidation, options)
+		rsp, err := d.Storage.Create(ctx, merged, createValidation, options)
 		if err != nil {
 			klog.Error("unable to create object in duplicate storage", "error", err)
 		}
