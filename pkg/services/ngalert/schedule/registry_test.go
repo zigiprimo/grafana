@@ -514,5 +514,5 @@ func TestRuleWithFolderFingerprint(t *testing.T) {
 
 func RuleFactoryForTests() RuleFactoryFunc {
 	m := metrics.NewNGAlert(prometheus.NewPedanticRegistry())
-	return NewRuleFactory(clock.New(), m.GetSchedulerMetrics(), log.NewNopLogger(), tracing.InitializeTracerForTest())
+	return NewRuleFactory(nil, nil, clock.New(), m.GetSchedulerMetrics(), log.NewNopLogger(), tracing.InitializeTracerForTest())
 }

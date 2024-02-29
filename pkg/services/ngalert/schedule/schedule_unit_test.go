@@ -391,7 +391,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			rule := models.AlertRuleGen(withQueryForState(t, evalState))()
 			ruleStore.PutRule(context.Background(), rule)
 			folderTitle := ruleStore.getNamespaceTitle(rule.NamespaceUID)
-			ruleFactory := NewRuleFactory(sch.clock, sch.metrics, sch.log, sch.tracer)
+			ruleFactory := NewRuleFactory(sch.alertsSender, sch.stateManager, sch.clock, sch.metrics, sch.log, sch.tracer)
 
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
@@ -539,7 +539,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			sch, _, _, _ := createSchedule(make(chan time.Time), nil)
 
 			rule := models.AlertRuleGen()()
-			ruleFactory := NewRuleFactory(sch.clock, sch.metrics, sch.log, sch.tracer)
+			ruleFactory := NewRuleFactory(sch.alertsSender, sch.stateManager, sch.clock, sch.metrics, sch.log, sch.tracer)
 			ctx, cancel := context.WithCancel(context.Background())
 			ruleInfo := ruleFactory(ctx)
 			_ = sch.stateManager.ProcessEvalResults(context.Background(), sch.clock.Now(), rule, eval.GenerateResults(rand.Intn(5)+1, eval.ResultGen(eval.WithEvaluatedAt(sch.clock.Now()))), nil)
@@ -559,7 +559,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		t.Run("and clean up the state if delete is cancellation reason ", func(t *testing.T) {
 			stoppedChan := make(chan error)
 			sch, _, _, _ := createSchedule(make(chan time.Time), nil)
-			ruleFactory := NewRuleFactory(sch.clock, sch.metrics, sch.log, sch.tracer)
+			ruleFactory := NewRuleFactory(sch.alertsSender, sch.stateManager, sch.clock, sch.metrics, sch.log, sch.tracer)
 
 			rule := models.AlertRuleGen()()
 			ctx, cancel := context.WithCancel(context.Background())
@@ -594,7 +594,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		ruleStore.PutRule(context.Background(), rule)
 		sch.schedulableAlertRules.set([]*models.AlertRule{rule}, map[models.FolderKey]string{rule.GetFolderKey(): folderTitle})
 
-		ruleFactory := NewRuleFactory(sch.clock, sch.metrics, sch.log, sch.tracer)
+		ruleFactory := NewRuleFactory(sch.alertsSender, sch.stateManager, sch.clock, sch.metrics, sch.log, sch.tracer)
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
 		ruleInfo := ruleFactory(ctx)
@@ -676,7 +676,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		sch, ruleStore, _, reg := createSchedule(evalAppliedChan, sender)
 		sch.maxAttempts = 3
 		ruleStore.PutRule(context.Background(), rule)
-		ruleFactory := NewRuleFactory(sch.clock, sch.metrics, sch.log, sch.tracer)
+		ruleFactory := NewRuleFactory(sch.alertsSender, sch.stateManager, sch.clock, sch.metrics, sch.log, sch.tracer)
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
 		ruleInfo := ruleFactory(ctx)
@@ -782,7 +782,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 
 			sch, ruleStore, _, _ := createSchedule(evalAppliedChan, sender)
 			ruleStore.PutRule(context.Background(), rule)
-			ruleFactory := NewRuleFactory(sch.clock, sch.metrics, sch.log, sch.tracer)
+			ruleFactory := NewRuleFactory(sch.alertsSender, sch.stateManager, sch.clock, sch.metrics, sch.log, sch.tracer)
 			ctx, cancel := context.WithCancel(context.Background())
 			t.Cleanup(cancel)
 			ruleInfo := ruleFactory(ctx)
@@ -817,7 +817,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		sch, ruleStore, _, _ := createSchedule(evalAppliedChan, sender)
 		ruleStore.PutRule(context.Background(), rule)
 
-		ruleFactory := NewRuleFactory(sch.clock, sch.metrics, sch.log, sch.tracer)
+		ruleFactory := NewRuleFactory(sch.alertsSender, sch.stateManager, sch.clock, sch.metrics, sch.log, sch.tracer)
 		ctx, cancel := context.WithCancel(context.Background())
 		t.Cleanup(cancel)
 		ruleInfo := ruleFactory(ctx)
@@ -843,7 +843,7 @@ func TestSchedule_deleteAlertRule(t *testing.T) {
 	t.Run("when rule exists", func(t *testing.T) {
 		t.Run("it should stop evaluation loop and remove the controller from registry", func(t *testing.T) {
 			sch := setupScheduler(t, nil, nil, nil, nil, nil)
-			ruleFactory := NewRuleFactory(sch.clock, sch.metrics, sch.log, sch.tracer)
+			ruleFactory := NewRuleFactory(sch.alertsSender, sch.stateManager, sch.clock, sch.metrics, sch.log, sch.tracer)
 			rule := models.AlertRuleGen()()
 			key := rule.GetKey()
 			info, _ := sch.registry.getOrCreateInfo(context.Background(), key, ruleFactory)
