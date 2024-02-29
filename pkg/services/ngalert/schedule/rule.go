@@ -24,9 +24,9 @@ import (
 
 type RuleFactoryFunc func(context.Context) *Rule
 
-func NewRuleFactory(sender AlertsSender, stateManager *state.Manager, clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) RuleFactoryFunc {
+func NewRuleFactory(sender AlertsSender, stateManager *state.Manager, evalFactory eval.EvaluatorFactory, clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) RuleFactoryFunc {
 	return func(ctx context.Context) *Rule {
-		return newAlertRuleInfo(ctx, sender, stateManager, clock, met, logger, tracer)
+		return newAlertRuleInfo(ctx, sender, stateManager, evalFactory, clock, met, logger, tracer)
 	}
 }
 
@@ -39,13 +39,14 @@ type Rule struct {
 	clock        clock.Clock
 	sender       AlertsSender
 	stateManager *state.Manager
+	evalFactory  eval.EvaluatorFactory
 
 	metrics *metrics.Scheduler
 	logger  log.Logger
 	tracer  tracing.Tracer
 }
 
-func newAlertRuleInfo(parent context.Context, sender AlertsSender, stateManager *state.Manager, clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) *Rule {
+func newAlertRuleInfo(parent context.Context, sender AlertsSender, stateManager *state.Manager, evalFactory eval.EvaluatorFactory, clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) *Rule {
 	ctx, stop := util.WithCancelCause(parent)
 	return &Rule{
 		evalCh:   make(chan *evaluation),
@@ -56,6 +57,7 @@ func newAlertRuleInfo(parent context.Context, sender AlertsSender, stateManager 
 		clock:        clock,
 		sender:       sender,
 		stateManager: stateManager,
+		evalFactory:  evalFactory,
 
 		metrics: met,
 		logger:  logger,
@@ -143,10 +145,10 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 		start := rule.clock.Now()
 
 		evalCtx := eval.NewContextWithPreviousResults(ctx, SchedulerUserFor(e.rule.OrgID), sch.newLoadedMetricsReader(e.rule))
-		if sch.evaluatorFactory == nil {
+		if rule.evalFactory == nil {
 			panic("evalfactory nil")
 		}
-		ruleEval, err := sch.evaluatorFactory.Create(evalCtx, e.rule.GetEvalCondition())
+		ruleEval, err := rule.evalFactory.Create(evalCtx, e.rule.GetEvalCondition())
 		var results eval.Results
 		var dur time.Duration
 		if err != nil {
