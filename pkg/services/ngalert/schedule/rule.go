@@ -18,6 +18,14 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
+type RuleFactoryFunc func(context.Context) *Rule
+
+func NewRuleFactory() RuleFactoryFunc {
+	return func(ctx context.Context) *Rule {
+		return newAlertRuleInfo(ctx)
+	}
+}
+
 type Rule struct {
 	evalCh   chan *evaluation
 	updateCh chan ruleVersionAndPauseStatus

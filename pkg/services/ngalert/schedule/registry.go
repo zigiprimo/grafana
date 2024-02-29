@@ -24,13 +24,13 @@ type alertRuleInfoRegistry struct {
 
 // getOrCreateInfo gets rule routine information from registry by the key. If it does not exist, it creates a new one.
 // Returns a pointer to the rule routine information and a flag that indicates whether it is a new struct or not.
-func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey) (*Rule, bool) {
+func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey, factory RuleFactoryFunc) (*Rule, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	info, ok := r.alertRuleInfo[key]
 	if !ok {
-		info = newAlertRuleInfo(context)
+		info = factory(context)
 		r.alertRuleInfo[key] = info
 	}
 	return info, !ok
