@@ -11,14 +11,11 @@ import (
 
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/tracing"
-	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/ngalert/api/tooling/definitions"
 	"github.com/grafana/grafana/pkg/services/ngalert/eval"
 	"github.com/grafana/grafana/pkg/services/ngalert/metrics"
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/services/ngalert/state"
-	"github.com/grafana/grafana/pkg/services/org"
-	"github.com/grafana/grafana/pkg/services/user"
 	"github.com/grafana/grafana/pkg/util/ticker"
 )
 
@@ -338,39 +335,4 @@ func (sch *schedule) processTick(ctx context.Context, dispatcherGroup *errgroup.
 	}
 	sch.deleteAlertRule(toDelete...)
 	return readyToRun, registeredDefinitions, updatedRules
-}
-
-// evalApplied is only used on tests.
-func (sch *schedule) evalApplied(alertDefKey ngmodels.AlertRuleKey, now time.Time) {
-	if sch.evalAppliedFunc == nil {
-		return
-	}
-
-	sch.evalAppliedFunc(alertDefKey, now)
-}
-
-// stopApplied is only used on tests.
-func (sch *schedule) stopApplied(alertDefKey ngmodels.AlertRuleKey) {
-	if sch.stopAppliedFunc == nil {
-		return
-	}
-
-	sch.stopAppliedFunc(alertDefKey)
-}
-
-func SchedulerUserFor(orgID int64) *user.SignedInUser {
-	return &user.SignedInUser{
-		UserID:           -1,
-		IsServiceAccount: true,
-		Login:            "grafana_scheduler",
-		OrgID:            orgID,
-		OrgRole:          org.RoleAdmin,
-		Permissions: map[int64]map[string][]string{
-			orgID: {
-				datasources.ActionQuery: []string{
-					datasources.ScopeAll,
-				},
-			},
-		},
-	}
 }
