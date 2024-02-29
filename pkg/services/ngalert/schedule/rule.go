@@ -333,7 +333,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 				// cases.
 				ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 				defer cancelFunc()
-				states := sch.stateManager.DeleteStateByRuleUID(ngmodels.WithRuleKey(ctx, key), key, ngmodels.StateReasonRuleDeleted)
+				states := rule.stateManager.DeleteStateByRuleUID(ngmodels.WithRuleKey(ctx, key), key, ngmodels.StateReasonRuleDeleted)
 				notify(states)
 			}
 			logger.Debug("Stopping alert rule routine")
