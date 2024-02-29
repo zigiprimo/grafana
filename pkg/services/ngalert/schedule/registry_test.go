@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/google/uuid"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
@@ -513,5 +514,5 @@ func TestRuleWithFolderFingerprint(t *testing.T) {
 
 func RuleFactoryForTests() RuleFactoryFunc {
 	m := metrics.NewNGAlert(prometheus.NewPedanticRegistry())
-	return NewRuleFactory(m.GetSchedulerMetrics(), log.NewNopLogger(), tracing.InitializeTracerForTest())
+	return NewRuleFactory(clock.New(), m.GetSchedulerMetrics(), log.NewNopLogger(), tracing.InitializeTracerForTest())
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/benbjohnson/clock"
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/services/datasources"
@@ -23,9 +24,9 @@ import (
 
 type RuleFactoryFunc func(context.Context) *Rule
 
-func NewRuleFactory(met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) RuleFactoryFunc {
+func NewRuleFactory(clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) RuleFactoryFunc {
 	return func(ctx context.Context) *Rule {
-		return newAlertRuleInfo(ctx, met, logger, tracer)
+		return newAlertRuleInfo(ctx, clock, met, logger, tracer)
 	}
 }
 
@@ -35,18 +36,22 @@ type Rule struct {
 	ctx      context.Context
 	cancelFn util.CancelCauseFunc
 
+	clock clock.Clock
+
 	metrics *metrics.Scheduler
 	logger  log.Logger
 	tracer  tracing.Tracer
 }
 
-func newAlertRuleInfo(parent context.Context, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) *Rule {
+func newAlertRuleInfo(parent context.Context, clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) *Rule {
 	ctx, stop := util.WithCancelCause(parent)
 	return &Rule{
 		evalCh:   make(chan *evaluation),
 		updateCh: make(chan ruleVersionAndPauseStatus),
 		ctx:      ctx,
 		cancelFn: stop,
+
+		clock: clock,
 
 		metrics: met,
 		logger:  logger,
@@ -113,7 +118,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 	sendDuration := rule.metrics.SendDuration.WithLabelValues(orgID)
 
 	notify := func(states []state.StateTransition) {
-		expiredAlerts := state.FromAlertsStateToStoppedAlert(states, sch.appURL, sch.clock)
+		expiredAlerts := state.FromAlertsStateToStoppedAlert(states, sch.appURL, rule.clock)
 		if len(expiredAlerts.PostableAlerts) > 0 {
 			sch.alertsSender.Send(grafanaCtx, key, expiredAlerts)
 		}
@@ -131,7 +136,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 
 	evaluate := func(ctx context.Context, f fingerprint, attempt int64, e *evaluation, span trace.Span, retry bool) error {
 		logger := logger.New("version", e.rule.Version, "fingerprint", f, "attempt", attempt, "now", e.scheduledAt).FromContext(ctx)
-		start := sch.clock.Now()
+		start := rule.clock.Now()
 
 		evalCtx := eval.NewContextWithPreviousResults(ctx, SchedulerUserFor(e.rule.OrgID), sch.newLoadedMetricsReader(e.rule))
 		if sch.evaluatorFactory == nil {
@@ -141,11 +146,11 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 		var results eval.Results
 		var dur time.Duration
 		if err != nil {
-			dur = sch.clock.Now().Sub(start)
+			dur = rule.clock.Now().Sub(start)
 			logger.Error("Failed to build rule evaluator", "error", err)
 		} else {
 			results, err = ruleEval.Evaluate(ctx, e.scheduledAt)
-			dur = sch.clock.Now().Sub(start)
+			dur = rule.clock.Now().Sub(start)
 			if err != nil {
 				logger.Error("Failed to evaluate rule", "error", err, "duration", dur)
 			}
@@ -199,7 +204,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 				attribute.Int64("results", int64(len(results))),
 			))
 		}
-		start = sch.clock.Now()
+		start = rule.clock.Now()
 		processedStates := sch.stateManager.ProcessEvalResults(
 			ctx,
 			e.scheduledAt,
@@ -207,9 +212,9 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 			results,
 			state.GetRuleExtraLabels(logger, e.rule, e.folderTitle, !sch.disableGrafanaFolder),
 		)
-		processDuration.Observe(sch.clock.Now().Sub(start).Seconds())
+		processDuration.Observe(rule.clock.Now().Sub(start).Seconds())
 
-		start = sch.clock.Now()
+		start = rule.clock.Now()
 		alerts := state.FromStateTransitionToPostableAlerts(processedStates, sch.stateManager, sch.appURL)
 		span.AddEvent("results processed", trace.WithAttributes(
 			attribute.Int64("state_transitions", int64(len(processedStates))),
@@ -218,7 +223,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 		if len(alerts.PostableAlerts) > 0 {
 			sch.alertsSender.Send(ctx, key, alerts)
 		}
-		sendDuration.Observe(sch.clock.Now().Sub(start).Seconds())
+		sendDuration.Observe(rule.clock.Now().Sub(start).Seconds())
 
 		return nil
 	}
