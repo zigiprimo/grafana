@@ -88,8 +88,6 @@ example-apiserver/
 /devenv/docker/ha-test-unified-alerting/logs/webhook/dumps/
 /devenv/docker/ha-test-unified-alerting/logs/webhook/webhook-listener.log
 
-conf/custom.ini
-
 /conf/provisioning/**/*.yaml
 !/conf/provisioning/**/sample.yaml
 

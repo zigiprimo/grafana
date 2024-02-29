@@ -23,10 +23,13 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/clients"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/kinds/dataquery"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
 	"github.com/patrickmn/go-cache"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -64,6 +67,13 @@ const (
 func ProvideService(httpClientProvider *httpclient.Provider) *CloudWatchService {
 	logger := backend.NewLoggerWith("logger", "tsdb.cloudwatch")
 	logger.Debug("Initializing")
+
+	if err := backend.SetupTracer("cloudwatch", tracing.Opts{
+		CustomAttributes: []attribute.KeyValue{
+			attribute.String("my_plugin.my_attribute", "4 hours of sleep again"),
+		}}); err != nil {
+		panic("fluffles")
+	}
 
 	executor := newExecutor(
 		datasource.NewInstanceManager(NewInstanceSettings(httpClientProvider)),
@@ -180,6 +190,14 @@ func (e *cloudWatchExecutor) CallResource(ctx context.Context, req *backend.Call
 }
 
 func (e *cloudWatchExecutor) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+	ctx, span := tracing.DefaultTracer().Start(ctx,
+		"query processing",
+		trace.WithAttributes(
+			attribute.String("query.ref_id", req.Queries[0].RefID),
+		),
+	)
+	defer span.End()
+
 	ctx = instrumentContext(ctx, "queryData", req.PluginContext)
 	q := req.Queries[0]
 	var model DataQueryJson
