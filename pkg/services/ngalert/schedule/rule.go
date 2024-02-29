@@ -201,7 +201,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 
 	evalRunning := false
 	var currentFingerprint fingerprint
-	defer sch.stopApplied(key)
+	defer rule.stopApplied(key, sch.stopAppliedFunc)
 	for {
 		select {
 		// used by external services (API) to notify that rule is updated.
@@ -229,7 +229,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 				evalRunning = true
 				defer func() {
 					evalRunning = false
-					sch.evalApplied(key, ctx.scheduledAt)
+					rule.evalApplied(key, ctx.scheduledAt, sch.evalAppliedFunc)
 				}()
 
 				for attempt := int64(1); attempt <= sch.maxAttempts; attempt++ {
@@ -310,21 +310,21 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 }
 
 // evalApplied is only used on tests.
-func (sch *schedule) evalApplied(alertDefKey ngmodels.AlertRuleKey, now time.Time) {
-	if sch.evalAppliedFunc == nil {
+func (rule *Rule) evalApplied(alertDefKey ngmodels.AlertRuleKey, now time.Time, fn func(ngmodels.AlertRuleKey, time.Time)) {
+	if fn == nil {
 		return
 	}
 
-	sch.evalAppliedFunc(alertDefKey, now)
+	fn(alertDefKey, now)
 }
 
 // stopApplied is only used on tests.
-func (sch *schedule) stopApplied(alertDefKey ngmodels.AlertRuleKey) {
-	if sch.stopAppliedFunc == nil {
+func (rule *Rule) stopApplied(alertDefKey ngmodels.AlertRuleKey, fn func(ngmodels.AlertRuleKey)) {
+	if fn == nil {
 		return
 	}
 
-	sch.stopAppliedFunc(alertDefKey)
+	fn(alertDefKey)
 }
 
 func SchedulerUserFor(orgID int64) *user.SignedInUser {
