@@ -10,12 +10,12 @@ type alertRuleInfo struct {
 	evalCh   chan *evaluation
 	updateCh chan ruleVersionAndPauseStatus
 	ctx      context.Context
-	stop     func(reason error)
+	cancelFn util.CancelCauseFunc
 }
 
 func newAlertRuleInfo(parent context.Context) *alertRuleInfo {
 	ctx, stop := util.WithCancelCause(parent)
-	return &alertRuleInfo{evalCh: make(chan *evaluation), updateCh: make(chan ruleVersionAndPauseStatus), ctx: ctx, stop: stop}
+	return &alertRuleInfo{evalCh: make(chan *evaluation), updateCh: make(chan ruleVersionAndPauseStatus), ctx: ctx, cancelFn: stop}
 }
 
 // eval signals the rule evaluation routine to perform the evaluation of the rule. Does nothing if the loop is stopped.
@@ -57,4 +57,8 @@ func (a *alertRuleInfo) update(lastVersion ruleVersionAndPauseStatus) bool {
 	case <-a.ctx.Done():
 		return false
 	}
+}
+
+func (a *alertRuleInfo) stop(reason error) {
+	a.cancelFn(reason)
 }
