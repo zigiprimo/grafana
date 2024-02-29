@@ -73,7 +73,7 @@ func (a *Rule) stop(reason error) {
 }
 
 //nolint:gocyclo
-func (sch *schedule) ruleRoutine(key ngmodels.AlertRuleKey, rule *Rule) error {
+func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 	grafanaCtx := ngmodels.WithRuleKey(rule.ctx, key)
 	logger := sch.log.FromContext(grafanaCtx)
 	logger.Debug("Alert rule routine started")

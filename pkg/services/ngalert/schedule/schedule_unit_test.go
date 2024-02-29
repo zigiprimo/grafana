@@ -396,7 +396,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ruleInfo := newAlertRuleInfo(ctx)
 			go func() {
 
-				_ = sch.ruleRoutine(rule.GetKey(), ruleInfo)
+				_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
 			}()
 
 			expectedTime := time.UnixMicro(rand.Int63())
@@ -544,7 +544,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			require.NotEmpty(t, expectedStates)
 
 			go func() {
-				err := sch.ruleRoutine(models.AlertRuleKey{}, ruleInfo)
+				err := ruleInfo.ruleRoutine(models.AlertRuleKey{}, sch)
 				stoppedChan <- err
 			}()
 
@@ -565,7 +565,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			require.NotEmpty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID))
 
 			go func() {
-				err := sch.ruleRoutine(rule.GetKey(), ruleInfo)
+				err := ruleInfo.ruleRoutine(rule.GetKey(), sch)
 				stoppedChan <- err
 			}()
 
@@ -595,7 +595,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		sch.schedulableAlertRules.set([]*models.AlertRule{rule}, map[models.FolderKey]string{rule.GetFolderKey(): folderTitle})
 
 		go func() {
-			_ = sch.ruleRoutine(rule.GetKey(), ruleInfo)
+			_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
 		}()
 
 		// init evaluation loop so it got the rule version
@@ -677,7 +677,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 
 		go func() {
 
-			_ = sch.ruleRoutine(rule.GetKey(), ruleInfo)
+			_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
 		}()
 
 		ruleInfo.evalCh <- &evaluation{
@@ -782,7 +782,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ruleStore.PutRule(context.Background(), rule)
 
 			go func() {
-				_ = sch.ruleRoutine(rule.GetKey(), ruleInfo)
+				_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
 			}()
 
 			ruleInfo.evalCh <- &evaluation{
@@ -815,7 +815,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		ruleStore.PutRule(context.Background(), rule)
 
 		go func() {
-			_ = sch.ruleRoutine(rule.GetKey(), ruleInfo)
+			_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
 		}()
 
 		ruleInfo.evalCh <- &evaluation{
