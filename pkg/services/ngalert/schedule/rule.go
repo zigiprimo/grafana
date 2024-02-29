@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/grafana/grafana/pkg/infra/log"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/grafana/grafana/pkg/services/datasources"
 	"github.com/grafana/grafana/pkg/services/ngalert/eval"
+	"github.com/grafana/grafana/pkg/services/ngalert/metrics"
 	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/services/ngalert/state"
 	"github.com/grafana/grafana/pkg/services/org"
@@ -20,9 +23,9 @@ import (
 
 type RuleFactoryFunc func(context.Context) *Rule
 
-func NewRuleFactory() RuleFactoryFunc {
+func NewRuleFactory(met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) RuleFactoryFunc {
 	return func(ctx context.Context) *Rule {
-		return newAlertRuleInfo(ctx)
+		return newAlertRuleInfo(ctx, met, logger, tracer)
 	}
 }
 
@@ -31,11 +34,24 @@ type Rule struct {
 	updateCh chan ruleVersionAndPauseStatus
 	ctx      context.Context
 	cancelFn util.CancelCauseFunc
+
+	metrics *metrics.Scheduler
+	logger  log.Logger
+	tracer  tracing.Tracer
 }
 
-func newAlertRuleInfo(parent context.Context) *Rule {
+func newAlertRuleInfo(parent context.Context, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) *Rule {
 	ctx, stop := util.WithCancelCause(parent)
-	return &Rule{evalCh: make(chan *evaluation), updateCh: make(chan ruleVersionAndPauseStatus), ctx: ctx, cancelFn: stop}
+	return &Rule{
+		evalCh:   make(chan *evaluation),
+		updateCh: make(chan ruleVersionAndPauseStatus),
+		ctx:      ctx,
+		cancelFn: stop,
+
+		metrics: met,
+		logger:  logger,
+		tracer:  tracer,
+	}
 }
 
 // eval signals the rule evaluation routine to perform the evaluation of the rule. Does nothing if the loop is stopped.
@@ -86,15 +102,15 @@ func (a *Rule) stop(reason error) {
 //nolint:gocyclo
 func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 	grafanaCtx := ngmodels.WithRuleKey(rule.ctx, key)
-	logger := sch.log.FromContext(grafanaCtx)
+	logger := rule.logger.FromContext(grafanaCtx)
 	logger.Debug("Alert rule routine started")
 
 	orgID := fmt.Sprint(key.OrgID)
-	evalTotal := sch.metrics.EvalTotal.WithLabelValues(orgID)
-	evalDuration := sch.metrics.EvalDuration.WithLabelValues(orgID)
-	evalTotalFailures := sch.metrics.EvalFailures.WithLabelValues(orgID)
-	processDuration := sch.metrics.ProcessDuration.WithLabelValues(orgID)
-	sendDuration := sch.metrics.SendDuration.WithLabelValues(orgID)
+	evalTotal := rule.metrics.EvalTotal.WithLabelValues(orgID)
+	evalDuration := rule.metrics.EvalDuration.WithLabelValues(orgID)
+	evalTotalFailures := rule.metrics.EvalFailures.WithLabelValues(orgID)
+	processDuration := rule.metrics.ProcessDuration.WithLabelValues(orgID)
+	sendDuration := rule.metrics.SendDuration.WithLabelValues(orgID)
 
 	notify := func(states []state.StateTransition) {
 		expiredAlerts := state.FromAlertsStateToStoppedAlert(states, sch.appURL, sch.clock)
@@ -264,7 +280,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 
 					fpStr := currentFingerprint.String()
 					utcTick := ctx.scheduledAt.UTC().Format(time.RFC3339Nano)
-					tracingCtx, span := sch.tracer.Start(grafanaCtx, "alert rule execution", trace.WithAttributes(
+					tracingCtx, span := rule.tracer.Start(grafanaCtx, "alert rule execution", trace.WithAttributes(
 						attribute.String("rule_uid", ctx.rule.UID),
 						attribute.Int64("org_id", ctx.rule.OrgID),
 						attribute.Int64("rule_version", ctx.rule.Version),
