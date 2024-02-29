@@ -256,7 +256,7 @@ func (sch *schedule) processTick(ctx context.Context, dispatcherGroup *errgroup.
 
 		if newRoutine && !invalidInterval {
 			dispatcherGroup.Go(func() error {
-				return sch.ruleRoutine(ruleInfo.ctx, key, ruleInfo)
+				return sch.ruleRoutine(key, ruleInfo)
 			})
 		}
 
@@ -345,8 +345,8 @@ func (sch *schedule) processTick(ctx context.Context, dispatcherGroup *errgroup.
 }
 
 //nolint:gocyclo
-func (sch *schedule) ruleRoutine(grafanaCtx context.Context, key ngmodels.AlertRuleKey, rule *Rule) error {
-	grafanaCtx = ngmodels.WithRuleKey(grafanaCtx, key)
+func (sch *schedule) ruleRoutine(key ngmodels.AlertRuleKey, rule *Rule) error {
+	grafanaCtx := ngmodels.WithRuleKey(rule.ctx, key)
 	logger := sch.log.FromContext(grafanaCtx)
 	logger.Debug("Alert rule routine started")
 
