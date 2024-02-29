@@ -6,16 +6,16 @@ import (
 	"github.com/grafana/grafana/pkg/util"
 )
 
-type alertRuleInfo struct {
+type Rule struct {
 	evalCh   chan *evaluation
 	updateCh chan ruleVersionAndPauseStatus
 	ctx      context.Context
 	cancelFn util.CancelCauseFunc
 }
 
-func newAlertRuleInfo(parent context.Context) *alertRuleInfo {
+func newAlertRuleInfo(parent context.Context) *Rule {
 	ctx, stop := util.WithCancelCause(parent)
-	return &alertRuleInfo{evalCh: make(chan *evaluation), updateCh: make(chan ruleVersionAndPauseStatus), ctx: ctx, cancelFn: stop}
+	return &Rule{evalCh: make(chan *evaluation), updateCh: make(chan ruleVersionAndPauseStatus), ctx: ctx, cancelFn: stop}
 }
 
 // eval signals the rule evaluation routine to perform the evaluation of the rule. Does nothing if the loop is stopped.
@@ -25,7 +25,7 @@ func newAlertRuleInfo(parent context.Context) *alertRuleInfo {
 //   - false when the send operation is stopped
 //
 // the second element contains a dropped message that was sent by a concurrent sender.
-func (a *alertRuleInfo) eval(eval *evaluation) (bool, *evaluation) {
+func (a *Rule) eval(eval *evaluation) (bool, *evaluation) {
 	// read the channel in unblocking manner to make sure that there is no concurrent send operation.
 	var droppedMsg *evaluation
 	select {
@@ -42,7 +42,7 @@ func (a *alertRuleInfo) eval(eval *evaluation) (bool, *evaluation) {
 }
 
 // update sends an instruction to the rule evaluation routine to update the scheduled rule to the specified version. The specified version must be later than the current version, otherwise no update will happen.
-func (a *alertRuleInfo) update(lastVersion ruleVersionAndPauseStatus) bool {
+func (a *Rule) update(lastVersion ruleVersionAndPauseStatus) bool {
 	// check if the channel is not empty.
 	select {
 	case <-a.updateCh:
@@ -59,6 +59,6 @@ func (a *alertRuleInfo) update(lastVersion ruleVersionAndPauseStatus) bool {
 	}
 }
 
-func (a *alertRuleInfo) stop(reason error) {
+func (a *Rule) stop(reason error) {
 	a.cancelFn(reason)
 }
