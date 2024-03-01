@@ -398,7 +398,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ruleInfo := ruleFactory(ctx)
 			go func() {
 
-				_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
+				_ = ruleInfo.run(rule.GetKey(), sch)
 			}()
 
 			expectedTime := time.UnixMicro(rand.Int63())
@@ -547,7 +547,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			require.NotEmpty(t, expectedStates)
 
 			go func() {
-				err := ruleInfo.ruleRoutine(models.AlertRuleKey{}, sch)
+				err := ruleInfo.run(models.AlertRuleKey{}, sch)
 				stoppedChan <- err
 			}()
 
@@ -569,7 +569,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			require.NotEmpty(t, sch.stateManager.GetStatesForRuleUID(rule.OrgID, rule.UID))
 
 			go func() {
-				err := ruleInfo.ruleRoutine(rule.GetKey(), sch)
+				err := ruleInfo.run(rule.GetKey(), sch)
 				stoppedChan <- err
 			}()
 
@@ -600,7 +600,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		ruleInfo := ruleFactory(ctx)
 
 		go func() {
-			_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
+			_ = ruleInfo.run(rule.GetKey(), sch)
 		}()
 
 		// init evaluation loop so it got the rule version
@@ -682,7 +682,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		ruleInfo := ruleFactory(ctx)
 
 		go func() {
-			_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
+			_ = ruleInfo.run(rule.GetKey(), sch)
 		}()
 
 		ruleInfo.evalCh <- &evaluation{
@@ -788,7 +788,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 			ruleInfo := ruleFactory(ctx)
 
 			go func() {
-				_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
+				_ = ruleInfo.run(rule.GetKey(), sch)
 			}()
 
 			ruleInfo.evalCh <- &evaluation{
@@ -823,7 +823,7 @@ func TestSchedule_ruleRoutine(t *testing.T) {
 		ruleInfo := ruleFactory(ctx)
 
 		go func() {
-			_ = ruleInfo.ruleRoutine(rule.GetKey(), sch)
+			_ = ruleInfo.run(rule.GetKey(), sch)
 		}()
 
 		ruleInfo.evalCh <- &evaluation{
