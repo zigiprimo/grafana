@@ -12,9 +12,10 @@ interface Props {
   labels: Record<string, string>;
   commonLabels?: Record<string, string>;
   size?: LabelSize;
+  color?: string;
 }
 
-export const AlertLabels = ({ labels, commonLabels = {}, size }: Props) => {
+export const AlertLabels = ({ labels, commonLabels = {}, size, color }: Props) => {
   const styles = useStyles2(getStyles, size);
   const [showCommonLabels, setShowCommonLabels] = useState(false);
 
@@ -30,7 +31,7 @@ export const AlertLabels = ({ labels, commonLabels = {}, size }: Props) => {
   return (
     <div className={styles.wrapper} role="list" aria-label="Labels">
       {labelsToShow.map(([label, value]) => (
-        <Label key={label + value} size={size} label={label} value={value} color={getLabelColor(label)} />
+        <Label key={label + value} size={size} label={label} value={value} color={color ?? getLabelColor(label)} />
       ))}
       {!showCommonLabels && hasCommonLabels && (
         <Button

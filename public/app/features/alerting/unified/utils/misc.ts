@@ -14,6 +14,7 @@ import {
   mapStateWithReasonToBaseState,
 } from 'app/types/unified-alerting-dto';
 
+import { AlertmanagerAlert } from '../../../../plugins/datasource/alertmanager/types';
 import { FolderDTO } from '../../../../types';
 
 import { ALERTMANAGER_NAME_QUERY_KEY } from './constants';
@@ -128,6 +129,13 @@ export function makeLabelBasedSilenceLink(alertManagerSourceName: string, labels
   matcherParams.forEach((value, key) => silenceUrlParams.append(key, value));
 
   return createUrl('/alerting/silence/new', silenceUrlParams);
+}
+
+export function makeSilenceDetailsLink(alertManagerSourceName: string, alert: AlertmanagerAlert) {
+  return createUrl(`/alerting/silences/`, {
+    alertmanager: alertManagerSourceName,
+    silenceIds: alert.status.silencedBy.join(','),
+  });
 }
 
 export function makeDataSourceLink(uid: string) {

@@ -1,12 +1,24 @@
 import { css } from '@emotion/css';
-import { format, formatDistance } from 'date-fns';
+import { formatDistance, formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns';
 import { isEqual } from 'lodash';
 import pluralize from 'pluralize';
 import React from 'react';
 import { useToggle } from 'react-use';
 
 import { GrafanaTheme2 } from '@grafana/data';
-import { Alert, Collapse, Icon, LoadingPlaceholder, Stack, Text, useStyles2 } from '@grafana/ui';
+import {
+  Alert,
+  Button,
+  Collapse,
+  Dropdown,
+  getTagColor,
+  Icon,
+  LoadingPlaceholder,
+  Menu,
+  Stack,
+  Text,
+  useStyles2,
+} from '@grafana/ui';
 import { useQueryParams } from 'app/core/hooks/useQueryParams';
 
 import { getMessageFromError } from '../../../core/utils/errors';
@@ -19,15 +31,14 @@ import {
 
 import { alertmanagerApi } from './api/alertmanagerApi';
 import { AlertLabels } from './components/AlertLabels';
+import { AlertStateDot } from './components/AlertStateDot';
 import { AlertmanagerPageWrapper } from './components/AlertingPageWrapper';
 import { CollapseToggle } from './components/CollapseToggle';
-import { AlertGroupAlertsTable } from './components/alert-groups/AlertGroupAlertsTable';
 import { AlertGroupFilter } from './components/alert-groups/AlertGroupFilter';
-import { AlertStateTag } from './components/rules/AlertStateTag';
 import { AmAlertStateTag } from './components/silences/AmAlertStateTag';
 import { useAlertmanager } from './state/AlertmanagerContext';
 import { GRAFANA_RULES_SOURCE_NAME } from './utils/datasource';
-import { getFiltersFromUrlParams } from './utils/misc';
+import { getFiltersFromUrlParams, makeLabelBasedSilenceLink, makeSilenceDetailsLink } from './utils/misc';
 
 const AlertGroups = () => {
   const { useGetAlertmanagerChoiceStatusQuery } = alertmanagerApi;
@@ -58,6 +69,10 @@ const AlertGroups = () => {
     selectedAlertmanager === GRAFANA_RULES_SOURCE_NAME &&
     amConfigStatus?.alertmanagersChoice === AlertmanagerChoice.External;
 
+  if (!selectedAlertmanager) {
+    return <Alert title="No Alertmanager selected" severity="warning" />;
+  }
+
   return (
     <>
       <AlertGroupFilter groups={alertGroups} />
@@ -78,7 +93,7 @@ const AlertGroups = () => {
       {combinedAlertGroups.map((group) => {
         return (
           <React.Fragment key={`${JSON.stringify(group.labels)}`}>
-            <CombinedGroup group={group} />
+            <CombinedGroup group={group} alertmanagerName={selectedAlertmanager} />
           </React.Fragment>
         );
       })}
@@ -87,7 +102,7 @@ const AlertGroups = () => {
   );
 };
 
-function CombinedGroup({ group }: { group: CombinedAlertGroup }) {
+function CombinedGroup({ group, alertmanagerName }: { group: CombinedAlertGroup; alertmanagerName: string }) {
   const styles = useStyles2(getCombinedGroupStyles);
   const [collapsed, toggleCollapsed] = useToggle(false);
 
@@ -97,14 +112,14 @@ function CombinedGroup({ group }: { group: CombinedAlertGroup }) {
         label={
           <Stack direction="column" grow={1}>
             <Stack direction="row" justifyContent="space-between">
-              <AlertLabels labels={group.labels} size="sm" />
+              <AlertLabels labels={group.labels} size="sm" color={getTagColor(9).color} />
               <CombinedGroupStatus group={group} />
             </Stack>
             <Stack direction="row" gap={2}>
               {group.receivers.map((receiver) => (
                 <div key={receiver.name} className={styles.contactPoint}>
-                  <Icon name="message" size="md" className={styles.contactPointIcon} />
-                  {receiver.name}
+                  <Icon name="message" size="sm" className={styles.contactPointIcon} />
+                  <Text variant="bodySmall">{receiver.name}</Text>
                 </div>
               ))}
             </Stack>
@@ -114,7 +129,7 @@ function CombinedGroup({ group }: { group: CombinedAlertGroup }) {
         isOpen={collapsed}
         onToggle={toggleCollapsed}
       >
-        <GroupAlerts alerts={group.alerts} />
+        <GroupAlerts alerts={group.alerts} groupLabels={group.labels} alertmanagerName={alertmanagerName} />
       </Collapse>
     </Stack>
   );
@@ -141,17 +156,35 @@ function CombinedGroupStatus({ group }: { group: CombinedAlertGroup }) {
 
   return (
     <Stack direction="row" gap={0.5}>
-      <Text>{pluralize('alert', total, true)}:</Text>
-      {!!firingCount && <Text color="error">{firingCount} firing</Text>}
-      {!!suppressedCount && <Text color="info">{suppressedCount} suppressed</Text>}
-      {!!unprocessedCount && <Text color="secondary">{unprocessedCount} unprocessed</Text>}
+      <Text variant="bodySmall">{pluralize('alert', total, true)}:</Text>
+      {!!firingCount && (
+        <Text variant="bodySmall" color="error">
+          {firingCount} firing
+        </Text>
+      )}
+      {!!suppressedCount && (
+        <Text variant="bodySmall" color="info">
+          {suppressedCount} suppressed
+        </Text>
+      )}
+      {!!unprocessedCount && (
+        <Text variant="bodySmall" color="secondary">
+          {unprocessedCount} unprocessed
+        </Text>
+      )}
     </Stack>
   );
 }
 
 const getCombinedGroupStatusStyles = (theme: GrafanaTheme2) => ({});
 
-function GroupAlerts({ alerts }: { alerts: AlertmanagerAlert[] }) {
+interface GroupAlertsProps {
+  alerts: AlertmanagerAlert[];
+  groupLabels?: Record<string, string>;
+  alertmanagerName: string;
+}
+
+function GroupAlerts({ alerts, groupLabels = {}, alertmanagerName }: GroupAlertsProps) {
   const styles = useStyles2(getGroupAlertsStyles);
 
   return (
@@ -159,30 +192,74 @@ function GroupAlerts({ alerts }: { alerts: AlertmanagerAlert[] }) {
       <div></div>
       <div>State</div>
       <div>Instance</div>
+      <div></div>
       {alerts.map((alert) => (
-        <GroupAlertsAlert key={alert.fingerprint} alert={alert} />
+        <GroupAlertsAlert
+          key={alert.fingerprint}
+          alert={alert}
+          commonLabels={groupLabels}
+          alertmanagerName={alertmanagerName}
+        />
       ))}
     </div>
   );
 }
 
-function GroupAlertsAlert({ alert }: { alert: AlertmanagerAlert }) {
+interface GroupAlertsAlertProps {
+  alert: AlertmanagerAlert;
+  commonLabels?: Record<string, string>;
+  alertmanagerName: string;
+}
+
+function GroupAlertsAlert({ alert, commonLabels, alertmanagerName }: GroupAlertsAlertProps) {
   const styles = useStyles2(getGroupAlertsStyles);
   const [collapsed, toggleCollapsed] = useToggle(true);
+
+  const status = alert.status.state;
 
   return (
     <>
       <CollapseToggle isCollapsed={collapsed} onToggle={toggleCollapsed} />
-      <div>
-        <AmAlertStateTag state={alert.status.state} />
-      </div>
-      <AlertLabels labels={alert.labels} size="sm" />
+      <Stack direction="row">
+        {/*<AmAlertStateTag state={alert.status.state} />*/}
+        <AlertStateDot color={alertStateToColor(status)} />
+        <Text variant="bodySmall">{formatDistanceToNowStrict(alert.startsAt)}</Text>
+      </Stack>
+      <AlertLabels labels={alert.labels} size="sm" commonLabels={commonLabels} />
+      <Dropdown
+        overlay={
+          <Menu>
+            {alert.generatorURL && (
+              <Menu.Item label="See source" url={alert.generatorURL} icon="external-link-alt" target="_blank" />
+            )}
+            {status === AlertState.Active && (
+              <Menu.Item
+                label="Silence"
+                url={makeLabelBasedSilenceLink(alertmanagerName, alert.labels)}
+                icon="bell-slash"
+              />
+            )}
+            {status === AlertState.Suppressed && (
+              <Menu.Item
+                label="Silences details"
+                url={makeSilenceDetailsLink(alertmanagerName, alert)}
+                icon="bell-slash"
+              />
+            )}
+          </Menu>
+        }
+      >
+        <Button variant="secondary" fill="text" size="sm">
+          Actions
+          <Icon name="angle-down" />
+        </Button>
+      </Dropdown>
       {!collapsed && (
         <div className={styles.expanded}>
           <Stack direction="row" gap={2}>
-            <div>Started {formatDistance(alert.startsAt, new Date())}</div>
-            <div>Updated {formatDistance(alert.updatedAt, new Date())}</div>
-            <div>Ends {formatDistance(alert.endsAt, new Date())}</div>
+            <div>Started {formatDistanceToNow(alert.startsAt)}</div>
+            <div>Updated {formatDistanceToNow(alert.updatedAt)}</div>
+            <div>Ends {formatDistanceToNow(alert.endsAt)}</div>
           </Stack>
         </div>
       )}
@@ -193,13 +270,27 @@ function GroupAlertsAlert({ alert }: { alert: AlertmanagerAlert }) {
 const getGroupAlertsStyles = (theme: GrafanaTheme2) => ({
   container: css({
     display: 'grid',
-    gridTemplateColumns: 'min-content min-content auto',
+    gridTemplateColumns: 'min-content max-content auto min-content',
     gap: theme.spacing(1),
+    alignItems: 'center',
   }),
   expanded: css({
     gridColumn: '2 / -1',
   }),
 });
+
+function alertStateToColor(state: AlertState) {
+  switch (state) {
+    case AlertState.Active:
+      return 'error';
+    case AlertState.Suppressed:
+      return 'info';
+    case AlertState.Unprocessed:
+      return 'warning';
+    default:
+      return 'info';
+  }
+}
 
 interface CombinedAlertGroup {
   labels: Record<string, string>;
