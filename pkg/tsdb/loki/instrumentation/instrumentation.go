@@ -4,7 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/grafana/grafana/pkg/tsdb/loki/tracing"
+	// "github.com/grafana/grafana/pkg/tsdb/loki/tracing"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )

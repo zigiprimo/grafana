@@ -13,7 +13,9 @@ import (
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend/httpclient"
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
-	"github.com/grafana/grafana/pkg/tsdb/loki/tracing"
+
+	// "github.com/grafana/grafana/pkg/tsdb/loki/tracing"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -86,7 +88,7 @@ func Test_healthcheck(t *testing.T) {
 		s := &Service{
 			// TODO
 			// im:       datasource.NewInstanceManager(newInstanceSettings(httpProvider)),
-			im:       datasource.NewInstanceManager(newInstanceSettings(httpProvider.Provider)),
+			im:       datasource.NewInstanceManager(newInstanceSettings(&httpProvider.Provider)),
 			features: featuremgmt.WithFeatures(featuremgmt.FlagLokiLogsDataplane, featuremgmt.FlagLokiMetricDataplane),
 			tracer:   tracing.InitializeTracerForTest(),
 			logger:   backend.NewLoggerWith("loki test"),
@@ -107,7 +109,7 @@ func Test_healthcheck(t *testing.T) {
 		s := &Service{
 			// TODO
 			// im:       datasource.NewInstanceManager(newInstanceSettings(httpProvider)),
-			im:       datasource.NewInstanceManager(newInstanceSettings(httpProvider.Provider)),
+			im:       datasource.NewInstanceManager(newInstanceSettings(&httpProvider.Provider)),
 			features: featuremgmt.WithFeatures(featuremgmt.FlagLokiLogsDataplane, featuremgmt.FlagLokiMetricDataplane),
 			tracer:   tracing.InitializeTracerForTest(),
 			logger:   backend.NewLoggerWith("loki test"),

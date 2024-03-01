@@ -25,7 +25,9 @@ import (
 	"github.com/grafana/grafana/pkg/services/featuremgmt"
 	ngalertmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/tsdb/loki/kinds/dataquery"
-	"github.com/grafana/grafana/pkg/tsdb/loki/tracing"
+
+	// "github.com/grafana/grafana/pkg/tsdb/loki/tracing"
+	"github.com/grafana/grafana/pkg/infra/tracing"
 )
 
 var logger = backend.NewLoggerWith("tsdb.loki")
@@ -43,7 +45,7 @@ var (
 	_ backend.CallResourceHandler = (*Service)(nil)
 )
 
-func ProvideService(httpClientProvider httpclient.Provider, features featuremgmt.FeatureToggles, tracer tracing.Tracer) *Service {
+func ProvideService(httpClientProvider *httpclient.Provider, features featuremgmt.FeatureToggles, tracer tracing.Tracer) *Service {
 	return &Service{
 		im:       datasource.NewInstanceManager(newInstanceSettings(httpClientProvider)),
 		features: features,
@@ -89,7 +91,7 @@ func parseQueryModel(raw json.RawMessage) (*QueryJSONModel, error) {
 	return model, err
 }
 
-func newInstanceSettings(httpClientProvider httpclient.Provider) datasource.InstanceFactoryFunc {
+func newInstanceSettings(httpClientProvider *httpclient.Provider) datasource.InstanceFactoryFunc {
 	return func(ctx context.Context, settings backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
 		opts, err := settings.HTTPClientOptions(ctx)
 		if err != nil {
