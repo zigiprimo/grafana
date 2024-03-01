@@ -1,12 +1,9 @@
 import dbscan from '@cdxoo/dbscan';
-import { format, formatISO, getUnixTime } from 'date-fns';
-import { intersection } from 'lodash';
+import { format, getUnixTime } from 'date-fns';
 import * as React from 'react';
 
 import { findCommonLabels } from '@grafana/data';
 import { Stack } from '@grafana/ui';
-
-import { AlertmanagerAlert } from '../../../plugins/datasource/alertmanager/types';
 
 import { alertmanagerApi } from './api/alertmanagerApi';
 import { AlertLabels } from './components/AlertLabels';
@@ -21,11 +18,6 @@ export function AlertGroupAnalysis({}: AlertGroupsAnalysisProps) {
     amSourceName: selectedAlertmanager || '',
   });
 
-  // const alertsByFingerprint = alerts.reduce((acc, alert) => {
-  //   acc.set(alert.fingerprint, alert);
-  //   return acc;
-  // }, new Map<string, AlertmanagerAlert>());
-
   const dataset = alerts.map((alert) => ({
     key: alert.fingerprint,
     timestamp: getUnixTime(alert.startsAt),
@@ -36,8 +28,6 @@ export function AlertGroupAnalysis({}: AlertGroupsAnalysisProps) {
     epsilon: 5 * 60, // 5 minutes
     distanceFunction: (a, b) => Math.abs(a.timestamp - b.timestamp),
   });
-
-  console.log(result);
 
   return (
     <Stack direction="column" gap={3}>
@@ -52,7 +42,7 @@ export function AlertGroupAnalysis({}: AlertGroupsAnalysisProps) {
             </Stack>
             {clusterAlerts.map((alert) => (
               <Stack key={alert.fingerprint} direction="row">
-                <div>{format(alert.startsAt, 'dd/MM/yy p')}</div>
+                <div>{format(alert.startsAt, 'dd/MM/yy hh:mm')}</div>
                 <AlertLabels labels={alert.labels} commonLabels={commonLabels} />
                 {/*<div>{alert.startsAt}</div>*/}
               </Stack>

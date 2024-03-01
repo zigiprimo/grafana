@@ -1,5 +1,5 @@
 import { css } from '@emotion/css';
-import { formatDistance, formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns';
 import { isEqual } from 'lodash';
 import pluralize from 'pluralize';
 import React from 'react';
@@ -38,7 +38,6 @@ import { AlertStateDot } from './components/AlertStateDot';
 import { AlertmanagerPageWrapper } from './components/AlertingPageWrapper';
 import { CollapseToggle } from './components/CollapseToggle';
 import { AlertGroupFilter } from './components/alert-groups/AlertGroupFilter';
-import { AmAlertStateTag } from './components/silences/AmAlertStateTag';
 import { useAlertmanager } from './state/AlertmanagerContext';
 import { GRAFANA_RULES_SOURCE_NAME } from './utils/datasource';
 import { getFiltersFromUrlParams, makeLabelBasedSilenceLink, makeSilenceDetailsLink } from './utils/misc';
@@ -50,7 +49,7 @@ const AlertGroups = () => {
 
   const [queryParams] = useQueryParams();
   const { groupBy = [] } = getFiltersFromUrlParams(queryParams);
-  const styles = useStyles2(getStyles);
+  // const styles = useStyles2(getStyles);
 
   const { currentData: amConfigStatus } = useGetAlertmanagerChoiceStatusQuery();
 
@@ -259,11 +258,13 @@ function GroupAlertsAlert({ alert, commonLabels, alertmanagerName }: GroupAlerts
       </Dropdown>
       {!collapsed && (
         <div className={styles.expanded}>
-          <Stack direction="row" gap={2}>
-            <div>Started {formatDistanceToNow(alert.startsAt)}</div>
-            <div>Updated {formatDistanceToNow(alert.updatedAt)}</div>
-            <div>Ends {formatDistanceToNow(alert.endsAt)}</div>
-          </Stack>
+          <div className={styles.timeline}>
+            <div className={styles.timelineBox}>
+              <div className={styles.timelineBoxContent}>Started {formatDistanceToNow(alert.startsAt)}</div>
+            </div>
+            <div className={styles.timelineBox}>Updated {formatDistanceToNow(alert.updatedAt)}</div>
+            <div className={styles.timelineBox}>Ends {formatDistanceToNow(alert.endsAt)}</div>
+          </div>
         </div>
       )}
     </>
@@ -279,6 +280,24 @@ const getGroupAlertsStyles = (theme: GrafanaTheme2) => ({
   }),
   expanded: css({
     gridColumn: '2 / -1',
+  }),
+  timeline: css({
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  }),
+  timelineBox: css({
+    width: 20,
+    height: 20,
+    borderRadius: theme.shape.radius.pill,
+    backgroundColor: theme.colors.info.main,
+    position: 'relative',
+  }),
+  timelineBoxContent: css({
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
   }),
 });
 
