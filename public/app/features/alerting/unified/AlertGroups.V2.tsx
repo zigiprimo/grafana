@@ -16,6 +16,8 @@ import {
   LoadingPlaceholder,
   Menu,
   Stack,
+  Tab,
+  TabsBar,
   Text,
   useStyles2,
 } from '@grafana/ui';
@@ -29,6 +31,7 @@ import {
   AlertState,
 } from '../../../plugins/datasource/alertmanager/types';
 
+import { AlertGroupAnalysis } from './AlertGroupsAnalysis';
 import { alertmanagerApi } from './api/alertmanagerApi';
 import { AlertLabels } from './components/AlertLabels';
 import { AlertStateDot } from './components/AlertStateDot';
@@ -271,7 +274,7 @@ const getGroupAlertsStyles = (theme: GrafanaTheme2) => ({
   container: css({
     display: 'grid',
     gridTemplateColumns: 'min-content max-content auto min-content',
-    gap: theme.spacing(1),
+    gap: theme.spacing(2),
     alignItems: 'center',
   }),
   expanded: css({
@@ -318,11 +321,45 @@ function useCombinedAlertGroups(alertGroups: AlertmanagerGroup[]): CombinedAlert
   );
 }
 
-const AlertGroupsPage = () => (
-  <AlertmanagerPageWrapper navId="groups" accessType="instance">
-    <AlertGroups />
-  </AlertmanagerPageWrapper>
-);
+function ActiveNotifications() {
+  const styles = useStyles2(getActiveNotificationsStyles);
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'insights'>('overview');
+
+  return (
+    <>
+      <TabsBar className={styles.tabs}>
+        <Tab
+          key="overview"
+          label="Overview"
+          onChangeTab={() => setActiveTab('overview')}
+          active={activeTab === 'overview'}
+        />
+        <Tab
+          key="insights"
+          label="Insights"
+          onChangeTab={() => setActiveTab('insights')}
+          active={activeTab === 'insights'}
+        />
+      </TabsBar>
+      {activeTab === 'overview' && <AlertGroups />}
+      {activeTab === 'insights' && <AlertGroupAnalysis />}
+    </>
+  );
+}
+
+const getActiveNotificationsStyles = (theme: GrafanaTheme2) => ({
+  tabs: css({
+    marginBottom: theme.spacing(2),
+  }),
+});
+
+const AlertGroupsPage = () => {
+  return (
+    <AlertmanagerPageWrapper navId="groups" accessType="instance">
+      <ActiveNotifications />
+    </AlertmanagerPageWrapper>
+  );
+};
 
 const getStyles = (theme: GrafanaTheme2) => ({
   groupingBanner: css({

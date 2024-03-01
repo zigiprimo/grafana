@@ -26,36 +26,40 @@ const getDotStyles = (theme: GrafanaTheme2, props: DotStylesProps) => {
   const errorStyle = props.color === 'error';
   const successStyle = props.color === 'success';
   const warningStyle = props.color === 'warning';
+  const infoStyle = props.color === 'info';
 
   return {
-    dot: css`
-      width: ${size};
-      height: ${size};
+    dot: css(
+      {
+        width: size,
+        height: size,
+        borderRadius: theme.shape.radius.circle,
 
-      border-radius: 100%;
-
-      background-color: ${theme.colors.secondary.main};
-      outline: solid ${outlineSize} ${theme.colors.secondary.transparent};
-      margin: ${outlineSize};
-
-      ${successStyle &&
-      css({
-        backgroundColor: theme.colors.success.main,
-        outlineColor: theme.colors.success.transparent,
-      })}
-
-      ${warningStyle &&
-      css({
-        backgroundColor: theme.colors.warning.main,
-        outlineColor: theme.colors.warning.transparent,
-      })}
-
-      ${errorStyle &&
-      css({
-        backgroundColor: theme.colors.error.main,
-        outlineColor: theme.colors.error.transparent,
-      })}
-    `,
+        backgroundColor: theme.colors.secondary.main,
+        outline: `solid ${outlineSize} ${theme.colors.secondary.transparent}`,
+        margin: outlineSize,
+      },
+      successStyle &&
+        css({
+          backgroundColor: theme.colors.success.main,
+          outlineColor: theme.colors.success.transparent,
+        }),
+      infoStyle &&
+        css({
+          backgroundColor: theme.colors.info.main,
+          outlineColor: theme.colors.info.transparent,
+        }),
+      warningStyle &&
+        css({
+          backgroundColor: theme.colors.warning.main,
+          outlineColor: theme.colors.warning.transparent,
+        }),
+      errorStyle &&
+        css({
+          backgroundColor: theme.colors.error.main,
+          outlineColor: theme.colors.error.transparent,
+        })
+    ),
   };
 };
 

@@ -1883,6 +1883,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@cdxoo/dbscan@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@cdxoo/dbscan@npm:1.1.1"
+  checksum: 10/b59a5bb9be6c2f30c689d4466426591b145ca11dece0b39d45c0b6154492bdfd663a1e4fe447f1548055d7a4d66422a6b226303838449fce7c4d879d1121f2f7
+  languageName: node
+  linkType: hard
+
 "@colors/colors@npm:1.5.0":
   version: 1.5.0
   resolution: "@colors/colors@npm:1.5.0"
@@ -18310,6 +18317,7 @@ __metadata:
     "@betterer/betterer": "npm:5.4.0"
     "@betterer/cli": "npm:5.4.0"
     "@betterer/eslint": "npm:5.4.0"
+    "@cdxoo/dbscan": "npm:^1.1.1"
     "@cypress/webpack-preprocessor": "npm:6.0.1"
     "@daybrush/utils": "npm:1.13.0"
     "@emotion/css": "npm:11.11.2"
