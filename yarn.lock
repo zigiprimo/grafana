@@ -3352,6 +3352,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@grafana-plugins/loki@workspace:public/app/plugins/datasource/loki":
+  version: 0.0.0-use.local
+  resolution: "@grafana-plugins/loki@workspace:public/app/plugins/datasource/loki"
+  dependencies:
+    "@grafana/plugin-configs": "npm:11.0.0-pre"
+    tslib: "npm:2.6.2"
+    typescript: "npm:5.3.3"
+    webpack: "npm:5.90.3"
+  peerDependencies:
+    "@grafana/runtime": "*"
+  languageName: unknown
+  linkType: soft
+
 "@grafana-plugins/parca@workspace:*, @grafana-plugins/parca@workspace:public/app/plugins/datasource/parca":
   version: 0.0.0-use.local
   resolution: "@grafana-plugins/parca@workspace:public/app/plugins/datasource/parca"

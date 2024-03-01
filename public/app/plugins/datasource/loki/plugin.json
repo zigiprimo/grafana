@@ -3,6 +3,7 @@
   "name": "Loki",
   "id": "loki",
   "category": "logging",
+  "executable": "gpx_loki",
 
   "logs": true,
   "metrics": true,
@@ -34,6 +35,10 @@
         "name": "GitHub Project",
         "url": "https://github.com/grafana/loki"
       }
-    ]
+    ],
+    "version": "%VERSION%"
+  },
+  "dependencies": {
+    "grafanaDependency": ">=10.4.0-0"
   }
 }

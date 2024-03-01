@@ -69,6 +69,8 @@ files = [
   "**/pkg/tsdb/tempo/**/*",
   "**/pkg/tsdb/cloudwatch/*",
   "**/pkg/tsdb/cloudwatch/**/*",
+  "**/pkg/tsdb/loki/*",
+  "**/pkg/tsdb/loki/**/*",
 ]
 
 [linters-settings.gocritic]
