@@ -19,12 +19,12 @@ var errRuleDeleted = errors.New("rule deleted")
 
 type alertRuleInfoRegistry struct {
 	mu            sync.Mutex
-	alertRuleInfo map[models.AlertRuleKey]*Rule
+	alertRuleInfo map[models.AlertRuleKey]*AlertRule
 }
 
 // getOrCreateInfo gets rule routine information from registry by the key. If it does not exist, it creates a new one.
 // Returns a pointer to the rule routine information and a flag that indicates whether it is a new struct or not.
-func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey, factory RuleFactoryFunc) (*Rule, bool) {
+func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey, factory RuleFactoryFunc) (*AlertRule, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -47,7 +47,7 @@ func (r *alertRuleInfoRegistry) exists(key models.AlertRuleKey) bool {
 // del removes pair that has specific key from alertRuleInfo.
 // Returns 2-tuple where the first element is value of the removed pair
 // and the second element indicates whether element with the specified key existed.
-func (r *alertRuleInfoRegistry) del(key models.AlertRuleKey) (*Rule, bool) {
+func (r *alertRuleInfoRegistry) del(key models.AlertRuleKey) (*AlertRule, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	info, ok := r.alertRuleInfo[key]

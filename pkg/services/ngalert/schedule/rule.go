@@ -22,15 +22,15 @@ import (
 	"go.opentelemetry.io/otel/trace"
 )
 
-type RuleFactoryFunc func(context.Context) *Rule
+type RuleFactoryFunc func(context.Context) *AlertRule
 
 func NewRuleFactory(sender AlertsSender, stateManager *state.Manager, evalFactory eval.EvaluatorFactory, clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) RuleFactoryFunc {
-	return func(ctx context.Context) *Rule {
+	return func(ctx context.Context) *AlertRule {
 		return newAlertRuleInfo(ctx, sender, stateManager, evalFactory, clock, met, logger, tracer)
 	}
 }
 
-type Rule struct {
+type AlertRule struct {
 	evalCh   chan *evaluation
 	updateCh chan ruleVersionAndPauseStatus
 	ctx      context.Context
@@ -46,9 +46,9 @@ type Rule struct {
 	tracer  tracing.Tracer
 }
 
-func newAlertRuleInfo(parent context.Context, sender AlertsSender, stateManager *state.Manager, evalFactory eval.EvaluatorFactory, clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) *Rule {
+func newAlertRuleInfo(parent context.Context, sender AlertsSender, stateManager *state.Manager, evalFactory eval.EvaluatorFactory, clock clock.Clock, met *metrics.Scheduler, logger log.Logger, tracer tracing.Tracer) *AlertRule {
 	ctx, stop := util.WithCancelCause(parent)
-	return &Rule{
+	return &AlertRule{
 		evalCh:   make(chan *evaluation),
 		updateCh: make(chan ruleVersionAndPauseStatus),
 		ctx:      ctx,
@@ -72,7 +72,7 @@ func newAlertRuleInfo(parent context.Context, sender AlertsSender, stateManager 
 //   - false when the send operation is stopped
 //
 // the second element contains a dropped message that was sent by a concurrent sender.
-func (a *Rule) eval(eval *evaluation) (bool, *evaluation) {
+func (a *AlertRule) eval(eval *evaluation) (bool, *evaluation) {
 	// read the channel in unblocking manner to make sure that there is no concurrent send operation.
 	var droppedMsg *evaluation
 	select {
@@ -89,7 +89,7 @@ func (a *Rule) eval(eval *evaluation) (bool, *evaluation) {
 }
 
 // update sends an instruction to the rule evaluation routine to update the scheduled rule to the specified version. The specified version must be later than the current version, otherwise no update will happen.
-func (a *Rule) update(lastVersion ruleVersionAndPauseStatus) bool {
+func (a *AlertRule) update(lastVersion ruleVersionAndPauseStatus) bool {
 	// check if the channel is not empty.
 	select {
 	case <-a.updateCh:
@@ -106,27 +106,27 @@ func (a *Rule) update(lastVersion ruleVersionAndPauseStatus) bool {
 	}
 }
 
-func (a *Rule) stop(reason error) {
+func (a *AlertRule) stop(reason error) {
 	a.cancelFn(reason)
 }
 
 //nolint:gocyclo
-func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
-	grafanaCtx := ngmodels.WithRuleKey(rule.ctx, key)
-	logger := rule.logger.FromContext(grafanaCtx)
+func (a *AlertRule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
+	grafanaCtx := ngmodels.WithRuleKey(a.ctx, key)
+	logger := a.logger.FromContext(grafanaCtx)
 	logger.Debug("Alert rule routine started")
 
 	orgID := fmt.Sprint(key.OrgID)
-	evalTotal := rule.metrics.EvalTotal.WithLabelValues(orgID)
-	evalDuration := rule.metrics.EvalDuration.WithLabelValues(orgID)
-	evalTotalFailures := rule.metrics.EvalFailures.WithLabelValues(orgID)
-	processDuration := rule.metrics.ProcessDuration.WithLabelValues(orgID)
-	sendDuration := rule.metrics.SendDuration.WithLabelValues(orgID)
+	evalTotal := a.metrics.EvalTotal.WithLabelValues(orgID)
+	evalDuration := a.metrics.EvalDuration.WithLabelValues(orgID)
+	evalTotalFailures := a.metrics.EvalFailures.WithLabelValues(orgID)
+	processDuration := a.metrics.ProcessDuration.WithLabelValues(orgID)
+	sendDuration := a.metrics.SendDuration.WithLabelValues(orgID)
 
 	notify := func(states []state.StateTransition) {
-		expiredAlerts := state.FromAlertsStateToStoppedAlert(states, sch.appURL, rule.clock)
+		expiredAlerts := state.FromAlertsStateToStoppedAlert(states, sch.appURL, a.clock)
 		if len(expiredAlerts.PostableAlerts) > 0 {
-			rule.sender.Send(grafanaCtx, key, expiredAlerts)
+			a.sender.Send(grafanaCtx, key, expiredAlerts)
 		}
 	}
 
@@ -136,27 +136,27 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 		if isPaused {
 			reason = ngmodels.StateReasonPaused
 		}
-		states := rule.stateManager.ResetStateByRuleUID(ctx, ruleDef, reason)
+		states := a.stateManager.ResetStateByRuleUID(ctx, ruleDef, reason)
 		notify(states)
 	}
 
 	evaluate := func(ctx context.Context, f fingerprint, attempt int64, e *evaluation, span trace.Span, retry bool) error {
 		logger := logger.New("version", e.rule.Version, "fingerprint", f, "attempt", attempt, "now", e.scheduledAt).FromContext(ctx)
-		start := rule.clock.Now()
+		start := a.clock.Now()
 
 		evalCtx := eval.NewContextWithPreviousResults(ctx, SchedulerUserFor(e.rule.OrgID), sch.newLoadedMetricsReader(e.rule))
-		if rule.evalFactory == nil {
+		if a.evalFactory == nil {
 			panic("evalfactory nil")
 		}
-		ruleEval, err := rule.evalFactory.Create(evalCtx, e.rule.GetEvalCondition())
+		ruleEval, err := a.evalFactory.Create(evalCtx, e.rule.GetEvalCondition())
 		var results eval.Results
 		var dur time.Duration
 		if err != nil {
-			dur = rule.clock.Now().Sub(start)
+			dur = a.clock.Now().Sub(start)
 			logger.Error("Failed to build rule evaluator", "error", err)
 		} else {
 			results, err = ruleEval.Evaluate(ctx, e.scheduledAt)
-			dur = rule.clock.Now().Sub(start)
+			dur = a.clock.Now().Sub(start)
 			if err != nil {
 				logger.Error("Failed to evaluate rule", "error", err, "duration", dur)
 			}
@@ -210,37 +210,37 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 				attribute.Int64("results", int64(len(results))),
 			))
 		}
-		start = rule.clock.Now()
-		processedStates := rule.stateManager.ProcessEvalResults(
+		start = a.clock.Now()
+		processedStates := a.stateManager.ProcessEvalResults(
 			ctx,
 			e.scheduledAt,
 			e.rule,
 			results,
 			state.GetRuleExtraLabels(logger, e.rule, e.folderTitle, !sch.disableGrafanaFolder),
 		)
-		processDuration.Observe(rule.clock.Now().Sub(start).Seconds())
+		processDuration.Observe(a.clock.Now().Sub(start).Seconds())
 
-		start = rule.clock.Now()
-		alerts := state.FromStateTransitionToPostableAlerts(processedStates, rule.stateManager, sch.appURL)
+		start = a.clock.Now()
+		alerts := state.FromStateTransitionToPostableAlerts(processedStates, a.stateManager, sch.appURL)
 		span.AddEvent("results processed", trace.WithAttributes(
 			attribute.Int64("state_transitions", int64(len(processedStates))),
 			attribute.Int64("alerts_to_send", int64(len(alerts.PostableAlerts))),
 		))
 		if len(alerts.PostableAlerts) > 0 {
-			rule.sender.Send(ctx, key, alerts)
+			a.sender.Send(ctx, key, alerts)
 		}
-		sendDuration.Observe(rule.clock.Now().Sub(start).Seconds())
+		sendDuration.Observe(a.clock.Now().Sub(start).Seconds())
 
 		return nil
 	}
 
 	evalRunning := false
 	var currentFingerprint fingerprint
-	defer rule.stopApplied(key, sch.stopAppliedFunc)
+	defer a.stopApplied(key, sch.stopAppliedFunc)
 	for {
 		select {
 		// used by external services (API) to notify that rule is updated.
-		case ctx := <-rule.updateCh:
+		case ctx := <-a.updateCh:
 			if currentFingerprint == ctx.Fingerprint {
 				logger.Info("Rule's fingerprint has not changed. Skip resetting the state", "currentFingerprint", currentFingerprint)
 				continue
@@ -251,7 +251,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 			resetState(grafanaCtx, ctx.IsPaused)
 			currentFingerprint = ctx.Fingerprint
 		// evalCh - used by the scheduler to signal that evaluation is needed.
-		case ctx, ok := <-rule.evalCh:
+		case ctx, ok := <-a.evalCh:
 			if !ok {
 				logger.Debug("Evaluation channel has been closed. Exiting")
 				return nil
@@ -264,7 +264,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 				evalRunning = true
 				defer func() {
 					evalRunning = false
-					rule.evalApplied(key, ctx.scheduledAt, sch.evalAppliedFunc)
+					a.evalApplied(key, ctx.scheduledAt, sch.evalAppliedFunc)
 				}()
 
 				for attempt := int64(1); attempt <= sch.maxAttempts; attempt++ {
@@ -291,7 +291,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 
 					fpStr := currentFingerprint.String()
 					utcTick := ctx.scheduledAt.UTC().Format(time.RFC3339Nano)
-					tracingCtx, span := rule.tracer.Start(grafanaCtx, "alert rule execution", trace.WithAttributes(
+					tracingCtx, span := a.tracer.Start(grafanaCtx, "alert rule execution", trace.WithAttributes(
 						attribute.String("rule_uid", ctx.rule.UID),
 						attribute.Int64("org_id", ctx.rule.OrgID),
 						attribute.Int64("rule_version", ctx.rule.Version),
@@ -335,7 +335,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 				// cases.
 				ctx, cancelFunc := context.WithTimeout(context.Background(), time.Minute)
 				defer cancelFunc()
-				states := rule.stateManager.DeleteStateByRuleUID(ngmodels.WithRuleKey(ctx, key), key, ngmodels.StateReasonRuleDeleted)
+				states := a.stateManager.DeleteStateByRuleUID(ngmodels.WithRuleKey(ctx, key), key, ngmodels.StateReasonRuleDeleted)
 				notify(states)
 			}
 			logger.Debug("Stopping alert rule routine")
@@ -345,7 +345,7 @@ func (rule *Rule) ruleRoutine(key ngmodels.AlertRuleKey, sch *schedule) error {
 }
 
 // evalApplied is only used on tests.
-func (rule *Rule) evalApplied(alertDefKey ngmodels.AlertRuleKey, now time.Time, fn func(ngmodels.AlertRuleKey, time.Time)) {
+func (a *AlertRule) evalApplied(alertDefKey ngmodels.AlertRuleKey, now time.Time, fn func(ngmodels.AlertRuleKey, time.Time)) {
 	if fn == nil {
 		return
 	}
@@ -354,7 +354,7 @@ func (rule *Rule) evalApplied(alertDefKey ngmodels.AlertRuleKey, now time.Time, 
 }
 
 // stopApplied is only used on tests.
-func (rule *Rule) stopApplied(alertDefKey ngmodels.AlertRuleKey, fn func(ngmodels.AlertRuleKey)) {
+func (a *AlertRule) stopApplied(alertDefKey ngmodels.AlertRuleKey, fn func(ngmodels.AlertRuleKey)) {
 	if fn == nil {
 		return
 	}
