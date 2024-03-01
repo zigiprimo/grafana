@@ -46,6 +46,28 @@ interface AlertmanagerAlertsFilter {
   matchers?: Matcher[];
 }
 
+function alertsFilterToQueryParams(filter: AlertmanagerAlertsFilter): Record<string, unknown> {
+  const filterMatchers = filter?.matchers
+    ?.filter((matcher) => matcher.name && matcher.value)
+    .map((matcher) => `${matcher.name}${matcherToOperator(matcher)}${wrapWithQuotes(matcher.value)}`);
+
+  const { silenced, inhibited, unprocessed, active } = filter || {};
+
+  const stateParams = Object.fromEntries(
+    Object.entries({ silenced, active, inhibited, unprocessed }).filter(([_, value]) => value !== undefined)
+  );
+
+  const params: Record<string, unknown> = { filter: filterMatchers };
+
+  if (stateParams) {
+    Object.keys(stateParams).forEach((key: string) => {
+      params[key] = stateParams[key];
+    });
+  }
+
+  return params;
+}
+
 // Based on https://github.com/prometheus/alertmanager/blob/main/api/v2/openapi.yaml
 export const alertmanagerApi = alertingApi.injectEndpoints({
   endpoints: (build) => ({
@@ -53,36 +75,19 @@ export const alertmanagerApi = alertingApi.injectEndpoints({
       AlertmanagerAlert[],
       { amSourceName: string; filter?: AlertmanagerAlertsFilter }
     >({
-      query: ({ amSourceName, filter }) => {
-        // TODO Add support for active, silenced, inhibited, unprocessed filters
-        const filterMatchers = filter?.matchers
-          ?.filter((matcher) => matcher.name && matcher.value)
-          .map((matcher) => `${matcher.name}${matcherToOperator(matcher)}${wrapWithQuotes(matcher.value)}`);
-
-        const { silenced, inhibited, unprocessed, active } = filter || {};
-
-        const stateParams = Object.fromEntries(
-          Object.entries({ silenced, active, inhibited, unprocessed }).filter(([_, value]) => value !== undefined)
-        );
-
-        const params: Record<string, unknown> | undefined = { filter: filterMatchers };
-
-        if (stateParams) {
-          Object.keys(stateParams).forEach((key: string) => {
-            params[key] = stateParams[key];
-          });
-        }
-
-        return {
-          url: `/api/alertmanager/${getDatasourceAPIUid(amSourceName)}/api/v2/alerts`,
-          params,
-        };
-      },
+      query: ({ amSourceName, filter }) => ({
+        url: `/api/alertmanager/${getDatasourceAPIUid(amSourceName)}/api/v2/alerts`,
+        params: filter ? alertsFilterToQueryParams(filter) : undefined,
+      }),
     }),
 
-    getAlertmanagerAlertGroups: build.query<AlertmanagerGroup[], { amSourceName: string }>({
-      query: ({ amSourceName }) => ({
+    getAlertmanagerAlertGroups: build.query<
+      AlertmanagerGroup[],
+      { amSourceName: string; filter?: AlertmanagerAlertsFilter }
+    >({
+      query: ({ amSourceName, filter }) => ({
         url: `/api/alertmanager/${getDatasourceAPIUid(amSourceName)}/api/v2/alerts/groups`,
+        params: filter ? alertsFilterToQueryParams(filter) : undefined,
       }),
     }),
 

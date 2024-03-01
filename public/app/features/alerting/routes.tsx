@@ -250,7 +250,7 @@ const unifiedRoutes: RouteDescriptor[] = [
       AccessControlAction.AlertingInstancesExternalRead,
     ]),
     component: SafeDynamicImport(
-      () => import(/* webpackChunkName: "AlertGroups" */ 'app/features/alerting/unified/AlertGroups')
+      () => import(/* webpackChunkName: "AlertGroups" */ 'app/features/alerting/unified/AlertGroups.V2')
     ),
   },
   {
