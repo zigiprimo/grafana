@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 	"runtime"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -30,8 +30,8 @@ import (
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
 	"github.com/patrickmn/go-cache"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 )
 
 const (
@@ -72,7 +72,7 @@ func ProvideService(httpClientProvider *httpclient.Provider) *CloudWatchService 
 
 	if err := backend.SetupTracer("cloudwatch", tracing.Opts{
 		CustomAttributes: []attribute.KeyValue{
-			attribute.String("cloudwatch.attribute", "4 hours of sleep again"),
+			attribute.String("my_plugin.my_attribute", "4 hours of sleep again"),
 		}}); err != nil {
 		panic("fluffles")
 	}
@@ -260,7 +260,7 @@ func FancyTracying(ctx context.Context, pluginCtx backend.PluginContext, retErr 
 		// identifies a single function in the program.
 		// This may be the empty string if not known.
 		// If Func is not nil then Function == Func.Name().
-		frame.Function,
+		fmt.Sprintf("fluffles %s", frame.Function),
 		trace.WithAttributes(
 			attribute.String("pluginId", pluginCtx.PluginID),
 		),
@@ -268,6 +268,7 @@ func FancyTracying(ctx context.Context, pluginCtx backend.PluginContext, retErr 
 	var finish = func() {
 		if retErr != nil {
 			span.SetStatus(codes.Error, retErr.Error())
+			//span.RecordError(retErr)
 		}
 		span.End()
 	}
@@ -276,12 +277,11 @@ func FancyTracying(ctx context.Context, pluginCtx backend.PluginContext, retErr 
 }
 
 func (e *cloudWatchExecutor) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (result *backend.CheckHealthResult, retErr error) {
+	ctx = instrumentContext(ctx, "checkHealth", req.PluginContext)
 	status := backend.HealthStatusOk
 	ctx, _, finish := FancyTracying(ctx, req.PluginContext, retErr)
 	defer finish()
 	var flufflesErrors string
-
-	ctx = instrumentContext(ctx, "checkHealth", req.PluginContext)
 
 	metricsTest := "Successfully queried the CloudWatch metrics API."
 	logsTest := "Successfully queried the CloudWatch logs API."
@@ -300,12 +300,12 @@ func (e *cloudWatchExecutor) CheckHealth(ctx context.Context, req *backend.Check
 		flufflesErrors += logsTest
 	}
 
-	if flufflesErrors != ""{
+	if flufflesErrors != "" {
 		someOtherError := fmt.Errorf("%s", flufflesErrors)
 		return &backend.CheckHealthResult{
 			Status:  status,
 			Message: someOtherError.Error(),
-		}, fmt.Errorf("%s", someOtherError)
+		}, someOtherError
 	}
 
 	return &backend.CheckHealthResult{
