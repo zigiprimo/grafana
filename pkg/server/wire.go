@@ -166,6 +166,7 @@ import (
 	"github.com/grafana/grafana/pkg/tsdb/legacydata"
 	legacydataservice "github.com/grafana/grafana/pkg/tsdb/legacydata/service"
 	"github.com/grafana/grafana/pkg/tsdb/loki"
+	lokiTracing "github.com/grafana/grafana/pkg/tsdb/loki/tracing"
 	"github.com/grafana/grafana/pkg/tsdb/mssql"
 	"github.com/grafana/grafana/pkg/tsdb/mysql"
 	"github.com/grafana/grafana/pkg/tsdb/opentsdb"
@@ -256,6 +257,8 @@ var wireBasicSet = wire.NewSet(
 	notifications.ProvideSmtpService,
 	tracing.ProvideService,
 	wire.Bind(new(tracing.Tracer), new(*tracing.TracingService)),
+	lokiTracing.ProvideService,
+	wire.Bind(new(lokiTracing.Tracer), new(*lokiTracing.TracingService)),
 	testdatasource.ProvideService,
 	ldapapi.ProvideService,
 	opentsdb.ProvideService,

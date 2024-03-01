@@ -6,8 +6,7 @@ import (
 	"net/http"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
-	// "github.com/grafana/grafana/pkg/tsdb/loki/tracing"
-	"github.com/grafana/grafana/pkg/infra/tracing"
+	"github.com/grafana/grafana/pkg/tsdb/loki/tracing"
 )
 
 type mockRequestCallback func(req *http.Request)

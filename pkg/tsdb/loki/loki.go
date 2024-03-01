@@ -26,8 +26,7 @@ import (
 	ngalertmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 	"github.com/grafana/grafana/pkg/tsdb/loki/kinds/dataquery"
 
-	// "github.com/grafana/grafana/pkg/tsdb/loki/tracing"
-	"github.com/grafana/grafana/pkg/infra/tracing"
+	"github.com/grafana/grafana/pkg/tsdb/loki/tracing"
 )
 
 var logger = backend.NewLoggerWith("tsdb.loki")
