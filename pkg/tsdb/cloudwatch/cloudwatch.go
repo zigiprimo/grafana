@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+	"runtime"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -23,10 +24,14 @@ import (
 	"github.com/grafana/grafana-plugin-sdk-go/backend/log"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/proxy"
 	"github.com/grafana/grafana-plugin-sdk-go/backend/resource/httpadapter"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/clients"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/kinds/dataquery"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
 	"github.com/patrickmn/go-cache"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
+	"go.opentelemetry.io/otel/codes"
 )
 
 const (
@@ -64,6 +69,13 @@ const (
 func ProvideService(httpClientProvider *httpclient.Provider) *CloudWatchService {
 	logger := backend.NewLoggerWith("logger", "tsdb.cloudwatch")
 	logger.Debug("Initializing")
+
+	if err := backend.SetupTracer("cloudwatch", tracing.Opts{
+		CustomAttributes: []attribute.KeyValue{
+			attribute.String("cloudwatch.attribute", "4 hours of sleep again"),
+		}}); err != nil {
+		panic("fluffles")
+	}
 
 	executor := newExecutor(
 		datasource.NewInstanceManager(NewInstanceSettings(httpClientProvider)),
@@ -180,6 +192,14 @@ func (e *cloudWatchExecutor) CallResource(ctx context.Context, req *backend.Call
 }
 
 func (e *cloudWatchExecutor) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+	ctx, span := tracing.DefaultTracer().Start(ctx,
+		"query processing",
+		trace.WithAttributes(
+			attribute.String("query.ref_id", req.Queries[0].RefID),
+		),
+	)
+	defer span.End()
+
 	ctx = instrumentContext(ctx, "queryData", req.PluginContext)
 	q := req.Queries[0]
 	var model DataQueryJson
@@ -214,9 +234,55 @@ func (e *cloudWatchExecutor) QueryData(ctx context.Context, req *backend.QueryDa
 	return result, err
 }
 
-func (e *cloudWatchExecutor) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
-	ctx = instrumentContext(ctx, "checkHealth", req.PluginContext)
+func FancyTracying(ctx context.Context, pluginCtx backend.PluginContext, retErr error) (context.Context, trace.Span, func()) {
+	// initializes the holder for the "function pointer"
+	pc := make([]uintptr, 1)
+
+	// Specify which function we want to target
+	// Skip 3: 0 gives Callers itself?, 1 gives us FancyTracying, 2 if we do a defer, gives us `defer`. but we might not so this will give us the parent function
+	_ = runtime.Callers(3, pc)
+	// simpler approach:
+	// pc, file, line, ok := runtime.Caller(2)
+	// name := runtime.FuncForPC(pc).Name()
+
+	// CallersFrames takes a slice of PC values returned by Callers and
+	// prepares to return function/file/line information.
+	// Do not change the slice until you are done with the Frames.
+	// Frames may be used to get function/file/line information for a
+	// slice of PC values returned by Callers.
+	frames := runtime.CallersFrames(pc)
+
+	// pc is size 1, so just 1 frame which we get here
+	frame, _ := frames.Next()
+	ctx, span := tracing.DefaultTracer().Start(ctx,
+		// Function is the package path-qualified function name of
+		// this call frame. If non-empty, this string uniquely
+		// identifies a single function in the program.
+		// This may be the empty string if not known.
+		// If Func is not nil then Function == Func.Name().
+		frame.Function,
+		trace.WithAttributes(
+			attribute.String("pluginId", pluginCtx.PluginID),
+		),
+	)
+	var finish = func() {
+		if retErr != nil {
+			span.SetStatus(codes.Error, retErr.Error())
+		}
+		span.End()
+	}
+
+	return ctx, span, finish
+}
+
+func (e *cloudWatchExecutor) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (result *backend.CheckHealthResult, retErr error) {
 	status := backend.HealthStatusOk
+	ctx, _, finish := FancyTracying(ctx, req.PluginContext, retErr)
+	defer finish()
+	var flufflesErrors string
+
+	ctx = instrumentContext(ctx, "checkHealth", req.PluginContext)
+
 	metricsTest := "Successfully queried the CloudWatch metrics API."
 	logsTest := "Successfully queried the CloudWatch logs API."
 
@@ -224,12 +290,22 @@ func (e *cloudWatchExecutor) CheckHealth(ctx context.Context, req *backend.Check
 	if err != nil {
 		status = backend.HealthStatusError
 		metricsTest = fmt.Sprintf("CloudWatch metrics query failed: %s", err.Error())
+		flufflesErrors += metricsTest
 	}
 
 	err = e.checkHealthLogs(ctx, req.PluginContext)
 	if err != nil {
 		status = backend.HealthStatusError
 		logsTest = fmt.Sprintf("CloudWatch logs query failed: %s", err.Error())
+		flufflesErrors += logsTest
+	}
+
+	if flufflesErrors != ""{
+		someOtherError := fmt.Errorf("%s", flufflesErrors)
+		return &backend.CheckHealthResult{
+			Status:  status,
+			Message: someOtherError.Error(),
+		}, fmt.Errorf("%s", someOtherError)
 	}
 
 	return &backend.CheckHealthResult{

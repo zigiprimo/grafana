@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"regexp"
 
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/grafana/grafana-plugin-sdk-go/backend"
+	"github.com/grafana/grafana-plugin-sdk-go/backend/tracing"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/features"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/models"
 	"github.com/grafana/grafana/pkg/tsdb/cloudwatch/utils"
@@ -19,6 +22,13 @@ type responseWrapper struct {
 }
 
 func (e *cloudWatchExecutor) executeTimeSeriesQuery(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+	ctx, span := tracing.DefaultTracer().Start(ctx,
+		"time series query",
+		trace.WithAttributes(
+			attribute.String("query.ref_id", req.Queries[0].RefID),
+		),
+	)
+	defer span.End()
 	e.logger.FromContext(ctx).Debug("Executing time series query")
 	resp := backend.NewQueryDataResponse()
 
