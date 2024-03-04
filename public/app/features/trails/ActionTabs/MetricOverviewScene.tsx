@@ -122,7 +122,8 @@ export class MetricOverviewScene extends SceneObjectBase<MetricOverviewSceneStat
                     {l.label!}
                   </TextLink>
                 ) : (
-                  <div style={{ background: '#808' }} key={l.label}>
+                  <div key={l.label}>
+                    {/* These ones aren't interactive (for now) */}
                     {l.label}
                   </div>
                 )
