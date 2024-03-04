@@ -18,20 +18,20 @@ import (
 
 var errRuleDeleted = errors.New("rule deleted")
 
-type alertRuleInfoRegistry struct {
+type ruleRegistry struct {
 	mu    sync.Mutex
 	rules map[models.AlertRuleKey]*alertRuleInfo
 }
 
-func newAlertRuleInfoRegistry() alertRuleInfoRegistry {
-	return alertRuleInfoRegistry{
+func newRuleRegistry() ruleRegistry {
+	return ruleRegistry{
 		rules: make(map[ngmodels.AlertRuleKey]*alertRuleInfo),
 	}
 }
 
 // getOrCreateInfo gets rule routine information from registry by the key. If it does not exist, it creates a new one.
 // Returns a pointer to the rule routine information and a flag that indicates whether it is a new struct or not.
-func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey) (*alertRuleInfo, bool) {
+func (r *ruleRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey) (*alertRuleInfo, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -43,7 +43,7 @@ func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key mod
 	return info, !ok
 }
 
-func (r *alertRuleInfoRegistry) exists(key models.AlertRuleKey) bool {
+func (r *ruleRegistry) exists(key models.AlertRuleKey) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -51,10 +51,10 @@ func (r *alertRuleInfoRegistry) exists(key models.AlertRuleKey) bool {
 	return ok
 }
 
-// del removes pair that has specific key from alertRuleInfo.
+// del removes an entry from the registry.
 // Returns 2-tuple where the first element is value of the removed pair
 // and the second element indicates whether element with the specified key existed.
-func (r *alertRuleInfoRegistry) del(key models.AlertRuleKey) (*alertRuleInfo, bool) {
+func (r *ruleRegistry) del(key models.AlertRuleKey) (*alertRuleInfo, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	info, ok := r.rules[key]
@@ -64,7 +64,7 @@ func (r *alertRuleInfoRegistry) del(key models.AlertRuleKey) (*alertRuleInfo, bo
 	return info, ok
 }
 
-func (r *alertRuleInfoRegistry) keyMap() map[models.AlertRuleKey]struct{} {
+func (r *ruleRegistry) keyMap() map[models.AlertRuleKey]struct{} {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	definitionsIDs := make(map[models.AlertRuleKey]struct{}, len(r.rules))

@@ -55,7 +55,7 @@ type schedule struct {
 	baseInterval time.Duration
 
 	// each alert rule gets its own channel and routine
-	registry alertRuleInfoRegistry
+	registry ruleRegistry
 
 	maxAttempts int64
 
@@ -123,7 +123,7 @@ func NewScheduler(cfg SchedulerCfg, stateManager *state.Manager) *schedule {
 	}
 
 	sch := schedule{
-		registry:              newAlertRuleInfoRegistry(),
+		registry:              newRuleRegistry(),
 		maxAttempts:           cfg.MaxAttempts,
 		clock:                 cfg.C,
 		baseInterval:          cfg.BaseInterval,
