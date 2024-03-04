@@ -1,0 +1,35 @@
+mysql:
+  image: mysql:8.0.32
+  environment:
+    MYSQL_ROOT_PASSWORD: rootpass
+    MYSQL_DATABASE: grafana
+    MYSQL_USER: grafana
+    MYSQL_PASSWORD: password
+  ports:
+    - "3306:3306"
+  command: [mysqld, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --innodb_monitor_enable=all, --max_allowed_packet=2048M]
+
+spicedb:
+  image: authzed/spicedb
+  command: "serve"
+  restart: "on-failure"
+  ports:
+    - "50051:50051"
+  environment:
+    - "SPICEDB_GRPC_PRESHARED_KEY=spicedbsecret"
+    - "SPICEDB_DATASTORE_ENGINE=mysql"
+    - "SPICEDB_DATASTORE_CONN_URI=root:rootpass@tcp(mysql:3306)/grafana?parseTime=true"
+  depends_on:
+    - "migrate"
+
+migrate:
+  image: "authzed/spicedb"
+  command: "migrate head"
+  restart: "on-failure"
+  environment:
+    - "SPICEDB_DATASTORE_ENGINE=mysql"
+    - "SPICEDB_DATASTORE_CONN_URI=root:rootpass@tcp(mysql:3306)/grafana?parseTime=true"
+  depends_on:
+    - "mysql"
+
+
