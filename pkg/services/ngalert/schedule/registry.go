@@ -13,13 +13,20 @@ import (
 	"unsafe"
 
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
+	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 )
 
 var errRuleDeleted = errors.New("rule deleted")
 
 type alertRuleInfoRegistry struct {
-	mu            sync.Mutex
-	alertRuleInfo map[models.AlertRuleKey]*alertRuleInfo
+	mu    sync.Mutex
+	rules map[models.AlertRuleKey]*alertRuleInfo
+}
+
+func newAlertRuleInfoRegistry() alertRuleInfoRegistry {
+	return alertRuleInfoRegistry{
+		rules: make(map[ngmodels.AlertRuleKey]*alertRuleInfo),
+	}
 }
 
 // getOrCreateInfo gets rule routine information from registry by the key. If it does not exist, it creates a new one.
@@ -28,10 +35,10 @@ func (r *alertRuleInfoRegistry) getOrCreateInfo(context context.Context, key mod
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	info, ok := r.alertRuleInfo[key]
+	info, ok := r.rules[key]
 	if !ok {
 		info = newAlertRuleInfo(context)
-		r.alertRuleInfo[key] = info
+		r.rules[key] = info
 	}
 	return info, !ok
 }
@@ -40,7 +47,7 @@ func (r *alertRuleInfoRegistry) exists(key models.AlertRuleKey) bool {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	_, ok := r.alertRuleInfo[key]
+	_, ok := r.rules[key]
 	return ok
 }
 
@@ -50,9 +57,9 @@ func (r *alertRuleInfoRegistry) exists(key models.AlertRuleKey) bool {
 func (r *alertRuleInfoRegistry) del(key models.AlertRuleKey) (*alertRuleInfo, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	info, ok := r.alertRuleInfo[key]
+	info, ok := r.rules[key]
 	if ok {
-		delete(r.alertRuleInfo, key)
+		delete(r.rules, key)
 	}
 	return info, ok
 }
@@ -60,8 +67,8 @@ func (r *alertRuleInfoRegistry) del(key models.AlertRuleKey) (*alertRuleInfo, bo
 func (r *alertRuleInfoRegistry) keyMap() map[models.AlertRuleKey]struct{} {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	definitionsIDs := make(map[models.AlertRuleKey]struct{}, len(r.alertRuleInfo))
-	for k := range r.alertRuleInfo {
+	definitionsIDs := make(map[models.AlertRuleKey]struct{}, len(r.rules))
+	for k := range r.rules {
 		definitionsIDs[k] = struct{}{}
 	}
 	return definitionsIDs
