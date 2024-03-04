@@ -82,6 +82,11 @@ func (oss *OSSMigrations) AddMigration(mg *Migrator) {
 	accesscontrol.AddManagedPermissionsMigration(mg, accesscontrol.ManagedPermissionsMigrationID)
 	accesscontrol.AddManagedFolderAlertActionsMigration(mg)
 	accesscontrol.AddActionNameMigrator(mg)
+	if oss.features != nil && oss.features.IsEnabledGlobally(featuremgmt.FlagRbacNG) {
+		accesscontrol.AddRBACNGMigration(mg)
+		accesscontrol.AddRBACNGDataMigration(mg)
+	}
+
 	addPlaylistUIDMigration(mg)
 
 	ualert.UpdateRuleGroupIndexMigration(mg)
