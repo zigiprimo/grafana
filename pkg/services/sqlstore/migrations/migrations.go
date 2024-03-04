@@ -83,8 +83,8 @@ func (oss *OSSMigrations) AddMigration(mg *Migrator) {
 	accesscontrol.AddManagedFolderAlertActionsMigration(mg)
 	accesscontrol.AddActionNameMigrator(mg)
 	if oss.features != nil && oss.features.IsEnabledGlobally(featuremgmt.FlagRbacNG) {
-		accesscontrol.AddRBACNGMigration(mg)
-		accesscontrol.AddRBACNGDataMigration(mg)
+		accesscontrol.AddRBACSpiceDBSchemaMigration(mg)
+		// accesscontrol.AddRBACSpiceDBDataMigration(mg)
 	}
 
 	addPlaylistUIDMigration(mg)

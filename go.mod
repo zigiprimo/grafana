@@ -488,6 +488,17 @@ require (
 	github.com/xwb1989/sqlparser v0.0.0-20180606152119-120387863bf2 // @grafana/grafana-app-platform-squad
 )
 
+require (
+	github.com/authzed/authzed-go v0.10.1 // @grafana/grafana-authnz-team
+	github.com/authzed/grpcutil v0.0.0-20240123194739-2ea1e3d2d98b // @grafana/grafana-authnz-team
+	github.com/certifi/gocertifi v0.0.0-20210507211836-431795d63e8d // indirect; @grafana/grafana-authnz-team
+)
+
+require (
+	github.com/envoyproxy/protoc-gen-validate v1.0.2 // indirect
+	github.com/jzelinskie/stringz v0.0.2 // indirect
+)
+
 // Use fork of crewjam/saml with fixes for some issues until changes get merged into upstream
 replace github.com/crewjam/saml => github.com/grafana/saml v0.4.15-0.20231025143828-a6c0e9b86a4c
 

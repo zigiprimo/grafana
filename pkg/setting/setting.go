@@ -475,6 +475,8 @@ type Cfg struct {
 	RBACResetBasicRoles bool
 	// RBAC single organization. This configuration option is subject to change.
 	RBACSingleOrganization bool
+	// RBAC SpiceDB preshared key for connection
+	RBACSpiceDBToken string
 
 	// GRPC Server.
 	GRPCServerNetwork   string
@@ -1628,6 +1630,7 @@ func readAccessControlSettings(iniFile *ini.File, cfg *Cfg) {
 	cfg.RBACPermissionValidationEnabled = rbac.Key("permission_validation_enabled").MustBool(false)
 	cfg.RBACResetBasicRoles = rbac.Key("reset_basic_roles").MustBool(false)
 	cfg.RBACSingleOrganization = rbac.Key("single_organization").MustBool(false)
+	cfg.RBACSpiceDBToken = rbac.Key("spicedb_token").MustString("")
 }
 
 func readOAuth2ServerSettings(cfg *Cfg) {

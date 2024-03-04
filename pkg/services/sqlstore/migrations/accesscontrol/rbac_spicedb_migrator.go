@@ -1,11 +1,20 @@
 package accesscontrol
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
 	"time"
 
+	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/authzed/grpcutil"
+
+	"google.golang.org/grpc"
+
+	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
+	"github.com/authzed/authzed-go/v1"
 	"xorm.io/xorm"
 
 	"github.com/grafana/grafana/pkg/infra/log"
@@ -13,49 +22,85 @@ import (
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
 )
 
-const RBACNGDataMigrationID = "migrating permissions into ac_relation table"
+const RBACSpiceDBSchemaMigrationID = "creating spicedb schema"
+const RBACSpiceDBDataMigrationID = "migrating permissions into spicedb"
 
-func AddRBACNGMigration(mg *migrator.Migrator) {
-	acRelationV1 := migrator.Table{
-		Name: "ac_relation",
-		Columns: []*migrator.Column{
-			{Name: "id", Type: migrator.DB_BigInt, IsPrimaryKey: true, IsAutoIncrement: true},
-			{Name: "org_id", Type: migrator.DB_BigInt},
-			{Name: "object_id", Type: migrator.DB_Varchar, Length: 190, Nullable: false},
-			{Name: "object_type", Type: migrator.DB_Varchar, Length: 40, Nullable: false},
-			{Name: "relation", Type: migrator.DB_Varchar, Length: 40, Nullable: false},
-			{Name: "subject_id", Type: migrator.DB_Varchar, Length: 190, Nullable: false},
-			{Name: "subject_type", Type: migrator.DB_Varchar, Length: 40, Nullable: false},
-			{Name: "created", Type: migrator.DB_DateTime, Nullable: false},
-			{Name: "updated", Type: migrator.DB_DateTime, Nullable: false},
-		},
-		Indices: []*migrator.Index{
-			{
-				Cols: []string{"org_id", "object_id", "object_type", "relation", "subject_id", "subject_type"},
-				Name: "UQE_org_object_relation_subject",
-				Type: migrator.UniqueIndex,
-			},
-		},
-	}
+const schema = `
+definition user {}
 
-	mg.AddMigration("create ac_relation table", migrator.NewAddTableMigration(acRelationV1))
-
-	//-------  indexes ------------------
-	mg.AddMigration("add unique index ac_relation.org_object_relation_subject", migrator.NewAddIndexMigration(acRelationV1, acRelationV1.Indices[0]))
+definition dashboard {
+	relation parent: folder
+	relation writer: user
+	relation reader: user
+	permission edit = writer + parent->edit
+	permission view = reader + edit + parent->view
 }
 
-func AddRBACNGDataMigration(mg *migrator.Migrator) {
-	mg.AddMigration(RBACNGDataMigrationID, &rbacNGDataMigrator{})
+definition folder {
+	relation parent: folder
+	relation writer: user
+	relation reader: user
+	permission edit = writer + parent->edit
+	permission view = reader + edit + parent->view
+}`
+
+const spicedbEndpoint = "localhost:50051"
+
+func AddRBACSpiceDBSchemaMigration(mg *migrator.Migrator) {
+	mg.AddMigration(RBACSpiceDBSchemaMigrationID, &rbacSpiceDBSchemaMigrator{})
 }
 
-var _ migrator.CodeMigration = new(rbacNGDataMigrator)
+var _ migrator.CodeMigration = new(rbacSpiceDBSchemaMigrator)
 
-type rbacNGDataMigrator struct {
+type rbacSpiceDBSchemaMigrator struct {
 	migrator.MigrationBase
 	logger log.Logger
 }
 
-func (p *rbacNGDataMigrator) SQL(dialect migrator.Dialect) string {
+func (p *rbacSpiceDBSchemaMigrator) SQL(dialect migrator.Dialect) string {
+	return CodeMigrationSQL
+}
+
+func (p *rbacSpiceDBSchemaMigrator) Exec(sess *xorm.Session, mg *migrator.Migrator) error {
+	client, err := authzed.NewClient(
+		spicedbEndpoint,
+		grpcutil.WithInsecureBearerToken(mg.Cfg.RBACSpiceDBToken),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		mg.Logger.Error("unable to initialize client: %s", err)
+		return err
+	}
+
+	req := &pb.ReadSchemaRequest{}
+	res, err := client.ReadSchema(context.Background(), req)
+	if err != nil {
+		mg.Logger.Error("failed to read schema: %s", err)
+	} else {
+		mg.Logger.Debug("schema", "s", res)
+	}
+
+	request := &pb.WriteSchemaRequest{Schema: schema}
+	_, err = client.WriteSchema(context.Background(), request)
+	if err != nil {
+		mg.Logger.Error("failed to write schema: %s", err)
+		return err
+	}
+	return nil
+}
+
+func AddRBACSpiceDBDataMigration(mg *migrator.Migrator) {
+	mg.AddMigration(RBACSpiceDBDataMigrationID, &rbacSpiceDBDataMigrator{})
+}
+
+var _ migrator.CodeMigration = new(rbacSpiceDBDataMigrator)
+
+type rbacSpiceDBDataMigrator struct {
+	migrator.MigrationBase
+	logger log.Logger
+}
+
+func (p *rbacSpiceDBDataMigrator) SQL(dialect migrator.Dialect) string {
 	return CodeMigrationSQL
 }
 
@@ -86,7 +131,7 @@ type relation struct {
 	SubjectId   string
 }
 
-func (p *rbacNGDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Migrator) error {
+func (p *rbacSpiceDBDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Migrator) error {
 	logger := log.New("RBAC NG data migrator")
 	p.logger = logger
 	p.logger.Debug("rbac ng data migration")
@@ -116,7 +161,7 @@ func (p *rbacNGDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Migrato
 	return nil
 }
 
-func (p *rbacNGDataMigrator) migrateRoleAssignments(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateRoleAssignments(sess *xorm.Session) error {
 	assignments := make([]userAssignment, 0)
 	getRoleAssignmentsQuery := `SELECT ur.org_id, ur.user_id, r.name FROM user_role ur INNER JOIN role r ON r.id = ur.role_id`
 	if err := sess.SQL(getRoleAssignmentsQuery).Find(&assignments); err != nil {
@@ -139,7 +184,7 @@ func (p *rbacNGDataMigrator) migrateRoleAssignments(sess *xorm.Session) error {
 	return nil
 }
 
-func (p *rbacNGDataMigrator) migrateTeamRoleAssignments(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateTeamRoleAssignments(sess *xorm.Session) error {
 	assignments := make([]teamAssignment, 0)
 	getRoleAssignmentsQuery := `SELECT tr.org_id, tr.team_id, r.name FROM team_role tr INNER JOIN role r ON r.id = tr.role_id`
 	if err := sess.SQL(getRoleAssignmentsQuery).Find(&assignments); err != nil {
@@ -162,7 +207,7 @@ func (p *rbacNGDataMigrator) migrateTeamRoleAssignments(sess *xorm.Session) erro
 	return nil
 }
 
-func (p *rbacNGDataMigrator) migrateUsersTeams(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateUsersTeams(sess *xorm.Session) error {
 	assignments := make([]teamMember, 0)
 	getRoleAssignmentsQuery := `SELECT org_id, team_id, user_id FROM team_member`
 	if err := sess.SQL(getRoleAssignmentsQuery).Find(&assignments); err != nil {
@@ -196,7 +241,7 @@ type managedPermission struct {
 	Identifier string
 }
 
-func (p *rbacNGDataMigrator) migrateUserManagedPermissions(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateUserManagedPermissions(sess *xorm.Session) error {
 	assignments := make([]managedPermission, 0)
 	getPermissionsQuery := `SELECT ur.org_id, ur.user_id, r.name, p.action, p.attribute, p.kind, p.identifier
 		FROM user_role ur
@@ -224,7 +269,7 @@ func (p *rbacNGDataMigrator) migrateUserManagedPermissions(sess *xorm.Session) e
 	return p.insertRelations(sess, relations)
 }
 
-func (p *rbacNGDataMigrator) migrateTeamManagedPermissions(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateTeamManagedPermissions(sess *xorm.Session) error {
 	assignments := make([]managedPermission, 0)
 	getPermissionsQuery := `SELECT tr.org_id, tr.team_id, r.name, p.action, p.attribute, p.kind, p.identifier
 		FROM team_role tr
@@ -258,7 +303,7 @@ type folder struct {
 	ParentUid string `xorm:"parent_uid"`
 }
 
-func (p *rbacNGDataMigrator) migrateFolders(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateFolders(sess *xorm.Session) error {
 	folders := make([]folder, 0)
 	getFoldersQuery := `SELECT org_id, uid, parent_uid FROM folder`
 	if err := sess.SQL(getFoldersQuery).Find(&folders); err != nil {
@@ -287,7 +332,7 @@ type dash struct {
 	FolderUid string `xorm:"folder_uid"`
 }
 
-func (p *rbacNGDataMigrator) migrateDashboards(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateDashboards(sess *xorm.Session) error {
 	dashboards := make([]dash, 0)
 	getDashboardsQuery := `SELECT org_id, uid, folder_uid FROM dashboard WHERE is_folder = 0`
 	if err := sess.SQL(getDashboardsQuery).Find(&dashboards); err != nil {
@@ -310,7 +355,7 @@ func (p *rbacNGDataMigrator) migrateDashboards(sess *xorm.Session) error {
 	return p.insertRelations(sess, relations)
 }
 
-func (p *rbacNGDataMigrator) migratePermissions(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migratePermissions(sess *xorm.Session) error {
 	permissions := make([]*accesscontrol.Permission, 0)
 	getRoleAssignmentsQuery := `SELECT ur.org_id, ur.user_id, r.name FROM user_role ur INNER JOIN role r ON r.id = ur.role_id`
 	if err := sess.SQL(getRoleAssignmentsQuery).Find(&permissions); err != nil {
@@ -320,7 +365,7 @@ func (p *rbacNGDataMigrator) migratePermissions(sess *xorm.Session) error {
 	return nil
 }
 
-func (p *rbacNGDataMigrator) insertRelations(sess *xorm.Session, relations []relation) error {
+func (p *rbacSpiceDBDataMigrator) insertRelations(sess *xorm.Session, relations []relation) error {
 	ts := time.Now()
 	valueStrings := make([]string, len(relations))
 	args := make([]any, 0, len(relations)*8)
