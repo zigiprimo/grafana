@@ -13,7 +13,6 @@ import (
 	"unsafe"
 
 	"github.com/grafana/grafana/pkg/services/ngalert/models"
-	ngmodels "github.com/grafana/grafana/pkg/services/ngalert/models"
 )
 
 var errRuleDeleted = errors.New("rule deleted")
@@ -25,13 +24,13 @@ type ruleRegistry struct {
 
 func newRuleRegistry() ruleRegistry {
 	return ruleRegistry{
-		rules: make(map[ngmodels.AlertRuleKey]*alertRuleInfo),
+		rules: make(map[models.AlertRuleKey]*alertRuleInfo),
 	}
 }
 
-// getOrCreateInfo gets rule routine information from registry by the key. If it does not exist, it creates a new one.
-// Returns a pointer to the rule routine information and a flag that indicates whether it is a new struct or not.
-func (r *ruleRegistry) getOrCreateInfo(context context.Context, key models.AlertRuleKey) (*alertRuleInfo, bool) {
+// getOrCreate gets a scheduled rule from registry by the key. If it does not exist, it creates a new one.
+// Returns a pointer to the rule and a flag that indicates whether it is a new struct or not.
+func (r *ruleRegistry) getOrCreate(context context.Context, key models.AlertRuleKey) (*alertRuleInfo, bool) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 

@@ -244,7 +244,7 @@ func (sch *schedule) processTick(ctx context.Context, dispatcherGroup *errgroup.
 	missingFolder := make(map[string][]string)
 	for _, item := range alertRules {
 		key := item.GetKey()
-		ruleInfo, newRoutine := sch.registry.getOrCreateInfo(ctx, key)
+		ruleInfo, newRoutine := sch.registry.getOrCreate(ctx, key)
 
 		// enforce minimum evaluation interval
 		if item.IntervalSeconds < int64(sch.minRuleInterval.Seconds()) {
