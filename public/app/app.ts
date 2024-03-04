@@ -34,6 +34,7 @@ import {
   setPluginImportUtils,
   setPluginExtensionGetter,
   setEmbeddedDashboard,
+  setDataTrailEmbedded,
   setAppEvents,
   setReturnToPreviousHook,
   type GetPluginExtensions,
@@ -90,6 +91,7 @@ import { QueryRunner } from './features/query/state/QueryRunner';
 import { runRequest } from './features/query/state/runRequest';
 import { initWindowRuntime } from './features/runtime/init';
 import { cleanupOldExpandedFolders } from './features/search/utils';
+import { DataTrailEmbedded } from './features/trails/DataTrailEmbedded';
 import { variableAdapters } from './features/variables/adapters';
 import { createAdHocVariableAdapter } from './features/variables/adhoc/adapter';
 import { createConstantVariableAdapter } from './features/variables/constant/adapter';
@@ -140,6 +142,7 @@ export class GrafanaApp {
       setPanelDataErrorView(PanelDataErrorView);
       setLocationSrv(locationService);
       setEmbeddedDashboard(EmbeddedDashboardLazy);
+      setDataTrailEmbedded(DataTrailEmbedded);
       setTimeZoneResolver(() => config.bootData.user.timezone);
       initGrafanaLive();
 
