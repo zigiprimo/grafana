@@ -2,13 +2,21 @@ package acimpl
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"slices"
 	"strconv"
 	"strings"
 	"time"
 
+	pb "github.com/authzed/authzed-go/proto/authzed/api/v1"
+
+	"github.com/authzed/authzed-go/v1"
+	"github.com/authzed/grpcutil"
 	"github.com/prometheus/client_golang/prometheus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/grafana/grafana/pkg/api/routing"
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -88,6 +96,18 @@ type Service struct {
 	store         accesscontrol.Store
 }
 
+func NewSpiceDBClient(cfg *setting.Cfg) (*authzed.Client, error) {
+	client, err := authzed.NewClient(
+		cfg.RBACSpiceDBAddr,
+		grpcutil.WithInsecureBearerToken(cfg.RBACSpiceDBToken),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
 func (s *Service) GetUsageStats(_ context.Context) map[string]any {
 	return map[string]any{
 		"stats.oss.accesscontrol.enabled.count": 1,
@@ -99,11 +119,60 @@ func (s *Service) GetUserPermissions(ctx context.Context, user identity.Requeste
 	timer := prometheus.NewTimer(metrics.MAccessPermissionsSummary)
 	defer timer.ObserveDuration()
 
+	res, err := s.lookupResources(ctx, user)
+	if err != nil {
+		s.log.Error("unable to lookup resources: %s", err)
+		return nil, err
+	}
+	s.log.Debug("lookup result", "res", res)
+
 	if !s.cfg.RBACPermissionCache || !user.HasUniqueId() {
 		return s.getUserPermissions(ctx, user, options)
 	}
 
 	return s.getCachedUserPermissions(ctx, user, options)
+}
+
+func (s *Service) lookupResources(ctx context.Context, user identity.Requester) ([]string, error) {
+	_, userId := user.GetNamespacedID()
+	objectIDs := make([]string, 0)
+	if userId == "0" {
+		return objectIDs, nil
+	}
+
+	client, err := NewSpiceDBClient(s.cfg)
+	if err != nil {
+		s.log.Error("unable to initialize client: %s", err)
+		return nil, err
+	}
+	lookupClient, err := client.LookupResources(ctx, &pb.LookupResourcesRequest{
+		ResourceObjectType: "dashboard",
+		Permission:         "view",
+		Subject: &pb.SubjectReference{
+			Object: &pb.ObjectReference{
+				ObjectType: accesscontrol.KindUser,
+				ObjectId:   userId,
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	for {
+		select {
+		default:
+			// Recieve on the stream
+			res, err := lookupClient.Recv()
+			if errors.Is(err, io.EOF) {
+				s.log.Debug("lookup result", "res", objectIDs)
+				return objectIDs, nil
+			} else if err != nil {
+				return nil, err
+			}
+			objectIDs = append(objectIDs, res.ResourceObjectId)
+		}
+	}
+	return objectIDs, nil
 }
 
 func (s *Service) getUserPermissions(ctx context.Context, user identity.Requester, options accesscontrol.Options) ([]accesscontrol.Permission, error) {
