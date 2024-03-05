@@ -145,7 +145,7 @@ func (s *Service) lookupResources(ctx context.Context, user identity.Requester) 
 		s.log.Error("unable to initialize client: %s", err)
 		return nil, err
 	}
-	lookupClient, err := client.LookupResources(ctx, &pb.LookupResourcesRequest{
+	lookupStream, err := client.LookupResources(ctx, &pb.LookupResourcesRequest{
 		ResourceObjectType: "dashboard",
 		Permission:         "view",
 		Subject: &pb.SubjectReference{
@@ -162,9 +162,8 @@ func (s *Service) lookupResources(ctx context.Context, user identity.Requester) 
 		select {
 		default:
 			// Recieve on the stream
-			res, err := lookupClient.Recv()
+			res, err := lookupStream.Recv()
 			if errors.Is(err, io.EOF) {
-				s.log.Debug("lookup result", "res", objectIDs)
 				return objectIDs, nil
 			} else if err != nil {
 				return nil, err
@@ -172,7 +171,6 @@ func (s *Service) lookupResources(ctx context.Context, user identity.Requester) 
 			objectIDs = append(objectIDs, res.ResourceObjectId)
 		}
 	}
-	return objectIDs, nil
 }
 
 func (s *Service) getUserPermissions(ctx context.Context, user identity.Requester, options accesscontrol.Options) ([]accesscontrol.Permission, error) {
