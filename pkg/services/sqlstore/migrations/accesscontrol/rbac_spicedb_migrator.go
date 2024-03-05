@@ -3,9 +3,7 @@ package accesscontrol
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
-	"time"
 
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -29,20 +27,30 @@ const RBACSpiceDBDataMigrationID = "migrating permissions into spicedb"
 const schema = `
 definition user {}
 
+definition team {
+	relation member: user
+	permission view = member
+}
+
+definition role {
+	relation granted: user | team#member
+	permission view = granted
+}
+
 definition dashboard {
 	relation parent: folder
-	relation writer: user
-	relation reader: user
-	permission edit = writer + parent->edit
-	permission view = reader + edit + parent->view
+	relation writer: user | team#member | role#granted
+	relation reader: user | team#member | role#granted
+	permission edit = writer + parent->edit + writer->member
+	permission view = reader + edit + parent->view + reader->granted
 }
 
 definition folder {
 	relation parent: folder
-	relation writer: user
-	relation reader: user
-	permission edit = writer + parent->edit
-	permission view = reader + edit + parent->view
+	relation writer: user | team#member | role#granted
+	relation reader: user | team#member | role#granted
+	permission edit = writer + parent->edit + writer->member
+	permission view = reader + edit + parent->view + reader->granted
 }`
 
 func NewSpiceDBClient(cfg *setting.Cfg) (*authzed.Client, error) {
@@ -142,25 +150,31 @@ func (p *rbacSpiceDBDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Mi
 	logger := log.New("RBAC NG data migrator")
 	p.logger = logger
 	p.logger.Debug("rbac ng data migration")
-	if err := p.migrateRoleAssignments(sess); err != nil {
+
+	client, err := NewSpiceDBClient(migrator.Cfg)
+	if err != nil {
+		p.logger.Error("unable to initialize client: %s", err)
 		return err
 	}
-	if err := p.migrateTeamRoleAssignments(sess); err != nil {
+	if err := p.migrateUserRoleAssignments(sess, migrator, client); err != nil {
 		return err
 	}
-	if err := p.migrateUsersTeams(sess); err != nil {
+	if err := p.migrateTeamRoleAssignments(sess, migrator, client); err != nil {
 		return err
 	}
-	if err := p.migrateUserManagedPermissions(sess); err != nil {
+	if err := p.migrateUsersTeams(sess, migrator, client); err != nil {
 		return err
 	}
-	if err := p.migrateTeamManagedPermissions(sess); err != nil {
+	if err := p.migrateUserManagedPermissions(sess, migrator, client); err != nil {
 		return err
 	}
-	if err := p.migrateFolders(sess); err != nil {
+	if err := p.migrateTeamManagedPermissions(sess, migrator, client); err != nil {
 		return err
 	}
-	if err := p.migrateDashboards(sess); err != nil {
+	if err := p.migrateFolders(sess, migrator, client); err != nil {
+		return err
+	}
+	if err := p.migrateDashboards(sess, migrator, client); err != nil {
 		return err
 	}
 
@@ -168,72 +182,118 @@ func (p *rbacSpiceDBDataMigrator) Exec(sess *xorm.Session, migrator *migrator.Mi
 	return nil
 }
 
-func (p *rbacSpiceDBDataMigrator) migrateRoleAssignments(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateUserRoleAssignments(sess *xorm.Session, mg *migrator.Migrator, client *authzed.Client) error {
 	assignments := make([]userAssignment, 0)
 	getRoleAssignmentsQuery := `SELECT ur.org_id, ur.user_id, r.name FROM user_role ur INNER JOIN role r ON r.id = ur.role_id`
 	if err := sess.SQL(getRoleAssignmentsQuery).Find(&assignments); err != nil {
 		return err
 	}
 
-	ts := time.Now()
-	valueStrings := make([]string, len(assignments))
-	args := make([]any, 0, len(assignments)*5)
-	for i, a := range assignments {
-		valueStrings[i] = "(?, 'role', ?, 'has', 'user', ?, ?, ?)"
-		args = append(args, a.OrgId, a.Name, a.UserId, ts, ts)
+	relUpdates := make([]*pb.RelationshipUpdate, 0)
+	for _, a := range assignments {
+		update := &pb.RelationshipUpdate{
+			Operation: pb.RelationshipUpdate_OPERATION_CREATE,
+			Relationship: &pb.Relationship{
+				Resource: &pb.ObjectReference{
+					ObjectType: accesscontrol.KindRole,
+					ObjectId:   formatObjectID(a.Name),
+				},
+				Relation: accesscontrol.RelationGranted,
+				Subject: &pb.SubjectReference{
+					Object: &pb.ObjectReference{
+						ObjectType: accesscontrol.KindUser,
+						ObjectId:   fmt.Sprintf("%d", a.UserId),
+					},
+				},
+			},
+		}
+		relUpdates = append(relUpdates, update)
 	}
-	valueString := strings.Join(valueStrings, ",")
-	sql := fmt.Sprintf("INSERT INTO ac_relation (org_id, object_type, object_id, relation, subject_type, subject_id, created, updated) VALUES %s", valueString)
-	sqlArgs := append([]any{sql}, args...)
-	if _, errCreate := sess.Exec(sqlArgs...); errCreate != nil {
-		return fmt.Errorf("failed to move user role assignments: %w", errCreate)
+
+	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
+	_, err := client.WriteRelationships(context.Background(), request)
+	if err != nil {
+		mg.Logger.Error("failed to write relationships: %s", err)
+		return err
 	}
+
 	return nil
 }
 
-func (p *rbacSpiceDBDataMigrator) migrateTeamRoleAssignments(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateTeamRoleAssignments(sess *xorm.Session, mg *migrator.Migrator, client *authzed.Client) error {
 	assignments := make([]teamAssignment, 0)
 	getRoleAssignmentsQuery := `SELECT tr.org_id, tr.team_id, r.name FROM team_role tr INNER JOIN role r ON r.id = tr.role_id`
 	if err := sess.SQL(getRoleAssignmentsQuery).Find(&assignments); err != nil {
 		return err
 	}
 
-	ts := time.Now()
-	valueStrings := make([]string, len(assignments))
-	args := make([]any, 0, len(assignments)*5)
-	for i, a := range assignments {
-		valueStrings[i] = "(?, 'role', ?, 'has', 'team', ?, ?, ?)"
-		args = append(args, a.OrgId, a.Name, a.TeamId, ts, ts)
+	relUpdates := make([]*pb.RelationshipUpdate, 0)
+	for _, a := range assignments {
+		update := &pb.RelationshipUpdate{
+			Operation: pb.RelationshipUpdate_OPERATION_CREATE,
+			Relationship: &pb.Relationship{
+				Resource: &pb.ObjectReference{
+					ObjectType: accesscontrol.KindRole,
+					ObjectId:   formatObjectID(a.Name),
+				},
+				Relation: accesscontrol.RelationGranted,
+				Subject: &pb.SubjectReference{
+					Object: &pb.ObjectReference{
+						ObjectType: accesscontrol.KindTeam,
+						ObjectId:   fmt.Sprintf("%d", a.TeamId),
+					},
+					OptionalRelation: accesscontrol.RelationMember,
+				},
+			},
+		}
+		relUpdates = append(relUpdates, update)
 	}
-	valueString := strings.Join(valueStrings, ",")
-	sql := fmt.Sprintf("INSERT INTO ac_relation (org_id, object_type, object_id, relation, subject_type, subject_id, created, updated) VALUES %s", valueString)
-	sqlArgs := append([]any{sql}, args...)
-	if _, errCreate := sess.Exec(sqlArgs...); errCreate != nil {
-		return fmt.Errorf("failed to move team role assignments: %w", errCreate)
+
+	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
+	_, err := client.WriteRelationships(context.Background(), request)
+	if err != nil {
+		mg.Logger.Error("failed to write relationships: %s", err)
+		return err
 	}
+
 	return nil
 }
 
-func (p *rbacSpiceDBDataMigrator) migrateUsersTeams(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateUsersTeams(sess *xorm.Session, mg *migrator.Migrator, client *authzed.Client) error {
 	assignments := make([]teamMember, 0)
 	getRoleAssignmentsQuery := `SELECT org_id, team_id, user_id FROM team_member`
 	if err := sess.SQL(getRoleAssignmentsQuery).Find(&assignments); err != nil {
 		return err
 	}
 
-	ts := time.Now()
-	valueStrings := make([]string, len(assignments))
-	args := make([]any, 0, len(assignments)*5)
-	for i, a := range assignments {
-		valueStrings[i] = "(?, 'team', ?, 'member', 'user', ?, ?, ?)"
-		args = append(args, a.OrgId, a.TeamId, a.UserId, ts, ts)
+	relUpdates := make([]*pb.RelationshipUpdate, 0)
+	for _, a := range assignments {
+		update := &pb.RelationshipUpdate{
+			Operation: pb.RelationshipUpdate_OPERATION_CREATE,
+			Relationship: &pb.Relationship{
+				Resource: &pb.ObjectReference{
+					ObjectType: accesscontrol.KindTeam,
+					ObjectId:   fmt.Sprintf("%d", a.TeamId),
+				},
+				Relation: accesscontrol.RelationMember,
+				Subject: &pb.SubjectReference{
+					Object: &pb.ObjectReference{
+						ObjectType: accesscontrol.KindUser,
+						ObjectId:   fmt.Sprintf("%d", a.UserId),
+					},
+				},
+			},
+		}
+		relUpdates = append(relUpdates, update)
 	}
-	valueString := strings.Join(valueStrings, ",")
-	sql := fmt.Sprintf("INSERT INTO ac_relation (org_id, object_type, object_id, relation, subject_type, subject_id, created, updated) VALUES %s", valueString)
-	sqlArgs := append([]any{sql}, args...)
-	if _, errCreate := sess.Exec(sqlArgs...); errCreate != nil {
-		return fmt.Errorf("failed to move team members: %w", errCreate)
+
+	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
+	_, err := client.WriteRelationships(context.Background(), request)
+	if err != nil {
+		mg.Logger.Error("failed to write relationships: %s", err)
+		return err
 	}
+
 	return nil
 }
 
@@ -248,7 +308,7 @@ type managedPermission struct {
 	Identifier string
 }
 
-func (p *rbacSpiceDBDataMigrator) migrateUserManagedPermissions(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateUserManagedPermissions(sess *xorm.Session, mg *migrator.Migrator, client *authzed.Client) error {
 	assignments := make([]managedPermission, 0)
 	getPermissionsQuery := `SELECT ur.org_id, ur.user_id, r.name, p.action, p.attribute, p.kind, p.identifier
 		FROM user_role ur
@@ -259,24 +319,46 @@ func (p *rbacSpiceDBDataMigrator) migrateUserManagedPermissions(sess *xorm.Sessi
 		return err
 	}
 
-	relations := make([]relation, 0)
+	relUpdates := make([]*pb.RelationshipUpdate, 0)
 	for _, a := range assignments {
-		objType := kindToObjectType(a.Kind)
-		r := relation{
-			OrgId:       a.OrgId,
-			ObjectType:  objType,
-			ObjectId:    a.Identifier,
-			SubjectType: accesscontrol.KindUser,
-			SubjectId:   strconv.FormatInt(a.UserId, 10),
-			Relation:    a.Action,
+		rel := accesscontrol.ActionToRelation(a.Action)
+		if rel == "" {
+			continue
 		}
-		relations = append(relations, r)
+		if a.Kind == "folders" && strings.Contains(a.Action, "dashboard") {
+			continue
+		}
+		objType := kindToObjectType(a.Kind)
+		update := &pb.RelationshipUpdate{
+			Operation: pb.RelationshipUpdate_OPERATION_CREATE,
+			Relationship: &pb.Relationship{
+				Resource: &pb.ObjectReference{
+					ObjectType: objType,
+					ObjectId:   a.Identifier,
+				},
+				Relation: rel,
+				Subject: &pb.SubjectReference{
+					Object: &pb.ObjectReference{
+						ObjectType: accesscontrol.KindUser,
+						ObjectId:   fmt.Sprintf("%d", a.UserId),
+					},
+				},
+			},
+		}
+		relUpdates = append(relUpdates, update)
 	}
 
-	return p.insertRelations(sess, relations)
+	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
+	_, err := client.WriteRelationships(context.Background(), request)
+	if err != nil {
+		mg.Logger.Error("failed to write relationships: %s", err)
+		return err
+	}
+
+	return nil
 }
 
-func (p *rbacSpiceDBDataMigrator) migrateTeamManagedPermissions(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateTeamManagedPermissions(sess *xorm.Session, mg *migrator.Migrator, client *authzed.Client) error {
 	assignments := make([]managedPermission, 0)
 	getPermissionsQuery := `SELECT tr.org_id, tr.team_id, r.name, p.action, p.attribute, p.kind, p.identifier
 		FROM team_role tr
@@ -287,21 +369,44 @@ func (p *rbacSpiceDBDataMigrator) migrateTeamManagedPermissions(sess *xorm.Sessi
 		return err
 	}
 
-	relations := make([]relation, 0)
+	relUpdates := make([]*pb.RelationshipUpdate, 0)
 	for _, a := range assignments {
-		objType := kindToObjectType(a.Kind)
-		r := relation{
-			OrgId:       a.OrgId,
-			ObjectType:  objType,
-			ObjectId:    a.Identifier,
-			SubjectType: accesscontrol.KindTeam,
-			SubjectId:   strconv.FormatInt(a.TeamId, 10),
-			Relation:    a.Action,
+		rel := accesscontrol.ActionToRelation(a.Action)
+		if rel == "" {
+			continue
 		}
-		relations = append(relations, r)
+		if a.Kind == "folders" && strings.Contains(a.Action, "dashboard") {
+			continue
+		}
+		objType := kindToObjectType(a.Kind)
+		update := &pb.RelationshipUpdate{
+			Operation: pb.RelationshipUpdate_OPERATION_CREATE,
+			Relationship: &pb.Relationship{
+				Resource: &pb.ObjectReference{
+					ObjectType: objType,
+					ObjectId:   a.Identifier,
+				},
+				Relation: rel,
+				Subject: &pb.SubjectReference{
+					Object: &pb.ObjectReference{
+						ObjectType: accesscontrol.KindTeam,
+						ObjectId:   fmt.Sprintf("%d", a.TeamId),
+					},
+					OptionalRelation: accesscontrol.RelationMember,
+				},
+			},
+		}
+		relUpdates = append(relUpdates, update)
 	}
 
-	return p.insertRelations(sess, relations)
+	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
+	_, err := client.WriteRelationships(context.Background(), request)
+	if err != nil {
+		mg.Logger.Error("failed to write relationships: %s", err)
+		return err
+	}
+
+	return nil
 }
 
 type folder struct {
@@ -310,27 +415,45 @@ type folder struct {
 	ParentUid string `xorm:"parent_uid"`
 }
 
-func (p *rbacSpiceDBDataMigrator) migrateFolders(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateFolders(sess *xorm.Session, mg *migrator.Migrator, client *authzed.Client) error {
 	folders := make([]folder, 0)
 	getFoldersQuery := `SELECT org_id, uid, parent_uid FROM folder`
 	if err := sess.SQL(getFoldersQuery).Find(&folders); err != nil {
 		return err
 	}
 
-	relations := make([]relation, 0)
+	relUpdates := make([]*pb.RelationshipUpdate, 0)
 	for _, f := range folders {
-		r := relation{
-			OrgId:       f.OrgId,
-			ObjectType:  accesscontrol.KindFolder,
-			ObjectId:    f.UID,
-			SubjectType: accesscontrol.KindFolder,
-			SubjectId:   f.ParentUid,
-			Relation:    accesscontrol.RelationParent,
+		if f.ParentUid == "" {
+			continue
 		}
-		relations = append(relations, r)
+		update := &pb.RelationshipUpdate{
+			Operation: pb.RelationshipUpdate_OPERATION_CREATE,
+			Relationship: &pb.Relationship{
+				Resource: &pb.ObjectReference{
+					ObjectType: accesscontrol.KindFolder,
+					ObjectId:   f.UID,
+				},
+				Relation: accesscontrol.RelationParent,
+				Subject: &pb.SubjectReference{
+					Object: &pb.ObjectReference{
+						ObjectType: accesscontrol.KindFolder,
+						ObjectId:   f.ParentUid,
+					},
+				},
+			},
+		}
+		relUpdates = append(relUpdates, update)
 	}
 
-	return p.insertRelations(sess, relations)
+	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
+	_, err := client.WriteRelationships(context.Background(), request)
+	if err != nil {
+		mg.Logger.Error("failed to write relationships: %s", err)
+		return err
+	}
+
+	return nil
 }
 
 type dash struct {
@@ -339,27 +462,42 @@ type dash struct {
 	FolderUid string `xorm:"folder_uid"`
 }
 
-func (p *rbacSpiceDBDataMigrator) migrateDashboards(sess *xorm.Session) error {
+func (p *rbacSpiceDBDataMigrator) migrateDashboards(sess *xorm.Session, mg *migrator.Migrator, client *authzed.Client) error {
 	dashboards := make([]dash, 0)
 	getDashboardsQuery := `SELECT org_id, uid, folder_uid FROM dashboard WHERE is_folder = 0`
 	if err := sess.SQL(getDashboardsQuery).Find(&dashboards); err != nil {
 		return err
 	}
 
-	relations := make([]relation, 0)
+	relUpdates := make([]*pb.RelationshipUpdate, 0)
 	for _, d := range dashboards {
-		r := relation{
-			OrgId:       d.OrgId,
-			ObjectType:  accesscontrol.KindDashboard,
-			ObjectId:    d.UID,
-			SubjectType: accesscontrol.KindFolder,
-			SubjectId:   d.FolderUid,
-			Relation:    accesscontrol.RelationParent,
+		update := &pb.RelationshipUpdate{
+			Operation: pb.RelationshipUpdate_OPERATION_CREATE,
+			Relationship: &pb.Relationship{
+				Resource: &pb.ObjectReference{
+					ObjectType: accesscontrol.KindDashboard,
+					ObjectId:   d.UID,
+				},
+				Relation: accesscontrol.RelationParent,
+				Subject: &pb.SubjectReference{
+					Object: &pb.ObjectReference{
+						ObjectType: accesscontrol.KindFolder,
+						ObjectId:   d.FolderUid,
+					},
+				},
+			},
 		}
-		relations = append(relations, r)
+		relUpdates = append(relUpdates, update)
 	}
 
-	return p.insertRelations(sess, relations)
+	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
+	_, err := client.WriteRelationships(context.Background(), request)
+	if err != nil {
+		mg.Logger.Error("failed to write relationships: %s", err)
+		return err
+	}
+
+	return nil
 }
 
 func (p *rbacSpiceDBDataMigrator) migratePermissions(sess *xorm.Session) error {
@@ -372,24 +510,6 @@ func (p *rbacSpiceDBDataMigrator) migratePermissions(sess *xorm.Session) error {
 	return nil
 }
 
-func (p *rbacSpiceDBDataMigrator) insertRelations(sess *xorm.Session, relations []relation) error {
-	ts := time.Now()
-	valueStrings := make([]string, len(relations))
-	args := make([]any, 0, len(relations)*8)
-	for i, r := range relations {
-		valueStrings[i] = "(?, ?, ?, ?, ?, ?, ?, ?)"
-		args = append(args, r.OrgId, r.ObjectType, r.ObjectId, r.Relation, r.SubjectType, r.SubjectId, ts, ts)
-	}
-	valueString := strings.Join(valueStrings, ",")
-	sql := fmt.Sprintf("INSERT INTO ac_relation (org_id, object_type, object_id, relation, subject_type, subject_id, created, updated) VALUES %s", valueString)
-	sqlArgs := append([]any{sql}, args...)
-	if _, errCreate := sess.Exec(sqlArgs...); errCreate != nil {
-		return fmt.Errorf("failed to migrate managed permissions: %w", errCreate)
-	}
-
-	return nil
-}
-
 var objectKinds = map[string]string{
 	"teams":      accesscontrol.KindTeam,
 	"folders":    accesscontrol.KindFolder,
@@ -398,4 +518,9 @@ var objectKinds = map[string]string{
 
 func kindToObjectType(kind string) string {
 	return objectKinds[kind]
+}
+
+// replace managed:users:1:permissions with managed/users/1/permissions to match SpiceDB pattern
+func formatObjectID(id string) string {
+	return strings.ReplaceAll(id, ":", "/")
 }

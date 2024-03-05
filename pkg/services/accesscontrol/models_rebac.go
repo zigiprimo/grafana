@@ -1,12 +1,14 @@
 package accesscontrol
 
 const (
-	RelationRead   = "read"
-	RelationWrite  = "write"
-	RelationDelete = "delete"
-	RelationHas    = "has"
-	RelationParent = "parent"
-	RelationMember = "member"
+	RelationReader  = "reader"
+	RelationWriter  = "writer"
+	RelationAdmin   = "admin"
+	RelationDelete  = "delete"
+	RelationHas     = "has"
+	RelationParent  = "parent"
+	RelationMember  = "member"
+	RelationGranted = "granted"
 )
 
 const (
@@ -17,3 +19,15 @@ const (
 	KindDashboard  = "dashboard"
 	KindFolder     = "folder"
 )
+
+var actionToRelationMap = map[string]string{
+	"dashboards:read":  RelationReader,
+	"folders:read":     RelationReader,
+	"dashboards:write": RelationWriter,
+	"folders:write":    RelationWriter,
+}
+
+func ActionToRelation(action string) string {
+	rel := actionToRelationMap[action]
+	return rel
+}
