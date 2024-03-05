@@ -17,7 +17,6 @@ type Datasource struct {
 
 var (
 	_ backend.QueryDataHandler = (*Datasource)(nil)
-	_ backend.StreamHandler    = (*Datasource)(nil)
 )
 
 func NewDatasource(c context.Context, b backend.DataSourceInstanceSettings) (instancemgmt.Instance, error) {
@@ -30,17 +29,32 @@ func NewDatasource(c context.Context, b backend.DataSourceInstanceSettings) (ins
 }
 
 func (d *Datasource) QueryData(ctx context.Context, req *backend.QueryDataRequest) (*backend.QueryDataResponse, error) {
+	logger.Info("loki - QueryData")
 	return d.Service.QueryData(ctx, req)
 }
 
+func (d *Datasource) CheckHealth(ctx context.Context, req *backend.CheckHealthRequest) (*backend.CheckHealthResult, error) {
+	logger.Info("loki - CheckHealth")
+	return d.Service.CheckHealth(ctx, req)
+}
+
+
 func (d *Datasource) SubscribeStream(ctx context.Context, req *backend.SubscribeStreamRequest) (*backend.SubscribeStreamResponse, error) {
+	logger.Info("loki - SubscribeStream")
 	return d.Service.SubscribeStream(ctx, req)
 }
 
 func (d *Datasource) PublishStream(ctx context.Context, req *backend.PublishStreamRequest) (*backend.PublishStreamResponse, error) {
+	logger.Info("loki - PublishStream")
 	return d.Service.PublishStream(ctx, req)
 }
 
 func (d *Datasource) RunStream(ctx context.Context, req *backend.RunStreamRequest, sender *backend.StreamSender) error {
+	logger.Info("loki - RunStream")
 	return d.Service.RunStream(ctx, req, sender)
+}
+
+func (d *Datasource) CallResource(ctx context.Context, req *backend.CallResourceRequest, sender backend.CallResourceResponseSender) error {
+	logger.Info("loki - CallResource")
+	return d.Service.CallResource(ctx, req, sender)
 }

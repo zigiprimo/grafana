@@ -168,6 +168,10 @@ func (s *Service) QueryData(ctx context.Context, req *backend.QueryDataRequest) 
 	dsInfo, err := s.getDSInfo(ctx, req.PluginContext)
 	_, fromAlert := req.Headers[ngalertmodels.FromAlertHeaderName]
 	logger := backend.NewLoggerWith("fromAlert", fromAlert).FromContext(ctx)
+
+	var l = backend.NewLoggerWith("logger", "tsdb.loki")
+	l.Info("fab - QueryData - dsInfo.URL", "dsInfo.URL", dsInfo.URL)
+
 	if err != nil {
 		logger.Error("Failed to get data source info", "err", err)
 		result := backend.NewQueryDataResponse()

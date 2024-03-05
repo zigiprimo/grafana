@@ -88,9 +88,6 @@ func healthcheck(ctx context.Context, req *backend.CheckHealthRequest, s *Servic
 	return getHealthCheckMessage(nil, logger)
 }
 
-// TODO
-var logger2 = backend.NewLoggerWith("logger", "tsdb.tempo")
-
 func getHealthCheckMessage(err error, logger log.Logger) *backend.CheckHealthResult {
 	if err == nil {
 		return &backend.CheckHealthResult{
@@ -99,7 +96,6 @@ func getHealthCheckMessage(err error, logger log.Logger) *backend.CheckHealthRes
 		}
 	}
 
-	logger2.Error("Loki health check failed", "error", err)
 	return &backend.CheckHealthResult{
 		Status:  backend.HealthStatusError,
 		Message: "Unable to connect with Loki. Please check the server logs for more details.",

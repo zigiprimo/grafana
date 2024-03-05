@@ -44,7 +44,10 @@ func (s *Service) SubscribeStream(ctx context.Context, req *backend.SubscribeStr
 	defer dsInfo.streamsMu.RUnlock()
 
 	cache, ok := dsInfo.streams[req.Path]
+	var logger = backend.NewLoggerWith("tsdb.loki")
+	logger.Info("fab - cache - ok", "ok", ok)
 	if ok {
+		logger.Info("fab - cache", "cache", cache)
 		msg, err := backend.NewInitialData(cache.Bytes(data.IncludeAll))
 		return &backend.SubscribeStreamResponse{
 			Status:      backend.SubscribeStreamStatusOK,
@@ -60,6 +63,9 @@ func (s *Service) SubscribeStream(ctx context.Context, req *backend.SubscribeStr
 
 // Single instance for each channel (results are shared with all listeners)
 func (s *Service) RunStream(ctx context.Context, req *backend.RunStreamRequest, sender *backend.StreamSender) error {
+	var l = backend.NewLoggerWith("tsdb.loki")
+	l.Info("fab - RunStream")
+
 	dsInfo, err := s.getDSInfo(ctx, req.PluginContext)
 	if err != nil {
 		return err

@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/grafana/grafana-plugin-sdk-go/backend"
 	"github.com/grafana/grafana/pkg/tsdb/loki/tracing"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -23,8 +24,12 @@ const (
 	EndpointQueryData = "queryData"
 )
 
+var logger = backend.NewLoggerWith("logger", "tsdb.loki")
+
 func UpdatePluginParsingResponseDurationSeconds(ctx context.Context, duration time.Duration, status string) {
+	logger.Info("fab - status", "status", status, "EndpointQueryData", EndpointQueryData)
 	histogram := pluginParsingResponseDurationSeconds.WithLabelValues(status, EndpointQueryData)
+	logger.Info("fab - histogram", "histogram", histogram)
 
 	if traceID := tracing.TraceIDFromContext(ctx, true); traceID != "" {
 		histogram.(prometheus.ExemplarObserver).ObserveWithExemplar(duration.Seconds(), prometheus.Labels{"traceID": traceID})
