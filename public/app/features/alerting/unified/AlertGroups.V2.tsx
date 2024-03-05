@@ -258,13 +258,20 @@ function GroupAlertsAlert({ alert, commonLabels, alertmanagerName }: GroupAlerts
       </Dropdown>
       {!collapsed && (
         <div className={styles.expanded}>
-          <div className={styles.timeline}>
-            <div className={styles.timelineBox}>
-              <div className={styles.timelineBoxContent}>Started {formatDistanceToNow(alert.startsAt)}</div>
-            </div>
-            <div className={styles.timelineBox}>Updated {formatDistanceToNow(alert.updatedAt)}</div>
-            <div className={styles.timelineBox}>Ends {formatDistanceToNow(alert.endsAt)}</div>
-          </div>
+          <ol className={styles.timeline}>
+            <li>
+              <div className={styles.timestamp}>{formatDistanceToNow(alert.startsAt)}</div>
+              <div className={styles.event}>Started Firing</div>
+            </li>
+            <li>
+              <div className={styles.timestamp}>{formatDistanceToNow(alert.updatedAt)}</div>
+              <div className={styles.event}>Last update</div>
+            </li>
+            <li>
+              <div className={styles.timestamp}>{formatDistanceToNow(alert.endsAt)}</div>
+              <div className={styles.event}>Ends</div>
+            </li>
+          </ol>
         </div>
       )}
     </>
@@ -283,21 +290,34 @@ const getGroupAlertsStyles = (theme: GrafanaTheme2) => ({
   }),
   timeline: css({
     display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'center',
+    listStyleType: 'none',
   }),
-  timelineBox: css({
-    width: 20,
-    height: 20,
-    borderRadius: theme.shape.radius.pill,
-    backgroundColor: theme.colors.info.main,
+  timestamp: css({
+    marginBottom: 20,
+    padding: '0 40px',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+  }),
+  event: css({
+    padding: '0 40px',
+    display: 'flex',
+    justifyContent: 'center',
+    borderTop: '2px solid #D6DCE0',
     position: 'relative',
-  }),
-  timelineBoxContent: css({
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
+    '&::before': {
+      content: '""',
+      width: 25,
+      height: 25,
+      backgroundColor: 'white',
+      borderRadius: 25,
+      border: '1px solid #ddd',
+      position: 'absolute',
+      top: -15,
+      left: '42%',
+    },
   }),
 });
 
