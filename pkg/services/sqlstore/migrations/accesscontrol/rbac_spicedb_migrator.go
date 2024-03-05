@@ -20,6 +20,7 @@ import (
 	"github.com/grafana/grafana/pkg/infra/log"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
+	"github.com/grafana/grafana/pkg/setting"
 )
 
 const RBACSpiceDBSchemaMigrationID = "creating spicedb schema"
@@ -44,7 +45,17 @@ definition folder {
 	permission view = reader + edit + parent->view
 }`
 
-const spicedbEndpoint = "localhost:50051"
+func NewSpiceDBClient(cfg *setting.Cfg) (*authzed.Client, error) {
+	client, err := authzed.NewClient(
+		cfg.RBACSpiceDBAddr,
+		grpcutil.WithInsecureBearerToken(cfg.RBACSpiceDBToken),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
 
 func AddRBACSpiceDBSchemaMigration(mg *migrator.Migrator) {
 	mg.AddMigration(RBACSpiceDBSchemaMigrationID, &rbacSpiceDBSchemaMigrator{})
@@ -62,11 +73,7 @@ func (p *rbacSpiceDBSchemaMigrator) SQL(dialect migrator.Dialect) string {
 }
 
 func (p *rbacSpiceDBSchemaMigrator) Exec(sess *xorm.Session, mg *migrator.Migrator) error {
-	client, err := authzed.NewClient(
-		spicedbEndpoint,
-		grpcutil.WithInsecureBearerToken(mg.Cfg.RBACSpiceDBToken),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	client, err := NewSpiceDBClient(mg.Cfg)
 	if err != nil {
 		mg.Logger.Error("unable to initialize client: %s", err)
 		return err
