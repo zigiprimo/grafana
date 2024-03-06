@@ -4,6 +4,10 @@ import (
 	"context"
 	"sort"
 
+	"github.com/grafana/grafana/pkg/services/featuremgmt"
+
+	"github.com/grafana/grafana/pkg/services/accesscontrol"
+
 	"github.com/grafana/grafana/pkg/infra/db"
 	"github.com/grafana/grafana/pkg/infra/metrics"
 	"github.com/grafana/grafana/pkg/services/dashboards"
@@ -14,7 +18,7 @@ import (
 	"github.com/grafana/grafana/pkg/setting"
 )
 
-func ProvideService(cfg *setting.Cfg, sqlstore db.DB, starService star.Service, dashboardService dashboards.DashboardService) *SearchService {
+func ProvideService(cfg *setting.Cfg, sqlstore db.DB, starService star.Service, dashboardService dashboards.DashboardService, acService accesscontrol.Service, features featuremgmt.FeatureToggles) *SearchService {
 	s := &SearchService{
 		Cfg: cfg,
 		sortOptions: map[string]model.SortOption{
@@ -24,6 +28,8 @@ func ProvideService(cfg *setting.Cfg, sqlstore db.DB, starService star.Service, 
 		sqlstore:         sqlstore,
 		starService:      starService,
 		dashboardService: dashboardService,
+		acService:        acService,
+		features:         features,
 	}
 	return s
 }
@@ -57,6 +63,8 @@ type SearchService struct {
 	sqlstore         db.DB
 	starService      star.Service
 	dashboardService dashboards.DashboardService
+	acService        accesscontrol.Service
+	features         featuremgmt.FeatureToggles
 }
 
 func (s *SearchService) SearchHandler(ctx context.Context, query *Query) (model.HitList, error) {
@@ -77,6 +85,32 @@ func (s *SearchService) SearchHandler(ctx context.Context, query *Query) (model.
 	if query.IsStarred && len(query.DashboardIds) == 0 && len(query.DashboardUIDs) == 0 {
 		for id := range staredDashIDs.UserStars {
 			query.DashboardIds = append(query.DashboardIds, id)
+		}
+	}
+
+	userFolderUIDs := make([]string, 0)
+	userDashboardsUIDs := make([]string, 0)
+	if s.features.IsEnabled(ctx, featuremgmt.FlagRbacNG) {
+		// Lookup user's folders and dashboards
+		userFolderUIDs, err = s.acService.LookupResources(ctx, query.SignedInUser, accesscontrol.LookupQuery{
+			ResourceType: accesscontrol.KindFolder,
+			Permission:   accesscontrol.PermissionView,
+		})
+		if err != nil {
+			return nil, err
+		}
+		userDashboardsUIDs, err = s.acService.LookupResources(ctx, query.SignedInUser, accesscontrol.LookupQuery{
+			ResourceType: accesscontrol.KindDashboard,
+			Permission:   accesscontrol.PermissionView,
+		})
+		if err != nil {
+			return nil, err
+		}
+		// Pre-filter if user has access to small amount of dashboards
+		if int64(len(userFolderUIDs)+len(userDashboardsUIDs)) < query.Limit {
+			if len(query.DashboardUIDs) == 0 {
+				query.DashboardUIDs = append(userDashboardsUIDs, userFolderUIDs...)
+			}
 		}
 	}
 
@@ -102,6 +136,10 @@ func (s *SearchService) SearchHandler(ctx context.Context, query *Query) (model.
 	hits, err := s.dashboardService.SearchDashboards(ctx, &dashboardQuery)
 	if err != nil {
 		return nil, err
+	}
+
+	if int64(len(userFolderUIDs)+len(userDashboardsUIDs)) >= query.Limit && s.features.IsEnabled(ctx, featuremgmt.FlagRbacNG) {
+		// TODO: Do post-filtering if number of available dashboards is large
 	}
 
 	if query.Sort == "" {

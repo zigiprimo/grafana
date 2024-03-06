@@ -175,7 +175,13 @@ func (s *Service) lookupResources(ctx context.Context, query accesscontrol.Looku
 			} else if err != nil {
 				return nil, err
 			}
-			objectIDs = append(objectIDs, res.ResourceObjectId)
+			if len(query.ResourceFilter) > 0 {
+				if slices.Contains(query.ResourceFilter, res.ResourceObjectId) {
+					objectIDs = append(objectIDs, res.ResourceObjectId)
+				}
+			} else {
+				objectIDs = append(objectIDs, res.ResourceObjectId)
+			}
 		}
 	}
 }

@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/grafana/pkg/services/sqlstore/permissions"
+
 	"xorm.io/xorm"
 
 	"github.com/grafana/grafana/pkg/infra/db"
@@ -20,7 +22,6 @@ import (
 	"github.com/grafana/grafana/pkg/services/quota"
 	"github.com/grafana/grafana/pkg/services/sqlstore"
 	"github.com/grafana/grafana/pkg/services/sqlstore/migrator"
-	"github.com/grafana/grafana/pkg/services/sqlstore/permissions"
 	"github.com/grafana/grafana/pkg/services/sqlstore/searchstore"
 	"github.com/grafana/grafana/pkg/services/star"
 	"github.com/grafana/grafana/pkg/services/store"
@@ -908,13 +909,14 @@ func (d *dashboardStore) GetDashboards(ctx context.Context, query *dashboards.Ge
 }
 
 func (d *dashboardStore) FindDashboards(ctx context.Context, query *dashboards.FindPersistedDashboardsQuery) ([]dashboards.DashboardSearchProjection, error) {
-	recursiveQueriesAreSupported, err := d.store.RecursiveQueriesAreSupported()
-	if err != nil {
-		return nil, err
-	}
+	filters := make([]any, 0)
 
-	filters := []any{
-		permissions.NewAccessControlDashboardPermissionFilter(query.SignedInUser, query.Permission, query.Type, d.features, recursiveQueriesAreSupported),
+	if !d.features.IsEnabled(ctx, featuremgmt.FlagRbacNG) {
+		recursiveQueriesAreSupported, err := d.store.RecursiveQueriesAreSupported()
+		if err != nil {
+			return nil, err
+		}
+		filters = append(filters, permissions.NewAccessControlDashboardPermissionFilter(query.SignedInUser, query.Permission, query.Type, d.features, recursiveQueriesAreSupported))
 	}
 
 	for _, filter := range query.Sort.Filter {
@@ -979,7 +981,7 @@ func (d *dashboardStore) FindDashboards(ctx context.Context, query *dashboards.F
 
 	sql, params := sb.ToSQL(limit, page)
 
-	err = d.store.WithDbSession(ctx, func(sess *db.Session) error {
+	err := d.store.WithDbSession(ctx, func(sess *db.Session) error {
 		return sess.SQL(sql, params...).Find(&res)
 	})
 

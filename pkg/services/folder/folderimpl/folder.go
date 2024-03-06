@@ -343,15 +343,6 @@ func (s *Service) GetChildren(ctx context.Context, q *folder.GetChildrenQuery) (
 }
 
 func (s *Service) getRootFolders(ctx context.Context, q *folder.GetChildrenQuery) ([]*folder.Folder, error) {
-	// Lookup user's folders
-	userFolderUIDs, err := s.acService.LookupResources(ctx, q.SignedInUser, accesscontrol.LookupQuery{
-		ResourceType: accesscontrol.KindFolder,
-		Permission:   accesscontrol.PermissionView,
-	})
-	if err != nil {
-		return nil, err
-	}
-
 	// Get all root folders
 	q.FolderUIDs = []string{}
 	children, err := s.store.GetChildren(ctx, *q)
@@ -362,6 +353,16 @@ func (s *Service) getRootFolders(ctx context.Context, q *folder.GetChildrenQuery
 	childrenUIDs := make([]string, 0, len(children))
 	for _, f := range children {
 		childrenUIDs = append(childrenUIDs, f.UID)
+	}
+
+	// Lookup user's folders
+	userFolderUIDs, err := s.acService.LookupResources(ctx, q.SignedInUser, accesscontrol.LookupQuery{
+		ResourceType:   accesscontrol.KindFolder,
+		Permission:     accesscontrol.PermissionView,
+		ResourceFilter: childrenUIDs,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	childrenUIDsFiltered := make([]string, 0, len(children))

@@ -82,10 +82,11 @@ type SearchOptions struct {
 }
 
 type LookupQuery struct {
-	ResourceType string
-	Permission   string
-	SubjectType  string
-	SubjectID    string
+	ResourceType   string
+	Permission     string
+	SubjectType    string
+	SubjectID      string
+	ResourceFilter []string
 }
 
 // Wildcards computes the wildcard scopes that include the scope
