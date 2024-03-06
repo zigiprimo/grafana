@@ -1,0 +1,9 @@
+{
+  "version": "v1",
+  "packages": {
+    "@grafana/session-replay": {
+      "signature": "a1cdcd8d053c5bb00d7a9e6aba0aa1b9",
+      "file": true
+    }
+  }
+}

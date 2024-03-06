@@ -4102,6 +4102,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@grafana/session-replay@file:.yalc/@grafana/session-replay::locator=grafana%40workspace%3A.":
+  version: 1.0.5
+  resolution: "@grafana/session-replay@file:.yalc/@grafana/session-replay#.yalc/@grafana/session-replay::hash=5e029f&locator=grafana%40workspace%3A."
+  dependencies:
+    rrweb: "npm:^2.0.0-alpha.4"
+  checksum: 10/deaffc9010e4c5b53161039ffe26b57422a2787ba83fe1fc9f03ad4c596877a5cc6018cf8b761bf6167e24d0c68460a9c947a08a2982e45d1cc9c84504c89daf
+  languageName: node
+  linkType: hard
+
 "@grafana/sql@workspace:*, @grafana/sql@workspace:packages/grafana-sql":
   version: 0.0.0-use.local
   resolution: "@grafana/sql@workspace:packages/grafana-sql"
@@ -7091,6 +7100,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@rrweb/types@npm:^2.0.0-alpha.11":
+  version: 2.0.0-alpha.11
+  resolution: "@rrweb/types@npm:2.0.0-alpha.11"
+  dependencies:
+    rrweb-snapshot: "npm:^2.0.0-alpha.11"
+  checksum: 10/a69880137b40a0a45f47d639d939fc6e8303536ee1c5907de7de1faf0ba2fe5637da610bdb0ad04f1fa5baa2277cfe72b962c9d5dbaf55cced485a5830307d0f
+  languageName: node
+  linkType: hard
+
 "@rtsao/plugin-proposal-class-properties@npm:7.0.1-patch.1":
   version: 7.0.1-patch.1
   resolution: "@rtsao/plugin-proposal-class-properties@npm:7.0.1-patch.1"
@@ -8819,6 +8837,13 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10/06d50fa1e1370ef60b9c9085b76adec7d7bc20728fbb02b3c2061d4d922312acf1ba56a7c94d88c27a22fc6241ab6b970c936f3294038a9c97a719fbc8eb8a76
+  languageName: node
+  linkType: hard
+
+"@types/css-font-loading-module@npm:0.0.7":
+  version: 0.0.7
+  resolution: "@types/css-font-loading-module@npm:0.0.7"
+  checksum: 10/f70b9098ee3b2e006f5f6d5cecc627dcc7b898f266bfc594e73a8720636f1a3bc5f8c38fa0e8f7e5b7878038b46fd70da0c797c3288e072af984097210f4c056
   languageName: node
   linkType: hard
 
@@ -11051,6 +11076,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@xstate/fsm@npm:^1.4.0":
+  version: 1.6.5
+  resolution: "@xstate/fsm@npm:1.6.5"
+  checksum: 10/deae1501169d41d5395ce1581d7b08bde17911b7dec1533eacd5bee17060d22273055d6d6bc7e8f32222a502e4dcf510cd29064a5c9c5fa5aa2ced0ad60b2512
+  languageName: node
+  linkType: hard
+
 "@xtuc/ieee754@npm:^1.2.0":
   version: 1.2.0
   resolution: "@xtuc/ieee754@npm:1.2.0"
@@ -12195,7 +12227,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"base64-arraybuffer@npm:^1.0.2":
+"base64-arraybuffer@npm:^1.0.1, base64-arraybuffer@npm:^1.0.2":
   version: 1.0.2
   resolution: "base64-arraybuffer@npm:1.0.2"
   checksum: 10/15e6400d2d028bf18be4ed97702b11418f8f8779fb8c743251c863b726638d52f69571d4cc1843224da7838abef0949c670bde46936663c45ad078e89fee5c62
@@ -17179,7 +17211,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fflate@npm:^0.4.8":
+"fflate@npm:^0.4.4, fflate@npm:^0.4.8":
   version: 0.4.8
   resolution: "fflate@npm:0.4.8"
   checksum: 10/c0c75029bcbefd0b47cede4ad2a3698f571e38d3d93dfbb96d744c655ec3bf5e31111044c2c01fa3965109874f5be8b5a6b3686b958392693689665cbabf3ece
@@ -18351,6 +18383,7 @@ __metadata:
     "@grafana/runtime": "workspace:*"
     "@grafana/scenes": "npm:^3.8.0"
     "@grafana/schema": "workspace:*"
+    "@grafana/session-replay": "file:.yalc/@grafana/session-replay"
     "@grafana/sql": "workspace:*"
     "@grafana/tsconfig": "npm:^1.3.0-rc1"
     "@grafana/ui": "workspace:*"
@@ -22810,6 +22843,13 @@ __metadata:
     minipass: "npm:^3.0.0"
     yallist: "npm:^4.0.0"
   checksum: 10/ae0f45436fb51344dcb87938446a32fbebb540d0e191d63b35e1c773d47512e17307bf54aa88326cc6d176594d00e4423563a091f7266c2f9a6872cdc1e234d1
+  languageName: node
+  linkType: hard
+
+"mitt@npm:^3.0.0":
+  version: 3.0.1
+  resolution: "mitt@npm:3.0.1"
+  checksum: 10/287c70d8e73ffc25624261a4989c783768aed95ecb60900f051d180cf83e311e3e59865bfd6e9d029cdb149dc20ba2f128a805e9429c5c4ce33b1416c65bbd14
   languageName: node
   linkType: hard
 
@@ -27703,6 +27743,38 @@ __metadata:
   bin:
     rollup: dist/bin/rollup
   checksum: 10/df087b701304432f30922bbee5f534ab189aa6938bd383b5686c03147e0d00cd1789ea10a462361326ce6b6ebe448ce272ad3f3cc40b82eeb3157df12f33663c
+  languageName: node
+  linkType: hard
+
+"rrdom@npm:^2.0.0-alpha.11":
+  version: 2.0.0-alpha.11
+  resolution: "rrdom@npm:2.0.0-alpha.11"
+  dependencies:
+    rrweb-snapshot: "npm:^2.0.0-alpha.11"
+  checksum: 10/d7d78ecc99a787092f14c2c545838e52ad14faa2ca0f32b16fe409b1395c84e5b1bdd854cc22b871c643b93529888956d46feacc591a161b9c4e8869e6fcc8ae
+  languageName: node
+  linkType: hard
+
+"rrweb-snapshot@npm:^2.0.0-alpha.11":
+  version: 2.0.0-alpha.11
+  resolution: "rrweb-snapshot@npm:2.0.0-alpha.11"
+  checksum: 10/0001f1b70b13f1e9573b1abe7d0039f3052fa96ab1b9caceff9e48b2eebe66d437d78d9b90491e24d9ab12834bb3396359bf93be86cd72564799a73630d95673
+  languageName: node
+  linkType: hard
+
+"rrweb@npm:^2.0.0-alpha.4":
+  version: 2.0.0-alpha.11
+  resolution: "rrweb@npm:2.0.0-alpha.11"
+  dependencies:
+    "@rrweb/types": "npm:^2.0.0-alpha.11"
+    "@types/css-font-loading-module": "npm:0.0.7"
+    "@xstate/fsm": "npm:^1.4.0"
+    base64-arraybuffer: "npm:^1.0.1"
+    fflate: "npm:^0.4.4"
+    mitt: "npm:^3.0.0"
+    rrdom: "npm:^2.0.0-alpha.11"
+    rrweb-snapshot: "npm:^2.0.0-alpha.11"
+  checksum: 10/6c62ed3f3174e5bb6e200f04c5962ee899cacd3cd8850a672bf041ba107a65d1d6c7f8f4f214061f3d966ea3a01af1ea6e580885e362a3ec78dcb28aeb93a99a
   languageName: node
   linkType: hard
 

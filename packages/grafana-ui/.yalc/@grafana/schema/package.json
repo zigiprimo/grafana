@@ -1,0 +1,43 @@
+{
+  "author": "Grafana Labs",
+  "license": "Apache-2.0",
+  "name": "@grafana/schema",
+  "version": "10.3.0-pre",
+  "description": "Grafana Schema Library",
+  "keywords": [
+    "typescript"
+  ],
+  "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/grafana/grafana.git",
+    "directory": "packages/grafana-schema"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "main": "dist/index.js",
+    "module": "dist/esm/index.js",
+    "types": "dist/index.d.ts",
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "./README.md",
+    "./CHANGELOG.md",
+    "LICENSE_APACHE2"
+  ],
+  "scripts": {
+    "build": "tsc -p ./tsconfig.build.json && rollup -c rollup.config.ts",
+    "bundle": "rollup -c rollup.config.ts",
+    "clean": "rimraf ./dist ./compiled ./package.tgz",
+    "typecheck": "tsc --emitDeclarationOnly false --noEmit",
+    "prepack": "cp package.json package.json.bak && node ../../scripts/prepare-packagejson.js",
+    "postpack": "mv package.json.bak package.json"
+  },
+  "dependencies": {
+    "tslib": "2.6.0"
+  },
+  "module": "dist/esm/index.js",
+  "yalcSig": "c887a0e01449780de26fcaeac3d711aa"
+}
