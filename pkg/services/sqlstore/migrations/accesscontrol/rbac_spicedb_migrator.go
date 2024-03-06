@@ -210,8 +210,7 @@ func (p *rbacSpiceDBDataMigrator) migrateUserRoleAssignments(sess *xorm.Session,
 		relUpdates = append(relUpdates, update)
 	}
 
-	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
-	_, err := client.WriteRelationships(context.Background(), request)
+	err := bulkWriteUpdates(client, relUpdates)
 	if err != nil {
 		mg.Logger.Error("failed to write relationships: %s", err)
 		return err
@@ -249,8 +248,7 @@ func (p *rbacSpiceDBDataMigrator) migrateTeamRoleAssignments(sess *xorm.Session,
 		relUpdates = append(relUpdates, update)
 	}
 
-	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
-	_, err := client.WriteRelationships(context.Background(), request)
+	err := bulkWriteUpdates(client, relUpdates)
 	if err != nil {
 		mg.Logger.Error("failed to write relationships: %s", err)
 		return err
@@ -287,8 +285,7 @@ func (p *rbacSpiceDBDataMigrator) migrateUsersTeams(sess *xorm.Session, mg *migr
 		relUpdates = append(relUpdates, update)
 	}
 
-	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
-	_, err := client.WriteRelationships(context.Background(), request)
+	err := bulkWriteUpdates(client, relUpdates)
 	if err != nil {
 		mg.Logger.Error("failed to write relationships: %s", err)
 		return err
@@ -348,8 +345,7 @@ func (p *rbacSpiceDBDataMigrator) migrateUserManagedPermissions(sess *xorm.Sessi
 		relUpdates = append(relUpdates, update)
 	}
 
-	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
-	_, err := client.WriteRelationships(context.Background(), request)
+	err := bulkWriteUpdates(client, relUpdates)
 	if err != nil {
 		mg.Logger.Error("failed to write relationships: %s", err)
 		return err
@@ -399,8 +395,7 @@ func (p *rbacSpiceDBDataMigrator) migrateTeamManagedPermissions(sess *xorm.Sessi
 		relUpdates = append(relUpdates, update)
 	}
 
-	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
-	_, err := client.WriteRelationships(context.Background(), request)
+	err := bulkWriteUpdates(client, relUpdates)
 	if err != nil {
 		mg.Logger.Error("failed to write relationships: %s", err)
 		return err
@@ -446,8 +441,7 @@ func (p *rbacSpiceDBDataMigrator) migrateFolders(sess *xorm.Session, mg *migrato
 		relUpdates = append(relUpdates, update)
 	}
 
-	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
-	_, err := client.WriteRelationships(context.Background(), request)
+	err := bulkWriteUpdates(client, relUpdates)
 	if err != nil {
 		mg.Logger.Error("failed to write relationships: %s", err)
 		return err
@@ -490,8 +484,7 @@ func (p *rbacSpiceDBDataMigrator) migrateDashboards(sess *xorm.Session, mg *migr
 		relUpdates = append(relUpdates, update)
 	}
 
-	request := &pb.WriteRelationshipsRequest{Updates: relUpdates}
-	_, err := client.WriteRelationships(context.Background(), request)
+	err := bulkWriteUpdates(client, relUpdates)
 	if err != nil {
 		mg.Logger.Error("failed to write relationships: %s", err)
 		return err
@@ -523,4 +516,22 @@ func kindToObjectType(kind string) string {
 // replace managed:users:1:permissions with managed/users/1/permissions to match SpiceDB pattern
 func formatObjectID(id string) string {
 	return strings.ReplaceAll(id, ":", "/")
+}
+
+func bulkWriteUpdates(client *authzed.Client, updates []*pb.RelationshipUpdate) error {
+	limit := 1000
+	for i := 0; i < len(updates); i += limit {
+		last := i + limit
+		if last > len(updates) {
+			last = len(updates)
+		}
+		bulk := updates[i:last]
+		request := &pb.WriteRelationshipsRequest{Updates: bulk}
+		_, err := client.WriteRelationships(context.Background(), request)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+
 }
