@@ -21,6 +21,7 @@ import { shouldUseLegacyRunner, shouldUseMappingUI, standardAnnotationSupport } 
 import { AnnotationQueryResponse } from '../types';
 
 import { AnnotationFieldMapper } from './AnnotationResultMapper';
+import { FormControls } from './FormControls';
 
 export interface Props {
   datasource: DataSourceApi;
@@ -193,6 +194,7 @@ export default class StandardAnnotationQueryEditor extends PureComponent<Props, 
 
     return (
       <>
+        <FormControls />
         <DataSourcePluginContextProvider instanceSettings={datasourceInstanceSettings}>
           <QueryEditor
             key={datasource?.name}
