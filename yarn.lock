@@ -3432,8 +3432,8 @@ __metadata:
     "@grafana/data": "workspace:*"
     "@grafana/e2e-selectors": "workspace:*"
     "@grafana/experimental": "npm:1.7.10"
-    "@grafana/lezer-logql": "npm:0.2.3"
-    "@grafana/lezer-traceql": "npm:0.0.16"
+    "@grafana/lezer-logql": "patch:@grafana/lezer-logql@npm%3A0.2.3#~/.yarn/patches/@grafana-lezer-logql-npm-0.2.3-39282aaef5.patch"
+    "@grafana/lezer-traceql": "patch:@grafana/lezer-traceql@npm%3A0.0.16#~/.yarn/patches/@grafana-lezer-traceql-npm-0.0.16-92cb591c77.patch"
     "@grafana/monaco-logql": "npm:^0.0.7"
     "@grafana/o11y-ds-frontend": "workspace:*"
     "@grafana/plugin-configs": "npm:11.0.0-pre"
@@ -3854,12 +3854,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@grafana/lezer-logql@patch:@grafana/lezer-logql@npm%3A0.2.3#~/.yarn/patches/@grafana-lezer-logql-npm-0.2.3-39282aaef5.patch":
+  version: 0.2.3
+  resolution: "@grafana/lezer-logql@patch:@grafana/lezer-logql@npm%3A0.2.3#~/.yarn/patches/@grafana-lezer-logql-npm-0.2.3-39282aaef5.patch::version=0.2.3&hash=af56f4"
+  peerDependencies:
+    "@lezer/lr": ^1.0.0
+  checksum: 10/4f43eda28506903cfcacec0341b1a73161666d4f1decdf6fae7cf05fee696b6de6684926e3ae503f7433155af2e78e9fd221ec2e8bd4c6a9ad8336540d531eee
+  languageName: node
+  linkType: hard
+
 "@grafana/lezer-traceql@npm:0.0.16":
   version: 0.0.16
   resolution: "@grafana/lezer-traceql@npm:0.0.16"
   peerDependencies:
     "@lezer/lr": ^1.3.0
   checksum: 10/64443356f9ef880cbd2ccba7990c7a05d8eb73b165ef79d6ea55a269a775954a22262c3c90988dff82a21f4081dd8236ffe2c4af7c3ea41d03f7d994bea1af93
+  languageName: node
+  linkType: hard
+
+"@grafana/lezer-traceql@patch:@grafana/lezer-traceql@npm%3A0.0.16#~/.yarn/patches/@grafana-lezer-traceql-npm-0.0.16-92cb591c77.patch":
+  version: 0.0.16
+  resolution: "@grafana/lezer-traceql@patch:@grafana/lezer-traceql@npm%3A0.0.16#~/.yarn/patches/@grafana-lezer-traceql-npm-0.0.16-92cb591c77.patch::version=0.0.16&hash=84dd79"
+  peerDependencies:
+    "@lezer/lr": ^1.3.0
+  checksum: 10/987a8e668b513587fa01ff79281cf21314ae9cef2849b96d8abddea2fca48a443dd2f9c148736401d551c4382605410fa46aef41049933878f1a8ab577091835
   languageName: node
   linkType: hard
 
@@ -3954,7 +3972,7 @@ __metadata:
     "@lezer/common": "npm:1.2.1"
     "@lezer/highlight": "npm:1.2.0"
     "@lezer/lr": "npm:1.3.3"
-    "@prometheus-io/lezer-promql": "npm:^0.37.0-rc.1"
+    "@prometheus-io/lezer-promql": "patch:@prometheus-io/lezer-promql@npm%3A0.37.0#~/.yarn/patches/@prometheus-io-lezer-promql-npm-0.37.0-dcde65254c.patch"
     "@reduxjs/toolkit": "npm:1.9.5"
     "@rollup/plugin-image": "npm:3.0.3"
     "@rollup/plugin-node-resolve": "npm:15.2.3"
@@ -4254,7 +4272,7 @@ __metadata:
     "@types/testing-library__jest-dom": "npm:5.14.9"
     "@types/tinycolor2": "npm:1.4.6"
     "@types/uuid": "npm:9.0.8"
-    ansicolor: "npm:1.1.100"
+    ansicolor: "patch:ansicolor@npm%3A1.1.100#~/.yarn/patches/ansicolor-npm-1.1.100-32b8c891ec.patch"
     calculate-size: "npm:1.1.1"
     classnames: "npm:2.5.1"
     common-tags: "npm:1.8.2"
@@ -6146,13 +6164,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prometheus-io/lezer-promql@npm:^0.37.0-rc.1":
+"@prometheus-io/lezer-promql@npm:0.37.0":
   version: 0.37.0
   resolution: "@prometheus-io/lezer-promql@npm:0.37.0"
   peerDependencies:
     "@lezer/highlight": ^1.0.0
     "@lezer/lr": ^1.0.0
   checksum: 10/00a3ef7a292ae17c7059da73e1ebd4568135eb5189be0eb60f039915f1c20a0bf355fe02cec1c11955e9e3885b5ecfdd8a67d57ce25fa09ad74575ba0fbc7386
+  languageName: node
+  linkType: hard
+
+"@prometheus-io/lezer-promql@patch:@prometheus-io/lezer-promql@npm%3A0.37.0#~/.yarn/patches/@prometheus-io-lezer-promql-npm-0.37.0-dcde65254c.patch":
+  version: 0.37.0
+  resolution: "@prometheus-io/lezer-promql@patch:@prometheus-io/lezer-promql@npm%3A0.37.0#~/.yarn/patches/@prometheus-io-lezer-promql-npm-0.37.0-dcde65254c.patch::version=0.37.0&hash=d20f6f"
+  peerDependencies:
+    "@lezer/highlight": ^1.0.0
+    "@lezer/lr": ^1.0.0
+  checksum: 10/9b557a6625ab99f088833fbfdd8efcc62b29bd0687ce16bec551f0ce2db0defdad0fb1731a6a9302d179a9f4979eaa576d868ac103444e044c7e8f6e3ea883df
   languageName: node
   linkType: hard
 
@@ -11654,6 +11682,13 @@ __metadata:
   version: 1.1.100
   resolution: "ansicolor@npm:1.1.100"
   checksum: 10/9420e96f44b578153dfd11e2d829d633ca2699452419aff48314219d66b7b69a9b6d994d2f2350b1d29a9826e33500b87fe85606629a8889cd52ce806908f4a9
+  languageName: node
+  linkType: hard
+
+"ansicolor@patch:ansicolor@npm%3A1.1.100#~/.yarn/patches/ansicolor-npm-1.1.100-32b8c891ec.patch":
+  version: 1.1.100
+  resolution: "ansicolor@patch:ansicolor@npm%3A1.1.100#~/.yarn/patches/ansicolor-npm-1.1.100-32b8c891ec.patch::version=1.1.100&hash=a2deb8"
+  checksum: 10/5a9d73cc6835a66c204b63c6ba83a4b8b927d4b4b484e980a47110063e7459e7daa2677dd2610ed1cc78713236e71ba67a1387890f6586b7aa28ca38cc2ad3b8
   languageName: node
   linkType: hard
 
@@ -18362,7 +18397,7 @@ __metadata:
     "@grafana/faro-web-sdk": "npm:^1.3.6"
     "@grafana/flamegraph": "workspace:*"
     "@grafana/google-sdk": "npm:0.1.2"
-    "@grafana/lezer-logql": "npm:0.2.3"
+    "@grafana/lezer-logql": "patch:@grafana/lezer-logql@npm%3A0.2.3#~/.yarn/patches/@grafana-lezer-logql-npm-0.2.3-39282aaef5.patch"
     "@grafana/monaco-logql": "npm:^0.0.7"
     "@grafana/o11y-ds-frontend": "workspace:*"
     "@grafana/plugin-e2e": "npm:0.18.0"
@@ -18388,7 +18423,7 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:1.21.0"
     "@playwright/test": "npm:^1.41.2"
     "@popperjs/core": "npm:2.11.8"
-    "@prometheus-io/lezer-promql": "npm:^0.37.0-rc.1"
+    "@prometheus-io/lezer-promql": "patch:@prometheus-io/lezer-promql@npm%3A0.37.0#~/.yarn/patches/@prometheus-io-lezer-promql-npm-0.37.0-dcde65254c.patch"
     "@react-aria/dialog": "npm:3.5.12"
     "@react-aria/focus": "npm:3.16.2"
     "@react-aria/overlays": "npm:3.21.1"
@@ -18483,7 +18518,7 @@ __metadata:
     angular-bindonce: "npm:0.3.1"
     angular-route: "npm:1.8.3"
     angular-sanitize: "npm:1.8.3"
-    ansicolor: "npm:1.1.100"
+    ansicolor: "patch:ansicolor@npm%3A1.1.100#~/.yarn/patches/ansicolor-npm-1.1.100-32b8c891ec.patch"
     autoprefixer: "npm:10.4.17"
     baron: "npm:3.0.3"
     blob-polyfill: "npm:7.0.20220408"
