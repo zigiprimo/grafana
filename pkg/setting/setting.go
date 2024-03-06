@@ -1765,12 +1765,6 @@ func (cfg *Cfg) readAlertingSettings(iniFile *ini.File) error {
 	return nil
 }
 
-// IsLegacyAlertingEnabled returns whether the legacy alerting is enabled or not.
-// It's safe to be used only after readAlertingSettings() and ReadUnifiedAlertingSettings() are executed.
-func (cfg *Cfg) IsLegacyAlertingEnabled() bool {
-	return cfg.AlertingEnabled != nil && *(cfg.AlertingEnabled)
-}
-
 func readGRPCServerSettings(cfg *Cfg, iniFile *ini.File) error {
 	server := iniFile.Section("grpc_server")
 	errPrefix := "grpc_server:"

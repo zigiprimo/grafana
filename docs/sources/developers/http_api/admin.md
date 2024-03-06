@@ -654,8 +654,6 @@ Content-Type: application/json
 
 `POST /api/admin/provisioning/plugins/reload`
 
-`POST /api/admin/provisioning/notifications/reload`
-
 `POST /api/admin/provisioning/access-control/reload`
 
 `POST /api/admin/provisioning/alerting/reload`

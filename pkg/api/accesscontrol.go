@@ -22,12 +22,11 @@ const (
 
 // API related scopes
 var (
-	ScopeProvisionersAll           = ac.Scope("provisioners", "*")
-	ScopeProvisionersDashboards    = ac.Scope("provisioners", "dashboards")
-	ScopeProvisionersPlugins       = ac.Scope("provisioners", "plugins")
-	ScopeProvisionersDatasources   = ac.Scope("provisioners", "datasources")
-	ScopeProvisionersNotifications = ac.Scope("provisioners", "notifications")
-	ScopeProvisionersAlertRules    = ac.Scope("provisioners", "alerting")
+	ScopeProvisionersAll         = ac.Scope("provisioners", "*")
+	ScopeProvisionersDashboards  = ac.Scope("provisioners", "dashboards")
+	ScopeProvisionersPlugins     = ac.Scope("provisioners", "plugins")
+	ScopeProvisionersDatasources = ac.Scope("provisioners", "datasources")
+	ScopeProvisionersAlertRules  = ac.Scope("provisioners", "alerting")
 )
 
 // declareFixedRoles declares to the AccessControl service fixed roles and their
