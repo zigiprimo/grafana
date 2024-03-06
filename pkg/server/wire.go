@@ -37,6 +37,7 @@ import (
 	apiregistry "github.com/grafana/grafana/pkg/registry/apis"
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/accesscontrol/acimpl"
+	"github.com/grafana/grafana/pkg/services/accesscontrol/embedserver"
 	"github.com/grafana/grafana/pkg/services/accesscontrol/ossaccesscontrol"
 	"github.com/grafana/grafana/pkg/services/alerting"
 	"github.com/grafana/grafana/pkg/services/annotations"
@@ -181,6 +182,7 @@ var wireBasicSet = wire.NewSet(
 	wire.Bind(new(annotations.Repository), new(*annotationsimpl.RepositoryImpl)),
 	alerting.ProvideAlertStore,
 	alerting.ProvideAlertEngine,
+	embedserver.ProvideService,
 	wire.Bind(new(alerting.UsageStatsQuerier), new(*alerting.AlertEngine)),
 	New,
 	api.ProvideHTTPServer,
