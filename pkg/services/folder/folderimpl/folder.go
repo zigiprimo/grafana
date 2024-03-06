@@ -414,7 +414,7 @@ func (s *Service) getRootFoldersNG(ctx context.Context, q *folder.GetChildrenQue
 
 func (s *Service) getRootFolders(ctx context.Context, q *folder.GetChildrenQuery) ([]*folder.Folder, error) {
 	if s.features.IsEnabled(ctx, featuremgmt.FlagRbacNG) {
-		return s.getRootFolders(ctx, q)
+		return s.getRootFoldersNG(ctx, q)
 	}
 
 	permissions := q.SignedInUser.GetPermissions()
