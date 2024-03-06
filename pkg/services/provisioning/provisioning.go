@@ -163,10 +163,12 @@ func (ps *ProvisioningServiceImpl) RunInitProvisioners(ctx context.Context) erro
 		return err
 	}
 
-	err = ps.ProvisionNotifications(ctx)
-	if err != nil {
-		ps.log.Error("Failed to provision alert notifications", "error", err)
-		return err
+	if ps.Cfg.IsLegacyAlertingEnabled() {
+		err = ps.ProvisionNotifications(ctx)
+		if err != nil {
+			ps.log.Error("Failed to provision alert notifications", "error", err)
+			return err
+		}
 	}
 
 	err = ps.ProvisionAlerting(ctx)

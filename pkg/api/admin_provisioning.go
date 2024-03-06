@@ -94,6 +94,9 @@ func (hs *HTTPServer) AdminProvisioningReloadPlugins(c *contextmodel.ReqContext)
 // 403: forbiddenError
 // 500: internalServerError
 func (hs *HTTPServer) AdminProvisioningReloadNotifications(c *contextmodel.ReqContext) response.Response {
+	if !hs.Cfg.IsLegacyAlertingEnabled() {
+		return response.Error(http.StatusNotFound, "Legacy alerting is not enabled", nil)
+	}
 	err := hs.ProvisioningService.ProvisionNotifications(c.Req.Context())
 	if err != nil {
 		return response.Error(http.StatusInternalServerError, "", err)

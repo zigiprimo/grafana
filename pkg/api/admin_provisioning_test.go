@@ -12,12 +12,16 @@ import (
 	"github.com/grafana/grafana/pkg/services/accesscontrol"
 	"github.com/grafana/grafana/pkg/services/provisioning"
 	"github.com/grafana/grafana/pkg/setting"
+	"github.com/grafana/grafana/pkg/util"
 	"github.com/grafana/grafana/pkg/web/webtest"
 )
 
 func TestAPI_AdminProvisioningReload_AccessControl(t *testing.T) {
+	legacyConfig := setting.NewCfg()
+	legacyConfig.AlertingEnabled = util.Pointer(true)
 	type testCase struct {
 		desc         string
+		cfg          *setting.Cfg
 		url          string
 		expectedBody string
 		expectedCode int
@@ -73,6 +77,7 @@ func TestAPI_AdminProvisioningReload_AccessControl(t *testing.T) {
 		},
 		{
 			desc:         "should work for notifications with specific scope",
+			cfg:          legacyConfig,
 			expectedCode: http.StatusOK,
 			expectedBody: `{"message":"Notifications config reloaded"}`,
 			permissions: []accesscontrol.Permission{
@@ -88,8 +93,20 @@ func TestAPI_AdminProvisioningReload_AccessControl(t *testing.T) {
 		},
 		{
 			desc:         "should fail for notifications with no permission",
+			cfg:          legacyConfig,
 			expectedCode: http.StatusForbidden,
 			url:          "/api/admin/provisioning/notifications/reload",
+		},
+		{
+			desc:         "should fail for notifications when legacy alerting disabled",
+			expectedCode: http.StatusNotFound,
+			permissions: []accesscontrol.Permission{
+				{
+					Action: ActionProvisioningReload,
+					Scope:  ScopeProvisionersNotifications,
+				},
+			},
+			url: "/api/admin/provisioning/notifications/reload",
 		},
 		{
 			desc:         "should work for datasources with specific scope",
@@ -162,7 +179,11 @@ func TestAPI_AdminProvisioningReload_AccessControl(t *testing.T) {
 		t.Run(tt.desc, func(t *testing.T) {
 			pService := provisioning.NewProvisioningServiceMock(context.Background())
 			server := SetupAPITestServer(t, func(hs *HTTPServer) {
-				hs.Cfg = setting.NewCfg()
+				if tt.cfg != nil {
+					hs.Cfg = tt.cfg
+				} else {
+					hs.Cfg = setting.NewCfg()
+				}
 				hs.ProvisioningService = pService
 			})
 
