@@ -54,7 +54,12 @@ var OSSRolesPrefixes = []string{accesscontrol.ManagedRolePrefix, accesscontrol.E
 
 func ProvideService(cfg *setting.Cfg, db db.DB, routeRegister routing.RouteRegister, cache *localcache.CacheService,
 	accessControl accesscontrol.AccessControl, features featuremgmt.FeatureToggles) (*Service, error) {
-	service := ProvideOSSService(cfg, database.ProvideService(db), cache, features)
+	spiceDBClient, err := NewSpiceDBClient(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	service := ProvideOSSService(cfg, database.ProvideService(db), cache, features, spiceDBClient)
 
 	api.NewAccessControlAPI(routeRegister, accessControl, service, features).RegisterAPIEndpoints()
 	if err := accesscontrol.DeclareFixedRoles(service, cfg); err != nil {
@@ -72,14 +77,15 @@ func ProvideService(cfg *setting.Cfg, db db.DB, routeRegister routing.RouteRegis
 	return service, nil
 }
 
-func ProvideOSSService(cfg *setting.Cfg, store accesscontrol.Store, cache *localcache.CacheService, features featuremgmt.FeatureToggles) *Service {
+func ProvideOSSService(cfg *setting.Cfg, store accesscontrol.Store, cache *localcache.CacheService, features featuremgmt.FeatureToggles, spiceDBClient *authzed.Client) *Service {
 	s := &Service{
-		cache:    cache,
-		cfg:      cfg,
-		features: features,
-		log:      log.New("accesscontrol.service"),
-		roles:    accesscontrol.BuildBasicRoleDefinitions(),
-		store:    store,
+		cache:         cache,
+		cfg:           cfg,
+		features:      features,
+		log:           log.New("accesscontrol.service"),
+		roles:         accesscontrol.BuildBasicRoleDefinitions(),
+		store:         store,
+		spiceDBClient: spiceDBClient,
 	}
 
 	return s
@@ -94,6 +100,7 @@ type Service struct {
 	registrations accesscontrol.RegistrationList
 	roles         map[string]*accesscontrol.RoleDTO
 	store         accesscontrol.Store
+	spiceDBClient *authzed.Client
 }
 
 func NewSpiceDBClient(cfg *setting.Cfg) (*authzed.Client, error) {
@@ -119,13 +126,6 @@ func (s *Service) GetUserPermissions(ctx context.Context, user identity.Requeste
 	timer := prometheus.NewTimer(metrics.MAccessPermissionsSummary)
 	defer timer.ObserveDuration()
 
-	res, err := s.lookupResources(ctx, user)
-	if err != nil {
-		s.log.Error("unable to lookup resources: %s", err)
-		return nil, err
-	}
-	s.log.Debug("lookup result", "res", res)
-
 	if !s.cfg.RBACPermissionCache || !user.HasUniqueId() {
 		return s.getUserPermissions(ctx, user, options)
 	}
@@ -133,25 +133,32 @@ func (s *Service) GetUserPermissions(ctx context.Context, user identity.Requeste
 	return s.getCachedUserPermissions(ctx, user, options)
 }
 
-func (s *Service) lookupResources(ctx context.Context, user identity.Requester) ([]string, error) {
+func (s *Service) LookupResources(ctx context.Context, user identity.Requester, query accesscontrol.LookupQuery) ([]string, error) {
+	timer := prometheus.NewTimer(metrics.MAccessLookupResourcesSummary)
+	defer timer.ObserveDuration()
+
 	_, userId := user.GetNamespacedID()
-	objectIDs := make([]string, 0)
 	if userId == "0" {
-		return objectIDs, nil
+		return []string{}, nil
+	}
+	query.SubjectType = accesscontrol.KindUser
+	query.SubjectID = userId
+	if query.Permission == "" {
+		query.Permission = accesscontrol.PermissionView
 	}
 
-	client, err := NewSpiceDBClient(s.cfg)
-	if err != nil {
-		s.log.Error("unable to initialize client: %s", err)
-		return nil, err
-	}
-	lookupStream, err := client.LookupResources(ctx, &pb.LookupResourcesRequest{
-		ResourceObjectType: "dashboard",
-		Permission:         "view",
+	return s.lookupResources(ctx, query)
+}
+
+func (s *Service) lookupResources(ctx context.Context, query accesscontrol.LookupQuery) ([]string, error) {
+	objectIDs := make([]string, 0)
+	lookupStream, err := s.spiceDBClient.LookupResources(ctx, &pb.LookupResourcesRequest{
+		ResourceObjectType: query.ResourceType,
+		Permission:         query.Permission,
 		Subject: &pb.SubjectReference{
 			Object: &pb.ObjectReference{
-				ObjectType: accesscontrol.KindUser,
-				ObjectId:   userId,
+				ObjectType: query.SubjectType,
+				ObjectId:   query.SubjectID,
 			},
 		},
 	})

@@ -49,6 +49,7 @@ type Service interface {
 	DeleteExternalServiceRole(ctx context.Context, externalServiceID string) error
 	// SyncUserRoles adds provided roles to user
 	SyncUserRoles(ctx context.Context, orgID int64, cmd SyncUserRolesCommand) error
+	LookupResources(ctx context.Context, user identity.Requester, query LookupQuery) ([]string, error)
 }
 
 //go:generate  mockery --name Store --structname MockStore --outpkg actest --filename store_mock.go --output ./actest/
@@ -78,6 +79,13 @@ type SearchOptions struct {
 	NamespacedID string    // ID of the identity (ex: user:3, service-account:4)
 	wildcards    Wildcards // private field computed based on the Scope
 	RolePrefixes []string
+}
+
+type LookupQuery struct {
+	ResourceType string
+	Permission   string
+	SubjectType  string
+	SubjectID    string
 }
 
 // Wildcards computes the wildcard scopes that include the scope

@@ -43,6 +43,7 @@ type Service struct {
 	dashboardFolderStore folder.FolderStore
 	features             featuremgmt.FeatureToggles
 	accessControl        accesscontrol.AccessControl
+	acService            accesscontrol.Service
 	// bus is currently used to publish event in case of title change
 	bus bus.Bus
 
@@ -53,6 +54,7 @@ type Service struct {
 
 func ProvideService(
 	ac accesscontrol.AccessControl,
+	acService accesscontrol.Service,
 	bus bus.Bus,
 	cfg *setting.Cfg,
 	dashboardStore dashboards.Store,
@@ -71,6 +73,7 @@ func ProvideService(
 		store:                store,
 		features:             features,
 		accessControl:        ac,
+		acService:            acService,
 		bus:                  bus,
 		db:                   db,
 		registry:             make(map[string]folder.RegistryService),
@@ -340,24 +343,17 @@ func (s *Service) GetChildren(ctx context.Context, q *folder.GetChildrenQuery) (
 }
 
 func (s *Service) getRootFolders(ctx context.Context, q *folder.GetChildrenQuery) ([]*folder.Folder, error) {
-	permissions := q.SignedInUser.GetPermissions()
-	folderPermissions := permissions[dashboards.ActionFoldersRead]
-	folderPermissions = append(folderPermissions, permissions[dashboards.ActionDashboardsRead]...)
-	q.FolderUIDs = make([]string, 0, len(folderPermissions))
-	for _, p := range folderPermissions {
-		if p == dashboards.ScopeFoldersAll {
-			// no need to query for folders with permissions
-			// the user has permission to access all folders
-			q.FolderUIDs = nil
-			break
-		}
-		if folderUid, found := strings.CutPrefix(p, dashboards.ScopeFoldersPrefix); found {
-			if !slices.Contains(q.FolderUIDs, folderUid) {
-				q.FolderUIDs = append(q.FolderUIDs, folderUid)
-			}
-		}
+	// Lookup user's folders
+	userFolderUIDs, err := s.acService.LookupResources(ctx, q.SignedInUser, accesscontrol.LookupQuery{
+		ResourceType: accesscontrol.KindFolder,
+		Permission:   accesscontrol.PermissionView,
+	})
+	if err != nil {
+		return nil, err
 	}
 
+	// Get all root folders
+	q.FolderUIDs = []string{}
 	children, err := s.store.GetChildren(ctx, *q)
 	if err != nil {
 		return nil, err
@@ -368,17 +364,34 @@ func (s *Service) getRootFolders(ctx context.Context, q *folder.GetChildrenQuery
 		childrenUIDs = append(childrenUIDs, f.UID)
 	}
 
-	dashFolders, err := s.dashboardFolderStore.GetFolders(ctx, q.OrgID, childrenUIDs)
+	childrenUIDsFiltered := make([]string, 0, len(children))
+	for _, userFolder := range userFolderUIDs {
+		if slices.Contains(childrenUIDs, userFolder) {
+			childrenUIDsFiltered = append(childrenUIDsFiltered, userFolder)
+		}
+	}
+	childrenFiltered := make([]*folder.Folder, 0, len(childrenUIDsFiltered))
+	for _, uid := range childrenUIDsFiltered {
+		idx := slices.IndexFunc(children, func(f *folder.Folder) bool {
+			return f.UID == uid
+		})
+		if idx >= 0 {
+			childrenFiltered = append(childrenFiltered, children[idx])
+		}
+	}
+
+	dashFolders, err := s.dashboardFolderStore.GetFolders(ctx, q.OrgID, childrenUIDsFiltered)
 	if err != nil {
 		return nil, folder.ErrInternal.Errorf("failed to fetch subfolders from dashboard store: %w", err)
 	}
 
-	if err := concurrency.ForEachJob(ctx, len(children), runtime.NumCPU(), func(ctx context.Context, i int) error {
-		f := children[i]
+	if err := concurrency.ForEachJob(ctx, len(childrenFiltered), runtime.NumCPU(), func(ctx context.Context, i int) error {
+		f := childrenFiltered[i]
 		// fetch folder from dashboard store
 		dashFolder, ok := dashFolders[f.UID]
 		if !ok {
 			s.log.Error("failed to fetch folder by UID from dashboard store", "orgID", f.OrgID, "uid", f.UID)
+			return nil
 		}
 		// always expose the dashboard store sequential ID
 		metrics.MFolderIDsServiceCount.WithLabelValues(metrics.Folder).Inc()
@@ -391,11 +404,11 @@ func (s *Service) getRootFolders(ctx context.Context, q *folder.GetChildrenQuery
 	}
 
 	// add "shared with me" folder on the 1st page
-	if (q.Page == 0 || q.Page == 1) && len(q.FolderUIDs) != 0 {
-		children = append([]*folder.Folder{&folder.SharedWithMeFolder}, children...)
+	if (q.Page == 0 || q.Page == 1) && len(childrenUIDsFiltered) < len(childrenUIDs) {
+		childrenFiltered = append([]*folder.Folder{&folder.SharedWithMeFolder}, childrenFiltered...)
 	}
 
-	return children, nil
+	return childrenFiltered, nil
 }
 
 // GetSharedWithMe returns folders available to user, which cannot be accessed from the root folders

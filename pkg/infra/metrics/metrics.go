@@ -132,6 +132,9 @@ var (
 	// MAccessPermissionsSummary is a metric summary for loading permissions request duration when evaluating access
 	MAccessPermissionsSummary prometheus.Histogram
 
+	// MAccessLookupResourcesSummary is a metric summary for listing resources available to user
+	MAccessLookupResourcesSummary prometheus.Histogram
+
 	// MSearchPermissionsSummary is a metric summary for searching permissions request duration
 	MAccessSearchPermissionsSummary prometheus.Histogram
 
@@ -600,6 +603,12 @@ func init() {
 		Buckets: prometheus.ExponentialBuckets(0.00001, 4, 10),
 	})
 
+	MAccessLookupResourcesSummary = prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name:    "access_lookup_permissions_duration",
+		Help:    "Histogram for the listing resources available to user",
+		Buckets: prometheus.ExponentialBuckets(0.00001, 4, 10),
+	})
+
 	MAccessEvaluationsSummary = prometheus.NewHistogram(prometheus.HistogramOpts{
 		Name:    "access_evaluation_duration",
 		Help:    "Histogram for the runtime of evaluation function.",
@@ -743,6 +752,7 @@ func initMetricVars(reg prometheus.Registerer) {
 		MRenderingUserLookupSummary,
 		MRenderingQueue,
 		MAccessPermissionsSummary,
+		MAccessLookupResourcesSummary,
 		MAccessEvaluationsSummary,
 		MAccessSearchPermissionsSummary,
 		MAccessEvaluationCount,

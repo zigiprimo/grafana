@@ -20,6 +20,11 @@ const (
 	KindFolder     = "folder"
 )
 
+const (
+	PermissionView = "view"
+	PermissionEdit = "edit"
+)
+
 var actionToRelationMap = map[string]string{
 	"dashboards:read":  RelationReader,
 	"folders:read":     RelationReader,
