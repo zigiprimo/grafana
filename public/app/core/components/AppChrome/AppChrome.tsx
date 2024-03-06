@@ -150,12 +150,9 @@ const getStyles = (theme: GrafanaTheme2) => {
       flexDirection: 'column',
     }),
     panes: css({
-      label: 'page-panes',
       display: 'flex',
-      height: '100%',
       width: '100%',
       flexGrow: 1,
-      minHeight: 0,
       flexDirection: 'column',
       [theme.breakpoints.up('md')]: {
         flexDirection: 'row',

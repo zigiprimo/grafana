@@ -21,18 +21,19 @@ function NativeScrollbar({ children, scrollRefCallback, scrollTop }: FlaggedScro
 
   useEffect(() => {
     if (ref.current && scrollRefCallback) {
+      console.warn('TODO: the body element now scrolls instead');
       scrollRefCallback(ref.current);
     }
   }, [ref, scrollRefCallback]);
 
   useEffect(() => {
     if (ref.current && scrollTop != null) {
+      console.warn('TODO: the body element now scrolls instead');
       ref.current?.scrollTo(0, scrollTop);
     }
   }, [scrollTop]);
 
   return (
-    // Set the .scrollbar-view class to help e2e tests find this, like in CustomScrollbar
     <div ref={ref} className={cx(styles.nativeScrollbars, 'scrollbar-view')}>
       {children}
     </div>
@@ -43,12 +44,6 @@ function getStyles() {
   return {
     nativeScrollbars: css({
       label: 'native-scroll-container',
-      minHeight: `calc(100% + 0px)`, // I don't know, just copied from custom scrollbars
-      maxHeight: `calc(100% + 0px)`, // I don't know, just copied from custom scrollbars
-      display: 'flex',
-      flexDirection: 'column',
-      flexGrow: 1,
-      overflow: 'auto',
     }),
   };
 }
