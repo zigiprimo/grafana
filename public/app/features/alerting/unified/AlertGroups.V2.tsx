@@ -36,9 +36,11 @@ import { alertmanagerApi } from './api/alertmanagerApi';
 import { AlertLabels } from './components/AlertLabels';
 import { AlertStateDot } from './components/AlertStateDot';
 import { AlertmanagerPageWrapper } from './components/AlertingPageWrapper';
+import { AnnotationDetailsField } from './components/AnnotationDetailsField';
 import { CollapseToggle } from './components/CollapseToggle';
 import { AlertGroupFilter } from './components/alert-groups/AlertGroupFilter';
 import { useAlertmanager } from './state/AlertmanagerContext';
+import { Annotation } from './utils/constants';
 import { GRAFANA_RULES_SOURCE_NAME } from './utils/datasource';
 import { getFiltersFromUrlParams, makeLabelBasedSilenceLink, makeSilenceDetailsLink } from './utils/misc';
 
@@ -257,22 +259,26 @@ function GroupAlertsAlert({ alert, commonLabels, alertmanagerName }: GroupAlerts
         </Button>
       </Dropdown>
       {!collapsed && (
-        <div className={styles.expanded}>
-          <ol className={styles.timeline}>
-            <li>
-              <div className={styles.timestamp}>{formatDistanceToNow(alert.startsAt)}</div>
-              <div className={styles.event}>Started Firing</div>
-            </li>
-            <li>
-              <div className={styles.timestamp}>{formatDistanceToNow(alert.updatedAt)}</div>
-              <div className={styles.event}>Last update</div>
-            </li>
-            <li>
-              <div className={styles.timestamp}>{formatDistanceToNow(alert.endsAt)}</div>
-              <div className={styles.event}>Ends</div>
-            </li>
-          </ol>
-        </div>
+        <>
+          <div></div>
+          <div className={styles.expanded}>
+            <ol className={styles.timeline}>
+              <li>
+                <div className={styles.timestamp}>{formatDistanceToNow(alert.startsAt, { addSuffix: true })}</div>
+                <div className={styles.event}>Started Firing</div>
+              </li>
+              <li>
+                <div className={styles.timestamp}>{formatDistanceToNow(alert.updatedAt, { addSuffix: true })}</div>
+                <div className={styles.event}>Last update</div>
+              </li>
+              <li>
+                <div className={styles.timestamp}>{formatDistanceToNow(alert.endsAt, { addSuffix: true })}</div>
+                <div className={styles.event}>Ends</div>
+              </li>
+            </ol>
+            <AlertAnnotations annotations={alert.annotations} />
+          </div>
+        </>
       )}
     </>
   );
@@ -281,7 +287,7 @@ function GroupAlertsAlert({ alert, commonLabels, alertmanagerName }: GroupAlerts
 const getGroupAlertsStyles = (theme: GrafanaTheme2) => ({
   container: css({
     display: 'grid',
-    gridTemplateColumns: 'min-content max-content auto min-content',
+    gridTemplateColumns: 'min-content max-content 1fr min-content',
     gap: theme.spacing(2),
     alignItems: 'center',
   }),
@@ -293,31 +299,61 @@ const getGroupAlertsStyles = (theme: GrafanaTheme2) => ({
     alignItems: 'center',
     justifyContent: 'center',
     listStyleType: 'none',
+    fontSize: theme.typography.bodySmall.fontSize,
+    '& li': {
+      flex: 1,
+    },
   }),
   timestamp: css({
-    marginBottom: 20,
-    padding: '0 40px',
+    padding: theme.spacing(0, 4, 2, 4),
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
   }),
   event: css({
-    padding: '0 40px',
+    padding: theme.spacing(2, 4, 0, 4),
     display: 'flex',
     justifyContent: 'center',
-    borderTop: '2px solid #D6DCE0',
+    borderTop: `2px solid ${theme.colors.border.strong}`,
     position: 'relative',
     '&::before': {
       content: '""',
-      width: 25,
-      height: 25,
-      backgroundColor: 'white',
-      borderRadius: 25,
-      border: '1px solid #ddd',
+      width: theme.spacing(1.5),
+      height: theme.spacing(1.5),
+      backgroundColor: theme.colors.error.main,
+      borderRadius: theme.shape.radius.circle,
+      outline: `${theme.spacing(0.25)} solid ${theme.colors.border.strong}`,
       position: 'absolute',
-      top: -15,
-      left: '42%',
+      top: -8,
     },
+  }),
+});
+
+function AlertAnnotations({ annotations }: { annotations: Record<string, string> }) {
+  const styles = useStyles2(getAlertAnnotationsStyles);
+
+  const runbookUrl = annotations[Annotation.runbookURL];
+  const summary = annotations[Annotation.summary];
+  const description = annotations[Annotation.description];
+
+  return (
+    <div>
+      <div className={styles.annotationName}>Summary</div>
+      <div className={styles.annotationValue}>{summary}</div>
+      <div className={styles.annotationName}>Description</div>
+      <div className={styles.annotationValue}>{description}</div>
+    </div>
+  );
+}
+
+const getAlertAnnotationsStyles = (theme: GrafanaTheme2) => ({
+  annotationName: css({
+    fontSize: theme.typography.bodySmall.fontSize,
+    color: theme.colors.text.secondary,
+  }),
+  annotationValue: css({
+    fontSize: theme.typography.bodySmall.fontSize,
+    color: theme.colors.text.primary,
   }),
 });
 
