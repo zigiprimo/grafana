@@ -34,6 +34,7 @@ export const DogfoodFeedback = ({}: Props) => {
         method: 'POST',
         data: {
           comment: comment,
+          tags: tags,
           url: window.location.href,
         },
       })
@@ -43,7 +44,8 @@ export const DogfoodFeedback = ({}: Props) => {
         // @ts-ignore
         const issueId = response.data.issue_id;
 
-        console.log('file', files);
+        if (files.length > 0) {
+          console.log('file', files);
 
         const formData = new FormData();
         formData.append('screenshot', files[0]);
@@ -53,14 +55,19 @@ export const DogfoodFeedback = ({}: Props) => {
           body: formData,
         });
 
-        result.then((response) => {
+          result.then((response) => {
+            setComment('');
+            setTags([]);
+            setFiles([]);
+            setShowDrawer(false);
+          });
+        } else {
           setComment('');
           setTags([]);
           setFiles([]);
-        });
+          setShowDrawer(false);
+        }
       });
-
-    setShowDrawer(false);
 
     console.log('createFeedback');
   }
