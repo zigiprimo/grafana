@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { getBackendSrv } from '@grafana/runtime';
 import { Drawer, FileUpload, TagsInput, TextArea, ToolbarButton } from '@grafana/ui';
+import useRudderStack from './useRudderstack';
 
 export interface Props {}
 
@@ -10,9 +11,14 @@ export const DogfoodFeedback = ({}: Props) => {
   const [tags, setTags] = useState<string[]>([]);
   const [comment, setComment] = useState<string>('');
   const [files, setFiles] = useState<File[]>([]);
+  const { trackRudderStackEvent } = useRudderStack();
 
   function createFeedback(event: any) {
     event.preventDefault();
+
+    useEffect(() => {
+      trackRudderStackEvent('feedr.feedback', { tags, comment });
+    });
 
     getBackendSrv()
     .fetch({
