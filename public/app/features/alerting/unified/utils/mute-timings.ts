@@ -50,13 +50,14 @@ const convertStringToArray = (str: string) => {
 export const createMuteTiming = (fields: MuteTimingFields): MuteTimeInterval => {
   const timeIntervals: TimeInterval[] = fields.time_intervals.map(
     ({ times, weekdays, days_of_month, months, years, location }) => {
+      const filteredTimes = times.filter(({ start_time, end_time }) => !!start_time && !!end_time);
       const interval = {
-        times: times.filter(({ start_time, end_time }) => !!start_time && !!end_time),
         weekdays: convertStringToArray(weekdays)?.map((v) => v.toLowerCase()),
         days_of_month: convertStringToArray(days_of_month),
         months: convertStringToArray(months),
         years: convertStringToArray(years),
         location: location ? location : undefined,
+        ...(filteredTimes.length && { times: filteredTimes }),
       };
 
       return omitBy(interval, isUndefined);
