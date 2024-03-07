@@ -5,6 +5,7 @@ import { SQLEditor } from '@grafana/experimental';
 
 import { ExpressionQuery } from '../types';
 
+import { ExecutedAxQuery } from './ExecutedAxQuery';
 import { SpeechRecognitionButton } from './SpeechRecognitionButton';
 
 interface Props {
