@@ -13,6 +13,7 @@ export const DogfoodFeedback = ({}: Props) => {
   const [comment, setComment] = useState<string>('');
   const [files, setFiles] = useState<File[]>([]);
   const [showDog, setShowDog] = useState<boolean>(false);
+  const [issueUrl, setIssueUrl] = useState<string>('');
   const { trackRudderStackEvent } = useRudderStack();
 
   useEffect(() => {
@@ -21,7 +22,7 @@ export const DogfoodFeedback = ({}: Props) => {
     }
 
     return () => {};
-  }, [showDrawer])
+  }, [showDrawer]);
 
   function createFeedback(event: any) {
     event.preventDefault();
@@ -47,15 +48,17 @@ export const DogfoodFeedback = ({}: Props) => {
         if (files.length > 0) {
           console.log('file', files);
 
-        const formData = new FormData();
-        formData.append('screenshot', files[0]);
+          const formData = new FormData();
+          formData.append('screenshot', files[0]);
 
-        const result = fetch(`/api/plugins/grafana-feedr-app/resources/feedback/upload?issueId=${issueId}`, {
-          method: 'POST',
-          body: formData,
-        });
+          const result = fetch(`/api/plugins/grafana-feedr-app/resources/feedback/upload?issueId=${issueId}`, {
+            method: 'POST',
+            body: formData,
+          });
 
           result.then((response) => {
+            // @ts-ignore
+            setIssueUrl(response?.issue_url ?? '');
             setComment('');
             setTags([]);
             setFiles([]);
@@ -86,11 +89,18 @@ export const DogfoodFeedback = ({}: Props) => {
           {showDog ? (
             <div style={{ display: 'flex', flexFlow: 'column' }}>
               <span
-                style={{ display: 'block', margin: '5px', fontSize: '16px', lineHeight: '22px', fontWeight: '400', textAlign: 'center' }}
+                style={{
+                  display: 'block',
+                  margin: '5px',
+                  fontSize: '16px',
+                  lineHeight: '22px',
+                  fontWeight: '400',
+                  textAlign: 'center',
+                }}
               >
-                Thank you for your feedback! Your issue has been reported here (or somewhere like that?)
+                Thank you for your feedback! Your issue has been reported <a href={issueUrl} target="_blank">here</a>
               </span>
-              <img src={'public/img/dogs/dog1.gif'} alt="dog" width="240px" height="240px" style={{ margin: 'auto' }} />
+              <img src={'public/img/dogs/dog1.gif'} alt="dog" width="240px" height="240px" style={{ margin: 'auto', textDecoration: 'underline' }} />
             </div>
           ) : (
             <form onSubmit={createFeedback}>
@@ -136,8 +146,8 @@ export const DogfoodFeedback = ({}: Props) => {
               </div>
 
               <div style={{ display: 'flex' }}>
-                <div style={{ margin: '250px auto' }}>
-                  <Button type="submit" onClick={() => setShowDog(true)} style={{margin: 'auto 5px'}}>
+                <div style={{ margin: '100px auto' }}>
+                  <Button type="submit" onClick={() => setShowDog(true)} style={{ margin: 'auto 5px' }}>
                     Submit Feedback
                   </Button>
                 </div>
