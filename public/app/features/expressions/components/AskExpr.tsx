@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
 import { SelectableValue } from '@grafana/data';
 import { SQLEditor } from '@grafana/experimental';
@@ -15,13 +15,14 @@ interface Props {
 
 export const AskExpr: React.FC<Props> = ({ onChange, refIds, query }) => {
   const vars = useMemo(() => refIds.map((v) => v.value!), [refIds]);
-
   const initialQuery = `What is the count of ${vars[0]}?`;
+  const [expression, setExpression] = useState(query.expression || initialQuery);
 
-  const onEditorChange = (expression: string) => {
+  const onEditorChange = (exp: string) => {
+    setExpression(exp);
     onChange({
       ...query,
-      expression,
+      expression: exp,
     });
   };
 
@@ -30,7 +31,7 @@ export const AskExpr: React.FC<Props> = ({ onChange, refIds, query }) => {
   return (
     <div>
       <SpeechRecognitionButton onResult={onSpeechResult} />
-      <SQLEditor language={{ id: 'markdown' }} query={query.expression || initialQuery} onChange={onEditorChange} />
+      <SQLEditor language={{ id: 'markdown' }} query={expression} onChange={onEditorChange} />
     </div>
   );
 };
