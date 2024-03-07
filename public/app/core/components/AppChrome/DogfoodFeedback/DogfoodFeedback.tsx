@@ -46,8 +46,6 @@ export const DogfoodFeedback = ({}: Props) => {
         const issueId = response.data.issue_id;
 
         if (files.length > 0) {
-          console.log('file', files);
-
           const formData = new FormData();
           formData.append('screenshot', files[0]);
 
@@ -62,17 +60,15 @@ export const DogfoodFeedback = ({}: Props) => {
             setComment('');
             setTags([]);
             setFiles([]);
-            setShowDrawer(false);
+            setShowDog(true);
           });
         } else {
           setComment('');
           setTags([]);
           setFiles([]);
-          setShowDrawer(false);
+          setShowDog(true);
         }
       });
-
-    console.log('createFeedback');
   }
 
   return (
@@ -146,8 +142,8 @@ export const DogfoodFeedback = ({}: Props) => {
               </div>
 
               <div style={{ display: 'flex' }}>
-                <div style={{ margin: '5px' }}>
-                  <Button type="submit" onClick={() => setShowDog(true)} style={{ margin: 'auto 5px' }}>
+                <div style={{ marginTop: '15px' }}>
+                  <Button type="submit" style={{ margin: 'auto 5px' }}>
                     Submit Feedback
                   </Button>
                 </div>
@@ -159,20 +155,3 @@ export const DogfoodFeedback = ({}: Props) => {
     </>
   );
 };
-
-// const getStyles = (theme: GrafanaTheme2) => ({
-//   buttonContent: css({
-//     alignItems: 'center',
-//     display: 'flex',
-//   }),
-//   buttonText: css({
-//     [theme.breakpoints.down('md')]: {
-//       display: 'none',
-//     },
-//   }),
-//   separator: css({
-//     [theme.breakpoints.down('sm')]: {
-//       display: 'none',
-//     },
-//   }),
-// });
