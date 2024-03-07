@@ -16,9 +16,7 @@ export const DogfoodFeedback = ({}: Props) => {
   function createFeedback(event: any) {
     event.preventDefault();
 
-    useEffect(() => {
-      trackRudderStackEvent('feedr.feedback', { tags, comment });
-    });
+    trackRudderStackEvent('feedr.feedback', { tags, comment });
 
     getBackendSrv()
     .fetch({
