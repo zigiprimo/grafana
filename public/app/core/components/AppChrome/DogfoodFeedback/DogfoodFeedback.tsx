@@ -146,7 +146,7 @@ export const DogfoodFeedback = ({}: Props) => {
               </div>
 
               <div style={{ display: 'flex' }}>
-                <div style={{ margin: '100px auto' }}>
+                <div style={{ margin: '5px' }}>
                   <Button type="submit" onClick={() => setShowDog(true)} style={{ margin: 'auto 5px' }}>
                     Submit Feedback
                   </Button>
