@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import { getBackendSrv } from '@grafana/runtime';
 import { Drawer, FileUpload, TagsInput, TextArea, ToolbarButton } from '@grafana/ui';
+
 import useRudderStack from './useRudderstack';
 
 export interface Props {}
@@ -24,6 +25,7 @@ export const DogfoodFeedback = ({}: Props) => {
         method: 'POST',
         data: {
           comment: comment,
+          tags: tags,
           url: window.location.href,
         },
       })
@@ -32,6 +34,7 @@ export const DogfoodFeedback = ({}: Props) => {
 
         const issueId = response.data.issue_id;
 
+        if (files.length > 0) {
           console.log('file', files);
 
           const formData = new FormData();
@@ -46,10 +49,15 @@ export const DogfoodFeedback = ({}: Props) => {
             setComment('');
             setTags([]);
             setFiles([]);
+            setShowDrawer(false);
           });
+        } else {
+          setComment('');
+          setTags([]);
+          setFiles([]);
+          setShowDrawer(false);
+        }
       });
-
-    setShowDrawer(false);
 
     console.log('createFeedback');
   }
