@@ -5,7 +5,7 @@ import { SQLEditor } from '@grafana/experimental';
 
 import { ExpressionQuery } from '../types';
 
-import { ExecutedAxQuery } from './ExecutedAxQuery';
+// import { ExecutedAxQuery } from './ExecutedAxQuery';
 import { SpeechRecognitionButton } from './SpeechRecognitionButton';
 
 interface Props {
@@ -33,6 +33,7 @@ export const AskExpr: React.FC<Props> = ({ onChange, refIds, query }) => {
     <div>
       <SpeechRecognitionButton onResult={onSpeechResult} />
       <SQLEditor language={{ id: 'markdown' }} query={expression} onChange={onEditorChange} />
+      {/* <ExecutedAxQuery /> */}
     </div>
   );
 };
