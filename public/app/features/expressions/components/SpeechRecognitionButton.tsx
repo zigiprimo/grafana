@@ -15,7 +15,7 @@ export const SpeechRecognitionButton: React.FC<SpeechRecognitionProps> = ({ onRe
   const [transcript, setTranscript] = useState('');
 
   useEffect(() => {
-    const SpeechRecognitionConstructor = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const SpeechRecognitionConstructor = window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (SpeechRecognitionConstructor) {
       const recognition = new SpeechRecognitionConstructor();
